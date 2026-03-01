@@ -32,7 +32,6 @@ export default function Anuncios() {
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true)
-
       if (subrubroId) {
         const { data: subData } = await supabase.from('subrubros').select('*').eq('id', subrubroId).single()
         if (subData) {
@@ -44,10 +43,8 @@ export default function Anuncios() {
         const { data: rubroData } = await supabase.from('rubros').select('*').eq('id', rubroId).single()
         if (rubroData) setRubro(rubroData)
       }
-
       let query = supabase.from('anuncios').select('*').eq('estado', 'activo').order('created_at', { ascending: false })
       if (subrubroId) query = query.eq('subrubro_id', subrubroId)
-
       const { data } = await query
       if (data) setAnuncios(data)
       setLoading(false)
@@ -67,12 +64,7 @@ export default function Anuncios() {
     return `hace ${Math.floor(diff / 1440)} días`
   }
 
-  // URL para publicar con subrubro preseleccionado
-  const urlPublicar = subrubroId
-    ? `/publicar?subrubro_id=${subrubroId}`
-    : rubroId
-    ? `/publicar?rubro_id=${rubroId}`
-    : '/publicar'
+  const urlPublicar = subrubroId ? `/publicar?subrubro_id=${subrubroId}` : rubroId ? `/publicar?rubro_id=${rubroId}` : '/publicar'
 
   return (
     <div style={{ fontFamily: "'Nunito', sans-serif", background: "#F0F2F5", maxWidth: "390px", margin: "0 auto", minHeight: "100vh", paddingBottom: "80px" }}>
@@ -87,8 +79,7 @@ export default function Anuncios() {
               <div style={{ fontSize: "16px", fontWeight: 900, color: "white" }}>{subrubro ? subrubro.nombre : rubro ? rubro.nombre : 'Anuncios'}</div>
             </div>
           </div>
-          {/* BOTON PUBLICAR EN HEADER */}
-          <a href={urlPublicar} style={{ background: "#FFE600", color: "#1a1a2e", padding: "8px 14px", borderRadius: "20px", fontWeight: 800, fontSize: "13px", textDecoration: "none", display: "flex", alignItems: "center", gap: "4px" }}>
+          <a href={urlPublicar} style={{ background: "#FFE600", color: "#1a1a2e", padding: "8px 14px", borderRadius: "20px", fontWeight: 800, fontSize: "13px", textDecoration: "none" }}>
             ➕ Publicar
           </a>
         </div>
@@ -96,7 +87,6 @@ export default function Anuncios() {
 
       <div style={{ height: "70px" }} />
 
-      {/* CONTENIDO */}
       <div style={{ padding: "12px 16px" }}>
         {loading ? (
           <div style={{ textAlign: "center", padding: "60px 0", color: "#999" }}>
@@ -119,7 +109,7 @@ export default function Anuncios() {
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
               {anuncios.map((anuncio) => (
-                <div key={anuncio.id} style={{ background: "white", borderRadius: "16px", overflow: "hidden", boxShadow: "0 2px 8px rgba(0,0,0,0.06)", cursor: "pointer" }}>
+                <a key={anuncio.id} href={`/anuncios/${anuncio.id}`} style={{ background: "white", borderRadius: "16px", overflow: "hidden", boxShadow: "0 2px 8px rgba(0,0,0,0.06)", textDecoration: "none", display: "block" }}>
                   {anuncio.imagenes && anuncio.imagenes.length > 0 && (
                     <img src={anuncio.imagenes[0]} style={{ width: "100%", height: "180px", objectFit: "cover" }} />
                   )}
@@ -140,7 +130,7 @@ export default function Anuncios() {
                       <div style={{ fontSize: "11px", color: "#bbb" }}>{timeAgo(anuncio.created_at)}</div>
                     </div>
                   </div>
-                </div>
+                </a>
               ))}
             </div>
           </>

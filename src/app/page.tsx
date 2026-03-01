@@ -63,9 +63,9 @@ export default function Home() {
             <div style={{ width: "34px", height: "34px", borderRadius: "50%", background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
               🔔
             </div>
-            <div style={{ width: "34px", height: "34px", borderRadius: "50%", background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+            <a href="/login" style={{ width: "34px", height: "34px", borderRadius: "50%", background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", textDecoration: "none" }}>
               👤
-            </div>
+            </a>
           </div>
         </div>
 
@@ -143,13 +143,14 @@ export default function Home() {
       {/* BOTTOM NAV */}
       <div style={{ height: "80px" }} />
       <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: "390px", background: "white", borderTop: "1px solid #E4E6EA", display: "flex", justifyContent: "space-around", padding: "8px 0 18px", boxShadow: "0 -4px 12px rgba(0,0,0,0.08)" }}>
-        {[["🔍", "Buscar"], ["➕", "Publicar"], ["🏠", "Inicio"], ["💬", "Chat"], ["👤", "Perfil"]].map(([icon, label], i) => (
-          <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "3px", cursor: "pointer", padding: "4px 10px" }}>
+        {([["🔍", "Buscar", "/"], ["➕", "Publicar", "/publicar"], ["🏠", "Inicio", "/"], ["💬", "Chat", "/"], ["👤", "Perfil", "/login"]] as [string, string, string][]).map(([icon, label, href], i) => (
+          <a key={i} href={href} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "3px", cursor: "pointer", padding: "4px 10px", textDecoration: "none" }}>
             <span style={{ fontSize: "22px" }}>{icon}</span>
             <span style={{ fontSize: "10px", color: i === 2 ? "#3483FA" : "#bbb", fontWeight: 700 }}>{label}</span>
-          </div>
+          </a>
         ))}
       </div>
+
     </div>
   );
 }

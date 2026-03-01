@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 
@@ -11,7 +11,7 @@ type Opcion = { id: number; filtro_id: number; subrubro_id: number; opcion: stri
 
 const CAMPOS_FIJOS = ['precio', 'descripcion', 'descripción', 'precio de venta', 'titulo', 'título', 'moneda', 'moneda de publicación', 'tipo de moneda']
 
-export default function Publicar() {
+function PublicarContent() {
   const searchParams = useSearchParams()
   const subrubroIdParam = searchParams.get('subrubro_id')
   const rubroIdParam = searchParams.get('rubro_id')
@@ -337,5 +337,13 @@ export default function Publicar() {
         )}
       </div>
     </div>
+  )
+}
+
+export default function Publicar() {
+  return (
+    <Suspense fallback={<div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh" }}>⏳</div>}>
+      <PublicarContent />
+    </Suspense>
   )
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 
@@ -20,7 +20,7 @@ type Anuncio = {
 type Subrubro = { id: number; nombre: string; rubro_id: number }
 type Rubro = { id: number; nombre: string }
 
-export default function Anuncios() {
+function AnunciosContent() {
   const [anuncios, setAnuncios] = useState<Anuncio[]>([])
   const [loading, setLoading] = useState(true)
   const [subrubro, setSubrubro] = useState<Subrubro | null>(null)
@@ -68,8 +68,6 @@ export default function Anuncios() {
 
   return (
     <div style={{ fontFamily: "'Nunito', sans-serif", background: "#F0F2F5", maxWidth: "390px", margin: "0 auto", minHeight: "100vh", paddingBottom: "80px" }}>
-
-      {/* HEADER FIJO */}
       <div style={{ position: "fixed", top: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: "390px", zIndex: 100, background: "linear-gradient(180deg, #050d1a 0%, #0a1628 100%)", padding: "16px", boxShadow: "0 4px 20px rgba(0,0,0,0.4)" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
@@ -137,7 +135,6 @@ export default function Anuncios() {
         )}
       </div>
 
-      {/* BOTTOM NAV */}
       <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: "390px", background: "white", borderTop: "1px solid #E4E6EA", display: "flex", justifyContent: "space-around", padding: "8px 0 18px", boxShadow: "0 -4px 12px rgba(0,0,0,0.08)" }}>
         {([["🔍", "Buscar", "/"], ["➕", "Publicar", urlPublicar], ["🏠", "Inicio", "/"], ["💬", "Chat", "/"], ["👤", "Perfil", "/login"]] as [string, string, string][]).map(([icon, label, href], i) => (
           <a key={i} href={href} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "3px", cursor: "pointer", padding: "4px 10px", textDecoration: "none" }}>
@@ -147,5 +144,13 @@ export default function Anuncios() {
         ))}
       </div>
     </div>
+  )
+}
+
+export default function Anuncios() {
+  return (
+    <Suspense fallback={<div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh" }}>⏳</div>}>
+      <AnunciosContent />
+    </Suspense>
   )
 }

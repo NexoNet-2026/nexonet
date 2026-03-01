@@ -33,23 +33,18 @@ export default function Anuncios() {
     const fetchData = async () => {
       setLoading(true)
 
-      // Obtener nombre del subrubro y rubro
       if (subrubroId) {
-        const { data: subData } = await supabase
-          .from('subrubros').select('*').eq('id', subrubroId).single()
+        const { data: subData } = await supabase.from('subrubros').select('*').eq('id', subrubroId).single()
         if (subData) {
           setSubrubro(subData)
-          const { data: rubroData } = await supabase
-            .from('rubros').select('*').eq('id', subData.rubro_id).single()
+          const { data: rubroData } = await supabase.from('rubros').select('*').eq('id', subData.rubro_id).single()
           if (rubroData) setRubro(rubroData)
         }
       } else if (rubroId) {
-        const { data: rubroData } = await supabase
-          .from('rubros').select('*').eq('id', rubroId).single()
+        const { data: rubroData } = await supabase.from('rubros').select('*').eq('id', rubroId).single()
         if (rubroData) setRubro(rubroData)
       }
 
-      // Filtrar anuncios
       let query = supabase.from('anuncios').select('*').eq('estado', 'activo').order('created_at', { ascending: false })
       if (subrubroId) query = query.eq('subrubro_id', subrubroId)
 
@@ -72,17 +67,30 @@ export default function Anuncios() {
     return `hace ${Math.floor(diff / 1440)} días`
   }
 
+  // URL para publicar con subrubro preseleccionado
+  const urlPublicar = subrubroId
+    ? `/publicar?subrubro_id=${subrubroId}`
+    : rubroId
+    ? `/publicar?rubro_id=${rubroId}`
+    : '/publicar'
+
   return (
     <div style={{ fontFamily: "'Nunito', sans-serif", background: "#F0F2F5", maxWidth: "390px", margin: "0 auto", minHeight: "100vh", paddingBottom: "80px" }}>
 
       {/* HEADER FIJO */}
       <div style={{ position: "fixed", top: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: "390px", zIndex: 100, background: "linear-gradient(180deg, #050d1a 0%, #0a1628 100%)", padding: "16px", boxShadow: "0 4px 20px rgba(0,0,0,0.4)" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          <a href="/" style={{ color: "white", textDecoration: "none", fontSize: "22px" }}>←</a>
-          <div>
-            {rubro && <div style={{ fontSize: "10px", color: "rgba(255,255,255,0.5)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "1px" }}>{rubro.nombre}</div>}
-            <div style={{ fontSize: "16px", fontWeight: 900, color: "white" }}>{subrubro ? subrubro.nombre : rubro ? rubro.nombre : 'Anuncios'}</div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <a href="/" style={{ color: "white", textDecoration: "none", fontSize: "22px" }}>←</a>
+            <div>
+              {rubro && <div style={{ fontSize: "10px", color: "rgba(255,255,255,0.5)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "1px" }}>{rubro.nombre}</div>}
+              <div style={{ fontSize: "16px", fontWeight: 900, color: "white" }}>{subrubro ? subrubro.nombre : rubro ? rubro.nombre : 'Anuncios'}</div>
+            </div>
           </div>
+          {/* BOTON PUBLICAR EN HEADER */}
+          <a href={urlPublicar} style={{ background: "#FFE600", color: "#1a1a2e", padding: "8px 14px", borderRadius: "20px", fontWeight: 800, fontSize: "13px", textDecoration: "none", display: "flex", alignItems: "center", gap: "4px" }}>
+            ➕ Publicar
+          </a>
         </div>
       </div>
 
@@ -100,8 +108,8 @@ export default function Anuncios() {
             <div style={{ fontSize: "40px", marginBottom: "12px" }}>📭</div>
             <div style={{ fontWeight: 700 }}>No hay anuncios todavía</div>
             <div style={{ fontSize: "13px", marginTop: "8px" }}>¡Sé el primero en publicar!</div>
-            <a href="/publicar" style={{ display: "inline-block", marginTop: "20px", background: "#FFE600", color: "#1a1a2e", padding: "12px 24px", borderRadius: "12px", fontWeight: 800, textDecoration: "none" }}>
-              ➕ Publicar anuncio
+            <a href={urlPublicar} style={{ display: "inline-block", marginTop: "20px", background: "#FFE600", color: "#1a1a2e", padding: "12px 24px", borderRadius: "12px", fontWeight: 800, textDecoration: "none" }}>
+              ➕ Publicar acá
             </a>
           </div>
         ) : (
@@ -112,7 +120,6 @@ export default function Anuncios() {
             <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
               {anuncios.map((anuncio) => (
                 <div key={anuncio.id} style={{ background: "white", borderRadius: "16px", overflow: "hidden", boxShadow: "0 2px 8px rgba(0,0,0,0.06)", cursor: "pointer" }}>
-                  {/* IMAGEN */}
                   {anuncio.imagenes && anuncio.imagenes.length > 0 && (
                     <img src={anuncio.imagenes[0]} style={{ width: "100%", height: "180px", objectFit: "cover" }} />
                   )}
@@ -142,10 +149,10 @@ export default function Anuncios() {
 
       {/* BOTTOM NAV */}
       <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: "390px", background: "white", borderTop: "1px solid #E4E6EA", display: "flex", justifyContent: "space-around", padding: "8px 0 18px", boxShadow: "0 -4px 12px rgba(0,0,0,0.08)" }}>
-        {([["🔍", "Buscar", "/"], ["➕", "Publicar", "/publicar"], ["🏠", "Inicio", "/"], ["💬", "Chat", "/"], ["👤", "Perfil", "/login"]] as [string, string, string][]).map(([icon, label, href], i) => (
+        {([["🔍", "Buscar", "/"], ["➕", "Publicar", urlPublicar], ["🏠", "Inicio", "/"], ["💬", "Chat", "/"], ["👤", "Perfil", "/login"]] as [string, string, string][]).map(([icon, label, href], i) => (
           <a key={i} href={href} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "3px", cursor: "pointer", padding: "4px 10px", textDecoration: "none" }}>
             <span style={{ fontSize: "22px" }}>{icon}</span>
-            <span style={{ fontSize: "10px", color: "#bbb", fontWeight: 700 }}>{label}</span>
+            <span style={{ fontSize: "10px", color: i === 1 ? "#FFE600" : "#bbb", fontWeight: 700 }}>{label}</span>
           </a>
         ))}
       </div>

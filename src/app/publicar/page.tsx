@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 
 type Rubro = { id: number; nombre: string; orden: number }
@@ -8,17 +9,25 @@ type Subrubro = { id: number; rubro_id: number; nombre: string }
 type Filtro = { id: number; filtro_id: number; subrubro_id: number; nombre: string; tipo: string; obligatorio: boolean; orden: number }
 type Opcion = { id: number; filtro_id: number; subrubro_id: number; opcion: string }
 
-const CAMPOS_FIJOS = ['precio', 'descripcion', 'descripción', 'precio de venta', 'titulo', 'título']
+const CAMPOS_FIJOS = ['precio', 'descripcion', 'descripción', 'precio de venta', 'titulo', 'título', 'moneda', 'moneda de publicación', 'tipo de moneda']
 
 export default function Publicar() {
-  const [paso, setPaso] = useState(1)
+  const searchParams = useSearchParams()
+  const subrubroIdParam = searchParams.get('subrubro_id')
+  const rubroIdParam = searchParams.get('rubro_id')
+
+  // Si viene con subrubro preseleccionado arrancamos en paso 2
+  const [paso, setPaso] = useState(subrubroIdParam ? 2 : 1)
   const [rubros, setRubros] = useState<Rubro[]>([])
   const [subrubros, setSubrubros] = useState<Subrubro[]>([])
   const [filtros, setFiltros] = useState<Filtro[]>([])
   const [opciones, setOpciones] = useState<Opcion[]>([])
 
-  const [rubroId, setRubroId] = useState<number | null>(null)
-  const [subrubroId, setSubrubroId] = useState<number | null>(null)
+  const [rubroId, setRubroId] = useState<number | null>(rubroIdParam ? Number(rubroIdParam) : null)
+  const [subrubroId, setSubrubroId] = useState<number | null>(subrubroIdParam ? Number(subrubroIdParam) : null)
+  const [rubroNombre, setRubroNombre] = useState('')
+  const [subrubroNombre, setSubrubroNombre] = useState('')
+
   const [titulo, setTitulo] = useState('')
   const [descripcion, setDescripcion] = useState('')
   const [precio, setPrecio] = useState('')
@@ -38,12 +47,33 @@ export default function Publicar() {
     })
   }, [])
 
+  // Si viene con subrubro_id preseleccionado, cargar sus datos
   useEffect(() => {
-    if (rubroId) {
+    if (subrubroIdParam) {
+      const id = Number(subrubroIdParam)
+      supabase.from('subrubros').select('*').eq('id', id).single().then(({ data }) => {
+        if (data) {
+          setSubrubroNombre(data.nombre)
+          setRubroId(data.rubro_id)
+          supabase.from('rubros').select('*').eq('id', data.rubro_id).single().then(({ data: r }) => {
+            if (r) setRubroNombre(r.nombre)
+          })
+          supabase.from('subrubros').select('*').eq('rubro_id', data.rubro_id).then(({ data: subs }) => {
+            if (subs) setSubrubros(subs)
+          })
+        }
+      })
+    }
+  }, [subrubroIdParam])
+
+  useEffect(() => {
+    if (rubroId && !subrubroIdParam) {
       setSubrubroId(null)
       supabase.from('subrubros').select('*').eq('rubro_id', rubroId).then(({ data }) => {
         if (data) setSubrubros(data)
       })
+      const r = rubros.find(r => r.id === rubroId)
+      if (r) setRubroNombre(r.nombre)
     }
   }, [rubroId])
 
@@ -58,11 +88,12 @@ export default function Publicar() {
       supabase.from('opciones_filtro').select('*').eq('subrubro_id', subrubroId).then(({ data }) => {
         if (data) setOpciones(data)
       })
+      const s = subrubros.find(s => s.id === subrubroId)
+      if (s) setSubrubroNombre(s.nombre)
     }
   }, [subrubroId])
 
-  const opcionesDeFiltro = (filtro_id: number) =>
-    opciones.filter(o => o.filtro_id === filtro_id)
+  const opcionesDeFiltro = (filtro_id: number) => opciones.filter(o => o.filtro_id === filtro_id)
 
   const esBooleanField = (nombre: string) => {
     const n = nombre.toLowerCase()
@@ -73,8 +104,7 @@ export default function Publicar() {
     const files = Array.from(e.target.files || [])
     const nuevas = [...imagenes, ...files].slice(0, 3)
     setImagenes(nuevas)
-    const urls = nuevas.map(f => URL.createObjectURL(f))
-    setPreviews(urls)
+    setPreviews(nuevas.map(f => URL.createObjectURL(f)))
   }
 
   const eliminarImagen = (index: number) => {
@@ -88,27 +118,19 @@ export default function Publicar() {
     setError('')
     try {
       const { data: { user } } = await supabase.auth.getUser()
-      
-      // Subir imágenes
       const urlsImagenes: string[] = []
       for (const img of imagenes) {
         const nombre = `${Date.now()}_${img.name.replace(/\s/g, '_')}`
-        const { error: uploadError } = await supabase.storage
-          .from('Imagenes')
-          .upload(nombre, img)
+        const { error: uploadError } = await supabase.storage.from('Imagenes').upload(nombre, img)
         if (!uploadError) {
           const { data: urlData } = supabase.storage.from('Imagenes').getPublicUrl(nombre)
           urlsImagenes.push(urlData.publicUrl)
         }
       }
-
       const { error } = await supabase.from('anuncios').insert({
-        titulo,
-        descripcion,
+        titulo, descripcion,
         precio: precio ? parseFloat(precio) : null,
-        moneda,
-        ciudad,
-        provincia,
+        moneda, ciudad, provincia,
         subrubro_id: subrubroId,
         usuario_id: user?.id || null,
         imagenes: urlsImagenes,
@@ -127,7 +149,7 @@ export default function Publicar() {
       <div style={{ fontSize: "80px", marginBottom: "20px" }}>🎉</div>
       <div style={{ fontSize: "24px", fontWeight: 900, color: "white", marginBottom: "8px" }}>¡Anuncio publicado!</div>
       <div style={{ fontSize: "14px", color: "rgba(255,255,255,0.6)", marginBottom: "32px" }}>Tu anuncio ya está visible en NexoNet</div>
-      <a href="/" style={{ background: "#FFE600", color: "#1a1a2e", padding: "14px 28px", borderRadius: "12px", fontWeight: 800, textDecoration: "none", fontSize: "15px" }}>← Volver al inicio</a>
+      <a href={subrubroIdParam ? `/anuncios?subrubro_id=${subrubroIdParam}` : '/'} style={{ background: "#FFE600", color: "#1a1a2e", padding: "14px 28px", borderRadius: "12px", fontWeight: 800, textDecoration: "none", fontSize: "15px" }}>← Volver</a>
     </div>
   )
 
@@ -137,10 +159,10 @@ export default function Publicar() {
       {/* HEADER FIJO */}
       <div style={{ position: "fixed", top: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: "390px", zIndex: 100, background: "linear-gradient(180deg, #050d1a 0%, #0a1628 100%)", padding: "16px", boxShadow: "0 4px 20px rgba(0,0,0,0.4)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          <a href="/" style={{ color: "white", textDecoration: "none", fontSize: "22px" }}>←</a>
+          <a href={subrubroIdParam ? `/anuncios?subrubro_id=${subrubroIdParam}` : '/'} style={{ color: "white", textDecoration: "none", fontSize: "22px" }}>←</a>
           <div>
+            {rubroNombre && <div style={{ fontSize: "10px", color: "rgba(255,255,255,0.5)", textTransform: "uppercase", letterSpacing: "1px" }}>{rubroNombre}{subrubroNombre ? ` › ${subrubroNombre}` : ''}</div>}
             <div style={{ fontSize: "16px", fontWeight: 900, color: "white" }}>➕ Publicar anuncio</div>
-            <div style={{ fontSize: "11px", color: "#FFE600" }}>Paso {paso} de 3</div>
           </div>
         </div>
         <div style={{ marginTop: "12px", background: "rgba(255,255,255,0.1)", borderRadius: "4px", height: "4px" }}>
@@ -151,7 +173,7 @@ export default function Publicar() {
       <div style={{ height: "90px" }} />
       <div style={{ padding: "16px" }}>
 
-        {/* PASO 1 */}
+        {/* PASO 1 — solo si no viene con subrubro preseleccionado */}
         {paso === 1 && (
           <div>
             <div style={{ fontSize: "16px", fontWeight: 800, marginBottom: "16px", color: "#1a1a2e" }}>¿En qué categoría publicás?</div>
@@ -220,8 +242,7 @@ export default function Publicar() {
                 {previews.map((url, i) => (
                   <div key={i} style={{ position: "relative", width: "90px", height: "90px" }}>
                     <img src={url} style={{ width: "90px", height: "90px", objectFit: "cover", borderRadius: "10px", border: "1.5px solid #E4E6EA" }} />
-                    <button onClick={() => eliminarImagen(i)}
-                      style={{ position: "absolute", top: "-6px", right: "-6px", background: "#E53935", color: "white", border: "none", borderRadius: "50%", width: "22px", height: "22px", fontSize: "12px", cursor: "pointer", fontWeight: 900 }}>✕</button>
+                    <button onClick={() => eliminarImagen(i)} style={{ position: "absolute", top: "-6px", right: "-6px", background: "#E53935", color: "white", border: "none", borderRadius: "50%", width: "22px", height: "22px", fontSize: "12px", cursor: "pointer", fontWeight: 900 }}>✕</button>
                   </div>
                 ))}
                 {imagenes.length < 3 && (
@@ -234,12 +255,10 @@ export default function Publicar() {
               </div>
             </div>
 
-            {/* FILTROS DINÁMICOS */}
+            {/* FILTROS */}
             {filtros.length > 0 && (
               <div>
-                <div style={{ fontSize: "14px", fontWeight: 800, color: "#1a1a2e", marginBottom: "12px", paddingTop: "8px", borderTop: "1px solid #E4E6EA" }}>
-                  📋 Características
-                </div>
+                <div style={{ fontSize: "14px", fontWeight: 800, color: "#1a1a2e", marginBottom: "12px", paddingTop: "8px", borderTop: "1px solid #E4E6EA" }}>📋 Características</div>
                 {filtros.map(filtro => {
                   const opts = opcionesDeFiltro(filtro.filtro_id)
                   const esBool = esBooleanField(filtro.nombre)
@@ -273,10 +292,9 @@ export default function Publicar() {
             )}
 
             <div style={{ display: "flex", gap: "8px", marginTop: "16px" }}>
-              <button onClick={() => setPaso(1)}
-                style={{ flex: 1, padding: "14px", background: "white", color: "#1a1a2e", border: "1.5px solid #E4E6EA", borderRadius: "12px", fontSize: "14px", fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
-                ← Atrás
-              </button>
+              {!subrubroIdParam && (
+                <button onClick={() => setPaso(1)} style={{ flex: 1, padding: "14px", background: "white", color: "#1a1a2e", border: "1.5px solid #E4E6EA", borderRadius: "12px", fontSize: "14px", fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>← Atrás</button>
+              )}
               <button onClick={() => titulo.trim() && setPaso(3)} disabled={!titulo.trim()}
                 style={{ flex: 2, padding: "14px", background: titulo.trim() ? "#FFE600" : "#E4E6EA", color: titulo.trim() ? "#1a1a2e" : "#999", border: "none", borderRadius: "12px", fontSize: "14px", fontWeight: 800, cursor: titulo.trim() ? "pointer" : "not-allowed", fontFamily: "inherit" }}>
                 Continuar →
@@ -299,22 +317,17 @@ export default function Publicar() {
               <input value={provincia} onChange={e => setProvincia(e.target.value)}
                 style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "1.5px solid #E4E6EA", fontSize: "14px", fontFamily: "inherit", boxSizing: "border-box" }} />
             </div>
-
             <div style={{ background: "white", borderRadius: "12px", padding: "14px", marginBottom: "16px", border: "1.5px solid #FFE600" }}>
               <div style={{ fontSize: "13px", fontWeight: 800, marginBottom: "8px" }}>📋 Resumen</div>
+              <div style={{ fontSize: "12px", color: "#555" }}><b>Categoría:</b> {rubroNombre}{subrubroNombre ? ` › ${subrubroNombre}` : ''}</div>
               <div style={{ fontSize: "12px", color: "#555" }}><b>Título:</b> {titulo}</div>
               {precio && <div style={{ fontSize: "12px", color: "#555" }}><b>Precio:</b> {moneda} {Number(precio).toLocaleString('es-AR')}</div>}
               <div style={{ fontSize: "12px", color: "#555" }}><b>Ubicación:</b> {ciudad}, {provincia}</div>
               {imagenes.length > 0 && <div style={{ fontSize: "12px", color: "#555" }}><b>Fotos:</b> {imagenes.length}</div>}
             </div>
-
             {error && <div style={{ background: "#FFF0F0", color: "#E53935", padding: "12px", borderRadius: "10px", fontSize: "13px", marginBottom: "12px" }}>⚠️ {error}</div>}
-
             <div style={{ display: "flex", gap: "8px" }}>
-              <button onClick={() => setPaso(2)}
-                style={{ flex: 1, padding: "14px", background: "white", color: "#1a1a2e", border: "1.5px solid #E4E6EA", borderRadius: "12px", fontSize: "14px", fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
-                ← Atrás
-              </button>
+              <button onClick={() => setPaso(2)} style={{ flex: 1, padding: "14px", background: "white", color: "#1a1a2e", border: "1.5px solid #E4E6EA", borderRadius: "12px", fontSize: "14px", fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>← Atrás</button>
               <button onClick={handlePublicar} disabled={publicando}
                 style={{ flex: 2, padding: "14px", background: "#FFE600", color: "#1a1a2e", border: "none", borderRadius: "12px", fontSize: "14px", fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>
                 {publicando ? '⏳ Publicando...' : '🚀 Publicar ahora'}

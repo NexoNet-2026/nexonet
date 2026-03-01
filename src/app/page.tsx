@@ -49,7 +49,6 @@ export default function Home() {
         background: "linear-gradient(180deg, #050d1a 0%, #0a1628 50%, #0f2040 100%)",
         padding: "14px 16px", boxShadow: "0 4px 20px rgba(0,0,0,0.4)"
       }}>
-        {/* Logo + iconos */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
           <div>
             <div style={{ fontSize: "24px", fontWeight: 900, color: "white" }}>
@@ -69,14 +68,12 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Ubicación */}
         <div style={{ display: "flex", alignItems: "center", gap: "8px", background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: "8px", padding: "8px 12px", marginBottom: "10px" }}>
           <span>📍</span>
           <span style={{ flex: 1, fontSize: "13px", fontWeight: 700, color: "white" }}>Roldán, Santa Fe</span>
           <span style={{ fontSize: "11px", color: "#FFE600", fontWeight: 700 }}>Cambiar ›</span>
         </div>
 
-        {/* Búsqueda */}
         <div style={{ display: "flex", alignItems: "center", gap: "8px", background: "white", borderRadius: "8px", padding: "10px 12px" }}>
           <span>🔍</span>
           <input
@@ -90,7 +87,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* SPACER para el header fijo */}
+      {/* SPACER */}
       <div style={{ height: "174px" }} />
 
       {/* GRUPOS */}
@@ -122,18 +119,20 @@ export default function Home() {
                 <div style={{ width: "9px", height: "9px", borderRadius: "50%", background: rubro.color }} />
                 {rubro.emoji} {rubro.nombre}
               </div>
-              <span style={{ fontSize: "12px", color: "#3483FA", fontWeight: 700, cursor: "pointer" }}>Ver todos ›</span>
+              <a href={`/anuncios?rubro=${encodeURIComponent(rubro.nombre)}`} style={{ fontSize: "12px", color: "#3483FA", fontWeight: 700, cursor: "pointer", textDecoration: "none" }}>
+                Ver todos ›
+              </a>
             </div>
             <div style={{ display: "flex", gap: "10px", overflowX: "auto", padding: "0 16px 14px" }}>
               {rubro.subrubros.map((sub, j) => (
-                <div key={j} style={{ flexShrink: 0, width: "78px", display: "flex", flexDirection: "column", alignItems: "center", gap: "6px", cursor: "pointer", padding: "10px 6px 8px", background: "white", border: "1.5px solid #E4E6EA", borderRadius: "12px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
+                <a key={j} href={`/anuncios?subrubro=${encodeURIComponent(sub.split(" ").slice(1).join(" "))}`} style={{ flexShrink: 0, width: "78px", display: "flex", flexDirection: "column", alignItems: "center", gap: "6px", cursor: "pointer", padding: "10px 6px 8px", background: "white", border: "1.5px solid #E4E6EA", borderRadius: "12px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)", textDecoration: "none" }}>
                   <div style={{ width: "46px", height: "46px", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "24px", background: `${rubro.color}18`, border: `1.5px solid ${rubro.color}40` }}>
                     {sub.split(" ")[0]}
                   </div>
                   <span style={{ fontSize: "9.5px", fontWeight: 700, color: "#555", textAlign: "center", lineHeight: 1.2 }}>
                     {sub.split(" ").slice(1).join(" ")}
                   </span>
-                </div>
+                </a>
               ))}
             </div>
           </div>

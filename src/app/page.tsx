@@ -23,16 +23,14 @@ export default function SplashPage() {
     <div style={{
       display: 'flex',
       justifyContent: 'center',
-      alignItems: 'flex-start',
-      minHeight: '100svh',
       background: '#000',
+      minHeight: '100svh',
     }}>
       <div style={{
         position: 'relative',
         width: '100%',
         maxWidth: '430px',
-        // Proporción exacta de pantalla01.png (768 x 1392)
-        aspectRatio: '768 / 1392',
+        height: '100svh',
       }}>
 
         {/* IMAGEN */}
@@ -45,7 +43,8 @@ export default function SplashPage() {
             top: 0, left: 0,
             width: '100%',
             height: '100%',
-            objectFit: 'fill',
+            objectFit: 'cover',
+            objectPosition: 'center top',
             userSelect: 'none',
             pointerEvents: 'none',
           }}

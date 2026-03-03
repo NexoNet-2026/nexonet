@@ -35,72 +35,40 @@ const navItems: [string, string, string][] = [
   ['🔍','Buscar','/buscar'],['➕','Publicar','/publicar'],['🏠','Inicio','/home'],['💬','Chat','/'],['👤','Perfil','/login'],
 ]
 
-// ── Estilos reutilizables ──────────────────────────────────────────────────────
+const selectStyle: React.CSSProperties = {
+  width: '100%', padding: '12px 40px 12px 14px',
+  background: 'rgba(0,0,0,0.35)',
+  border: '1px solid rgba(0,210,255,0.3)',
+  borderRadius: '10px', color: 'white',
+  fontSize: '14px', fontFamily: "'Nunito',sans-serif",
+  fontWeight: 600, outline: 'none', cursor: 'pointer',
+  appearance: 'none', WebkitAppearance: 'none',
+  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2300D2FF' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")`,
+  backgroundRepeat: 'no-repeat', backgroundPosition: 'right 14px center',
+  boxSizing: 'border-box',
+}
+
+const inputStyle: React.CSSProperties = {
+  width: '100%', padding: '12px 14px',
+  background: 'rgba(0,0,0,0.35)',
+  border: '1px solid rgba(0,210,255,0.3)',
+  borderRadius: '10px', color: 'white',
+  fontSize: '14px', fontFamily: "'Nunito',sans-serif",
+  fontWeight: 600, outline: 'none',
+  boxSizing: 'border-box',
+}
 
 const cardStyle: React.CSSProperties = {
-  background: 'rgba(255,255,255,0.07)',
-  backdropFilter: 'blur(16px)',
-  WebkitBackdropFilter: 'blur(16px)',
-  border: '1px solid rgba(0, 220, 255, 0.2)',
+  background: 'rgba(255,255,255,0.06)',
+  backdropFilter: 'blur(20px)',
+  WebkitBackdropFilter: 'blur(20px)',
+  border: '1px solid rgba(0,210,255,0.2)',
   borderRadius: '16px',
   padding: '16px',
   display: 'flex',
   flexDirection: 'column',
   gap: '10px',
 }
-
-const selectStyle: React.CSSProperties = {
-  width: '100%',
-  padding: '12px 40px 12px 14px',
-  background: 'rgba(0,0,0,0.25)',
-  backdropFilter: 'blur(8px)',
-  border: '1px solid rgba(0,220,255,0.25)',
-  borderRadius: '10px',
-  color: 'white',
-  fontSize: '14px',
-  fontFamily: "'Nunito',sans-serif",
-  fontWeight: 600,
-  outline: 'none',
-  cursor: 'pointer',
-  appearance: 'none',
-  WebkitAppearance: 'none',
-  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2300DCFF' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")`,
-  backgroundRepeat: 'no-repeat',
-  backgroundPosition: 'right 14px center',
-  boxSizing: 'border-box',
-}
-
-const inputStyle: React.CSSProperties = {
-  width: '100%',
-  padding: '12px 14px',
-  background: 'rgba(0,0,0,0.25)',
-  backdropFilter: 'blur(8px)',
-  border: '1px solid rgba(0,220,255,0.25)',
-  borderRadius: '10px',
-  color: 'white',
-  fontSize: '14px',
-  fontFamily: "'Nunito',sans-serif",
-  fontWeight: 600,
-  outline: 'none',
-  boxSizing: 'border-box',
-}
-
-const sectionTitle: React.CSSProperties = {
-  fontSize: '11px',
-  fontWeight: 800,
-  color: '#00DCFF',
-  letterSpacing: '1.5px',
-  textTransform: 'uppercase',
-}
-
-const subLabel: React.CSSProperties = {
-  fontSize: '12px',
-  color: 'rgba(255,255,255,0.45)',
-  marginBottom: '5px',
-  fontWeight: 600,
-}
-
-// ── Componente principal ──────────────────────────────────────────────────────
 
 export default function BuscarPage() {
   const router = useRouter()
@@ -131,26 +99,40 @@ export default function BuscarPage() {
   }
 
   return (
-    <div style={{ fontFamily:"'Nunito',sans-serif", maxWidth:'390px', margin:'0 auto', minHeight:'100vh', position:'relative', overflow:'hidden' }}>
+    <div style={{ fontFamily:"'Nunito',sans-serif", maxWidth:'430px', margin:'0 auto', minHeight:'100vh', position:'relative' }}>
 
       {/* FONDO FIJO */}
-      <div style={{ position:'fixed', top:0, left:'50%', transform:'translateX(-50%)', width:'390px', height:'100vh', backgroundImage:"url('/fondo02.png')", backgroundSize:'cover', backgroundPosition:'center top', zIndex:0 }} />
-      {/* overlay sutil para legibilidad */}
-      <div style={{ position:'fixed', top:0, left:'50%', transform:'translateX(-50%)', width:'390px', height:'100vh', background:'linear-gradient(180deg,rgba(5,13,26,0.72) 0%,rgba(5,13,26,0.45) 40%,rgba(5,13,26,0.78) 100%)', zIndex:1 }} />
+      <div style={{
+        position: 'fixed',
+        top: 0, left: '50%', transform: 'translateX(-50%)',
+        width: '100%', maxWidth: '430px', height: '100vh',
+        backgroundImage: "url('/fondo_pantallas.png')",
+        backgroundSize: '100% 100%',
+        backgroundPosition: 'center top',
+        zIndex: 0,
+      }} />
+      {/* Overlay para legibilidad */}
+      <div style={{
+        position: 'fixed',
+        top: 0, left: '50%', transform: 'translateX(-50%)',
+        width: '100%', maxWidth: '430px', height: '100vh',
+        background: 'rgba(5,13,26,0.55)',
+        zIndex: 1,
+      }} />
 
-      {/* SCROLL */}
-      <div style={{ position:'relative', zIndex:2, paddingBottom:'100px' }}>
+      {/* CONTENIDO */}
+      <div style={{ position: 'relative', zIndex: 2, paddingBottom: '100px' }}>
 
         {/* HEADER */}
-        <div style={{ padding:'52px 20px 20px' }}>
+        <div style={{ padding: '52px 20px 20px' }}>
           <button onClick={() => router.back()} style={{ background:'none', border:'none', cursor:'pointer', color:'rgba(255,255,255,0.5)', fontSize:'13px', fontWeight:700, padding:0, fontFamily:'inherit', marginBottom:'16px', display:'block' }}>
             ← Volver
           </button>
           <div style={{ fontSize:'11px', color:'#FFE600', fontWeight:800, letterSpacing:'2px', textTransform:'uppercase', marginBottom:'4px' }}>NexoNet</div>
-          <div style={{ fontSize:'28px', fontWeight:900, color:'white', lineHeight:1.15, marginBottom:'6px', textShadow:'0 2px 12px rgba(0,0,0,0.5)' }}>
+          <div style={{ fontSize:'28px', fontWeight:900, color:'white', lineHeight:1.15, marginBottom:'6px', textShadow:'0 2px 12px rgba(0,0,0,0.6)' }}>
             ¿Qué estás<br />buscando?
           </div>
-          <div style={{ fontSize:'13px', color:'rgba(255,255,255,0.45)', fontWeight:600 }}>
+          <div style={{ fontSize:'13px', color:'rgba(255,255,255,0.5)', fontWeight:600 }}>
             Filtrá por ubicación, rubro o escribí directamente
           </div>
         </div>
@@ -159,7 +141,7 @@ export default function BuscarPage() {
 
           {/* BÚSQUEDA LIBRE */}
           <div style={cardStyle}>
-            <div style={sectionTitle}>🔍 Búsqueda libre</div>
+            <div style={{ fontSize:'11px', fontWeight:800, color:'#00D2FF', letterSpacing:'1.5px', textTransform:'uppercase' }}>🔍 Búsqueda libre</div>
             <input
               type="text"
               placeholder="Ej: plomero, iPhone 14, depto en alquiler..."
@@ -172,29 +154,26 @@ export default function BuscarPage() {
 
           {/* UBICACIÓN */}
           <div style={cardStyle}>
-            <div style={sectionTitle}>📍 Ubicación</div>
-
+            <div style={{ fontSize:'11px', fontWeight:800, color:'#00D2FF', letterSpacing:'1.5px', textTransform:'uppercase' }}>📍 Ubicación</div>
             <div>
-              <div style={subLabel}>Provincia</div>
+              <div style={{ fontSize:'12px', color:'rgba(255,255,255,0.45)', marginBottom:'5px', fontWeight:600 }}>Provincia</div>
               <select value={provincia} onChange={e => { setProvincia(e.target.value); setCiudad(''); setBarrio('') }} style={selectStyle}>
                 <option value="" style={{ background:'#0a1628' }}>Todas las provincias</option>
                 {Object.keys(UBICACIONES).map(p => <option key={p} value={p} style={{ background:'#0a1628' }}>{p}</option>)}
               </select>
             </div>
-
             {provincia && (
               <div>
-                <div style={subLabel}>Ciudad / Localidad</div>
+                <div style={{ fontSize:'12px', color:'rgba(255,255,255,0.45)', marginBottom:'5px', fontWeight:600 }}>Ciudad / Localidad</div>
                 <select value={ciudad} onChange={e => { setCiudad(e.target.value); setBarrio('') }} style={selectStyle}>
                   <option value="" style={{ background:'#0a1628' }}>Todas las ciudades</option>
                   {ciudades.map(c => <option key={c} value={c} style={{ background:'#0a1628' }}>{c}</option>)}
                 </select>
               </div>
             )}
-
             {ciudad && barrios.length > 0 && (
               <div>
-                <div style={subLabel}>Barrio (opcional)</div>
+                <div style={{ fontSize:'12px', color:'rgba(255,255,255,0.45)', marginBottom:'5px', fontWeight:600 }}>Barrio (opcional)</div>
                 <select value={barrio} onChange={e => setBarrio(e.target.value)} style={selectStyle}>
                   <option value="" style={{ background:'#0a1628' }}>Todos los barrios</option>
                   {barrios.map(b => <option key={b} value={b} style={{ background:'#0a1628' }}>{b}</option>)}
@@ -205,29 +184,26 @@ export default function BuscarPage() {
 
           {/* RUBRO */}
           <div style={cardStyle}>
-            <div style={sectionTitle}>🗂 Rubro</div>
-
+            <div style={{ fontSize:'11px', fontWeight:800, color:'#00D2FF', letterSpacing:'1.5px', textTransform:'uppercase' }}>🗂 Rubro</div>
             <div>
-              <div style={subLabel}>Categoría</div>
+              <div style={{ fontSize:'12px', color:'rgba(255,255,255,0.45)', marginBottom:'5px', fontWeight:600 }}>Categoría</div>
               <select value={rubro} onChange={e => { setRubro(e.target.value); setSubrubro(''); setFiltro('') }} style={selectStyle}>
                 <option value="" style={{ background:'#0a1628' }}>Todos los rubros</option>
                 {Object.entries(RUBROS).map(([r, d]) => <option key={r} value={r} style={{ background:'#0a1628' }}>{d.emoji} {r}</option>)}
               </select>
             </div>
-
             {rubro && (
               <div>
-                <div style={subLabel}>Subrubro</div>
+                <div style={{ fontSize:'12px', color:'rgba(255,255,255,0.45)', marginBottom:'5px', fontWeight:600 }}>Subrubro</div>
                 <select value={subrubro} onChange={e => { setSubrubro(e.target.value); setFiltro('') }} style={selectStyle}>
                   <option value="" style={{ background:'#0a1628' }}>Todo {rubro}</option>
                   {subrubros.map(s => <option key={s} value={s} style={{ background:'#0a1628' }}>{s}</option>)}
                 </select>
               </div>
             )}
-
             {subrubro && filtros.length > 0 && (
               <div>
-                <div style={subLabel}>Filtro</div>
+                <div style={{ fontSize:'12px', color:'rgba(255,255,255,0.45)', marginBottom:'5px', fontWeight:600 }}>Filtro</div>
                 <select value={filtro} onChange={e => setFiltro(e.target.value)} style={selectStyle}>
                   <option value="" style={{ background:'#0a1628' }}>Todo {subrubro}</option>
                   {filtros.map(f => <option key={f} value={f} style={{ background:'#0a1628' }}>{f}</option>)}
@@ -236,27 +212,24 @@ export default function BuscarPage() {
             )}
           </div>
 
-          {/* BOTÓN BUSCAR */}
+          {/* BOTÓN */}
           <button
             onClick={handleBuscar}
             disabled={!canSearch}
             style={{
               width:'100%', padding:'15px',
-              background: canSearch
-                ? 'linear-gradient(135deg, rgba(0,220,255,0.3), rgba(0,150,220,0.4))'
-                : 'rgba(255,255,255,0.05)',
+              background: canSearch ? 'rgba(0,180,255,0.25)' : 'rgba(255,255,255,0.05)',
               backdropFilter: 'blur(12px)',
               WebkitBackdropFilter: 'blur(12px)',
-              border: canSearch ? '1px solid rgba(0,220,255,0.6)' : '1px solid rgba(255,255,255,0.08)',
+              border: canSearch ? '1px solid rgba(0,210,255,0.6)' : '1px solid rgba(255,255,255,0.08)',
               borderRadius:'14px',
               color: canSearch ? '#fff' : 'rgba(255,255,255,0.2)',
               fontSize:'16px', fontWeight:900,
               cursor: canSearch ? 'pointer' : 'not-allowed',
               fontFamily:'inherit',
-              boxShadow: canSearch ? '0 0 20px rgba(0,220,255,0.2), inset 0 0 20px rgba(0,220,255,0.05)' : 'none',
-              textShadow: canSearch ? '0 0 10px rgba(0,220,255,0.8)' : 'none',
+              boxShadow: canSearch ? '0 0 20px rgba(0,180,255,0.2)' : 'none',
+              textShadow: canSearch ? '0 0 10px rgba(0,210,255,0.6)' : 'none',
               transition:'all 0.2s ease',
-              letterSpacing: '0.3px',
             }}
           >
             {canSearch ? '🔍 Ver resultados' : 'Completá al menos un campo'}
@@ -266,11 +239,11 @@ export default function BuscarPage() {
       </div>
 
       {/* BOTTOM NAV */}
-      <div style={{ position:'fixed', bottom:0, left:'50%', transform:'translateX(-50%)', width:'100%', maxWidth:'390px', background:'rgba(5,13,26,0.85)', backdropFilter:'blur(16px)', WebkitBackdropFilter:'blur(16px)', borderTop:'1px solid rgba(0,220,255,0.15)', display:'flex', justifyContent:'space-around', padding:'8px 0 18px', zIndex:10 }}>
+      <div style={{ position:'fixed', bottom:0, left:'50%', transform:'translateX(-50%)', width:'100%', maxWidth:'430px', background:'rgba(5,13,26,0.9)', backdropFilter:'blur(16px)', WebkitBackdropFilter:'blur(16px)', borderTop:'1px solid rgba(0,210,255,0.15)', display:'flex', justifyContent:'space-around', padding:'8px 0 18px', zIndex:10 }}>
         {navItems.map(([icon, label, href], i) => (
           <a key={i} href={href} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'3px', padding:'4px 10px', textDecoration:'none' }}>
             <span style={{ fontSize:'22px' }}>{icon}</span>
-            <span style={{ fontSize:'10px', color: i===0 ? '#00DCFF' : 'rgba(255,255,255,0.3)', fontWeight:700 }}>{label}</span>
+            <span style={{ fontSize:'10px', color: i===0 ? '#00D2FF' : 'rgba(255,255,255,0.3)', fontWeight:700 }}>{label}</span>
           </a>
         ))}
       </div>

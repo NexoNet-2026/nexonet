@@ -3,11 +3,11 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
 const BOTONES = [
-  { id: 'buscar-lista',    label: '☰  Buscar en Lista', href: '/buscar',           top: '26%', left: '4%',  width: '42%', height: '6%',  shape: 'pill' },
-  { id: 'buscar-mapa',     label: '🗺  Buscar en Mapa',  href: '/mapa',             top: '26%', left: '54%', width: '42%', height: '6%',  shape: 'pill' },
-  { id: 'iniciar-sesion',  label: '🔑\nINICIAR\nSESION', href: '/login',            top: '80%', left: '2%',  width: '27%', height: '14%', shape: 'circle' },
-  { id: 'publicar',        label: '+\nPublicar\nAnuncio', href: '/publicar',         top: '77%', left: '36%', width: '28%', height: '17%', shape: 'circle' },
-  { id: 'registrarse',     label: '👤\nREGISTRARSE',     href: '/login?tab=registro', top: '80%', left: '72%', width: '27%', height: '14%', shape: 'circle' },
+  { id: 'buscar-lista',   label: '☰  Buscar en Lista',  href: '/buscar',             top: '26%', left: '4%',  width: '42%', height: '6%',  shape: 'pill' },
+  { id: 'buscar-mapa',    label: '🗺  Buscar en Mapa',   href: '/mapa',               top: '26%', left: '54%', width: '42%', height: '6%',  shape: 'pill' },
+  { id: 'iniciar-sesion', label: '🔑\nINICIAR\nSESION',  href: '/login',              top: '80%', left: '2%',  width: '27%', height: '14%', shape: 'circle' },
+  { id: 'publicar',       label: '+\nPublicar\nAnuncio', href: '/publicar',           top: '77%', left: '36%', width: '28%', height: '17%', shape: 'circle' },
+  { id: 'registrarse',    label: '👤\nREGISTRARSE',      href: '/login?tab=registro', top: '80%', left: '72%', width: '27%', height: '14%', shape: 'circle' },
 ]
 
 export default function SplashPage() {
@@ -20,18 +20,38 @@ export default function SplashPage() {
   }
 
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', background: '#000', minHeight: '100vh' }}>
+    <div style={{
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'flex-start',
+      minHeight: '100svh',
+      background: '#000',
+    }}>
       <div style={{
-  position: 'relative',
-  width: '100%',
-  maxWidth: '430px',
-  height: '100svh',
-  backgroundImage: "url('/pantalla01.png')",
-  backgroundSize: 'cover',
-  backgroundPosition: 'center top',
-}}>
+        position: 'relative',
+        width: '100%',
+        maxWidth: '430px',
+        // Proporción exacta de pantalla01.png (768 x 1392)
+        aspectRatio: '768 / 1392',
+      }}>
 
-        {/* BOTONES ENCIMA */}
+        {/* IMAGEN */}
+        <img
+          src="/pantalla01.png"
+          alt="NexoNet"
+          draggable={false}
+          style={{
+            position: 'absolute',
+            top: 0, left: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'fill',
+            userSelect: 'none',
+            pointerEvents: 'none',
+          }}
+        />
+
+        {/* BOTONES */}
         {BOTONES.map((btn) => {
           const isActive = active === btn.id
           const isPill = btn.shape === 'pill'

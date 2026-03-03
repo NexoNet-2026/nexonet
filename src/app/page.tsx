@@ -1,109 +1,129 @@
 'use client'
+import { useRouter } from 'next/navigation'
+import { useState } from 'react'
 
-export default function Home() {
+interface ButtonZone {
+  id: string
+  label: string
+  top: string
+  left: string
+  width: string
+  height: string
+  href: string
+  borderRadius: string
+}
+
+const buttons: ButtonZone[] = [
+  {
+    id: 'buscar-lista',
+    label: 'Buscar en Lista',
+    top: '24.5%',
+    left: '4%',
+    width: '37%',
+    height: '5.5%',
+    href: '/home',
+    borderRadius: '50px',
+  },
+  {
+    id: 'buscar-mapa',
+    label: 'Buscar en Mapa',
+    top: '24.5%',
+    left: '52%',
+    width: '37%',
+    height: '5.5%',
+    href: '/mapa',
+    borderRadius: '50px',
+  },
+  {
+    id: 'iniciar-sesion',
+    label: 'Iniciar Sesión',
+    top: '81%',
+    left: '2%',
+    width: '26%',
+    height: '14%',
+    href: '/login',
+    borderRadius: '50%',
+  },
+  {
+    id: 'publicar',
+    label: 'Publicar Anuncio',
+    top: '78%',
+    left: '34%',
+    width: '32%',
+    height: '17%',
+    href: '/publicar',
+    borderRadius: '50%',
+  },
+  {
+    id: 'registrarse',
+    label: 'Registrarse',
+    top: '81%',
+    left: '72%',
+    width: '26%',
+    height: '14%',
+    href: '/login?tab=registro',
+    borderRadius: '50%',
+  },
+]
+
+export default function SplashPage() {
+  const router = useRouter()
+  const [activeBtn, setActiveBtn] = useState<string | null>(null)
+
+  const handleClick = (btn: ButtonZone) => {
+    setActiveBtn(btn.id)
+    setTimeout(() => {
+      setActiveBtn(null)
+      router.push(btn.href)
+    }, 350)
+  }
+
   return (
-    <div style={{
-      fontFamily: "'Nunito', sans-serif",
-      maxWidth: "390px",
-      margin: "0 auto",
-      minHeight: "100vh",
-      position: "relative",
-      overflow: "hidden",
-      background: "#050d1a"
-    }}>
+    <div
+      style={{
+        position: 'relative',
+        width: '100%',
+        maxWidth: '430px',
+        margin: '0 auto',
+        overflow: 'hidden',
+        lineHeight: 0,
+      }}
+    >
+      <img
+        src="/pantalla01.png"
+        alt="NexoNet Splash"
+        style={{ width: '100%', display: 'block' }}
+        draggable={false}
+      />
 
-      {/* IMAGEN DE FONDO */}
-      <div style={{
-        position: "absolute",
-        top: 0, left: 0, right: 0, bottom: 0,
-        backgroundImage: "url('/fondo-nexonet.png')",
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        backgroundRepeat: "no-repeat",
-      }} />
-
-      {/* OVERLAY solo abajo */}
-      <div style={{
-        position: "absolute",
-        top: 0, left: 0, right: 0, bottom: 0,
-        background: "linear-gradient(180deg, transparent 0%, transparent 55%, rgba(5,13,26,0.6) 100%)"
-      }} />
-
-      {/* CONTENIDO */}
-      <div style={{ position: "relative", zIndex: 10, display: "flex", flexDirection: "column", minHeight: "100vh" }}>
-
-        <div style={{ flex: 1 }} />
-
-        {/* BOTONES */}
-        <div style={{ padding: "0 20px 56px", display: "flex", flexDirection: "column", gap: "10px" }}>
-
-          {/* BUSCAR EN LISTA */}
-          <a href="/explorar" style={{ textDecoration: "none" }}>
-            <div style={{
-              background: "rgba(255,255,255,0.10)",
-              backdropFilter: "blur(20px)",
-              WebkitBackdropFilter: "blur(20px)",
-              border: "1px solid rgba(255,255,255,0.20)",
-              borderRadius: "16px",
-              padding: "13px 20px",
-              display: "flex",
-              alignItems: "center",
-              gap: "14px",
-            }}>
-              <span style={{ fontSize: "22px" }}>📋</span>
-              <span style={{ fontSize: "15px", fontWeight: 800, color: "white" }}>Buscar en listas</span>
-              <span style={{ marginLeft: "auto", fontSize: "18px", color: "rgba(255,255,255,0.35)" }}>›</span>
-            </div>
-          </a>
-
-          {/* BUSCAR EN MAPA */}
-          <a href="/mapa" style={{ textDecoration: "none" }}>
-            <div style={{
-              background: "rgba(255,255,255,0.10)",
-              backdropFilter: "blur(20px)",
-              WebkitBackdropFilter: "blur(20px)",
-              border: "1px solid rgba(255,255,255,0.20)",
-              borderRadius: "16px",
-              padding: "13px 20px",
-              display: "flex",
-              alignItems: "center",
-              gap: "14px",
-            }}>
-              <span style={{ fontSize: "22px" }}>🗺️</span>
-              <span style={{ fontSize: "15px", fontWeight: 800, color: "white" }}>Buscar en mapa</span>
-              <span style={{ marginLeft: "auto", fontSize: "18px", color: "rgba(255,255,255,0.35)" }}>›</span>
-            </div>
-          </a>
-
-          {/* PUBLICAR */}
-          <a href="/publicar-inicio" style={{ textDecoration: "none" }}>
-            <div style={{
-              background: "rgba(255,140,0,0.22)",
-              backdropFilter: "blur(20px)",
-              WebkitBackdropFilter: "blur(20px)",
-              border: "1px solid rgba(255,180,0,0.40)",
-              borderRadius: "16px",
-              padding: "13px 20px",
-              display: "flex",
-              alignItems: "center",
-              gap: "14px",
-            }}>
-              <span style={{ fontSize: "22px" }}>➕</span>
-              <span style={{ fontSize: "15px", fontWeight: 800, color: "#FFE600" }}>Publicar</span>
-              <span style={{ marginLeft: "auto", fontSize: "18px", color: "rgba(255,230,0,0.4)" }}>›</span>
-            </div>
-          </a>
-
-        </div>
-
-        {/* FOOTER */}
-        <div style={{ position: "absolute", bottom: "18px", right: "20px", display: "flex", gap: "14px", alignItems: "center" }}>
-          <a href="/login" style={{ fontSize: "11px", color: "rgba(255,255,255,0.55)", textDecoration: "none", fontWeight: 700 }}>Ingresar</a>
-          <div style={{ width: "1px", height: "10px", background: "rgba(255,255,255,0.2)" }} />
-          <a href="/login" style={{ fontSize: "11px", color: "rgba(255,255,255,0.55)", textDecoration: "none", fontWeight: 700 }}>Registrarse</a>
-        </div>
-
-      </div>
+      {buttons.map((btn) => {
+        const isActive = activeBtn === btn.id
+        return (
+          <div
+            key={btn.id}
+            onClick={() => handleClick(btn)}
+            style={{
+              position: 'absolute',
+              top: btn.top,
+              left: btn.left,
+              width: btn.width,
+              height: btn.height,
+              borderRadius: btn.borderRadius,
+              cursor: 'pointer',
+              background: isActive
+                ? 'rgba(0, 255, 255, 0.25)'
+                : 'transparent',
+              boxShadow: isActive
+                ? '0 0 24px 8px rgba(0, 255, 255, 0.6), 0 0 60px 20px rgba(0, 255, 255, 0.3)'
+                : 'none',
+              transform: isActive ? 'scale(0.95)' : 'scale(1)',
+              transition: 'all 0.15s ease',
+              // Descomenta para debug:
+              // border: '2px solid red',
+            }}
+          />
+        )
+      })}
     </div>
   )
 }

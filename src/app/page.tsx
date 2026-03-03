@@ -3,11 +3,11 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
 const BOTONES = [
-  { id: 'buscar-lista',   href: '/buscar',             top: '26%', left: '4%',  width: '42%', height: '6%',  shape: 'pill' },
-  { id: 'buscar-mapa',    href: '/mapa',               top: '26%', left: '54%', width: '42%', height: '6%',  shape: 'pill' },
-  { id: 'iniciar-sesion', href: '/login',              top: '80%', left: '2%',  width: '27%', height: '14%', shape: 'circle' },
-  { id: 'publicar',       href: '/publicar',           top: '77%', left: '36%', width: '28%', height: '17%', shape: 'circle' },
-  { id: 'registrarse',    href: '/login?tab=registro', top: '80%', left: '72%', width: '27%', height: '14%', shape: 'circle' },
+  { id: 'buscar-lista',   href: '/buscar',             top: '22%', left: '4%',  width: '42%', height: '6%',  shape: 'pill' },
+  { id: 'buscar-mapa',    href: '/mapa',               top: '22%', left: '54%', width: '42%', height: '6%',  shape: 'pill' },
+  { id: 'iniciar-sesion', href: '/login',              top: '86.7%', left: '6%',  width: '22%', height: '9%', shape: 'circle' },
+  { id: 'publicar',       href: '/publicar',           top: '83.2%', left: '36%', width: '28%', height: '12.5%', shape: 'circle' },
+  { id: 'registrarse',    href: '/login?tab=registro', top: '86.7%', left: '72%', width: '22%', height: '9%', shape: 'circle' },
 ]
 
 export default function SplashPage() {
@@ -43,8 +43,8 @@ export default function SplashPage() {
               top: btn.top, left: btn.left,
               width: btn.width, height: btn.height,
               borderRadius: btn.shape === 'pill' ? '50px' : '50%',
-              background: isActive ? 'rgba(0,255,255,0.15)' : 'transparent',
-              border: isActive ? '2px solid rgba(0,255,255,0.8)' : '2px solid transparent',
+              background: isActive ? 'rgba(rgba(0,255,255,0.3))' : 'transparent',
+              border: isActive ? '2px solid rgba(0,255,255,0.8)' : '2px solid cyan',
               boxShadow: isActive
                 ? '0 0 30px 8px rgba(0,255,255,0.5), inset 0 0 20px rgba(0,255,255,0.1)'
                 : 'none',

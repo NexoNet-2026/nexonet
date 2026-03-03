@@ -2,128 +2,161 @@
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
-interface ButtonZone {
-  id: string
-  label: string
-  top: string
-  left: string
-  width: string
-  height: string
-  href: string
-  borderRadius: string
-}
-
-const buttons: ButtonZone[] = [
+// ╔══════════════════════════════════════════════════╗
+// ║  AJUSTÁ LAS COORDENADAS DE CADA BOTÓN ACÁ ABAJO ║
+// ╚══════════════════════════════════════════════════╝
+const BOTONES = [
   {
     id: 'buscar-lista',
-    label: 'Buscar en Lista',
-    top: '24.5%',
-    left: '4%',
-    width: '37%',
-    height: '5.5%',
+    label: '☰  Buscar en Lista',
     href: '/home',
-    borderRadius: '50px',
+    top: '21.6%',
+    left: '1%',
+    width: '45%',
+    height: '6%',
+    shape: 'pill',
   },
   {
     id: 'buscar-mapa',
-    label: 'Buscar en Mapa',
-    top: '24.5%',
-    left: '52%',
-    width: '37%',
-    height: '5.5%',
+    label: '🗺  Buscar en Mapa',
     href: '/mapa',
-    borderRadius: '50px',
+    top: '21.6%',
+    left: '54%',
+    width: '45%',
+    height: '6%',
+    shape: 'pill',
   },
   {
     id: 'iniciar-sesion',
-    label: 'Iniciar Sesión',
-    top: '81%',
-    left: '2%',
-    width: '26%',
-    height: '14%',
+    label: '🔑\nINICIAR\nSESION',
     href: '/login',
-    borderRadius: '50%',
+    top: '84%',
+    left: '-2%',
+    width: '26.5%',
+    height: '13%',
+    shape: 'circle',
   },
   {
     id: 'publicar',
-    label: 'Publicar Anuncio',
-    top: '78%',
-    left: '34%',
-    width: '32%',
-    height: '17%',
+    label: '+\nPublicar\nAnuncio',
     href: '/publicar',
-    borderRadius: '50%',
+    top: '80%',
+    left: '32.5%',
+    width: '35%',
+    height: '17%',
+    shape: 'circle',
   },
   {
     id: 'registrarse',
-    label: 'Registrarse',
-    top: '81%',
-    left: '72%',
-    width: '26%',
-    height: '14%',
+    label: '👤\nREGISTRARSE',
     href: '/login?tab=registro',
-    borderRadius: '50%',
+    top: '84%',
+    left: '75%',
+    width: '26.5%',
+    height: '13%',
+    shape: 'circle',
   },
 ]
 
 export default function SplashPage() {
   const router = useRouter()
-  const [activeBtn, setActiveBtn] = useState<string | null>(null)
+  const [active, setActive] = useState<string | null>(null)
 
-  const handleClick = (btn: ButtonZone) => {
-    setActiveBtn(btn.id)
+  const handleClick = (btn: typeof BOTONES[0]) => {
+    setActive(btn.id)
     setTimeout(() => {
-      setActiveBtn(null)
+      setActive(null)
       router.push(btn.href)
-    }, 350)
+    }, 400)
   }
 
   return (
-    <div
-      style={{
+    // Contenedor que centra la app en desktop y la muestra full en móvil
+    <div style={{
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'flex-start',
+      minHeight: '100vh',
+      background: '#000',
+    }}>
+      {/* Wrapper de la imagen — máx 430px, ocupa todo el alto */}
+      <div style={{
         position: 'relative',
         width: '100%',
         maxWidth: '430px',
-        margin: '0 auto',
+        minHeight: '100vh',
         overflow: 'hidden',
-        lineHeight: 0,
-      }}
-    >
-      <img
-        src="/pantalla01.png"
-        alt="NexoNet Splash"
-        style={{ width: '100%', display: 'block' }}
-        draggable={false}
-      />
+      }}>
+        {/* Imagen de fondo que cubre todo el alto del wrapper */}
+        <img
+          src="/pantalla01.png"
+          alt=""
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            objectPosition: 'center top',
+            display: 'block',
+            userSelect: 'none',
+            pointerEvents: 'none',
+          }}
+          draggable={false}
+        />
 
-      {buttons.map((btn) => {
-        const isActive = activeBtn === btn.id
-        return (
-          <div
-            key={btn.id}
-            onClick={() => handleClick(btn)}
-            style={{
-              position: 'absolute',
-              top: btn.top,
-              left: btn.left,
-              width: btn.width,
-              height: btn.height,
-              borderRadius: btn.borderRadius,
-              cursor: 'pointer',
-              background: isActive
-                ? 'rgba(0, 255, 255, 0.25)'
-                : 'transparent',
-              boxShadow: isActive
-                ? '0 0 24px 8px rgba(0, 255, 255, 0.6), 0 0 60px 20px rgba(0, 255, 255, 0.3)'
-                : 'none',
-              transform: isActive ? 'scale(0.95)' : 'scale(1)',
-              transition: 'all 0.15s ease',
-              // Descomenta para debug:
-              // border: '2px solid red',
-            }}
-          />
-        )
-      })}
+        {/* Botones encima de la imagen */}
+        {BOTONES.map((btn) => {
+          const isActive = active === btn.id
+          const isPill = btn.shape === 'pill'
+
+          return (
+            <button
+              key={btn.id}
+              onClick={() => handleClick(btn)}
+              style={{
+                position: 'absolute',
+                top: btn.top,
+                left: btn.left,
+                width: btn.width,
+                height: btn.height,
+                borderRadius: isPill ? '50px' : '50%',
+                cursor: 'pointer',
+                border: isActive
+                  ? '2px solid rgba(0,255,255,0.9)'
+                  : 'none',
+                background: isActive
+                  ? 'rgba(0,255,255,0.2)'
+                  : 'transparent',
+                boxShadow: isActive
+                  ? '0 0 28px 10px rgba(0,255,255,0.55), inset 0 0 20px rgba(0,255,255,0.15)'
+                  : 'none',
+                transform: isActive ? 'scale(0.96)' : 'scale(1)',
+                transition: 'all 0.18s ease',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexDirection: 'column',
+                gap: '1px',
+                padding: '4px',
+                color: 'rgba(160,240,255,0.9)',
+                fontSize: isPill ? '11px' : '9px',
+                fontWeight: 700,
+                fontFamily: 'system-ui, sans-serif',
+                textShadow: '0 0 8px rgba(0,220,255,0.8)',
+                whiteSpace: 'pre-line',
+                textAlign: 'center',
+                lineHeight: 1.2,
+                outline: 'none',
+                WebkitTapHighlightColor: 'transparent',
+              }}
+            >
+              {/* sin texto */}
+            </button>
+          )
+        })}
+      </div>
     </div>
   )
 }

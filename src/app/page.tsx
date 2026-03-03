@@ -21,15 +21,15 @@ export default function SplashPage() {
 
   return (
     <div style={{ display: 'flex', justifyContent: 'center', background: '#000', minHeight: '100vh' }}>
-      <div style={{ position: 'relative', width: '100%', maxWidth: '430px' }}>
-
-        {/* IMAGEN — ocupa todo el ancho, alto natural */}
-        <img
-          src="/pantalla01.png"
-          alt="NexoNet"
-          draggable={false}
-          style={{ width: '100%', height: 'auto', display: 'block', userSelect: 'none' }}
-        />
+      <div style={{
+  position: 'relative',
+  width: '100%',
+  maxWidth: '430px',
+  height: '100svh',
+  backgroundImage: "url('/pantalla01.png')",
+  backgroundSize: 'cover',
+  backgroundPosition: 'center top',
+}}>
 
         {/* BOTONES ENCIMA */}
         {BOTONES.map((btn) => {

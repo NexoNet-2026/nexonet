@@ -21,58 +21,35 @@ export default function SplashPage() {
 
   return (
     <div style={{
-      background: '#000',
-      minHeight: '100svh',
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'flex-start',
-      overflow: 'hidden',
+      position: 'fixed',
+      inset: 0,
+      backgroundImage: "url('/pantalla01.png')",
+      backgroundSize: '100% 100%',
+      backgroundPosition: 'center top',
+      backgroundRepeat: 'no-repeat',
     }}>
-      <div style={{
-        position: 'relative',
-        height: '100svh',       // ← el contenedor = pantalla exacta
-        maxWidth: '430px',
-        width: '100%',
-      }}>
-        <img
-          src="/pantalla01.png"
-          alt="NexoNet"
-          draggable={false}
-          style={{
-            height: '100%',     // ← imagen escala para entrar exacta en la pantalla
-            width: '100%',
-            objectFit: 'cover',
-            objectPosition: 'center top',
-            display: 'block',
-            userSelect: 'none',
-            pointerEvents: 'none',
-          }}
-        />
-
-        {BOTONES.map((btn) => {
-          const isActive = active === btn.id
-          return (
-            <button
-              key={btn.id}
-              onClick={() => handleClick(btn)}
-              style={{
-                position: 'absolute',
-                top: btn.top, left: btn.left,
-                width: btn.width, height: btn.height,
-                borderRadius: btn.shape === 'pill' ? '50px' : '50%',
-                cursor: 'pointer',
-                border: 'none',
-                background: 'transparent',
-                boxShadow: isActive ? '0 0 28px 10px rgba(0,255,255,0.4)' : 'none',
-                transform: isActive ? 'scale(0.96)' : 'scale(1)',
-                transition: 'all 0.18s ease',
-                outline: 'none',
-                WebkitTapHighlightColor: 'transparent',
-              }}
-            />
-          )
-        })}
-      </div>
+      {BOTONES.map((btn) => {
+        const isActive = active === btn.id
+        return (
+          <button
+            key={btn.id}
+            onClick={() => handleClick(btn)}
+            style={{
+              position: 'absolute',
+              top: btn.top, left: btn.left,
+              width: btn.width, height: btn.height,
+              borderRadius: btn.shape === 'pill' ? '50px' : '50%',
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              outline: 'none',
+              WebkitTapHighlightColor: 'transparent',
+              transform: isActive ? 'scale(0.96)' : 'scale(1)',
+              transition: 'transform 0.15s ease',
+            }}
+          />
+        )
+      })}
     </div>
   )
 }

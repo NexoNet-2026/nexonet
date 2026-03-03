@@ -1,6 +1,8 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Header from '@/components/Header'
+import BottomNav from '@/components/BottomNav'
 
 const UBICACIONES: Record<string, Record<string, string[]>> = {
   'Buenos Aires': { 'CABA': ['Palermo','Belgrano','Recoleta','San Telmo','Villa Crespo','Caballito','Almagro','Flores'], 'La Plata': ['Centro','City Bell','Los Hornos','Villa Elvira'], 'Mar del Plata': ['Centro','La Perla','Punta Mogotes'], 'Quilmes': ['Centro','Bernal','Ezpeleta'], 'Tigre': ['Centro','El Talar','Don Torcuato'], 'Bahía Blanca': ['Centro','Ingeniero White','Villa Mitre'] },
@@ -30,10 +32,6 @@ const RUBROS: Record<string, { emoji: string; subrubros: Record<string, string[]
   'Salud': { emoji: '🏥', subrubros: { 'Medicina': ['Clínica','Pediatría','Cardiología','Traumatología'], 'Bienestar': ['Yoga','Meditación','Nutrición','Psicología'], 'Farmacias': ['Medicamentos','Cosmética','Ortopedia'] } },
   'Agro': { emoji: '🌾', subrubros: { 'Producción': ['Cereales','Soja','Girasol','Maíz'], 'Ganadería': ['Bovinos','Porcinos','Ovinos','Aves'], 'Maquinaria': ['Tractores','Cosechadoras','Implementos','Repuestos'] } },
 }
-
-const navItems: [string, string, string][] = [
-  ['🔍','Buscar','/buscar'],['➕','Publicar','/publicar'],['🏠','Inicio','/home'],['💬','Chat','/'],['👤','Perfil','/login'],
-]
 
 const selectStyle: React.CSSProperties = {
   width: '100%', padding: '12px 40px 12px 14px',
@@ -102,42 +100,16 @@ export default function BuscarPage() {
     <div style={{ fontFamily:"'Nunito',sans-serif", maxWidth:'430px', margin:'0 auto', minHeight:'100vh', position:'relative' }}>
 
       {/* FONDO FIJO */}
-      <div style={{
-        position: 'fixed',
-        top: 0, left: '50%', transform: 'translateX(-50%)',
-        width: '100%', maxWidth: '430px', height: '100vh',
-        backgroundImage: "url('/fondo_pantallas.png')",
-        backgroundSize: '100% 100%',
-        backgroundPosition: 'center top',
-        zIndex: 0,
-      }} />
-      {/* Overlay para legibilidad */}
-      <div style={{
-        position: 'fixed',
-        top: 0, left: '50%', transform: 'translateX(-50%)',
-        width: '100%', maxWidth: '430px', height: '100vh',
-        background: 'rgba(5,13,26,0.55)',
-        zIndex: 1,
-      }} />
+      <div style={{ position:'fixed', top:0, left:'50%', transform:'translateX(-50%)', width:'100%', maxWidth:'430px', height:'100vh', backgroundImage:"url('/fondo_pantallas.png')", backgroundSize:'100% 100%', zIndex:0 }} />
+      <div style={{ position:'fixed', top:0, left:'50%', transform:'translateX(-50%)', width:'100%', maxWidth:'430px', height:'100vh', background:'rgba(5,13,26,0.55)', zIndex:1 }} />
 
       {/* CONTENIDO */}
-      <div style={{ position: 'relative', zIndex: 2, paddingBottom: '100px' }}>
+      <div style={{ position:'relative', zIndex:2, paddingBottom:'100px' }}>
 
-        {/* HEADER */}
-        <div style={{ padding: '52px 20px 20px' }}>
-          <button onClick={() => router.back()} style={{ background:'none', border:'none', cursor:'pointer', color:'rgba(255,255,255,0.5)', fontSize:'13px', fontWeight:700, padding:0, fontFamily:'inherit', marginBottom:'16px', display:'block' }}>
-            ← Volver
-          </button>
-          <div style={{ fontSize:'11px', color:'#FFE600', fontWeight:800, letterSpacing:'2px', textTransform:'uppercase', marginBottom:'4px' }}>NexoNet</div>
-          <div style={{ fontSize:'28px', fontWeight:900, color:'white', lineHeight:1.15, marginBottom:'6px', textShadow:'0 2px 12px rgba(0,0,0,0.6)' }}>
-            ¿Qué estás<br />buscando?
-          </div>
-          <div style={{ fontSize:'13px', color:'rgba(255,255,255,0.5)', fontWeight:600 }}>
-            Filtrá por ubicación, rubro o escribí directamente
-          </div>
-        </div>
+        {/* HEADER COMPARTIDO */}
+        <Header titulo="Buscar en Lista" volver={true} />
 
-        <div style={{ padding:'0 20px', display:'flex', flexDirection:'column', gap:'12px' }}>
+        <div style={{ padding:'16px 20px', display:'flex', flexDirection:'column', gap:'12px' }}>
 
           {/* BÚSQUEDA LIBRE */}
           <div style={cardStyle}>
@@ -219,8 +191,7 @@ export default function BuscarPage() {
             style={{
               width:'100%', padding:'15px',
               background: canSearch ? 'rgba(0,180,255,0.25)' : 'rgba(255,255,255,0.05)',
-              backdropFilter: 'blur(12px)',
-              WebkitBackdropFilter: 'blur(12px)',
+              backdropFilter:'blur(12px)', WebkitBackdropFilter:'blur(12px)',
               border: canSearch ? '1px solid rgba(0,210,255,0.6)' : '1px solid rgba(255,255,255,0.08)',
               borderRadius:'14px',
               color: canSearch ? '#fff' : 'rgba(255,255,255,0.2)',
@@ -238,15 +209,8 @@ export default function BuscarPage() {
         </div>
       </div>
 
-      {/* BOTTOM NAV */}
-      <div style={{ position:'fixed', bottom:0, left:'50%', transform:'translateX(-50%)', width:'100%', maxWidth:'430px', background:'rgba(5,13,26,0.9)', backdropFilter:'blur(16px)', WebkitBackdropFilter:'blur(16px)', borderTop:'1px solid rgba(0,210,255,0.15)', display:'flex', justifyContent:'space-around', padding:'8px 0 18px', zIndex:10 }}>
-        {navItems.map(([icon, label, href], i) => (
-          <a key={i} href={href} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'3px', padding:'4px 10px', textDecoration:'none' }}>
-            <span style={{ fontSize:'22px' }}>{icon}</span>
-            <span style={{ fontSize:'10px', color: i===0 ? '#00D2FF' : 'rgba(255,255,255,0.3)', fontWeight:700 }}>{label}</span>
-          </a>
-        ))}
-      </div>
+      {/* BOTTOM NAV COMPARTIDO */}
+      <BottomNav />
     </div>
   )
 }

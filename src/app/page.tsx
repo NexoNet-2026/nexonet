@@ -22,11 +22,15 @@ export default function SplashPage() {
   return (
     <div style={{
       position: 'fixed',
-      inset: 0,
+      top: 0,
+      left: '50%',
+      transform: 'translateX(-50%)',
+      width: '100%',
+      maxWidth: '430px',
+      height: '100vh',
       backgroundImage: "url('/pantalla01.png')",
       backgroundSize: '100% 100%',
       backgroundPosition: 'center top',
-      backgroundRepeat: 'no-repeat',
     }}>
       {BOTONES.map((btn) => {
         const isActive = active === btn.id
@@ -39,13 +43,16 @@ export default function SplashPage() {
               top: btn.top, left: btn.left,
               width: btn.width, height: btn.height,
               borderRadius: btn.shape === 'pill' ? '50px' : '50%',
-              background: 'transparent',
-              border: 'none',
+              background: isActive ? 'rgba(0,255,255,0.15)' : 'transparent',
+              border: isActive ? '2px solid rgba(0,255,255,0.8)' : '2px solid transparent',
+              boxShadow: isActive
+                ? '0 0 30px 8px rgba(0,255,255,0.5), inset 0 0 20px rgba(0,255,255,0.1)'
+                : 'none',
+              transform: isActive ? 'scale(0.96)' : 'scale(1)',
+              transition: 'all 0.18s ease',
               cursor: 'pointer',
               outline: 'none',
               WebkitTapHighlightColor: 'transparent',
-              transform: isActive ? 'scale(0.96)' : 'scale(1)',
-              transition: 'transform 0.15s ease',
             }}
           />
         )

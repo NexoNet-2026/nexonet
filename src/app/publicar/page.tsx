@@ -368,7 +368,7 @@ function PublicarContent() {
   ...(precio ? [['Precio', `${moneda} ${Number(precio).toLocaleString('es-AR')}`]] : []),
   ['Ubicación', `${ciudad}, ${provincia}`],
   ...(imagenes.length > 0 ? [['Fotos', `${imagenes.length}`]] : []),
-].map(([k, v], i) => (
+] as [string, string][]).map(([k, v], i) => (
   <div key={i} style={{ fontSize:'13px', color:'rgba(255,255,255,0.6)' }}>
     <span style={{ color:'rgba(255,255,255,0.35)', fontWeight:700 }}>{k}: </span>{v}
   </div>

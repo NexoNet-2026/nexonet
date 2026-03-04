@@ -12,8 +12,6 @@ type Opcion = { id: number; filtro_id: number; subrubro_id: number; opcion: stri
 
 const CAMPOS_FIJOS = ['precio', 'descripcion', 'descripción', 'precio de venta', 'titulo', 'título', 'moneda', 'moneda de publicación', 'tipo de moneda']
 
-// ── Estilos compartidos ──────────────────────────────────────────────────────
-
 const inputStyle: React.CSSProperties = {
   width: '100%', padding: '12px 14px',
   background: 'rgba(0,0,0,0.3)',
@@ -41,11 +39,8 @@ const cardStyle: React.CSSProperties = {
   backdropFilter: 'blur(20px)',
   WebkitBackdropFilter: 'blur(20px)',
   border: '1px solid rgba(0,210,255,0.2)',
-  borderRadius: '16px',
-  padding: '16px',
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '12px',
+  borderRadius: '16px', padding: '16px',
+  display: 'flex', flexDirection: 'column', gap: '12px',
 }
 
 const labelStyle: React.CSSProperties = {
@@ -82,7 +77,14 @@ const btnSecondary: React.CSSProperties = {
   cursor: 'pointer', fontFamily: "'Nunito',sans-serif",
 }
 
-// ── Componente principal ─────────────────────────────────────────────────────
+// Componente simple para cada fila del resumen — evita el problema de TypeScript con arrays
+function FilaResumen({ label, valor }: { label: string; valor: string }) {
+  return (
+    <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)' }}>
+      <span style={{ color: 'rgba(255,255,255,0.35)', fontWeight: 700 }}>{label}: </span>{valor}
+    </div>
+  )
+}
 
 function PublicarContent() {
   const searchParams = useSearchParams()
@@ -191,7 +193,6 @@ function PublicarContent() {
     setPublicando(false)
   }
 
-  // ── PANTALLA ÉXITO ──
   if (exito) return (
     <div style={{ fontFamily:"'Nunito',sans-serif", maxWidth:'430px', margin:'0 auto', minHeight:'100vh', position:'relative' }}>
       <div style={{ position:'fixed', top:0, left:'50%', transform:'translateX(-50%)', width:'100%', maxWidth:'430px', height:'100vh', backgroundImage:"url('/fondo_pantallas.png')", backgroundSize:'100% 100%', zIndex:0 }} />
@@ -205,15 +206,11 @@ function PublicarContent() {
     </div>
   )
 
-  // ── PANTALLA PRINCIPAL ──
   return (
     <div style={{ fontFamily:"'Nunito',sans-serif", maxWidth:'430px', margin:'0 auto', minHeight:'100vh', position:'relative' }}>
-
-      {/* FONDO */}
       <div style={{ position:'fixed', top:0, left:'50%', transform:'translateX(-50%)', width:'100%', maxWidth:'430px', height:'100vh', backgroundImage:"url('/fondo_pantallas.png')", backgroundSize:'100% 100%', zIndex:0 }} />
       <div style={{ position:'fixed', top:0, left:'50%', transform:'translateX(-50%)', width:'100%', maxWidth:'430px', height:'100vh', background:'rgba(5,13,26,0.72)', zIndex:1 }} />
 
-      {/* HEADER FIJO */}
       <div style={{ position:'fixed', top:0, left:'50%', transform:'translateX(-50%)', width:'100%', maxWidth:'430px', zIndex:100, background:'rgba(5,13,26,0.85)', backdropFilter:'blur(20px)', WebkitBackdropFilter:'blur(20px)', borderBottom:'1px solid rgba(0,210,255,0.15)', padding:'12px 16px' }}>
         <div style={{ display:'flex', alignItems:'center', gap:'12px' }}>
           <a href={subrubroIdParam ? `/anuncios?subrubro_id=${subrubroIdParam}` : '/'} style={{ color:'rgba(255,255,255,0.5)', textDecoration:'none', fontSize:'22px' }}>←</a>
@@ -222,7 +219,6 @@ function PublicarContent() {
             <div style={{ fontSize:'16px', fontWeight:900, color:'white' }}>➕ Publicar anuncio</div>
           </div>
         </div>
-        {/* BARRA DE PROGRESO */}
         <div style={{ marginTop:'10px', background:'rgba(255,255,255,0.08)', borderRadius:'4px', height:'3px' }}>
           <div style={{ background:'linear-gradient(90deg,#00D2FF,#0080FF)', height:'3px', borderRadius:'4px', width:`${(paso/3)*100}%`, transition:'width 0.3s', boxShadow:'0 0 8px rgba(0,210,255,0.5)' }} />
         </div>
@@ -233,11 +229,9 @@ function PublicarContent() {
         </div>
       </div>
 
-      {/* CONTENIDO */}
       <div style={{ position:'relative', zIndex:2, paddingTop:'90px', paddingBottom:'100px' }}>
         <div style={{ padding:'16px', display:'flex', flexDirection:'column', gap:'12px' }}>
 
-          {/* ── PASO 1 ── */}
           {paso === 1 && (
             <div style={cardStyle}>
               <div style={sectionTitle}>¿En qué categoría publicás?</div>
@@ -263,10 +257,8 @@ function PublicarContent() {
             </div>
           )}
 
-          {/* ── PASO 2 ── */}
           {paso === 2 && (
             <>
-              {/* Datos básicos */}
               <div style={cardStyle}>
                 <div style={sectionTitle}>📝 Datos del anuncio</div>
                 <div>
@@ -275,8 +267,7 @@ function PublicarContent() {
                 </div>
                 <div>
                   <label style={labelStyle}>Descripción</label>
-                  <textarea value={descripcion} onChange={e => setDescripcion(e.target.value)} placeholder="Describí tu anuncio..." rows={3}
-                    style={{ ...inputStyle, resize:'none' }} />
+                  <textarea value={descripcion} onChange={e => setDescripcion(e.target.value)} placeholder="Describí tu anuncio..." rows={3} style={{ ...inputStyle, resize:'none' }} />
                 </div>
                 <div style={{ display:'flex', gap:'8px' }}>
                   <div style={{ flex:1 }}>
@@ -293,7 +284,6 @@ function PublicarContent() {
                 </div>
               </div>
 
-              {/* Fotos */}
               <div style={cardStyle}>
                 <div style={sectionTitle}>📷 Fotos (hasta 3)</div>
                 <div style={{ display:'flex', gap:'8px', flexWrap:'wrap' }}>
@@ -313,7 +303,6 @@ function PublicarContent() {
                 </div>
               </div>
 
-              {/* Filtros dinámicos */}
               {filtros.length > 0 && (
                 <div style={cardStyle}>
                   <div style={sectionTitle}>📋 Características</div>
@@ -326,7 +315,10 @@ function PublicarContent() {
                         {esBool || opts.length > 0 ? (
                           <select value={valoresFiltros[filtro.filtro_id] || ''} onChange={e => setValoresFiltros(prev => ({ ...prev, [filtro.filtro_id]: e.target.value }))} style={selectStyle}>
                             <option value="" style={{ background:'#0a1628' }}>Seleccioná...</option>
-                            {esBool ? (<><option style={{ background:'#0a1628' }} value="Si">Sí</option><option style={{ background:'#0a1628' }} value="No">No</option></>) : opts.map((o, i) => <option key={i} value={o.opcion} style={{ background:'#0a1628' }}>{o.opcion}</option>)}
+                            {esBool
+                              ? (<><option style={{ background:'#0a1628' }} value="Si">Sí</option><option style={{ background:'#0a1628' }} value="No">No</option></>)
+                              : opts.map((o, i) => <option key={i} value={o.opcion} style={{ background:'#0a1628' }}>{o.opcion}</option>)
+                            }
                           </select>
                         ) : (
                           <input value={valoresFiltros[filtro.filtro_id] || ''} onChange={e => setValoresFiltros(prev => ({ ...prev, [filtro.filtro_id]: e.target.value }))} placeholder={`Ingresá ${filtro.nombre.toLowerCase()}`} style={inputStyle} />
@@ -344,7 +336,6 @@ function PublicarContent() {
             </>
           )}
 
-          {/* ── PASO 3 ── */}
           {paso === 3 && (
             <>
               <div style={cardStyle}>
@@ -359,20 +350,13 @@ function PublicarContent() {
                 </div>
               </div>
 
-              {/* Resumen */}
               <div style={{ ...cardStyle, borderColor:'rgba(0,210,255,0.4)' }}>
                 <div style={sectionTitle}>📋 Resumen</div>
-              {[
-  ['Categoría', `${rubroNombre}${subrubroNombre ? ` › ${subrubroNombre}` : ''}`],
-  ['Título', titulo],
-  ...(precio ? [['Precio', `${moneda} ${Number(precio).toLocaleString('es-AR')}`]] : []),
-  ['Ubicación', `${ciudad}, ${provincia}`],
-  ...(imagenes.length > 0 ? [['Fotos', `${imagenes.length}`]] : []),
-] as [string, string][]).map(([k, v], i) => (
-  <div key={i} style={{ fontSize:'13px', color:'rgba(255,255,255,0.6)' }}>
-    <span style={{ color:'rgba(255,255,255,0.35)', fontWeight:700 }}>{k}: </span>{v}
-  </div>
-))}
+                <FilaResumen label="Categoría" valor={`${rubroNombre}${subrubroNombre ? ` › ${subrubroNombre}` : ''}`} />
+                <FilaResumen label="Título" valor={titulo} />
+                {precio && <FilaResumen label="Precio" valor={`${moneda} ${Number(precio).toLocaleString('es-AR')}`} />}
+                <FilaResumen label="Ubicación" valor={`${ciudad}, ${provincia}`} />
+                {imagenes.length > 0 && <FilaResumen label="Fotos" valor={`${imagenes.length}`} />}
               </div>
 
               {error && (

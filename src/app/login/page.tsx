@@ -1,145 +1,180 @@
 'use client'
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import BottomNav from '@/components/BottomNav'
 
-export default function Login() {
-  const [modo, setModo] = useState<'login' | 'registro'>('login')
+export default function LoginPage() {
+  const router = useRouter()
+  const [tab, setTab] = useState<'ingresar' | 'registro'>('ingresar')
+  const [nombre, setNombre] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [nombre, setNombre] = useState('')
   const [loading, setLoading] = useState(false)
-  const [mensaje, setMensaje] = useState('')
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
 
-  async function handleLogin() {
-    setLoading(true)
-    setError('')
+  const handleIngresar = async () => {
+    setError(''); setLoading(true)
     const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) {
-      setError('Email o contraseña incorrectos')
-    } else {
-      window.location.href = '/'
-    }
+    if (error) setError('Email o contraseña incorrectos')
+    else router.push('/home')
     setLoading(false)
   }
 
-  async function handleRegistro() {
-    setLoading(true)
-    setError('')
-    if (!nombre || !email || !password) {
-      setError('Completá todos los campos')
-      setLoading(false)
-      return
-    }
-    if (password.length < 6) {
-      setError('La contraseña debe tener al menos 6 caracteres')
-      setLoading(false)
-      return
-    }
+  const handleRegistro = async () => {
+    setError(''); setLoading(true)
+    if (!nombre.trim()) { setError('Ingresá tu nombre'); setLoading(false); return }
     const { error } = await supabase.auth.signUp({
-      email,
-      password,
+      email, password,
       options: { data: { nombre } }
     })
-    if (error) {
-      setError(error.message)
-    } else {
-      setMensaje('¡Cuenta creada! Revisá tu email para confirmar.')
-    }
+    if (error) setError('Error al registrarse. Intentá de nuevo.')
+    else setSuccess('¡Cuenta creada! Revisá tu email para confirmar.')
     setLoading(false)
+  }
+
+  const inputStyle: React.CSSProperties = {
+    width: '100%', padding: '14px 16px',
+    background: 'rgba(0,0,0,0.3)',
+    border: '1px solid rgba(0,210,255,0.25)',
+    borderRadius: '12px', color: 'white',
+    fontSize: '15px', fontFamily: "'Nunito',sans-serif",
+    fontWeight: 600, outline: 'none', boxSizing: 'border-box',
   }
 
   return (
-    <div style={{ fontFamily: "'Nunito', sans-serif", background: 'linear-gradient(180deg, #050d1a 0%, #0a1628 50%, #0f2040 100%)', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-      <div style={{ width: '100%', maxWidth: '360px' }}>
+    <div style={{ fontFamily:"'Nunito',sans-serif", maxWidth:'430px', margin:'0 auto', minHeight:'100vh', position:'relative' }}>
+
+      {/* FONDO */}
+      <div style={{ position:'fixed', top:0, left:'50%', transform:'translateX(-50%)', width:'100%', maxWidth:'430px', height:'100vh', backgroundImage:"url('/fondo_pantallas.png')", backgroundSize:'100% 100%', zIndex:0 }} />
+      <div style={{ position:'fixed', top:0, left:'50%', transform:'translateX(-50%)', width:'100%', maxWidth:'430px', height:'100vh', background:'rgba(5,13,26,0.7)', zIndex:1 }} />
+
+      {/* CONTENIDO */}
+      <div style={{ position:'relative', zIndex:2, minHeight:'100vh', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'20px 24px 100px' }}>
 
         {/* LOGO */}
-        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-          <div style={{ fontSize: '36px', fontWeight: 900, color: 'white' }}>
-            Nexo<span style={{ color: '#FFE600' }}>Net</span>
+        <div style={{ textAlign:'center', marginBottom:'36px' }}>
+          <div style={{ fontSize:'42px', fontWeight:900, color:'white', lineHeight:1 }}>
+            Nexo<span style={{ color:'#00D2FF' }}>Net</span>
           </div>
-          <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.45)', letterSpacing: '2px', textTransform: 'uppercase', marginTop: '4px' }}>
-            Argentina · Hiper-local
+          <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.4)', letterSpacing:'3px', textTransform:'uppercase', marginTop:'6px' }}>
+            Argentina · Hiper-Local
           </div>
         </div>
 
         {/* CARD */}
-        <div style={{ background: 'white', borderRadius: '16px', padding: '28px 24px', boxShadow: '0 20px 60px rgba(0,0,0,0.4)' }}>
+        <div style={{
+          width:'100%',
+          background:'rgba(255,255,255,0.06)',
+          backdropFilter:'blur(24px)',
+          WebkitBackdropFilter:'blur(24px)',
+          border:'1px solid rgba(0,210,255,0.2)',
+          borderRadius:'20px',
+          padding:'24px',
+          display:'flex', flexDirection:'column', gap:'16px',
+        }}>
 
           {/* TABS */}
-          <div style={{ display: 'flex', background: '#F0F2F5', borderRadius: '10px', padding: '4px', marginBottom: '24px' }}>
-            {(['login', 'registro'] as const).map((tab) => (
-              <button key={tab} onClick={() => { setModo(tab); setError(''); setMensaje('') }}
-                style={{ flex: 1, padding: '10px', border: 'none', borderRadius: '8px', fontFamily: 'inherit', fontSize: '13px', fontWeight: 800, cursor: 'pointer', background: modo === tab ? 'white' : 'transparent', color: modo === tab ? '#222' : '#999', boxShadow: modo === tab ? '0 2px 8px rgba(0,0,0,0.1)' : 'none', transition: 'all 0.2s' }}>
-                {tab === 'login' ? '🔑 Ingresar' : '✨ Registrarse'}
+          <div style={{ display:'flex', background:'rgba(0,0,0,0.3)', borderRadius:'12px', padding:'4px', gap:'4px' }}>
+            {(['ingresar','registro'] as const).map(t => (
+              <button key={t} onClick={() => { setTab(t); setError(''); setSuccess('') }} style={{
+                flex:1, padding:'10px',
+                background: tab === t ? 'rgba(0,210,255,0.2)' : 'transparent',
+                border: tab === t ? '1px solid rgba(0,210,255,0.5)' : '1px solid transparent',
+                borderRadius:'10px',
+                color: tab === t ? '#00D2FF' : 'rgba(255,255,255,0.4)',
+                fontSize:'14px', fontWeight:800, cursor:'pointer',
+                fontFamily:'inherit', transition:'all 0.2s ease',
+              }}>
+                {t === 'ingresar' ? '🔑 Ingresar' : '✨ Registrarse'}
               </button>
             ))}
           </div>
 
           {/* CAMPOS */}
-          {modo === 'registro' && (
-            <div style={{ marginBottom: '14px' }}>
-              <label style={{ fontSize: '12px', fontWeight: 700, color: '#555', display: 'block', marginBottom: '6px' }}>Tu nombre</label>
+          {tab === 'registro' && (
+            <div>
+              <div style={{ fontSize:'12px', color:'rgba(255,255,255,0.45)', marginBottom:'6px', fontWeight:700 }}>Tu nombre</div>
               <input
-                type="text" value={nombre} onChange={e => setNombre(e.target.value)}
-                placeholder="Ej: Juan Pérez"
-                style={{ width: '100%', padding: '12px 14px', border: '1.5px solid #E4E6EA', borderRadius: '8px', fontFamily: 'inherit', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
+                type="text" placeholder="Ej: Juan Pérez"
+                value={nombre} onChange={e => setNombre(e.target.value)}
+                style={inputStyle}
               />
             </div>
           )}
 
-          <div style={{ marginBottom: '14px' }}>
-            <label style={{ fontSize: '12px', fontWeight: 700, color: '#555', display: 'block', marginBottom: '6px' }}>Email</label>
+          <div>
+            <div style={{ fontSize:'12px', color:'rgba(255,255,255,0.45)', marginBottom:'6px', fontWeight:700 }}>Email</div>
             <input
-              type="email" value={email} onChange={e => setEmail(e.target.value)}
-              placeholder="tu@email.com"
-              style={{ width: '100%', padding: '12px 14px', border: '1.5px solid #E4E6EA', borderRadius: '8px', fontFamily: 'inherit', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
+              type="email" placeholder="tu@email.com"
+              value={email} onChange={e => setEmail(e.target.value)}
+              style={inputStyle}
             />
           </div>
 
-          <div style={{ marginBottom: '20px' }}>
-            <label style={{ fontSize: '12px', fontWeight: 700, color: '#555', display: 'block', marginBottom: '6px' }}>Contraseña</label>
+          <div>
+            <div style={{ fontSize:'12px', color:'rgba(255,255,255,0.45)', marginBottom:'6px', fontWeight:700 }}>Contraseña</div>
             <input
-              type="password" value={password} onChange={e => setPassword(e.target.value)}
-              placeholder="Mínimo 6 caracteres"
-              style={{ width: '100%', padding: '12px 14px', border: '1.5px solid #E4E6EA', borderRadius: '8px', fontFamily: 'inherit', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
+              type="password" placeholder="Mínimo 6 caracteres"
+              value={password} onChange={e => setPassword(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && (tab === 'ingresar' ? handleIngresar() : handleRegistro())}
+              style={inputStyle}
             />
           </div>
 
-          {/* ERROR */}
+          {/* ERROR / SUCCESS */}
           {error && (
-            <div style={{ background: '#fff0f0', border: '1px solid #ffcdd2', borderRadius: '8px', padding: '10px 14px', marginBottom: '16px', fontSize: '13px', color: '#d32f2f', fontWeight: 600 }}>
+            <div style={{ background:'rgba(255,60,60,0.15)', border:'1px solid rgba(255,60,60,0.4)', borderRadius:'10px', padding:'10px 14px', fontSize:'13px', color:'#ff8080', fontWeight:600 }}>
               ⚠️ {error}
             </div>
           )}
-
-          {/* ÉXITO */}
-          {mensaje && (
-            <div style={{ background: '#f0fff8', border: '1px solid #b2dfdb', borderRadius: '8px', padding: '10px 14px', marginBottom: '16px', fontSize: '13px', color: '#00695c', fontWeight: 600 }}>
-              ✅ {mensaje}
+          {success && (
+            <div style={{ background:'rgba(0,255,150,0.1)', border:'1px solid rgba(0,255,150,0.3)', borderRadius:'10px', padding:'10px 14px', fontSize:'13px', color:'#00ff96', fontWeight:600 }}>
+              ✅ {success}
             </div>
           )}
 
-          {/* BOTÓN */}
+          {/* BOTÓN PRINCIPAL */}
           <button
-            onClick={modo === 'login' ? handleLogin : handleRegistro}
+            onClick={tab === 'ingresar' ? handleIngresar : handleRegistro}
             disabled={loading}
-            style={{ width: '100%', padding: '14px', background: loading ? '#ccc' : '#FFE600', border: 'none', borderRadius: '10px', fontFamily: 'inherit', fontSize: '15px', fontWeight: 900, cursor: loading ? 'not-allowed' : 'pointer', color: '#111' }}>
-            {loading ? '⏳ Procesando...' : modo === 'login' ? '🚀 Ingresar a NexoNet' : '✨ Crear mi cuenta'}
+            style={{
+              width:'100%', padding:'15px',
+              background: 'linear-gradient(135deg, rgba(0,180,255,0.4), rgba(0,100,200,0.3))',
+              backdropFilter:'blur(12px)',
+              border:'1px solid rgba(0,210,255,0.6)',
+              borderRadius:'14px', color:'white',
+              fontSize:'16px', fontWeight:900,
+              cursor: loading ? 'not-allowed' : 'pointer',
+              fontFamily:'inherit',
+              boxShadow:'0 0 20px rgba(0,180,255,0.2)',
+              textShadow:'0 0 10px rgba(0,210,255,0.6)',
+              opacity: loading ? 0.7 : 1,
+              transition:'all 0.2s ease',
+            }}
+          >
+            {loading ? '⏳ Procesando...' : tab === 'ingresar' ? '🚀 Ingresar a NexoNet' : '✨ Crear mi cuenta'}
           </button>
 
           {/* VOLVER */}
-          <div style={{ textAlign: 'center', marginTop: '16px' }}>
-            <a href="/" style={{ fontSize: '12px', color: '#999', textDecoration: 'none', fontWeight: 600 }}>
-              ← Volver al inicio
-            </a>
-          </div>
+          <button onClick={() => router.push('/')} style={{
+            background:'none', border:'none', cursor:'pointer',
+            color:'rgba(255,255,255,0.3)', fontSize:'13px', fontWeight:600,
+            fontFamily:'inherit', textAlign:'center',
+          }}>
+            ← Volver al inicio
+          </button>
+
         </div>
 
-        <div style={{ textAlign: 'center', marginTop: '20px', fontSize: '11px', color: 'rgba(255,255,255,0.3)' }}>
+        {/* FOOTER */}
+        <div style={{ marginTop:'24px', fontSize:'12px', color:'rgba(255,255,255,0.2)', textAlign:'center' }}>
           NexoNet © 2026 · Argentina
         </div>
       </div>
+
+      <BottomNav />
     </div>
   )
 }

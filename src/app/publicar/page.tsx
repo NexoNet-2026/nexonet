@@ -362,17 +362,17 @@ function PublicarContent() {
               {/* Resumen */}
               <div style={{ ...cardStyle, borderColor:'rgba(0,210,255,0.4)' }}>
                 <div style={sectionTitle}>📋 Resumen</div>
-                {[
-                  ['Categoría', `${rubroNombre}${subrubroNombre ? ` › ${subrubroNombre}` : ''}`],
-                  ['Título', titulo],
-                  precio ? ['Precio', `${moneda} ${Number(precio).toLocaleString('es-AR')}`] : null,
-                  ['Ubicación', `${ciudad}, ${provincia}`],
-                  imagenes.length > 0 ? ['Fotos', `${imagenes.length}`] : null,
-                ].filter(Boolean).map(([k, v], i) => (
-                  <div key={i} style={{ fontSize:'13px', color:'rgba(255,255,255,0.6)' }}>
-                    <span style={{ color:'rgba(255,255,255,0.35)', fontWeight:700 }}>{k}: </span>{v}
-                  </div>
-                ))}
+              {[
+  ['Categoría', `${rubroNombre}${subrubroNombre ? ` › ${subrubroNombre}` : ''}`],
+  ['Título', titulo],
+  ...(precio ? [['Precio', `${moneda} ${Number(precio).toLocaleString('es-AR')}`]] : []),
+  ['Ubicación', `${ciudad}, ${provincia}`],
+  ...(imagenes.length > 0 ? [['Fotos', `${imagenes.length}`]] : []),
+].map(([k, v], i) => (
+  <div key={i} style={{ fontSize:'13px', color:'rgba(255,255,255,0.6)' }}>
+    <span style={{ color:'rgba(255,255,255,0.35)', fontWeight:700 }}>{k}: </span>{v}
+  </div>
+))}
               </div>
 
               {error && (

@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation'
 const navItems: [string, string, string][] = [
   ['🔍', 'Buscar',   '/home'],
   ['➕', 'Publicar', '/publicar'],
-  ['🏠', 'Inicio',   '/home'],
+  ['🏠', 'Inicio',   '/anuncios'],
   ['💬', 'Chat',     '/chat'],
   ['👤', 'Perfil',   '/login'],
 ]

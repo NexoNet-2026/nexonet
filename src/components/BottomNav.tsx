@@ -14,41 +14,27 @@ export default function BottomNav() {
 
   return (
     <div style={{
-      position: 'fixed',
-      bottom: 0,
-      left: '50%',
-      transform: 'translateX(-50%)',
-      width: '100%',
-      maxWidth: '430px',
-      zIndex: 100,
-      background: 'rgba(5,13,26,0.75)',
-      backdropFilter: 'blur(20px)',
-      WebkitBackdropFilter: 'blur(20px)',
+      position: 'fixed', bottom: 0, left: '50%',
+      transform: 'translateX(-50%)', width: '100%', maxWidth: '430px',
+      zIndex: 100, background: 'rgba(5,13,26,0.75)',
+      backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
       borderTop: '1px solid rgba(0,210,255,0.15)',
-      display: 'flex',
-      justifyContent: 'space-around',
-      padding: '8px 0 22px',
-      fontFamily: "'Nunito', sans-serif",
+      display: 'flex', justifyContent: 'space-around',
+      padding: '8px 0 22px', fontFamily: "'Nunito', sans-serif",
     }}>
       {navItems.map(([icon, label, href]) => {
-        const isActive = pathname === href || (href === '/home' && pathname === '/')
+        const isActive = pathname === href
         return (
           <a key={href} href={href} style={{
             display: 'flex', flexDirection: 'column',
             alignItems: 'center', gap: '3px',
-            padding: '4px 12px',
-            textDecoration: 'none',
-            position: 'relative',
+            padding: '4px 12px', textDecoration: 'none', position: 'relative',
           }}>
-            {/* Indicador activo */}
             {isActive && (
               <div style={{
-                position: 'absolute',
-                top: '-8px',
-                width: '28px', height: '2px',
-                background: '#00D2FF',
-                borderRadius: '2px',
-                boxShadow: '0 0 8px rgba(0,210,255,0.8)',
+                position: 'absolute', top: '-8px',
+                width: '28px', height: '2px', background: '#00D2FF',
+                borderRadius: '2px', boxShadow: '0 0 8px rgba(0,210,255,0.8)',
               }} />
             )}
             <span style={{

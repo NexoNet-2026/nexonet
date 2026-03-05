@@ -2,7 +2,7 @@
 import { usePathname } from 'next/navigation'
 
 const navItems: [string, string, string][] = [
-  ['🔍', 'Buscar',   '/anuncios'],
+  ['🔍', 'Buscar',   '/home'],
   ['➕', 'Publicar', '/publicar'],
   ['🏠', 'Inicio',   '/home'],
   ['💬', 'Chat',     '/chat'],

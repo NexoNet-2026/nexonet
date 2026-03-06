@@ -16,46 +16,23 @@ export default function BottomNav() {
   return (
     <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 100 }}>
 
-      {/* FRANJA DOBLE */}
-      <div style={{ display: "flex" }}>
-        {/* GRUPO GRATIS */}
-        <Link href="/grupos" style={{
-          flex: 1,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: "6px",
-          background: "#1a2a3a",
-          padding: "7px 10px",
-          textDecoration: "none",
-          borderTop: "1px solid rgba(212,160,23,0.3)",
-          borderRight: "1px solid rgba(212,160,23,0.3)",
-        }}>
-          <span style={{ fontSize: "13px" }}>👥</span>
-          <span style={{ fontSize: "11px", fontWeight: 800, color: "#fff" }}>
-            Creá un <span style={{ color: "#d4a017" }}>GRUPO GRATIS</span>
-          </span>
-        </Link>
-
-        {/* NEXO PROMOTOR */}
-        <Link href="/usuario" style={{
-          flex: 1,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: "6px",
-          background: "#243b55",
-          padding: "7px 10px",
-          textDecoration: "none",
-          borderTop: "1px solid rgba(212,160,23,0.3)",
-        }}>
-          <span style={{ fontSize: "13px" }}>⭐</span>
-          <span style={{ fontSize: "11px", fontWeight: 800, color: "#fff" }}>
-            <span style={{ color: "#f0c040" }}>PROMOTOR</span>{" "}
-            <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "15px", color: "#d4a017" }}>30%</span>
-          </span>
-        </Link>
-      </div>
+     {/* FRANJA ÚNICA */}
+<Link href="/grupos" style={{
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: "8px",
+  background: "linear-gradient(90deg, #1a2a3a, #243b55, #1a2a3a)",
+  padding: "8px 16px",
+  textDecoration: "none",
+  borderTop: "1px solid rgba(212,160,23,0.3)",
+}}>
+  <span style={{ fontSize: "14px" }}>👥</span>
+  <span style={{ fontSize: "12px", fontWeight: 800, color: "#fff" }}>
+    Creá un <span style={{ color: "#d4a017" }}>GRUPO GRATIS</span> y ganá
+  </span>
+  <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "18px", color: "#f0c040" }}>30%</span>
+</Link>
 
       {/* NAV PRINCIPAL */}
       <nav style={{

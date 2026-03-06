@@ -50,7 +50,7 @@ export default function Registro() {
   };
 
   return (
-    <main style={{ paddingTop: "60px", paddingBottom: "64px", background: "#f4f4f2", minHeight: "100vh", fontFamily: "'Nunito', sans-serif" }}>
+    <main style={{ paddingTop: "60px", paddingBottom: "100px", background: "#f4f4f2", minHeight: "100vh", fontFamily: "'Nunito', sans-serif" }}>
       <Header />
 
       {/* HERO */}

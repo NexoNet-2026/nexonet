@@ -26,51 +26,46 @@ export default function Header() {
           </div>
         </div>
 
-        {/* BANNER PROMOTOR CENTRAL */}
-        <Link href="/usuario" style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
+        {/* BOTÓN INICIO */}
+        <Link href="/" style={{
+          display: "flex", alignItems: "center", gap: "4px",
           textDecoration: "none",
-          background: "linear-gradient(135deg, rgba(212,160,23,0.2), rgba(240,192,64,0.15))",
-          border: "1px solid rgba(212,160,23,0.5)",
-          borderRadius: "10px",
+          background: "rgba(255,255,255,0.08)",
+          border: "1px solid rgba(255,255,255,0.15)",
+          borderRadius: "8px",
           padding: "5px 12px",
-          cursor: "pointer",
-          transition: "all .2s",
         }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
-            <span style={{ fontSize: "12px" }}>⭐</span>
-            <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "15px", color: "#d4a017", letterSpacing: "1px" }}>
-              NEXO PROMOTOR
-            </span>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-            <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "18px", color: "#f0c040" }}>30%</span>
-            <span style={{ fontSize: "9px", fontWeight: 800, color: "#8a9aaa", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-              de ganancia
-            </span>
-          </div>
+          <span style={{ fontSize: "14px" }}>🏠</span>
+          <span style={{ fontSize: "10px", fontWeight: 800, color: "#8a9aaa", textTransform: "uppercase", letterSpacing: "1px" }}>Inicio</span>
         </Link>
 
-        {/* BOTÓN INICIO + USUARIO */}
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "2px" }}>
-          <Link href="/" style={{
-            display: "flex", alignItems: "center", gap: "4px",
-            textDecoration: "none",
-            background: "rgba(255,255,255,0.08)",
-            border: "1px solid rgba(255,255,255,0.15)",
-            borderRadius: "8px",
-            padding: "2px 8px",
-          }}>
-            <span style={{ fontSize: "12px" }}>🏠</span>
-            <span style={{ fontSize: "9px", fontWeight: 800, color: "#8a9aaa", textTransform: "uppercase", letterSpacing: "1px" }}>Inicio</span>
-          </Link>
-          <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "14px", color: "#d4a017", letterSpacing: "2px" }}>
-            AAA-00000
-          </span>
+        {/* USUARIO */}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
+          <span style={{ fontSize: "10px", color: "#8a9aaa", fontWeight: 600, textTransform: "uppercase", letterSpacing: "1px" }}>Usuario</span>
+          <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "16px", color: "#d4a017", letterSpacing: "2px" }}>AAA-00000</span>
         </div>
       </header>
+
+      {/* FRANJA NEXO PROMOTOR */}
+      <Link href="/usuario" style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: "8px",
+        background: "linear-gradient(90deg, #b8860b, #d4a017, #f0c040, #d4a017, #b8860b)",
+        padding: "7px 16px",
+        textDecoration: "none",
+        cursor: "pointer",
+      }}>
+        <span style={{ fontSize: "14px" }}>⭐</span>
+        <span style={{ fontSize: "12px", fontWeight: 800, color: "#1a2a3a", letterSpacing: "0.3px" }}>
+          NEXO PROMOTOR
+        </span>
+        <span style={{ fontSize: "10px", color: "#1a2a3a", fontWeight: 700 }}>—</span>
+        <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "20px", color: "#1a2a3a", letterSpacing: "1px" }}>30%</span>
+        <span style={{ fontSize: "12px", fontWeight: 800, color: "#1a2a3a" }}>de ganancia</span>
+        <span style={{ fontSize: "12px", color: "#1a2a3a", fontWeight: 800 }}>→</span>
+      </Link>
 
     </div>
   );

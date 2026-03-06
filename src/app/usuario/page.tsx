@@ -51,7 +51,7 @@ export default function Usuario() {
   };
 
   return (
-    <main style={{ paddingTop: "60px", paddingBottom: "100px", background: "#f4f4f2", minHeight: "100vh", fontFamily: "'Nunito', sans-serif" }}>
+    <main style={{ paddingTop: "90px", paddingBottom: "130px", background: "#f4f4f2", minHeight: "100vh", fontFamily: "'Nunito', sans-serif" }}>
       <Header />
 
       {/* HERO USUARIO */}

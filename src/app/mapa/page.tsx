@@ -1,10 +1,9 @@
 "use client";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import dynamic from "next/dynamic";
 
-// Leaflet solo corre en el browser, nunca en servidor
 const MapaLeaflet = dynamic(() => import("@/components/MapaLeaflet"), { ssr: false });
 
 const anuncios = [
@@ -29,11 +28,17 @@ export default function Mapa() {
     : anuncios.filter((a) => a.rubro === rubroActivo);
 
   return (
-    <main style={{ paddingTop: "60px", paddingBottom: "64px", background: "#f4f4f2", minHeight: "100vh", fontFamily: "'Nunito', sans-serif", display: "flex", flexDirection: "column" }}>
+    <div style={{ fontFamily: "'Nunito', sans-serif" }}>
       <Header />
 
-      {/* FILTROS */}
-      <div style={{ background: "linear-gradient(135deg, #1a2a3a 0%, #243b55 100%)", padding: "12px 16px" }}>
+      {/* FILTROS — fijos debajo del header */}
+      <div style={{
+        position: "fixed",
+        top: "90px", left: 0, right: 0,
+        background: "linear-gradient(135deg, #1a2a3a 0%, #243b55 100%)",
+        padding: "10px 16px",
+        zIndex: 99,
+      }}>
         <div style={{ display: "flex", gap: "8px", overflowX: "auto", scrollbarWidth: "none" }}>
           {rubros.map((r) => (
             <button key={r} onClick={() => setRubroActivo(r)} style={{
@@ -53,14 +58,19 @@ export default function Mapa() {
         </div>
       </div>
 
-      {/* MAPA */}
-      <div style={{ flex: 1, position: "relative", minHeight: "400px" }}>
+      {/* MAPA — ocupa todo el espacio entre filtros y nav */}
+      <div style={{
+        position: "fixed",
+        top: "140px",
+        left: 0, right: 0,
+        bottom: "130px",
+      }}>
         <MapaLeaflet
           anuncios={anunciosFiltrados}
           onSeleccionar={setAnuncioSeleccionado}
         />
 
-        {/* POPUP ANUNCIO SELECCIONADO */}
+        {/* POPUP */}
         {anuncioSeleccionado && (
           <div style={{
             position: "absolute",
@@ -91,19 +101,29 @@ export default function Mapa() {
             <button onClick={() => setAnuncioSeleccionado(null)} style={{ background: "none", border: "none", fontSize: "18px", cursor: "pointer", color: "#9a9a9a", alignSelf: "flex-start" }}>✕</button>
           </div>
         )}
-      </div>
 
-      {/* CONTADOR */}
-      <div style={{ background: "#fff", padding: "10px 16px", borderTop: "1px solid #e8e8e6", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span style={{ fontSize: "13px", fontWeight: 700, color: "#666" }}>
-          📍 {anunciosFiltrados.length} anuncios en el mapa
-        </span>
-        <span style={{ fontSize: "12px", fontWeight: 700, color: "#d4a017", cursor: "pointer" }}>
-          Ver en lista →
-        </span>
+        {/* CONTADOR */}
+        <div style={{
+          position: "absolute",
+          bottom: 0, left: 0, right: 0,
+          background: "#fff",
+          padding: "8px 16px",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          borderTop: "1px solid #e8e8e6",
+          zIndex: 999,
+        }}>
+          <span style={{ fontSize: "13px", fontWeight: 700, color: "#666" }}>
+            📍 {anunciosFiltrados.length} anuncios en el mapa
+          </span>
+          <a href="/buscar" style={{ fontSize: "12px", fontWeight: 700, color: "#d4a017", textDecoration: "none" }}>
+            Ver en lista →
+          </a>
+        </div>
       </div>
 
       <BottomNav />
-    </main>
+    </div>
   );
 }

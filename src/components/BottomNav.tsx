@@ -3,7 +3,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const navItems = [
-  { icon: "🏠", label: "Inicio",   href: "/" },
+  { icon: "🔑", label: "Ingresar", href: "/login" },
   { icon: "👥", label: "Grupos",   href: "/grupos" },
   { icon: "👤", label: "Registro", href: "/registro" },
 ];

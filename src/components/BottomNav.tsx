@@ -29,35 +29,24 @@ export default function BottomNav() {
       {!logueado && (
         <div style={{
           display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: "10px",
           background: "linear-gradient(90deg, #b8860b, #d4a017, #f0c040, #d4a017, #b8860b)",
-          padding: "8px 16px",
           borderTop: "1px solid rgba(255,255,255,0.15)",
+          overflow: "hidden",
         }}>
-          <span style={{ fontSize: "12px", fontWeight: 800, color: "#1a2a3a" }}>¿Ya tenés cuenta?</span>
           <Link href="/login" style={{
-            textDecoration: "none",
-            background: "#1a2a3a",
-            color: "#f0c040",
-            borderRadius: "20px",
-            padding: "5px 16px",
-            fontSize: "12px",
-            fontWeight: 900,
-            letterSpacing: "0.5px",
-            boxShadow: "0 3px 0 rgba(0,0,0,0.3)",
+            flex: 1, textDecoration: "none",
+            background: "#1a2a3a", color: "#f0c040",
+            padding: "11px", fontSize: "13px", fontWeight: 900,
+            letterSpacing: "0.5px", textAlign: "center",
+            borderRight: "1px solid rgba(255,255,255,0.15)",
+            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.05)",
           }}>🔑 Ingresar</Link>
           <Link href="/registro" style={{
-            textDecoration: "none",
-            background: "#1a2a3a",
-            color: "#f0c040",
-            borderRadius: "20px",
-            padding: "5px 16px",
-            fontSize: "12px",
-            fontWeight: 900,
-            letterSpacing: "0.5px",
-            boxShadow: "0 3px 0 rgba(0,0,0,0.3)",
+            flex: 1, textDecoration: "none",
+            background: "#1a2a3a", color: "#f0c040",
+            padding: "11px", fontSize: "13px", fontWeight: 900,
+            letterSpacing: "0.5px", textAlign: "center",
+            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.05)",
           }}>👤 Registrate</Link>
         </div>
       )}
@@ -73,7 +62,6 @@ export default function BottomNav() {
           padding: "10px 16px",
           textDecoration: "none",
           borderTop: "2px solid rgba(212,160,23,0.5)",
-          borderBottom: "3px solid rgba(0,0,0,0.5)",
           boxShadow: "inset 0 1px 0 rgba(255,255,255,0.1), 0 -2px 8px rgba(0,0,0,0.3)",
           cursor: "pointer",
           width: "100%",
@@ -120,8 +108,7 @@ export default function BottomNav() {
                   <span style={{
                     fontSize: "9px", fontWeight: 800, textTransform: "uppercase",
                     letterSpacing: "0.5px", color: isActive ? "#d4a017" : "#6a8aaa",
-                    marginTop: "2px",
-                    textShadow: "0 1px 3px rgba(255,255,255,0.15)",
+                    marginTop: "2px", textShadow: "0 1px 3px rgba(255,255,255,0.15)",
                   }}>{label}</span>
                 </Link>
               </div>
@@ -142,8 +129,7 @@ export default function BottomNav() {
               }}>{icon}</span>
               <span style={{
                 fontSize: "9px", fontWeight: 800, textTransform: "uppercase",
-                letterSpacing: "0.5px",
-                color: isActive ? "#d4a017" : "#6a8aaa",
+                letterSpacing: "0.5px", color: isActive ? "#d4a017" : "#6a8aaa",
                 textShadow: "0 1px 3px rgba(255,255,255,0.15)",
               }}>{label}</span>
             </Link>

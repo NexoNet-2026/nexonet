@@ -1,264 +1,278 @@
 "use client";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase";
 
-const rubrosData: Record<string, string[]> = {
-  "Vehículos":   ["Autos", "Motos", "Camionetas", "Camiones", "Náutica", "Maquinaria", "Repuestos"],
-  "Inmuebles":   ["Casas", "Departamentos", "Terrenos", "Locales", "Oficinas", "Galpones", "Quintas"],
-  "Tecnología":  ["Celulares", "Computadoras", "Tablets", "Audio", "TV", "Consolas", "Accesorios"],
-  "Servicios":   ["Plomería", "Electricidad", "Pintura", "Albañilería", "Jardinería", "Limpieza", "Fletes"],
-  "Ropa y Moda": ["Hombre", "Mujer", "Niños", "Calzado", "Accesorios", "Deportiva", "Segunda mano"],
-  "Hogar":       ["Muebles", "Electrodomésticos", "Decoración", "Jardín", "Herramientas", "Iluminación"],
-  "Empleos":     ["Tiempo completo", "Medio tiempo", "Freelance", "Prácticas", "Oficios"],
-  "Animales":    ["Perros", "Gatos", "Aves", "Peces", "Accesorios", "Veterinaria"],
-};
-
-type Paso = "categoria" | "datos";
+type Rubro = { id: number; nombre: string };
+type Subrubro = { id: number; nombre: string; rubro_id: number };
 
 export default function Publicar() {
-  const [paso, setPaso] = useState<Paso>("categoria");
-  const [rubro, setRubro] = useState("");
-  const [subrubro, setSubrubro] = useState("");
-  const [form, setForm] = useState({ titulo: "", descripcion: "", precio: "", moneda: "ARS" });
-  const [fotos, setFotos] = useState<string[]>([]);
-  const [error, setError] = useState("");
   const router = useRouter();
+  const [paso, setPaso] = useState<"categoria" | "datos">("categoria");
+  const [progreso, setProgreso] = useState(50);
+  const [rubros, setRubros] = useState<Rubro[]>([]);
+  const [subrubros, setSubrubros] = useState<Subrubro[]>([]);
+  const [subrubrosFiltrados, setSubrubrosFiltrados] = useState<Subrubro[]>([]);
+  const [rubroSeleccionado, setRubroSeleccionado] = useState<Rubro | null>(null);
+  const [subrubroSeleccionado, setSubrubroSeleccionado] = useState<Subrubro | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [subiendo, setSubiendo] = useState(false);
+  const [form, setForm] = useState({
+    titulo: "",
+    descripcion: "",
+    precio: "",
+    moneda: "ARS",
+    ciudad: "",
+    provincia: "",
+  });
+  const [fotos, setFotos] = useState<File[]>([]);
+  const [previews, setPreviews] = useState<string[]>([]);
 
-  const pasoNum = paso === "categoria" ? 1 : 2;
-  const progreso = paso === "categoria" ? 40 : 85;
+  useEffect(() => {
+    const cargar = async () => {
+      const [{ data: r }, { data: s }] = await Promise.all([
+        supabase.from("rubros").select("id, nombre").order("nombre"),
+        supabase.from("subrubros").select("id, nombre, rubro_id").order("nombre"),
+      ]);
+      if (r) setRubros(r);
+      if (s) setSubrubros(s);
+    };
+    cargar();
+  }, []);
 
-  const handleCategoria = () => {
-    if (!rubro || !subrubro) { setError("Seleccioná rubro y subrubro"); return; }
-    setError("");
+  const seleccionarRubro = (rubro: Rubro) => {
+    setRubroSeleccionado(rubro);
+    setSubrubroSeleccionado(null);
+    setSubrubrosFiltrados(subrubros.filter((s) => s.rubro_id === rubro.id));
+  };
+
+  const irADatos = () => {
+    if (!rubroSeleccionado || !subrubroSeleccionado) return;
     setPaso("datos");
+    setProgreso(100);
   };
 
-  const handleFoto = () => {
-    if (fotos.length < 3) setFotos([...fotos, `foto_${fotos.length + 1}`]);
+  const agregarFoto = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (fotos.length + files.length > 5) { alert("Máximo 5 fotos"); return; }
+    const nuevas = [...fotos, ...files].slice(0, 5);
+    setFotos(nuevas);
+    setPreviews(nuevas.map((f) => URL.createObjectURL(f)));
   };
 
-  const handlePublicar = () => {
-    if (!form.titulo) { setError("El título es obligatorio"); return; }
-    // lógica de publicación futura
-    router.push("/");
+  const subirFoto = async (file: File, anuncioId: number, index: number): Promise<string> => {
+    const ext = file.name.split(".").pop();
+    const path = `anuncios/${anuncioId}/${index}.${ext}`;
+    const { error } = await supabase.storage.from("imagenes").upload(path, file, { upsert: true });
+    if (error) throw error;
+    const { data } = supabase.storage.from("imagenes").getPublicUrl(path);
+    return data.publicUrl;
+  };
+
+  const publicar = async () => {
+    if (!form.titulo) { alert("El título es obligatorio"); return; }
+    setLoading(true);
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) { alert("Tenés que iniciar sesión para publicar"); router.push("/login"); return; }
+
+    // 1. Crear anuncio sin imágenes primero
+    const { data: anuncio, error } = await supabase.from("anuncios").insert({
+      usuario_id: session.user.id,
+      subrubro_id: subrubroSeleccionado?.id,
+      titulo: form.titulo,
+      descripcion: form.descripcion,
+      precio: form.precio ? parseFloat(form.precio) : null,
+      moneda: form.moneda,
+      ciudad: form.ciudad,
+      provincia: form.provincia,
+      imagenes: [],
+      estado: "activo",
+    }).select().single();
+
+    if (error || !anuncio) { alert("Error al publicar. Intentá de nuevo."); setLoading(false); return; }
+
+    // 2. Subir fotos si hay
+    let urls: string[] = [];
+    if (fotos.length > 0) {
+      setSubiendo(true);
+      try {
+        urls = await Promise.all(fotos.map((f, i) => subirFoto(f, anuncio.id, i)));
+        await supabase.from("anuncios").update({ imagenes: urls }).eq("id", anuncio.id);
+      } catch (e) {
+        console.error("Error subiendo fotos", e);
+      }
+      setSubiendo(false);
+    }
+
+    setLoading(false);
+    router.push(`/anuncios/${anuncio.id}`);
   };
 
   return (
-    <main style={{ paddingTop: "60px", paddingBottom: "64px", background: "#f4f4f2", minHeight: "100vh", fontFamily: "'Nunito', sans-serif" }}>
+    <main style={{ paddingTop: "95px", paddingBottom: "130px", background: "#f4f4f2", minHeight: "100vh", fontFamily: "'Nunito', sans-serif" }}>
       <Header />
 
       {/* SUB-HEADER */}
       <div style={{ background: "linear-gradient(135deg, #1a2a3a 0%, #243b55 100%)", padding: "12px 16px 0" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
           {paso === "datos" && (
-            <button onClick={() => setPaso("categoria")} style={{ background: "none", border: "none", color: "#d4a017", fontSize: "20px", cursor: "pointer", padding: 0 }}>←</button>
+            <button onClick={() => { setPaso("categoria"); setProgreso(50); }} style={{ background: "none", border: "none", color: "#d4a017", fontSize: "14px", cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>← Categoría</button>
           )}
-          <div>
-            {rubro && subrubro && (
-              <div style={{ fontSize: "10px", color: "#8a9aaa", fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase" }}>
-                {rubro} › {subrubro}
-              </div>
-            )}
-            <div style={{ fontSize: "18px", fontWeight: 900, color: "#fff" }}>➕ Publicar anuncio</div>
+          <div style={{ fontSize: "18px", fontWeight: 900, color: "#fff" }}>
+            {paso === "categoria" ? "Elegí la categoría" : "📝 Publicar anuncio"}
           </div>
         </div>
-
-        {/* BARRA PROGRESO */}
+        {rubroSeleccionado && subrubroSeleccionado && (
+          <div style={{ fontSize: "10px", color: "#8a9aaa", fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase", marginBottom: "8px" }}>
+            {rubroSeleccionado.nombre} → {subrubroSeleccionado.nombre}
+          </div>
+        )}
         <div style={{ height: "4px", background: "rgba(255,255,255,0.15)", borderRadius: "2px", marginBottom: "0" }}>
           <div style={{ height: "100%", width: `${progreso}%`, background: "#d4a017", borderRadius: "2px", transition: "width .4s ease" }} />
         </div>
       </div>
 
-      <div style={{ padding: "20px 16px" }}>
+      <div style={{ padding: "16px", maxWidth: "480px", margin: "0 auto" }}>
 
-        {/* ── PASO 1: CATEGORÍA ── */}
+        {/* PASO 1 — CATEGORÍA */}
         {paso === "categoria" && (
-          <div style={{ background: "#fff", borderRadius: "20px", padding: "24px 20px", boxShadow: "0 4px 20px rgba(0,0,0,0.08)", maxWidth: "480px", margin: "0 auto" }}>
-            <h2 style={{ fontSize: "18px", fontWeight: 900, color: "#1a2a3a", marginBottom: "20px" }}>¿En qué categoría publicás?</h2>
-
-            {/* RUBRO */}
-            <div style={{ marginBottom: "16px" }}>
-              <label style={labelStyle}>Rubro</label>
-              <select
-                value={rubro}
-                onChange={(e) => { setRubro(e.target.value); setSubrubro(""); }}
-                style={selectStyle}
-              >
-                <option value="">Seleccioná un rubro...</option>
-                {Object.keys(rubrosData).map((r) => (
-                  <option key={r} value={r}>{r.toUpperCase()}</option>
+          <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+            {/* RUBROS */}
+            <div style={cardStyle}>
+              <h3 style={subtituloStyle}>Rubro</h3>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                {rubros.map((r) => (
+                  <button key={r.id} onClick={() => seleccionarRubro(r)} style={{
+                    background: rubroSeleccionado?.id === r.id ? "#d4a017" : "#f4f4f2",
+                    border: `2px solid ${rubroSeleccionado?.id === r.id ? "#d4a017" : "#e8e8e6"}`,
+                    borderRadius: "20px", padding: "6px 14px", fontSize: "12px", fontWeight: 700,
+                    color: rubroSeleccionado?.id === r.id ? "#1a2a3a" : "#444",
+                    cursor: "pointer", fontFamily: "'Nunito', sans-serif",
+                  }}>{r.nombre}</button>
                 ))}
-              </select>
+              </div>
             </div>
 
-            {/* SUBRUBRO */}
-            <div style={{ marginBottom: "24px" }}>
-              <label style={labelStyle}>Subrubro</label>
-              <select
-                value={subrubro}
-                onChange={(e) => setSubrubro(e.target.value)}
-                disabled={!rubro}
-                style={{ ...selectStyle, opacity: rubro ? 1 : 0.5, borderColor: subrubro ? "#1a2a3a" : "#e8e8e6" }}
-              >
-                <option value="">Seleccioná un subrubro...</option>
-                {rubro && rubrosData[rubro].map((s) => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
-              </select>
-            </div>
+            {/* SUBRUBROS */}
+            {subrubrosFiltrados.length > 0 && (
+              <div style={cardStyle}>
+                <h3 style={subtituloStyle}>Subrubro</h3>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                  {subrubrosFiltrados.map((s) => (
+                    <button key={s.id} onClick={() => setSubrubroSeleccionado(s)} style={{
+                      background: subrubroSeleccionado?.id === s.id ? "#1a2a3a" : "#f4f4f2",
+                      border: `2px solid ${subrubroSeleccionado?.id === s.id ? "#1a2a3a" : "#e8e8e6"}`,
+                      borderRadius: "20px", padding: "6px 14px", fontSize: "12px", fontWeight: 700,
+                      color: subrubroSeleccionado?.id === s.id ? "#fff" : "#444",
+                      cursor: "pointer", fontFamily: "'Nunito', sans-serif",
+                    }}>{s.nombre}</button>
+                  ))}
+                </div>
+              </div>
+            )}
 
-            {error && <MensajeError texto={error} />}
-
-            <button onClick={handleCategoria} style={btnPrincipalStyle}>
-              Continuar →
-            </button>
+            <button onClick={irADatos} disabled={!rubroSeleccionado || !subrubroSeleccionado} style={{
+              width: "100%", background: (!rubroSeleccionado || !subrubroSeleccionado) ? "#ccc" : "linear-gradient(135deg, #d4a017, #f0c040)",
+              color: "#1a2a3a", border: "none", borderRadius: "12px", padding: "16px",
+              fontSize: "15px", fontWeight: 800, fontFamily: "'Nunito', sans-serif",
+              cursor: (!rubroSeleccionado || !subrubroSeleccionado) ? "not-allowed" : "pointer",
+              letterSpacing: "1px", textTransform: "uppercase",
+            }}>Siguiente →</button>
           </div>
         )}
 
-        {/* ── PASO 2: DATOS ── */}
+        {/* PASO 2 — DATOS */}
         {paso === "datos" && (
-          <div style={{ maxWidth: "480px", margin: "0 auto", display: "flex", flexDirection: "column", gap: "14px" }}>
-
-            {/* DATOS PRINCIPALES */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
             <div style={cardStyle}>
-              <h3 style={subtituloStyle}>Datos del anuncio</h3>
-
-              <div style={{ marginBottom: "14px" }}>
-                <label style={labelStyle}>Título *</label>
-                <input
-                  type="text"
-                  value={form.titulo}
-                  onChange={(e) => setForm({ ...form, titulo: e.target.value })}
-                  placeholder={`Ej: ${rubro === "Vehículos" ? "Toyota Corolla 2020 Full" : rubro === "Inmuebles" ? "Casa 3 dorm. con jardín" : "Título de tu anuncio"}`}
-                  style={inputStyle}
-                />
-              </div>
-
-              <div style={{ marginBottom: "14px" }}>
-                <label style={labelStyle}>Descripción</label>
-                <textarea
-                  value={form.descripcion}
-                  onChange={(e) => setForm({ ...form, descripcion: e.target.value })}
-                  placeholder="Describí tu anuncio con todos los detalles..."
-                  rows={4}
-                  style={{ ...inputStyle, resize: "vertical", lineHeight: 1.5 }}
-                />
-              </div>
-
-              {/* PRECIO + MONEDA */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: "10px" }}>
-                <div>
-                  <label style={labelStyle}>Precio</label>
-                  <input
-                    type="number"
-                    value={form.precio}
-                    onChange={(e) => setForm({ ...form, precio: e.target.value })}
-                    placeholder="0"
-                    style={inputStyle}
-                  />
+              <Campo label="Título *" value={form.titulo} onChange={(v) => setForm({ ...form, titulo: v })} placeholder="Ej: iPhone 14 Pro 128GB" />
+              <Campo label="Descripción" value={form.descripcion} onChange={(v) => setForm({ ...form, descripcion: v })} placeholder="Describí tu producto o servicio..." textarea />
+              <div style={{ display: "flex", gap: "10px" }}>
+                <div style={{ flex: 1 }}>
+                  <Campo label="Precio" value={form.precio} onChange={(v) => setForm({ ...form, precio: v })} placeholder="0" type="number" />
                 </div>
-                <div>
+                <div style={{ width: "90px" }}>
                   <label style={labelStyle}>Moneda</label>
-                  <select value={form.moneda} onChange={(e) => setForm({ ...form, moneda: e.target.value })} style={selectStyle}>
-                    <option>ARS</option>
-                    <option>USD</option>
+                  <select value={form.moneda} onChange={(e) => setForm({ ...form, moneda: e.target.value })} style={{ ...inputStyle, padding: "11px 10px" }}>
+                    <option value="ARS">ARS $</option>
+                    <option value="USD">USD U$D</option>
                   </select>
                 </div>
+              </div>
+              <div style={{ display: "flex", gap: "10px" }}>
+                <Campo label="Ciudad" value={form.ciudad} onChange={(v) => setForm({ ...form, ciudad: v })} placeholder="Tu ciudad" />
+                <Campo label="Provincia" value={form.provincia} onChange={(v) => setForm({ ...form, provincia: v })} placeholder="Provincia" />
               </div>
             </div>
 
             {/* FOTOS */}
             <div style={cardStyle}>
-              <h3 style={subtituloStyle}>📸 Fotos (hasta 3)</h3>
+              <h3 style={subtituloStyle}>📷 Fotos (hasta 5)</h3>
               <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-                {fotos.map((f, i) => (
-                  <div key={i} style={{ width: "90px", height: "90px", borderRadius: "10px", background: "#e8f0e8", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "28px", border: "2px solid #c8d8c8" }}>
-                    ✅
+                {previews.map((p, i) => (
+                  <div key={i} style={{ width: "80px", height: "80px", borderRadius: "10px", overflow: "hidden", position: "relative" }}>
+                    <img src={p} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    <button onClick={() => { const nf = fotos.filter((_, j) => j !== i); setFotos(nf); setPreviews(nf.map((f) => URL.createObjectURL(f))); }} style={{ position: "absolute", top: "2px", right: "2px", background: "rgba(0,0,0,0.6)", border: "none", borderRadius: "50%", width: "20px", height: "20px", color: "#fff", fontSize: "12px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
                   </div>
                 ))}
-                {fotos.length < 3 && (
-                  <button onClick={handleFoto} style={{ width: "90px", height: "90px", borderRadius: "10px", background: "#f4f4f2", border: "2px dashed #d0d0d0", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "4px" }}>
-                    <span style={{ fontSize: "24px" }}>📷</span>
-                    <span style={{ fontSize: "10px", fontWeight: 700, color: "#9a9a9a" }}>Agregar</span>
-                  </button>
+                {fotos.length < 5 && (
+                  <label style={{ width: "80px", height: "80px", borderRadius: "10px", border: "2px dashed #d4a017", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: "24px", color: "#d4a017" }}>
+                    +
+                    <input type="file" accept="image/*" multiple onChange={agregarFoto} style={{ display: "none" }} />
+                  </label>
                 )}
               </div>
             </div>
 
-            {/* BITS */}
-            <div style={{ ...cardStyle, background: "linear-gradient(135deg, #1a2a3a, #243b55)" }}>
-              <h3 style={{ ...subtituloStyle, color: "#d4a017" }}>⚡ Potenciá tu anuncio</h3>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
-                {[
-                  { label: "Bit Flash", desc: "Aparecé primero", bits: "14 Bits", color: "#d4a017" },
-                  { label: "Bit Posición", desc: "Mejor posición", bits: "15 Bits", color: "#d4a017" },
-                  { label: "Bit Conexión", desc: "+Contactos", bits: "13 Bits", color: "#d4a017" },
-                  { label: "Bit Empresa", desc: "Logo de empresa", bits: "16 Bits", color: "#d4a017" },
-                ].map((b) => (
-                  <div key={b.label} style={{ background: "rgba(255,255,255,0.08)", borderRadius: "10px", padding: "10px 12px", border: "1px solid rgba(212,160,23,0.3)", cursor: "pointer" }}>
-                    <div style={{ fontSize: "12px", fontWeight: 800, color: "#fff" }}>{b.label}</div>
-                    <div style={{ fontSize: "10px", color: "#8a9aaa", marginBottom: "4px" }}>{b.desc}</div>
-                    <div style={{ fontSize: "13px", fontWeight: 900, color: b.color }}>{b.bits}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {error && <MensajeError texto={error} />}
-
-            <button onClick={handlePublicar} style={btnPrincipalStyle}>
-              ✅ Publicar anuncio
+            <button onClick={publicar} disabled={loading || subiendo} style={{
+              width: "100%", background: (loading || subiendo) ? "#ccc" : "linear-gradient(135deg, #d4a017, #f0c040)",
+              color: "#1a2a3a", border: "none", borderRadius: "12px", padding: "16px",
+              fontSize: "15px", fontWeight: 800, fontFamily: "'Nunito', sans-serif",
+              cursor: (loading || subiendo) ? "not-allowed" : "pointer",
+              letterSpacing: "1px", textTransform: "uppercase",
+            }}>
+              {subiendo ? "Subiendo fotos..." : loading ? "Publicando..." : "🚀 Publicar anuncio"}
             </button>
-
           </div>
         )}
       </div>
-
       <BottomNav />
     </main>
   );
 }
 
-function MensajeError({ texto }: { texto: string }) {
+function Campo({ label, value, onChange, placeholder, type = "text", textarea }: {
+  label: string; value: string; onChange: (v: string) => void;
+  placeholder?: string; type?: string; textarea?: boolean;
+}) {
   return (
-    <div style={{ color: "#e53e3e", fontSize: "13px", fontWeight: 700, marginBottom: "12px", textAlign: "center" }}>
-      ⚠️ {texto}
+    <div style={{ marginBottom: "14px" }}>
+      <label style={labelStyle}>{label}</label>
+      {textarea ? (
+        <textarea value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} rows={4}
+          style={{ ...inputStyle, resize: "vertical" }} />
+      ) : (
+        <input type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} style={inputStyle} />
+      )}
     </div>
   );
 }
 
+const cardStyle: React.CSSProperties = {
+  background: "#fff", borderRadius: "16px", padding: "20px", boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
+};
+const subtituloStyle: React.CSSProperties = {
+  fontSize: "15px", fontWeight: 900, color: "#1a2a3a", marginBottom: "14px",
+};
 const labelStyle: React.CSSProperties = {
   display: "block", fontSize: "11px", fontWeight: 800, color: "#666",
   textTransform: "uppercase", letterSpacing: "1px", marginBottom: "6px",
 };
-
 const inputStyle: React.CSSProperties = {
   width: "100%", border: "2px solid #e8e8e6", borderRadius: "10px",
-  padding: "12px 14px", fontSize: "14px", fontFamily: "'Nunito', sans-serif",
+  padding: "11px 14px", fontSize: "14px", fontFamily: "'Nunito', sans-serif",
   color: "#2c2c2e", outline: "none", boxSizing: "border-box",
-};
-
-const selectStyle: React.CSSProperties = {
-  width: "100%", border: "2px solid #e8e8e6", borderRadius: "10px",
-  padding: "12px 14px", fontSize: "14px", fontFamily: "'Nunito', sans-serif",
-  color: "#2c2c2e", outline: "none", background: "#fff", cursor: "pointer",
-  boxSizing: "border-box",
-};
-
-const btnPrincipalStyle: React.CSSProperties = {
-  width: "100%", background: "linear-gradient(135deg, #d4a017, #f0c040)",
-  color: "#1a2a3a", border: "none", borderRadius: "12px", padding: "16px",
-  fontSize: "15px", fontWeight: 800, fontFamily: "'Nunito', sans-serif",
-  cursor: "pointer", letterSpacing: "1px", textTransform: "uppercase",
-};
-
-const cardStyle: React.CSSProperties = {
-  background: "#fff", borderRadius: "16px", padding: "20px",
-  boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
-};
-
-const subtituloStyle: React.CSSProperties = {
-  fontSize: "16px", fontWeight: 900, color: "#1a2a3a", marginBottom: "16px",
 };

@@ -1,4 +1,4 @@
-"use client";
+;"use client";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
 import { useState } from "react";
@@ -45,24 +45,41 @@ export default function Registro() {
     if (authError) {
       setError(authError.message === "User already registered"
         ? "Este email ya está registrado"
-        : "Error al registrarse. Intentá de nuevo."
+        : "Error al registrarse: " + authError.message
       );
       setLoading(false);
       return;
     }
 
-    // 2. Generar código único con la función de Supabase
-    if (data.user) {
-      const { data: codigoData } = await supabase.rpc("generar_codigo_usuario");
-      await supabase.from("usuarios").insert({
-        id: data.user.id,
-        email: form.email,
-        nombre: form.nombre,
-        nombre_usuario: form.nombre_usuario,
-        whatsapp: form.whatsapp,
-        codigo: codigoData,
-        codigo_promotor_ref: form.codigo_promotor_ref || null,
-      });
+    if (!data.user) {
+      setError("No se pudo crear el usuario. Intentá de nuevo.");
+      setLoading(false);
+      return;
+    }
+
+    // 2. Generar código y crear perfil
+    const { data: codigoData, error: rpcError } = await supabase.rpc("generar_codigo_usuario");
+    
+    if (rpcError) {
+      setError("Error generando código: " + rpcError.message);
+      setLoading(false);
+      return;
+    }
+
+    const { error: insertError } = await supabase.from("usuarios").insert({
+      id: data.user.id,
+      email: form.email,
+      nombre: form.nombre || null,
+      nombre_usuario: form.nombre_usuario,
+      whatsapp: form.whatsapp || null,
+      codigo: codigoData,
+      codigo_promotor_ref: form.codigo_promotor_ref || null,
+    });
+
+    if (insertError) {
+      setError("Error guardando perfil: " + insertError.message);
+      setLoading(false);
+      return;
     }
 
     setLoading(false);
@@ -70,7 +87,7 @@ export default function Registro() {
   };
 
   return (
-    <main style={{ paddingTop: "90px", paddingBottom: "130px", background: "#f4f4f2", minHeight: "100vh", fontFamily: "'Nunito', sans-serif" }}>
+    <main style={{ paddingTop: "95px", paddingBottom: "130px", background: "#f4f4f2", minHeight: "100vh", fontFamily: "'Nunito', sans-serif" }}>
       <Header />
       <div style={{ padding: "24px 16px", maxWidth: "400px", margin: "0 auto" }}>
 
@@ -135,13 +152,13 @@ export default function Registro() {
           </div>
         )}
 
-        {/* PASO 2 — CONFIRMAR EMAIL */}
+        {/* PASO 2 — BIENVENIDA */}
         {paso === 2 && (
           <div style={{ background: "#fff", borderRadius: "20px", padding: "32px 24px", boxShadow: "0 4px 20px rgba(0,0,0,0.08)", textAlign: "center" }}>
-            <div style={{ fontSize: "60px", marginBottom: "16px" }}>📧</div>
+            <div style={{ fontSize: "60px", marginBottom: "16px" }}>🎉</div>
             <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "26px", color: "#1a2a3a", letterSpacing: "2px", marginBottom: "12px" }}>¡Bienvenido!</div>
             <div style={{ fontSize: "14px", color: "#666", fontWeight: 600, lineHeight: 1.6, marginBottom: "8px" }}>
-              Te enviamos un link de confirmación a
+              Tu cuenta fue creada con éxito
             </div>
             <div style={{ fontSize: "15px", fontWeight: 800, color: "#1a2a3a", marginBottom: "20px" }}>{form.email}</div>
             <div style={{ background: "#f4f4f2", borderRadius: "12px", padding: "14px", marginBottom: "20px" }}>

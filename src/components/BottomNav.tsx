@@ -27,41 +27,30 @@ export default function BottomNav() {
   return (
     <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 100 }}>
 
-      {/* FRANJA GRUPO GRATIS — estilo botón 3D */}
+      {/* FRANJA GRUPO GRATIS — ancho completo, estilo 3D */}
       <Link href="/grupos" style={{
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
         gap: "8px",
         background: "linear-gradient(180deg, #2a3f55 0%, #1a2e42 100%)",
-        padding: "8px 16px",
+        padding: "9px 16px",
         textDecoration: "none",
-        borderTop: "1px solid rgba(212,160,23,0.4)",
-        borderBottom: "1px solid rgba(0,0,0,0.3)",
-        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.08), 0 -2px 0 rgba(0,0,0,0.3)",
+        borderTop: "2px solid rgba(212,160,23,0.5)",
+        borderBottom: "3px solid rgba(0,0,0,0.5)",
+        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.1), 0 -2px 8px rgba(0,0,0,0.3)",
         cursor: "pointer",
-        position: "relative",
+        width: "100%",
+        boxSizing: "border-box",
       }}>
-        {/* RECUADRO 3D */}
-        <div style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "8px",
-          background: "linear-gradient(180deg, #243b55 0%, #1a2a3a 100%)",
-          border: "1px solid rgba(212,160,23,0.5)",
-          borderRadius: "10px",
-          padding: "5px 16px",
-          boxShadow: "0 4px 0 rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1)",
-        }}>
-          <span style={{ fontSize: "14px" }}>👥</span>
-          <span style={{ fontSize: "12px", fontWeight: 800, color: "#fff" }}>
-            Creá un <span style={{ color: "#d4a017" }}>GRUPO GRATIS</span> y ganá
-          </span>
-          <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "18px", color: "#f0c040" }}>30%</span>
-        </div>
+        <span style={{ fontSize: "14px" }}>👥</span>
+        <span style={{ fontSize: "12px", fontWeight: 800, color: "#fff", letterSpacing: "0.3px" }}>
+          Creá un <span style={{ color: "#d4a017" }}>GRUPO GRATIS</span> y ganá
+        </span>
+        <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "20px", color: "#f0c040", textShadow: "0 2px 4px rgba(0,0,0,0.4)" }}>30%</span>
       </Link>
 
-      {/* NAV PRINCIPAL — fondo azul oscuro */}
+      {/* NAV PRINCIPAL */}
       <nav style={{
         height: "64px",
         background: "linear-gradient(180deg, #0f1c28 0%, #0a1520 100%)",
@@ -69,6 +58,7 @@ export default function BottomNav() {
         alignItems: "center",
         borderTop: "1px solid rgba(255,255,255,0.06)",
         boxShadow: "0 -4px 16px rgba(0,0,0,0.4)",
+        position: "relative",
       }}>
         {navItems.map(({ icon, label, href, central }: any) => {
           const isActive = pathname === href;
@@ -77,22 +67,27 @@ export default function BottomNav() {
             return (
               <Link key={href} href={href} style={{
                 flex: 1, display: "flex", flexDirection: "column",
-                alignItems: "center", textDecoration: "none", marginTop: "-20px",
+                alignItems: "center", textDecoration: "none",
+                position: "absolute",
+                left: "50%",
+                transform: "translateX(-50%)",
+                top: "-22px",
               }}>
                 <div style={{
-                  width: "52px", height: "52px", borderRadius: "50%",
+                  width: "56px", height: "56px", borderRadius: "50%",
                   background: isActive
                     ? "linear-gradient(135deg, #b8860b, #d4a017)"
                     : "linear-gradient(135deg, #d4a017, #f0c040)",
                   display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: "24px",
-                  boxShadow: "0 4px 0 rgba(0,0,0,0.4), 0 0 16px rgba(212,160,23,0.5)",
+                  fontSize: "26px",
+                  boxShadow: "0 4px 0 rgba(0,0,0,0.5), 0 0 20px rgba(212,160,23,0.6)",
                   border: "3px solid #0a1520",
                 }}>{icon}</div>
                 <span style={{
                   fontSize: "9px", fontWeight: 800, textTransform: "uppercase",
                   letterSpacing: "0.5px", color: isActive ? "#d4a017" : "#6a8aaa",
                   marginTop: "2px",
+                  textShadow: "0 1px 3px rgba(255,255,255,0.15)",
                 }}>{label}</span>
               </Link>
             );
@@ -104,13 +99,17 @@ export default function BottomNav() {
               alignItems: "center", gap: "3px", padding: "8px 0", textDecoration: "none",
             }}>
               <span style={{
-                fontSize: "20px",
-                filter: isActive ? "drop-shadow(0 0 6px rgba(212,160,23,0.8))" : "none",
-                opacity: isActive ? 1 : 0.5,
+                fontSize: "22px",
+                filter: isActive
+                  ? "drop-shadow(0 0 6px rgba(212,160,23,0.9)) drop-shadow(0 2px 4px rgba(255,255,255,0.3))"
+                  : "drop-shadow(0 1px 3px rgba(255,255,255,0.2))",
+                opacity: isActive ? 1 : 0.7,
               }}>{icon}</span>
               <span style={{
                 fontSize: "9px", fontWeight: 800, textTransform: "uppercase",
-                letterSpacing: "0.5px", color: isActive ? "#d4a017" : "#6a8aaa",
+                letterSpacing: "0.5px",
+                color: isActive ? "#d4a017" : "#6a8aaa",
+                textShadow: "0 1px 3px rgba(255,255,255,0.15)",
               }}>{label}</span>
             </Link>
           );

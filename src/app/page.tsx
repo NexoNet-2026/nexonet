@@ -22,42 +22,21 @@ export default function Home() {
   const [rubroActivo, setRubroActivo] = useState("Todos");
 
   return (
-    <main style={{ paddingTop: "90px", paddingBottom: "130px", background: "#f4f4f2", minHeight: "100vh", fontFamily: "'Nunito', sans-serif" }}>
+    <main style={{ paddingTop: "95px", paddingBottom: "130px", background: "#f4f4f2", minHeight: "100vh", fontFamily: "'Nunito', sans-serif" }}>
       <Header />
 
       {/* HERO */}
-      <div style={{
-        background: "linear-gradient(135deg, #1a2a3a 0%, #243b55 100%)",
-        padding: "28px 16px 32px",
-        textAlign: "center",
-      }}>
+      <div style={{ background: "linear-gradient(135deg, #1a2a3a 0%, #243b55 100%)", padding: "28px 16px 32px", textAlign: "center" }}>
         <div style={{ fontSize: "13px", fontWeight: 700, color: "#d4a017", letterSpacing: "2px", textTransform: "uppercase", marginBottom: "4px" }}>
           Conectando Oportunidades
         </div>
         <div style={{ fontSize: "12px", color: "#7a8fa0", marginBottom: "20px", fontWeight: 600 }}>
           Conectando a la Comunidad
         </div>
-        {/* BUSCADOR */}
         <div style={{ display: "flex", background: "#fff", borderRadius: "12px", overflow: "hidden", boxShadow: "0 4px 20px rgba(0,0,0,0.25)", maxWidth: "500px", margin: "0 auto" }}>
-          <input
-            type="text"
-            placeholder="¿Qué estás buscando?"
-            style={{ flex: 1, border: "none", padding: "14px 16px", fontFamily: "'Nunito', sans-serif", fontSize: "14px", color: "#2c2c2e", outline: "none" }}
-          />
+          <input type="text" placeholder="¿Qué estás buscando?" style={{ flex: 1, border: "none", padding: "14px 16px", fontFamily: "'Nunito', sans-serif", fontSize: "14px", color: "#2c2c2e", outline: "none" }} />
           <button style={{ background: "#d4a017", border: "none", padding: "0 18px", cursor: "pointer", fontSize: "18px" }}>🔍</button>
         </div>
-      </div>
-
-      {/* BANNER PROMOTOR */}
-      <div style={{
-        background: "linear-gradient(90deg, #b8860b, #d4a017, #f0c040)",
-        padding: "10px 16px",
-        display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
-        cursor: "pointer",
-      }}>
-        <span style={{ fontWeight: 800, fontSize: "13px", color: "#1a2a3a" }}>⭐ Nexo Promotor —</span>
-        <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "20px", color: "#1a2a3a" }}>30%</span>
-        <span style={{ fontWeight: 800, fontSize: "13px", color: "#1a2a3a" }}>de ganancia →</span>
       </div>
 
       {/* ACCIONES RÁPIDAS */}
@@ -67,7 +46,7 @@ export default function Home() {
           <div style={accionLabelStyle}>Ver en Lista</div>
         </a>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
-          <button style={btnPublicarStyle}>➕</button>
+          <a href="/publicar" style={btnPublicarStyle}>➕</a>
           <span style={{ fontSize: "10px", fontWeight: 800, textTransform: "uppercase", letterSpacing: "1px", color: "#2c2c2e" }}>Publicar</span>
         </div>
         <a href="/mapa" style={accionStyle}>
@@ -82,31 +61,21 @@ export default function Home() {
           <button key={r} onClick={() => setRubroActivo(r)} style={{
             background: rubroActivo === r ? "#2c2c2e" : "#fff",
             border: `2px solid ${rubroActivo === r ? "#2c2c2e" : "#e8e8e6"}`,
-            borderRadius: "20px",
-            padding: "6px 14px",
-            fontSize: "12px",
-            fontWeight: 700,
-            color: rubroActivo === r ? "#fff" : "#2c2c2e",
-            whiteSpace: "nowrap",
-            cursor: "pointer",
-            flexShrink: 0,
-            fontFamily: "'Nunito', sans-serif",
+            borderRadius: "20px", padding: "6px 14px", fontSize: "12px", fontWeight: 700,
+            color: rubroActivo === r ? "#fff" : "#2c2c2e", whiteSpace: "nowrap",
+            cursor: "pointer", flexShrink: 0, fontFamily: "'Nunito', sans-serif",
           }}>{r}</button>
         ))}
       </div>
 
       {/* SLIDER DESTACADOS */}
       <Seccion titulo="⚡ Destacados">
-        {destacados.map((item, i) => (
-          <Tarjeta key={i} {...item} />
-        ))}
+        {destacados.map((item, i) => <Tarjeta key={i} {...item} />)}
       </Seccion>
 
       {/* SLIDER RECIENTES */}
       <Seccion titulo="🕐 Recién publicados">
-        {recientes.map((item, i) => (
-          <Tarjeta key={i} {...item} />
-        ))}
+        {recientes.map((item, i) => <Tarjeta key={i} {...item} />)}
       </Seccion>
 
       {/* MAPA PREVIEW */}
@@ -125,8 +94,6 @@ export default function Home() {
   );
 }
 
-// ── COMPONENTES INTERNOS ──
-
 function Seccion({ titulo, children }: { titulo: string; children: React.ReactNode }) {
   return (
     <div style={{ marginBottom: "20px" }}>
@@ -141,18 +108,12 @@ function Seccion({ titulo, children }: { titulo: string; children: React.ReactNo
   );
 }
 
-function Tarjeta({ emoji, titulo, precio, lugar, bg, flash }: {
-  emoji: string; titulo: string; precio: string; lugar: string; bg: string; flash?: boolean;
-}) {
+function Tarjeta({ emoji, titulo, precio, lugar, bg, flash }: { emoji: string; titulo: string; precio: string; lugar: string; bg: string; flash?: boolean; }) {
   return (
     <div style={{ background: "#fff", borderRadius: "16px", overflow: "hidden", boxShadow: "0 2px 10px rgba(0,0,0,0.08)", flexShrink: 0, width: "180px", cursor: "pointer" }}>
       <div style={{ width: "100%", height: "120px", background: bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "48px", position: "relative" }}>
         {emoji}
-        {flash && (
-          <span style={{ position: "absolute", top: "8px", right: "8px", background: "#d4a017", color: "#1a2a3a", fontSize: "9px", fontWeight: 900, padding: "3px 7px", borderRadius: "8px", letterSpacing: "0.5px", textTransform: "uppercase" }}>
-            Flash
-          </span>
-        )}
+        {flash && <span style={{ position: "absolute", top: "8px", right: "8px", background: "#d4a017", color: "#1a2a3a", fontSize: "9px", fontWeight: 900, padding: "3px 7px", borderRadius: "8px", letterSpacing: "0.5px", textTransform: "uppercase" }}>Flash</span>}
       </div>
       <div style={{ padding: "10px 12px 12px" }}>
         <div style={{ fontSize: "13px", fontWeight: 800, color: "#2c2c2e", marginBottom: "3px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{titulo}</div>
@@ -163,38 +124,19 @@ function Tarjeta({ emoji, titulo, precio, lugar, bg, flash }: {
   );
 }
 
-// ── ESTILOS REUTILIZABLES ──
 const accionStyle: React.CSSProperties = {
-  background: "#fff",
-  borderRadius: "14px",
-  padding: "14px 10px",
-  textAlign: "center",
-  boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-  cursor: "pointer",
-  textDecoration: "none",
-  color: "#2c2c2e",
-  display: "block",
+  background: "#fff", borderRadius: "14px", padding: "14px 10px", textAlign: "center",
+  boxShadow: "0 2px 8px rgba(0,0,0,0.08)", cursor: "pointer", textDecoration: "none",
+  color: "#2c2c2e", display: "block",
 };
 
 const accionLabelStyle: React.CSSProperties = {
-  fontSize: "11px",
-  fontWeight: 800,
-  textTransform: "uppercase",
-  letterSpacing: "0.5px",
-  lineHeight: 1.2,
+  fontSize: "11px", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.5px", lineHeight: 1.2,
 };
 
 const btnPublicarStyle: React.CSSProperties = {
-  background: "#d4a017",
-  color: "#1a2a3a",
-  border: "none",
-  borderRadius: "50%",
-  width: "68px",
-  height: "68px",
-  fontSize: "30px",
-  cursor: "pointer",
-  boxShadow: "0 4px 16px rgba(212,160,23,0.45)",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
+  background: "#d4a017", color: "#1a2a3a", border: "none", borderRadius: "50%",
+  width: "68px", height: "68px", fontSize: "30px", cursor: "pointer",
+  boxShadow: "0 4px 16px rgba(212,160,23,0.45)", display: "flex",
+  alignItems: "center", justifyContent: "center", textDecoration: "none",
 };

@@ -34,7 +34,7 @@ export default function Mapa() {
       {/* FILTROS — fijos debajo del header */}
       <div style={{
         position: "fixed",
-        top: "95px", left: 0, right: 0,
+        top: "100px", left: 0, right: 0,
         background: "linear-gradient(135deg, #1a2a3a 0%, #243b55 100%)",
         padding: "10px 16px",
         zIndex: 99,
@@ -61,7 +61,7 @@ export default function Mapa() {
       {/* MAPA — ocupa todo el espacio entre filtros y nav */}
       <div style={{
         position: "fixed",
-        top: "145px",
+        top: "150px",
         left: 0, right: 0,
         bottom: "130px",
       }}>

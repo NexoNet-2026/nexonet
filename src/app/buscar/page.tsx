@@ -79,11 +79,11 @@ export default function Buscar() {
   };
 
   return (
-    <main style={{ paddingTop: "90px", paddingBottom: "130px", background: "#f4f4f2", minHeight: "100vh", fontFamily: "'Nunito', sans-serif" }}>
+    <main style={{ paddingTop: "104px", paddingBottom: "130px", background: "#f4f4f2", minHeight: "100vh", fontFamily: "'Nunito', sans-serif" }}>
       <Header />
 
       {/* BUSCADORES */}
-      <div style={{ background: "linear-gradient(135deg, #1a2a3a 0%, #243b55 100%)", padding: "10px 16px", display: "flex", flexDirection: "column", gap: "10px" }}>
+      <div style={{ background: "linear-gradient(135deg, #1a2a3a 0%, #243b55 100%)", padding: "12px 16px 10px", display: "flex", flexDirection: "column", gap: "10px" }}>
 
         {/* UBICACIÓN */}
         <div style={{ display: "flex", background: "#fff", borderRadius: "12px", overflow: "hidden", boxShadow: "0 2px 8px rgba(0,0,0,0.2)" }}>

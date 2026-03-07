@@ -1,25 +1,65 @@
 "use client";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
 
 const rubros = ["Todos", "Autos", "Inmuebles", "Tecnología", "Servicios", "Ropa", "Hogar"];
 
-const destacados = [
-  { emoji: "🚗", titulo: "Toyota Corolla 2020", precio: "$18.500.000", lugar: "Rafaela, SF", bg: "#dde8f0", flash: true },
-  { emoji: "🏠", titulo: "Depto 2 amb. céntrico", precio: "$320.000/mes", lugar: "Santa Fe", bg: "#f0ead8", flash: true },
-  { emoji: "💻", titulo: "MacBook Air M2", precio: "$2.800.000", lugar: "Rosario, SF", bg: "#e8f0e8", flash: false },
-  { emoji: "🔧", titulo: "Plomero disponible", precio: "Consultar", lugar: "Córdoba", bg: "#f0e8f0", flash: false },
-];
-
-const recientes = [
-  { emoji: "👕", titulo: "Ropa nueva importada", precio: "$45.000", lugar: "Buenos Aires", bg: "#f0e8d8" },
-  { emoji: "🛋️", titulo: "Sofá 3 cuerpos", precio: "$180.000", lugar: "Mendoza", bg: "#d8e8f0" },
-  { emoji: "📱", titulo: "iPhone 14 Pro 128GB", precio: "$1.200.000", lugar: "Tucumán", bg: "#e8f0d8" },
-];
+type Anuncio = {
+  id: number;
+  titulo: string;
+  precio: number;
+  moneda: string;
+  ciudad: string;
+  provincia: string;
+  imagenes: string[];
+  flash: boolean;
+  subrubro: string;
+  rubro: string;
+};
 
 export default function Home() {
   const [rubroActivo, setRubroActivo] = useState("Todos");
+  const [destacados, setDestacados] = useState<Anuncio[]>([]);
+  const [recientes, setRecientes] = useState<Anuncio[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const cargar = async () => {
+      const { data } = await supabase
+        .from("anuncios")
+        .select(`id, titulo, precio, moneda, ciudad, provincia, imagenes, flash, estado,
+          subrubros(nombre, rubros(nombre))`)
+        .eq("estado", "activo")
+        .order("created_at", { ascending: false })
+        .limit(20);
+
+      if (data) {
+        const mapped = data.map((a: any) => ({
+          id: a.id,
+          titulo: a.titulo,
+          precio: a.precio,
+          moneda: a.moneda,
+          ciudad: a.ciudad,
+          provincia: a.provincia,
+          imagenes: a.imagenes || [],
+          flash: a.flash || false,
+          subrubro: a.subrubros?.nombre || "",
+          rubro: a.subrubros?.rubros?.nombre || "",
+        }));
+        setDestacados(mapped.filter((a) => a.flash).slice(0, 6));
+        setRecientes(mapped.slice(0, 8));
+      }
+      setLoading(false);
+    };
+    cargar();
+  }, []);
+
+  const formatPrecio = (precio: number, moneda: string) => {
+    if (!precio) return "Consultar";
+    return `${moneda === "USD" ? "U$D" : "$"} ${precio.toLocaleString("es-AR")}`;
+  };
 
   return (
     <main style={{ paddingTop: "95px", paddingBottom: "130px", background: "#f4f4f2", minHeight: "100vh", fontFamily: "'Nunito', sans-serif" }}>
@@ -68,15 +108,23 @@ export default function Home() {
         ))}
       </div>
 
-      {/* SLIDER DESTACADOS */}
-      <Seccion titulo="⚡ Destacados">
-        {destacados.map((item, i) => <Tarjeta key={i} {...item} />)}
-      </Seccion>
+      {loading ? (
+        <div style={{ textAlign: "center", padding: "40px", color: "#9a9a9a", fontWeight: 700 }}>Cargando anuncios...</div>
+      ) : (
+        <>
+          {/* SLIDER DESTACADOS */}
+          {destacados.length > 0 && (
+            <Seccion titulo="⚡ Destacados">
+              {destacados.map((a) => <Tarjeta key={a.id} anuncio={a} formatPrecio={formatPrecio} />)}
+            </Seccion>
+          )}
 
-      {/* SLIDER RECIENTES */}
-      <Seccion titulo="🕐 Recién publicados">
-        {recientes.map((item, i) => <Tarjeta key={i} {...item} />)}
-      </Seccion>
+          {/* SLIDER RECIENTES */}
+          <Seccion titulo="🕐 Recién publicados">
+            {recientes.map((a) => <Tarjeta key={a.id} anuncio={a} formatPrecio={formatPrecio} />)}
+          </Seccion>
+        </>
+      )}
 
       {/* MAPA PREVIEW */}
       <a href="/mapa" style={{ display: "block", margin: "0 16px 20px", borderRadius: "16px", overflow: "hidden", boxShadow: "0 4px 16px rgba(0,0,0,0.1)", textDecoration: "none", position: "relative" }}>
@@ -108,32 +156,36 @@ function Seccion({ titulo, children }: { titulo: string; children: React.ReactNo
   );
 }
 
-function Tarjeta({ emoji, titulo, precio, lugar, bg, flash }: { emoji: string; titulo: string; precio: string; lugar: string; bg: string; flash?: boolean; }) {
+function Tarjeta({ anuncio, formatPrecio }: { anuncio: Anuncio; formatPrecio: (p: number, m: string) => string }) {
+  const imagen = anuncio.imagenes?.[0];
   return (
-    <div style={{ background: "#fff", borderRadius: "16px", overflow: "hidden", boxShadow: "0 2px 10px rgba(0,0,0,0.08)", flexShrink: 0, width: "180px", cursor: "pointer" }}>
-      <div style={{ width: "100%", height: "120px", background: bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "48px", position: "relative" }}>
-        {emoji}
-        {flash && <span style={{ position: "absolute", top: "8px", right: "8px", background: "#d4a017", color: "#1a2a3a", fontSize: "9px", fontWeight: 900, padding: "3px 7px", borderRadius: "8px", letterSpacing: "0.5px", textTransform: "uppercase" }}>Flash</span>}
+    <a href={`/anuncios/${anuncio.id}`} style={{ textDecoration: "none", flexShrink: 0, width: "180px" }}>
+      <div style={{ background: "#fff", borderRadius: "16px", overflow: "hidden", boxShadow: "0 2px 10px rgba(0,0,0,0.08)", cursor: "pointer" }}>
+        <div style={{ width: "100%", height: "120px", background: "#e8e8e6", display: "flex", alignItems: "center", justifyContent: "center", position: "relative", overflow: "hidden" }}>
+          {imagen ? (
+            <img src={imagen} alt={anuncio.titulo} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          ) : (
+            <span style={{ fontSize: "40px" }}>📦</span>
+          )}
+          {anuncio.flash && <span style={{ position: "absolute", top: "8px", right: "8px", background: "#d4a017", color: "#1a2a3a", fontSize: "9px", fontWeight: 900, padding: "3px 7px", borderRadius: "8px", textTransform: "uppercase" }}>Flash</span>}
+        </div>
+        <div style={{ padding: "10px 12px 12px" }}>
+          <div style={{ fontSize: "13px", fontWeight: 800, color: "#2c2c2e", marginBottom: "3px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{anuncio.titulo}</div>
+          <div style={{ fontSize: "15px", fontWeight: 900, color: "#d4a017" }}>{formatPrecio(anuncio.precio, anuncio.moneda)}</div>
+          <div style={{ fontSize: "11px", color: "#9a9a9a", fontWeight: 600, marginTop: "2px" }}>📍 {anuncio.ciudad}, {anuncio.provincia}</div>
+        </div>
       </div>
-      <div style={{ padding: "10px 12px 12px" }}>
-        <div style={{ fontSize: "13px", fontWeight: 800, color: "#2c2c2e", marginBottom: "3px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{titulo}</div>
-        <div style={{ fontSize: "15px", fontWeight: 900, color: "#d4a017" }}>{precio}</div>
-        <div style={{ fontSize: "11px", color: "#9a9a9a", fontWeight: 600, marginTop: "2px" }}>📍 {lugar}</div>
-      </div>
-    </div>
+    </a>
   );
 }
 
 const accionStyle: React.CSSProperties = {
   background: "#fff", borderRadius: "14px", padding: "14px 10px", textAlign: "center",
-  boxShadow: "0 2px 8px rgba(0,0,0,0.08)", cursor: "pointer", textDecoration: "none",
-  color: "#2c2c2e", display: "block",
+  boxShadow: "0 2px 8px rgba(0,0,0,0.08)", cursor: "pointer", textDecoration: "none", color: "#2c2c2e", display: "block",
 };
-
 const accionLabelStyle: React.CSSProperties = {
   fontSize: "11px", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.5px", lineHeight: 1.2,
 };
-
 const btnPublicarStyle: React.CSSProperties = {
   background: "#d4a017", color: "#1a2a3a", border: "none", borderRadius: "50%",
   width: "68px", height: "68px", fontSize: "30px", cursor: "pointer",

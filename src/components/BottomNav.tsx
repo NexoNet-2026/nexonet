@@ -21,13 +21,13 @@ export default function BottomNav() {
     { icon: "👥", label: "Grupos",   href: "/grupos" },
     logueado
       ? { icon: "👤", label: "Perfil",   href: "/usuario" }
-      : { icon: "🔑", label: "Ingresar", href: "/login" },
+      : { icon: "🚪", label: "Ingresar", href: "/login" },
   ];
 
   return (
     <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 100 }}>
 
-      {/* FRANJA GRUPO GRATIS — ancho completo, estilo 3D */}
+      {/* FRANJA GRUPO GRATIS */}
       <Link href="/grupos" style={{
         display: "flex",
         alignItems: "center",
@@ -65,31 +65,29 @@ export default function BottomNav() {
 
           if (central) {
             return (
-              <Link key={href} href={href} style={{
-                flex: 1, display: "flex", flexDirection: "column",
-                alignItems: "center", textDecoration: "none",
-                position: "absolute",
-                left: "50%",
-                transform: "translateX(-50%)",
-                top: "-22px",
-              }}>
-                <div style={{
-                  width: "56px", height: "56px", borderRadius: "50%",
-                  background: isActive
-                    ? "linear-gradient(135deg, #b8860b, #d4a017)"
-                    : "linear-gradient(135deg, #d4a017, #f0c040)",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: "26px",
-                  boxShadow: "0 4px 0 rgba(0,0,0,0.5), 0 0 20px rgba(212,160,23,0.6)",
-                  border: "3px solid #0a1520",
-                }}>{icon}</div>
-                <span style={{
-                  fontSize: "9px", fontWeight: 800, textTransform: "uppercase",
-                  letterSpacing: "0.5px", color: isActive ? "#d4a017" : "#6a8aaa",
-                  marginTop: "2px",
-                  textShadow: "0 1px 3px rgba(255,255,255,0.15)",
-                }}>{label}</span>
-              </Link>
+              <div key={href} style={{ flex: 1, position: "relative", display: "flex", justifyContent: "center" }}>
+                <Link href={href} style={{
+                  display: "flex", flexDirection: "column", alignItems: "center",
+                  textDecoration: "none", position: "absolute", top: "-22px",
+                }}>
+                  <div style={{
+                    width: "56px", height: "56px", borderRadius: "50%",
+                    background: isActive
+                      ? "linear-gradient(135deg, #b8860b, #d4a017)"
+                      : "linear-gradient(135deg, #d4a017, #f0c040)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: "26px",
+                    boxShadow: "0 4px 0 rgba(0,0,0,0.5), 0 0 20px rgba(212,160,23,0.6)",
+                    border: "3px solid #0a1520",
+                  }}>{icon}</div>
+                  <span style={{
+                    fontSize: "9px", fontWeight: 800, textTransform: "uppercase",
+                    letterSpacing: "0.5px", color: isActive ? "#d4a017" : "#6a8aaa",
+                    marginTop: "2px",
+                    textShadow: "0 1px 3px rgba(255,255,255,0.15)",
+                  }}>{label}</span>
+                </Link>
+              </div>
             );
           }
 

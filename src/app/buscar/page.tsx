@@ -79,7 +79,7 @@ export default function Buscar() {
   };
 
   return (
-    <main style={{ paddingTop: "95px", paddingBottom: "130px", background: "#f4f4f2", minHeight: "100vh", fontFamily: "'Nunito', sans-serif" }}>
+    <main style={{ paddingTop: "104px", paddingBottom: "130px", background: "#f4f4f2", minHeight: "100vh", fontFamily: "'Nunito', sans-serif" }}>
       <Header />
 
       {/* BUSCADORES */}

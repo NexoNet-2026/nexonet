@@ -83,11 +83,11 @@ export default function Buscar() {
       <Header />
 
       {/* BUSCADORES */}
-      <div style={{ background: "linear-gradient(135deg, #1a2a3a 0%, #243b55 100%)", padding: "16px", display: "flex", flexDirection: "column", gap: "10px" }}>
+      <div style={{ background: "linear-gradient(135deg, #1a2a3a 0%, #243b55 100%)", padding: "10px 16px", display: "flex", flexDirection: "column", gap: "10px" }}>
 
         {/* UBICACIÓN */}
         <div style={{ display: "flex", background: "#fff", borderRadius: "12px", overflow: "hidden", boxShadow: "0 2px 8px rgba(0,0,0,0.2)" }}>
-          <div style={{ padding: "0 14px", display: "flex", alignItems: "center", fontSize: "18px", background: "#f8f8f6" }}>📍</div>
+          <div style={{ padding: "0 24px", display: "flex", alignItems: "center", fontSize: "18px", background: "#f8f8f6" }}>📍</div>
           <input
             type="text"
             value={ubicacion}
@@ -102,7 +102,7 @@ export default function Buscar() {
 
         {/* BÚSQUEDA */}
         <div style={{ display: "flex", background: "#fff", borderRadius: "12px", overflow: "hidden", boxShadow: "0 2px 8px rgba(0,0,0,0.2)" }}>
-          <div style={{ padding: "0 14px", display: "flex", alignItems: "center", fontSize: "18px", background: "#f8f8f6" }}>🔍</div>
+          <div style={{ padding: "0 24px", display: "flex", alignItems: "center", fontSize: "18px", background: "#f8f8f6" }}>🔍</div>
           <input
             type="text"
             value={busqueda}
@@ -110,7 +110,7 @@ export default function Buscar() {
             placeholder={`¿Qué buscás en ${ubicacion.split(",")[0]}?`}
             style={{ flex: 1, border: "none", padding: "12px 10px", fontFamily: "'Nunito', sans-serif", fontSize: "14px", color: "#2c2c2e", outline: "none" }}
           />
-          <button style={{ background: "#d4a017", border: "none", padding: "0 18px", cursor: "pointer", fontSize: "14px", fontWeight: 800, color: "#1a2a3a" }}>
+          <button style={{ background: "#d4a017", border: "none", padding: "0 20px", cursor: "pointer", fontSize: "14px", fontWeight: 800, color: "#1a2a3a" }}>
             Buscar
           </button>
         </div>

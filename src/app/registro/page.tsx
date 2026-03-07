@@ -10,31 +10,59 @@ export default function Registro() {
   const [paso, setPaso] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [form, setForm] = useState({ nombre: "", email: "", whatsapp: "", password: "", confirmar: "" });
-
-  const generarCodigo = () => {
-    const letras = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    const nums = Math.floor(10000 + Math.random() * 90000);
-    const pref = letras[Math.floor(Math.random() * 26)] + letras[Math.floor(Math.random() * 26)] + letras[Math.floor(Math.random() * 26)];
-    return `${pref}-${nums}`;
-  };
+  const [form, setForm] = useState({
+    nombre_usuario: "",
+    nombre: "",
+    email: "",
+    whatsapp: "",
+    password: "",
+    confirmar: "",
+    codigo_promotor_ref: "",
+  });
 
   const handleRegistro = async () => {
-    if (!form.nombre || !form.email || !form.password) { setError("Completá todos los campos obligatorios"); return; }
-    if (form.password !== form.confirmar) { setError("Las contraseñas no coinciden"); return; }
-    if (form.password.length < 6) { setError("La contraseña debe tener al menos 6 caracteres"); return; }
-    setLoading(true); setError("");
+    if (!form.nombre_usuario || !form.email || !form.password) {
+      setError("Completá los campos obligatorios");
+      return;
+    }
+    if (form.password !== form.confirmar) {
+      setError("Las contraseñas no coinciden");
+      return;
+    }
+    if (form.password.length < 6) {
+      setError("La contraseña debe tener al menos 6 caracteres");
+      return;
+    }
+    setLoading(true);
+    setError("");
 
-    const { data, error: authError } = await supabase.auth.signUp({ email: form.email, password: form.password });
+    // 1. Crear en Supabase Auth
+    const { data, error: authError } = await supabase.auth.signUp({
+      email: form.email,
+      password: form.password,
+    });
 
     if (authError) {
-      setError(authError.message === "User already registered" ? "Este email ya está registrado" : "Error al registrarse. Intentá de nuevo.");
-      setLoading(false); return;
+      setError(authError.message === "User already registered"
+        ? "Este email ya está registrado"
+        : "Error al registrarse. Intentá de nuevo."
+      );
+      setLoading(false);
+      return;
     }
 
+    // 2. Generar código único con la función de Supabase
     if (data.user) {
-      const codigo = generarCodigo();
-      await supabase.from("usuarios").insert({ id: data.user.id, email: form.email, nombre: form.nombre, whatsapp: form.whatsapp, codigo, usuario: codigo });
+      const { data: codigoData } = await supabase.rpc("generar_codigo_usuario");
+      await supabase.from("usuarios").insert({
+        id: data.user.id,
+        email: form.email,
+        nombre: form.nombre,
+        nombre_usuario: form.nombre_usuario,
+        whatsapp: form.whatsapp,
+        codigo: codigoData,
+        codigo_promotor_ref: form.codigo_promotor_ref || null,
+      });
     }
 
     setLoading(false);
@@ -46,6 +74,7 @@ export default function Registro() {
       <Header />
       <div style={{ padding: "24px 16px", maxWidth: "400px", margin: "0 auto" }}>
 
+        {/* PASOS */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", marginBottom: "28px" }}>
           {[1, 2].map((p) => (
             <div key={p} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
@@ -55,18 +84,50 @@ export default function Registro() {
           ))}
         </div>
 
+        {/* PASO 1 */}
         {paso === 1 && (
           <div style={{ background: "#fff", borderRadius: "20px", padding: "24px", boxShadow: "0 4px 20px rgba(0,0,0,0.08)" }}>
             <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "24px", color: "#1a2a3a", letterSpacing: "2px", marginBottom: "20px" }}>Creá tu cuenta</div>
-            {error && <div style={{ background: "#fff0f0", border: "1px solid #ffcccc", borderRadius: "10px", padding: "12px", marginBottom: "16px", fontSize: "13px", color: "#cc0000", fontWeight: 700 }}>⚠️ {error}</div>}
-            <Campo label="Nombre *" value={form.nombre} onChange={(v) => setForm({ ...form, nombre: v })} placeholder="Tu nombre" />
+
+            {error && (
+              <div style={{ background: "#fff0f0", border: "1px solid #ffcccc", borderRadius: "10px", padding: "12px", marginBottom: "16px", fontSize: "13px", color: "#cc0000", fontWeight: 700 }}>
+                ⚠️ {error}
+              </div>
+            )}
+
+            <Campo label="Nombre de usuario *" value={form.nombre_usuario} onChange={(v) => setForm({ ...form, nombre_usuario: v })} placeholder="El nombre que verán los demás" />
+            <Campo label="Nombre real" value={form.nombre} onChange={(v) => setForm({ ...form, nombre: v })} placeholder="Tu nombre (opcional)" />
             <Campo label="Email *" value={form.email} onChange={(v) => setForm({ ...form, email: v })} placeholder="tu@email.com" type="email" />
             <Campo label="WhatsApp" value={form.whatsapp} onChange={(v) => setForm({ ...form, whatsapp: v })} placeholder="Ej: 3492123456" type="tel" />
             <Campo label="Contraseña *" value={form.password} onChange={(v) => setForm({ ...form, password: v })} placeholder="Mínimo 6 caracteres" type="password" />
             <Campo label="Confirmar contraseña *" value={form.confirmar} onChange={(v) => setForm({ ...form, confirmar: v })} placeholder="Repetí tu contraseña" type="password" />
-            <button onClick={handleRegistro} disabled={loading} style={{ width: "100%", background: loading ? "#ccc" : "linear-gradient(135deg, #d4a017, #f0c040)", color: "#1a2a3a", border: "none", borderRadius: "12px", padding: "16px", fontSize: "15px", fontWeight: 800, fontFamily: "'Nunito', sans-serif", cursor: loading ? "not-allowed" : "pointer", letterSpacing: "1px", textTransform: "uppercase", marginTop: "8px" }}>
+
+            {/* CÓDIGO PROMOTOR */}
+            <div style={{ marginBottom: "14px", background: "rgba(212,160,23,0.06)", border: "1px solid rgba(212,160,23,0.3)", borderRadius: "12px", padding: "12px" }}>
+              <label style={{ display: "block", fontSize: "11px", fontWeight: 800, color: "#d4a017", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "6px" }}>
+                ⭐ Código de promotor (opcional)
+              </label>
+              <input
+                type="text"
+                value={form.codigo_promotor_ref}
+                onChange={(e) => setForm({ ...form, codigo_promotor_ref: e.target.value.toUpperCase() })}
+                placeholder="Ej: NXN-00001"
+                style={{ width: "100%", border: "2px solid rgba(212,160,23,0.4)", borderRadius: "10px", padding: "10px 14px", fontSize: "14px", fontFamily: "'Nunito', sans-serif", color: "#2c2c2e", outline: "none", boxSizing: "border-box", background: "#fff" }}
+              />
+              <div style={{ fontSize: "11px", color: "#9a9a9a", fontWeight: 600, marginTop: "6px" }}>
+                Si alguien te invitó, ingresá su código NXN-XXXXX
+              </div>
+            </div>
+
+            <button onClick={handleRegistro} disabled={loading} style={{
+              width: "100%", background: loading ? "#ccc" : "linear-gradient(135deg, #d4a017, #f0c040)",
+              color: "#1a2a3a", border: "none", borderRadius: "12px", padding: "16px",
+              fontSize: "15px", fontWeight: 800, fontFamily: "'Nunito', sans-serif",
+              cursor: loading ? "not-allowed" : "pointer", letterSpacing: "1px", textTransform: "uppercase", marginTop: "8px",
+            }}>
               {loading ? "Registrando..." : "Crear cuenta →"}
             </button>
+
             <div style={{ textAlign: "center", marginTop: "16px" }}>
               <span style={{ fontSize: "13px", color: "#666", fontWeight: 600 }}>¿Ya tenés cuenta? </span>
               <a href="/login" style={{ fontSize: "13px", color: "#d4a017", fontWeight: 800, textDecoration: "none" }}>Ingresá →</a>
@@ -74,16 +135,26 @@ export default function Registro() {
           </div>
         )}
 
+        {/* PASO 2 — CONFIRMAR EMAIL */}
         {paso === 2 && (
           <div style={{ background: "#fff", borderRadius: "20px", padding: "32px 24px", boxShadow: "0 4px 20px rgba(0,0,0,0.08)", textAlign: "center" }}>
             <div style={{ fontSize: "60px", marginBottom: "16px" }}>📧</div>
-            <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "26px", color: "#1a2a3a", letterSpacing: "2px", marginBottom: "12px" }}>¡Revisá tu email!</div>
-            <div style={{ fontSize: "14px", color: "#666", fontWeight: 600, lineHeight: 1.6, marginBottom: "24px" }}>
-              Te enviamos un link de confirmación a<br />
-              <strong style={{ color: "#1a2a3a" }}>{form.email}</strong><br />
-              Hacé click en el link para activar tu cuenta.
+            <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "26px", color: "#1a2a3a", letterSpacing: "2px", marginBottom: "12px" }}>¡Bienvenido!</div>
+            <div style={{ fontSize: "14px", color: "#666", fontWeight: 600, lineHeight: 1.6, marginBottom: "8px" }}>
+              Te enviamos un link de confirmación a
             </div>
-            <button onClick={() => router.push("/login")} style={{ width: "100%", background: "linear-gradient(135deg, #d4a017, #f0c040)", color: "#1a2a3a", border: "none", borderRadius: "12px", padding: "16px", fontSize: "15px", fontWeight: 800, fontFamily: "'Nunito', sans-serif", cursor: "pointer", letterSpacing: "1px", textTransform: "uppercase" }}>
+            <div style={{ fontSize: "15px", fontWeight: 800, color: "#1a2a3a", marginBottom: "20px" }}>{form.email}</div>
+            <div style={{ background: "#f4f4f2", borderRadius: "12px", padding: "14px", marginBottom: "20px" }}>
+              <div style={{ fontSize: "12px", color: "#9a9a9a", fontWeight: 600, marginBottom: "4px" }}>Tu nombre de usuario</div>
+              <div style={{ fontSize: "18px", fontWeight: 900, color: "#1a2a3a" }}>{form.nombre_usuario}</div>
+              <div style={{ fontSize: "11px", color: "#9a9a9a", fontWeight: 600, marginTop: "4px" }}>Tu código NXN se generó automáticamente</div>
+            </div>
+            <button onClick={() => router.push("/login")} style={{
+              width: "100%", background: "linear-gradient(135deg, #d4a017, #f0c040)",
+              color: "#1a2a3a", border: "none", borderRadius: "12px", padding: "16px",
+              fontSize: "15px", fontWeight: 800, fontFamily: "'Nunito', sans-serif",
+              cursor: "pointer", letterSpacing: "1px", textTransform: "uppercase",
+            }}>
               Ir al login →
             </button>
           </div>

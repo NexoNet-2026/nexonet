@@ -15,40 +15,77 @@ export default function BottomNav() {
   }, []);
 
   const navItems = [
-    { icon: "🔍", label: "Buscar",   href: "/buscar" },
-    { icon: "🗺️", label: "Mapa",     href: "/mapa" },
+    { icon: "🔍", label: "Buscar",  href: "/buscar" },
+    { icon: "🗺️", label: "Mapa",    href: "/mapa" },
     { icon: "➕", label: "Publicar", href: "/publicar", central: true },
-    { icon: "👥", label: "Grupos",   href: "/grupos" },
-    logueado
-      ? { icon: "👤", label: "Perfil",   href: "/usuario" }
-      : { icon: "🚪", label: "Ingresar", href: "/login" },
+    { icon: "👥", label: "Grupos",  href: "/grupos" },
+    { icon: "👤", label: "Perfil",  href: "/usuario" },
   ];
 
   return (
     <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 100 }}>
 
-      {/* FRANJA GRUPO GRATIS */}
-      <Link href="/grupos" style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: "8px",
-        background: "linear-gradient(180deg, #2a3f55 0%, #1a2e42 100%)",
-        padding: "10px 16px",
-        textDecoration: "none",
-        borderTop: "2px solid rgba(212,160,23,0.5)",
-        borderBottom: "3px solid rgba(0,0,0,0.5)",
-        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.1), 0 -2px 8px rgba(0,0,0,0.3)",
-        cursor: "pointer",
-        width: "100%",
-        boxSizing: "border-box",
-      }}>
-        <span style={{ fontSize: "14px" }}>👥</span>
-        <span style={{ fontSize: "12px", fontWeight: 800, color: "#fff", letterSpacing: "0.3px" }}>
-          Creá un <span style={{ color: "#d4a017" }}>GRUPO GRATIS</span> y ganá
-        </span>
-        <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "20px", color: "#f0c040", textShadow: "0 2px 4px rgba(0,0,0,0.4)" }}>30%</span>
-      </Link>
+      {/* FRANJA LOGIN — solo si NO está logueado */}
+      {!logueado && (
+        <div style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: "10px",
+          background: "linear-gradient(90deg, #b8860b, #d4a017, #f0c040, #d4a017, #b8860b)",
+          padding: "8px 16px",
+          borderTop: "1px solid rgba(255,255,255,0.15)",
+        }}>
+          <span style={{ fontSize: "12px", fontWeight: 800, color: "#1a2a3a" }}>¿Ya tenés cuenta?</span>
+          <Link href="/login" style={{
+            textDecoration: "none",
+            background: "#1a2a3a",
+            color: "#f0c040",
+            borderRadius: "20px",
+            padding: "5px 16px",
+            fontSize: "12px",
+            fontWeight: 900,
+            letterSpacing: "0.5px",
+            boxShadow: "0 3px 0 rgba(0,0,0,0.3)",
+          }}>🔑 Ingresar</Link>
+          <Link href="/registro" style={{
+            textDecoration: "none",
+            background: "#1a2a3a",
+            color: "#f0c040",
+            borderRadius: "20px",
+            padding: "5px 16px",
+            fontSize: "12px",
+            fontWeight: 900,
+            letterSpacing: "0.5px",
+            boxShadow: "0 3px 0 rgba(0,0,0,0.3)",
+          }}>👤 Registrate</Link>
+        </div>
+      )}
+
+      {/* FRANJA GRUPO GRATIS — solo si está logueado */}
+      {logueado && (
+        <Link href="/grupos" style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: "8px",
+          background: "linear-gradient(180deg, #2a3f55 0%, #1a2e42 100%)",
+          padding: "10px 16px",
+          textDecoration: "none",
+          borderTop: "2px solid rgba(212,160,23,0.5)",
+          borderBottom: "3px solid rgba(0,0,0,0.5)",
+          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.1), 0 -2px 8px rgba(0,0,0,0.3)",
+          cursor: "pointer",
+          width: "100%",
+          boxSizing: "border-box",
+        }}>
+          <span style={{ fontSize: "14px" }}>👥</span>
+          <span style={{ fontSize: "12px", fontWeight: 800, color: "#fff", letterSpacing: "0.3px" }}>
+            Creá un <span style={{ color: "#d4a017" }}>GRUPO GRATIS</span> y ganá
+          </span>
+          <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "20px", color: "#f0c040", textShadow: "0 2px 4px rgba(0,0,0,0.4)" }}>30%</span>
+        </Link>
+      )}
 
       {/* NAV PRINCIPAL */}
       <nav style={{
@@ -68,7 +105,7 @@ export default function BottomNav() {
               <div key={href} style={{ flex: 1, position: "relative", display: "flex", justifyContent: "center" }}>
                 <Link href={href} style={{
                   display: "flex", flexDirection: "column", alignItems: "center",
-                  textDecoration: "none", position: "absolute", top: "-22px",
+                  textDecoration: "none", position: "absolute", top: "-43px",
                 }}>
                   <div style={{
                     width: "56px", height: "56px", borderRadius: "50%",

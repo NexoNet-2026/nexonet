@@ -28,12 +28,12 @@ export default function Home() {
   useEffect(() => {
     const cargar = async () => {
       const { data } = await supabase
-        .from("anuncios")
-        .select(`id, titulo, precio, moneda, ciudad, provincia, imagenes, flash, estado,
-          subrubros(nombre, rubros(nombre))`)
-        .eq("estado", "activo")
-        .order("created_at", { ascending: false })
-        .limit(20);
+  .from("anuncios")
+  .select(`id, titulo, precio, moneda, ciudad, provincia, imagenes, flash, estado,
+    subrubro_id, subrubros!inner(nombre, rubros!inner(nombre))`)
+  .eq("estado", "activo")
+  .order("created_at", { ascending: false })
+  .limit(20);
 
       if (data) {
         const mapped = data.map((a: any) => ({

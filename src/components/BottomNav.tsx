@@ -34,7 +34,7 @@ export default function BottomNav() {
         justifyContent: "center",
         gap: "8px",
         background: "linear-gradient(180deg, #2a3f55 0%, #1a2e42 100%)",
-        padding: "9px 16px",
+        padding: "10px 16px",
         textDecoration: "none",
         borderTop: "2px solid rgba(212,160,23,0.5)",
         borderBottom: "3px solid rgba(0,0,0,0.5)",

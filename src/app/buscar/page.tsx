@@ -79,21 +79,21 @@ export default function Buscar() {
   };
 
   return (
-    <main style={{ paddingTop: "104px", paddingBottom: "130px", background: "#f4f4f2", minHeight: "100vh", fontFamily: "'Nunito', sans-serif" }}>
+    <main style={{ paddingTop: "95px", paddingBottom: "130px", background: "#f4f4f2", minHeight: "100vh", fontFamily: "'Nunito', sans-serif" }}>
       <Header />
 
       {/* BUSCADORES */}
-      <div style={{ background: "linear-gradient(135deg, #1a2a3a 0%, #243b55 100%)", padding: "12px 16px 10px", display: "flex", flexDirection: "column", gap: "10px" }}>
+      <div style={{ background: "linear-gradient(135deg, #1a2a3a 0%, #243b55 100%)", padding: "12px 16px", display: "flex", flexDirection: "column", gap: "10px" }}>
 
         {/* UBICACIÓN */}
         <div style={{ display: "flex", background: "#fff", borderRadius: "12px", overflow: "hidden", boxShadow: "0 2px 8px rgba(0,0,0,0.2)" }}>
-          <div style={{ padding: "0 24px", display: "flex", alignItems: "center", fontSize: "18px", background: "#f8f8f6" }}>📍</div>
+          <div style={{ padding: "0 14px", display: "flex", alignItems: "center", fontSize: "18px", background: "#f8f8f6" }}>📍</div>
           <input
             type="text"
             value={ubicacion}
             onChange={(e) => setUbicacion(e.target.value)}
             placeholder="Tu ubicación..."
-            style={{ flex: 1, border: "none", padding: "12px 10px", fontFamily: "'Nunito', sans-serif", fontSize: "14px", fontWeight: 600, color: "#2c2c2e", outline: "none", background: "transparent" }}
+            style={{ flex: 1, border: "none", padding: "10px 10px", fontFamily: "'Nunito', sans-serif", fontSize: "14px", fontWeight: 600, color: "#2c2c2e", outline: "none", background: "transparent" }}
           />
           <button style={{ background: "#d4a017", border: "none", padding: "0 14px", cursor: "pointer", fontSize: "11px", fontWeight: 800, color: "#1a2a3a", letterSpacing: "0.5px" }}>
             CAMBIAR
@@ -102,15 +102,15 @@ export default function Buscar() {
 
         {/* BÚSQUEDA */}
         <div style={{ display: "flex", background: "#fff", borderRadius: "12px", overflow: "hidden", boxShadow: "0 2px 8px rgba(0,0,0,0.2)" }}>
-          <div style={{ padding: "0 24px", display: "flex", alignItems: "center", fontSize: "18px", background: "#f8f8f6" }}>🔍</div>
+          <div style={{ padding: "0 14px", display: "flex", alignItems: "center", fontSize: "18px", background: "#f8f8f6" }}>🔍</div>
           <input
             type="text"
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
             placeholder={`¿Qué buscás en ${ubicacion.split(",")[0]}?`}
-            style={{ flex: 1, border: "none", padding: "12px 10px", fontFamily: "'Nunito', sans-serif", fontSize: "14px", color: "#2c2c2e", outline: "none" }}
+            style={{ flex: 1, border: "none", padding: "10px 10px", fontFamily: "'Nunito', sans-serif", fontSize: "14px", color: "#2c2c2e", outline: "none" }}
           />
-          <button style={{ background: "#d4a017", border: "none", padding: "0 20px", cursor: "pointer", fontSize: "14px", fontWeight: 800, color: "#1a2a3a" }}>
+          <button style={{ background: "#d4a017", border: "none", padding: "0 18px", cursor: "pointer", fontSize: "14px", fontWeight: 800, color: "#1a2a3a" }}>
             Buscar
           </button>
         </div>

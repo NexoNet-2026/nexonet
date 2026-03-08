@@ -4,7 +4,6 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
-// Fix para los iconos de Leaflet en Next.js
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
@@ -12,8 +11,7 @@ L.Icon.Default.mergeOptions({
   shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
 });
 
-// Icono personalizado con emoji
-const crearIcono = (emoji: string, flash: boolean) => L.divIcon({
+const crearIcono = (flash: boolean) => L.divIcon({
   html: `
     <div style="
       background: ${flash ? "#d4a017" : "#1a2a3a"};
@@ -24,7 +22,7 @@ const crearIcono = (emoji: string, flash: boolean) => L.divIcon({
       display: flex; align-items: center; justify-content: center;
       box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     ">
-      <span style="transform: rotate(45deg); font-size: 18px;">${emoji}</span>
+      <span style="transform: rotate(45deg); font-size: 18px;">📦</span>
     </div>
   `,
   className: "",
@@ -33,15 +31,17 @@ const crearIcono = (emoji: string, flash: boolean) => L.divIcon({
   popupAnchor: [0, -40],
 });
 
-type Anuncio = {
+export type Anuncio = {
   id: number;
   titulo: string;
-  precio: string;
+  precio: number;
+  moneda: string;
   rubro: string;
-  emoji: string;
+  imagenes: string[];
   lat: number;
   lng: number;
-  lugar: string;
+  ciudad: string;
+  provincia: string;
   flash: boolean;
 };
 
@@ -63,11 +63,16 @@ export default function MapaLeaflet({
   anuncios: Anuncio[];
   onSeleccionar: (a: Anuncio) => void;
 }) {
+  const formatPrecio = (precio: number, moneda: string) => {
+    if (!precio) return "Consultar";
+    return `${moneda === "USD" ? "U$D" : "$"} ${precio.toLocaleString("es-AR")}`;
+  };
+
   return (
     <MapContainer
       center={[-31.2532, -61.4875]}
       zoom={8}
-      style={{ width: "100%", height: "calc(100vh - 200px)", minHeight: "400px" }}
+      style={{ width: "100%", height: "100%", minHeight: "400px" }}
       zoomControl={true}
     >
       <TileLayer
@@ -81,15 +86,14 @@ export default function MapaLeaflet({
         <Marker
           key={a.id}
           position={[a.lat, a.lng]}
-          icon={crearIcono(a.emoji, a.flash)}
+          icon={crearIcono(a.flash)}
           eventHandlers={{ click: () => onSeleccionar(a) }}
         >
           <Popup>
             <div style={{ fontFamily: "'Nunito', sans-serif", minWidth: "150px" }}>
-              <div style={{ fontSize: "20px", textAlign: "center", marginBottom: "4px" }}>{a.emoji}</div>
               <div style={{ fontWeight: 800, fontSize: "13px", color: "#1a2a3a" }}>{a.titulo}</div>
-              <div style={{ fontWeight: 900, fontSize: "15px", color: "#d4a017" }}>{a.precio}</div>
-              <div style={{ fontSize: "11px", color: "#9a9a9a" }}>📍 {a.lugar}</div>
+              <div style={{ fontWeight: 900, fontSize: "15px", color: "#d4a017" }}>{formatPrecio(a.precio, a.moneda)}</div>
+              <div style={{ fontSize: "11px", color: "#9a9a9a" }}>📍 {a.ciudad}{a.provincia ? `, ${a.provincia}` : ""}</div>
             </div>
           </Popup>
         </Marker>

@@ -247,48 +247,39 @@ function BuscarInner() {
 
         {/* FILA UBICACIÓN */}
         <div style={{ display:"flex", gap:"8px", alignItems:"center" }}>
-
-          {/* PROVINCIA */}
-          <div style={{ flex:1, position:"relative" }}>
-            <select value={provSel} onChange={e => setProvSel(e.target.value)} style={selStyle(!provSel)}>
-              <option value="">🗺️ Provincia</option>
-              {provincias.map(p => <option key={p.id} value={p.nombre}>{p.nombre}</option>)}
-            </select>
-          </div>
-
-          {/* CIUDAD — aparece si hay provincia */}
+          <UbiSelect
+            value={provSel}
+            placeholder="🗺️ Provincia"
+            opciones={provincias.map(p => p.nombre)}
+            onChange={v => setProvSel(v)}
+          />
           {provSel && (
-            <div style={{ flex:1, position:"relative" }}>
-              <select value={ciudadSel} onChange={e => setCiudadSel(e.target.value)} style={selStyle(!ciudadSel)}>
-                <option value="">🏙️ Ciudad</option>
-                {ciudades.map(c => <option key={c.id} value={c.nombre}>{c.nombre}</option>)}
-              </select>
-            </div>
+            <UbiSelect
+              value={ciudadSel}
+              placeholder="🏙️ Ciudad"
+              opciones={ciudades.map(c => c.nombre)}
+              onChange={v => setCiudadSel(v)}
+            />
           )}
-
-          {/* BARRIO — aparece si hay ciudad y barrios disponibles */}
           {ciudadSel && barrios.length > 0 && (
-            <div style={{ flex:1, position:"relative" }}>
-              <select value={barrioSel} onChange={e => setBarrioSel(e.target.value)} style={selStyle(!barrioSel)}>
-                <option value="">🏘️ Barrio</option>
-                {barrios.map(b => <option key={b.id} value={b.nombre}>{b.nombre}</option>)}
-              </select>
-            </div>
+            <UbiSelect
+              value={barrioSel}
+              placeholder="🏘️ Barrio"
+              opciones={barrios.map(b => b.nombre)}
+              onChange={v => setBarrioSel(v)}
+            />
           )}
-
-          {/* BOTÓN GPS */}
+          {/* GPS */}
           <button onClick={detectarGPS} disabled={gpsLoading} title="Detectar mi ubicación" style={{
-            background: "rgba(212,160,23,0.2)", border:"2px solid rgba(212,160,23,0.5)",
+            background:"rgba(212,160,23,0.2)", border:"2px solid rgba(212,160,23,0.5)",
             borderRadius:"12px", width:"42px", height:"42px", flexShrink:0,
             display:"flex", alignItems:"center", justifyContent:"center",
-            fontSize:"18px", cursor:"pointer", opacity: gpsLoading ? 0.6 : 1,
+            fontSize:"18px", cursor:"pointer", opacity:gpsLoading ? 0.6 : 1,
           }}>
             {gpsLoading ? "⏳" : "📍"}
           </button>
-
-          {/* LIMPIAR GEO */}
           {ubiActiva && (
-            <button onClick={limpiarUbi} title="Limpiar filtro" style={{
+            <button onClick={limpiarUbi} title="Limpiar" style={{
               background:"rgba(255,80,80,0.15)", border:"2px solid rgba(255,80,80,0.3)",
               borderRadius:"12px", width:"42px", height:"42px", flexShrink:0,
               display:"flex", alignItems:"center", justifyContent:"center",
@@ -297,17 +288,14 @@ function BuscarInner() {
           )}
         </div>
 
-        {/* CHIP UBICACIÓN ACTIVA */}
+        {/* CHIPS ACTIVOS */}
         {ubiActiva && (
           <div style={{ display:"flex", gap:"6px", flexWrap:"wrap" }}>
-            {[provSel, ciudadSel, barrioSel].filter(Boolean).map((label, i) => {
-              const iconos = ["🗺️","🏙️","🏘️"];
-              return (
-                <span key={i} style={{ background:"rgba(212,160,23,0.2)", border:"1px solid rgba(212,160,23,0.4)", borderRadius:"20px", padding:"3px 10px", fontSize:"11px", fontWeight:800, color:"#d4a017" }}>
-                  {iconos[i]} {label}
-                </span>
-              );
-            })}
+            {[provSel, ciudadSel, barrioSel].filter(Boolean).map((label, i) => (
+              <span key={i} style={{ background:"rgba(212,160,23,0.2)", border:"1px solid rgba(212,160,23,0.4)", borderRadius:"20px", padding:"3px 10px", fontSize:"11px", fontWeight:800, color:"#d4a017" }}>
+                {["🗺️","🏙️","🏘️"][i]} {label}
+              </span>
+            ))}
           </div>
         )}
 
@@ -513,12 +501,106 @@ const iDrop = (activo: boolean): React.CSSProperties => ({
   borderLeft: activo ? "3px solid #d4a017" : "3px solid transparent",
 });
 
-const selStyle = (placeholder: boolean): React.CSSProperties => ({
-  width:"100%",
-  background: placeholder ? "rgba(255,255,255,0.12)" : "#1a2a3a",
-  border:`2px solid ${placeholder ? "rgba(255,255,255,0.25)" : "#d4a017"}`,
-  borderRadius:"12px", padding:"10px 12px", fontSize:"12px", fontWeight:700,
-  color: placeholder ? "#fff" : "#d4a017",
-  fontFamily:"'Nunito', sans-serif", outline:"none", cursor:"pointer",
-  height:"42px",
-});
+// ── Selector de ubicación custom (reemplaza <select> nativo) ──
+function UbiSelect({ value, placeholder, opciones, onChange }: {
+  value: string;
+  placeholder: string;
+  opciones: string[];
+  onChange: (v: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [filtro, setFiltro] = useState("");
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const h = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false); setFiltro("");
+      }
+    };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, []);
+
+  const filtradas = opciones.filter(o => o.toLowerCase().includes(filtro.toLowerCase()));
+
+  return (
+    <div ref={ref} style={{ flex:1, position:"relative", minWidth:0 }}>
+      {/* BOTÓN TRIGGER */}
+      <button
+        onClick={() => { setOpen(v => !v); setFiltro(""); }}
+        style={{
+          width:"100%", height:"42px",
+          background: value ? "#d4a017" : "rgba(255,255,255,0.12)",
+          border:`2px solid ${value ? "#d4a017" : "rgba(255,255,255,0.3)"}`,
+          borderRadius:"12px", padding:"0 10px",
+          fontSize:"12px", fontWeight:800,
+          color: value ? "#1a2a3a" : "#fff",
+          cursor:"pointer", fontFamily:"'Nunito', sans-serif",
+          display:"flex", alignItems:"center", justifyContent:"space-between",
+          gap:"4px", whiteSpace:"nowrap", overflow:"hidden",
+        }}
+      >
+        <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+          {value || placeholder}
+        </span>
+        <span style={{ fontSize:"10px", opacity:0.7, flexShrink:0 }}>{open ? "▲" : "▼"}</span>
+      </button>
+
+      {/* DROPDOWN */}
+      {open && (
+        <div style={{
+          position:"absolute", top:"calc(100% + 4px)", left:0, right:0, zIndex:200,
+          background:"#fff", borderRadius:"12px", boxShadow:"0 8px 32px rgba(0,0,0,0.25)",
+          border:"1px solid #e8e8e6", maxHeight:"260px", display:"flex", flexDirection:"column",
+          overflow:"hidden",
+        }}>
+          {/* BÚSQUEDA DENTRO DEL DROPDOWN */}
+          <div style={{ padding:"8px", borderBottom:"1px solid #f0f0f0", flexShrink:0 }}>
+            <input
+              autoFocus
+              type="text"
+              value={filtro}
+              onChange={e => setFiltro(e.target.value)}
+              placeholder="Buscar..."
+              style={{
+                width:"100%", border:"2px solid #e8e8e6", borderRadius:"8px",
+                padding:"7px 10px", fontSize:"13px", fontFamily:"'Nunito', sans-serif",
+                outline:"none", boxSizing:"border-box", color:"#1a2a3a",
+              }}
+            />
+          </div>
+          {/* OPCIONES */}
+          <div style={{ overflowY:"auto", flex:1 }}>
+            {value && (
+              <div
+                onClick={() => { onChange(""); setOpen(false); setFiltro(""); }}
+                style={{ padding:"10px 14px", fontSize:"12px", fontWeight:700, color:"#e74c3c", cursor:"pointer", borderBottom:"1px solid #f9f9f9", display:"flex", alignItems:"center", gap:"6px" }}
+              >
+                ✕ Limpiar selección
+              </div>
+            )}
+            {filtradas.length === 0 ? (
+              <div style={{ padding:"16px", textAlign:"center", fontSize:"13px", color:"#9a9a9a" }}>Sin resultados</div>
+            ) : (
+              filtradas.map(o => (
+                <div
+                  key={o}
+                  onClick={() => { onChange(o); setOpen(false); setFiltro(""); }}
+                  style={{
+                    padding:"10px 14px", fontSize:"13px", fontWeight: o === value ? 800 : 600,
+                    color: o === value ? "#d4a017" : "#1a2a3a",
+                    background: o === value ? "rgba(212,160,23,0.08)" : "transparent",
+                    cursor:"pointer", borderLeft: o === value ? "3px solid #d4a017" : "3px solid transparent",
+                  }}
+                >
+                  {o}
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

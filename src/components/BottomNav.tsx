@@ -17,7 +17,7 @@ export default function BottomNav() {
   const navItems = [
     { icon: "🔍", label: "Buscar",  href: "/buscar" },
     { icon: "🗺️", label: "Mapa",    href: "/mapa" },
-    { icon: "➕", label: "Publicar", href: "/publicar", central: true },
+    { icon: "➕", label: "Publicar", href: "/mis-anuncios", central: true },
     { icon: "👥", label: "Grupos",  href: "/grupos" },
     { icon: "👤", label: "Perfil",  href: "/usuario" },
   ];
@@ -86,7 +86,7 @@ export default function BottomNav() {
         position: "relative",
       }}>
         {navItems.map(({ icon, label, href, central }: any) => {
-          const isActive = pathname === href;
+          const isActive = pathname === href || (href === "/mis-anuncios" && pathname === "/publicar");
 
           if (central) {
             return (

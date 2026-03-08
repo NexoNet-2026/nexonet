@@ -14,6 +14,9 @@ type Anuncio      = {
   ciudad: string; provincia: string; barrio: string;
   imagenes: string[]; flash: boolean; fuente: string; subrubro_id: number;
 };
+type Provincia = { id: number; nombre: string };
+type Ciudad    = { id: number; nombre: string; provincia_id: number };
+type Barrio    = { id: number; nombre: string; ciudad_id: number };
 
 const FUENTES: Record<string, { color: string; texto: string; label: string }> = {
   nexonet:       { color: "#d4a017", texto: "#1a2a3a", label: "NexoNet"        },
@@ -23,31 +26,18 @@ const FUENTES: Record<string, { color: string; texto: string; label: string }> =
   otro:          { color: "#888",    texto: "#fff",    label: "Externo"        },
 };
 
-type ModoUbi = "gps" | "manual";
-
 export default function Buscar() {
   const searchParams = useSearchParams();
 
-  // ── Modo ubicación ──
-  const [modoUbi,     setModoUbi]     = useState<ModoUbi>("gps");
-  const [ubiPanel,    setUbiPanel]    = useState(false); // panel abierto/cerrado
-
-  // ── GPS ──
+  // ── Ubicación ──
+  const [provincias,  setProvincias]  = useState<Provincia[]>([]);
+  const [ciudades,    setCiudades]    = useState<Ciudad[]>([]);
+  const [barrios,     setBarrios]     = useState<Barrio[]>([]);
+  const [provSel,     setProvSel]     = useState("");
+  const [ciudadSel,   setCiudadSel]   = useState("");
+  const [barrioSel,   setBarrioSel]   = useState("");
   const [gpsLoading,  setGpsLoading]  = useState(false);
-  const [gpsProv,     setGpsProv]     = useState("");
-  const [gpsCiudad,   setGpsCiudad]   = useState("");
-  const [gpsBarrio,   setGpsBarrio]   = useState("");
-  const [gpsNivel,    setGpsNivel]    = useState<"provincia"|"ciudad"|"barrio"|"">("");
-
-  // ── Manual ──
-  const [manProv,     setManProv]     = useState("");
-  const [manCiudad,   setManCiudad]   = useState("");
-  const [manBarrio,   setManBarrio]   = useState("");
-
-  // Listas para manual (extraídas de los anuncios cargados)
-  const [listaProvs,   setListaProvs]   = useState<string[]>([]);
-  const [listaCiudades, setListaCiudades] = useState<string[]>([]);
-  const [listaBarrios,  setListaBarrios]  = useState<string[]>([]);
+  const [ubiLabel,    setUbiLabel]    = useState("");
 
   // ── Buscador dropdown ──
   const [query,       setQuery]       = useState("");
@@ -57,31 +47,31 @@ export default function Buscar() {
   const inputRef = useRef<HTMLInputElement>(null);
   const dropRef  = useRef<HTMLDivElement>(null);
 
-  // ── Datos ──
+  // ── Datos anuncios / rubros ──
   const [rubros,        setRubros]        = useState<Rubro[]>([]);
   const [rubrosFlat,    setRubrosFlat]    = useState<RubroFlat[]>([]);
   const [subrubrosFlat, setSubrubrosFlat] = useState<SubrubroFlat[]>([]);
   const [anuncios,      setAnuncios]      = useState<Anuncio[]>([]);
-  const [subrubrosActivos, setSubrubrosActivos] = useState<Record<number, number | null>>({});
+  const [subActivos,    setSubActivos]    = useState<Record<number, number | null>>({});
   const [loading,       setLoading]       = useState(true);
 
-  // Leer params de URL
+  // ── Cargar datos iniciales ──
   useEffect(() => {
     const qParam = searchParams.get("q");
     if (qParam) setQuery(qParam);
-    (window as any).__initRubroParam    = searchParams.get("rubro");
-    (window as any).__initSubrubroParam = searchParams.get("subrubro");
-  }, []);
+    (window as any).__rP = searchParams.get("rubro");
+    (window as any).__sP = searchParams.get("subrubro");
 
-  useEffect(() => {
     const cargar = async () => {
-      const [{ data: rData }, { data: aData }] = await Promise.all([
+      const [{ data: provData }, { data: rData }, { data: aData }] = await Promise.all([
+        supabase.from("provincias").select("id, nombre").order("nombre"),
         supabase.from("rubros").select("id, nombre, subrubros(id, nombre)").order("nombre"),
         supabase.from("anuncios")
           .select("id, titulo, precio, moneda, ciudad, provincia, barrio, imagenes, flash, fuente, subrubro_id")
           .eq("estado", "activo").order("created_at", { ascending: false }).limit(100),
       ]);
 
+      if (provData) setProvincias(provData);
       if (rData) {
         setRubros(rData as any);
         const flat = rData.map((r: any) => ({ id: r.id, nombre: r.nombre }));
@@ -89,44 +79,50 @@ export default function Buscar() {
         setSubrubrosFlat(rData.flatMap((r: any) =>
           (r.subrubros || []).map((s: any) => ({ id: s.id, nombre: s.nombre, rubro_id: r.id }))
         ));
-        const rP = (window as any).__initRubroParam;
-        const sP = (window as any).__initSubrubroParam;
+        const rP = (window as any).__rP;
+        const sP = (window as any).__sP;
         if (rP) { const r = flat.find((x: RubroFlat) => x.id === parseInt(rP)); if (r) { setRubroSel(r); setQuery(r.nombre); } }
         if (sP) {
-          const allSub = rData.flatMap((r: any) => (r.subrubros||[]).map((s: any) => ({ id:s.id, nombre:s.nombre, rubro_id:r.id })));
-          const s = allSub.find((x: SubrubroFlat) => x.id === parseInt(sP));
+          const allS = rData.flatMap((r: any) => (r.subrubros||[]).map((s: any) => ({ id:s.id, nombre:s.nombre, rubro_id:r.id })));
+          const s = allS.find((x: SubrubroFlat) => x.id === parseInt(sP));
           if (s) { setSubrubroSel(s); setQuery(s.nombre); }
         }
       }
-
-      if (aData) {
-        setAnuncios(aData as any);
-        // Listas únicas para manual
-        const provs    = [...new Set((aData as any[]).map(a => a.provincia).filter(Boolean))].sort();
-        setListaProvs(provs);
-      }
+      if (aData) setAnuncios(aData as any);
       setLoading(false);
     };
     cargar();
   }, []);
 
-  // Actualizar ciudades cuando cambia provincia manual
+  // Cargar ciudades al seleccionar provincia
   useEffect(() => {
-    if (!manProv) { setListaCiudades([]); setManCiudad(""); setManBarrio(""); return; }
-    const ciudades = [...new Set(anuncios.filter(a => a.provincia === manProv).map(a => a.ciudad).filter(Boolean))].sort();
-    setListaCiudades(ciudades);
-    setManCiudad(""); setManBarrio("");
-  }, [manProv, anuncios]);
+    setCiudadSel(""); setBarrioSel(""); setCiudades([]); setBarrios([]);
+    if (!provSel) return;
+    const prov = provincias.find(p => p.nombre === provSel);
+    if (!prov) return;
+    supabase.from("ciudades").select("id, nombre, provincia_id")
+      .eq("provincia_id", prov.id).order("nombre")
+      .then(({ data }) => { if (data) setCiudades(data); });
+  }, [provSel, provincias]);
 
-  // Actualizar barrios cuando cambia ciudad manual
+  // Cargar barrios al seleccionar ciudad
   useEffect(() => {
-    if (!manCiudad) { setListaBarrios([]); setManBarrio(""); return; }
-    const barrios = [...new Set(anuncios.filter(a => a.ciudad === manCiudad).map(a => a.barrio).filter(Boolean))].sort();
-    setListaBarrios(barrios);
-    setManBarrio("");
-  }, [manCiudad, anuncios]);
+    setBarrioSel(""); setBarrios([]);
+    if (!ciudadSel) return;
+    const ciudad = ciudades.find(c => c.nombre === ciudadSel);
+    if (!ciudad) return;
+    supabase.from("barrios").select("id, nombre, ciudad_id")
+      .eq("ciudad_id", ciudad.id).order("nombre")
+      .then(({ data }) => { if (data) setBarrios(data); });
+  }, [ciudadSel, ciudades]);
 
-  // Cerrar dropdown al clickear afuera
+  // Actualizar label de ubicación
+  useEffect(() => {
+    const parts = [provSel, ciudadSel, barrioSel].filter(Boolean);
+    setUbiLabel(parts.length ? parts[parts.length - 1] : "");
+  }, [provSel, ciudadSel, barrioSel]);
+
+  // Cerrar dropdown afuera
   useEffect(() => {
     const h = (e: MouseEvent) => {
       if (dropRef.current && !dropRef.current.contains(e.target as Node) &&
@@ -145,259 +141,165 @@ export default function Buscar() {
       try {
         const r = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json`);
         const d = await r.json();
-        setGpsProv(d.address?.state || "");
-        setGpsCiudad(d.address?.city || d.address?.town || d.address?.village || "");
-        setGpsBarrio(d.address?.suburb || d.address?.neighbourhood || "");
-        setGpsNivel("provincia");
-        setModoUbi("gps");
-        setUbiPanel(false);
+        const prov   = d.address?.state || "";
+        const ciudad = d.address?.city || d.address?.town || d.address?.village || "";
+        const barrio = d.address?.suburb || d.address?.neighbourhood || "";
+
+        // Buscar provincia en nuestra lista
+        const provMatch = provincias.find(p =>
+          p.nombre.toLowerCase().includes(prov.toLowerCase()) ||
+          prov.toLowerCase().includes(p.nombre.toLowerCase())
+        );
+        if (provMatch) {
+          setProvSel(provMatch.nombre);
+          // Esperar ciudades y setear
+          const { data: ciudadesData } = await supabase.from("ciudades")
+            .select("id, nombre, provincia_id").eq("provincia_id", provMatch.id).order("nombre");
+          if (ciudadesData) {
+            setCiudades(ciudadesData);
+            const ciudadMatch = ciudadesData.find((c: Ciudad) =>
+              c.nombre.toLowerCase().includes(ciudad.toLowerCase()) ||
+              ciudad.toLowerCase().includes(c.nombre.toLowerCase())
+            );
+            if (ciudadMatch) {
+              setCiudadSel(ciudadMatch.nombre);
+              const { data: barriosData } = await supabase.from("barrios")
+                .select("id, nombre, ciudad_id").eq("ciudad_id", ciudadMatch.id).order("nombre");
+              if (barriosData) {
+                setBarrios(barriosData);
+                const barrioMatch = barriosData.find((b: Barrio) =>
+                  b.nombre.toLowerCase().includes(barrio.toLowerCase()) ||
+                  barrio.toLowerCase().includes(b.nombre.toLowerCase())
+                );
+                if (barrioMatch) setBarrioSel(barrioMatch.nombre);
+              }
+            }
+          }
+        }
       } catch { alert("No se pudo obtener la ubicación"); }
       setGpsLoading(false);
     }, () => { alert("No se pudo acceder al GPS"); setGpsLoading(false); });
   };
 
-  const avanzarGPS = () => {
-    if (gpsNivel === "provincia") setGpsNivel("ciudad");
-    else if (gpsNivel === "ciudad") setGpsNivel("barrio");
-    else { setGpsNivel(""); setGpsProv(""); setGpsCiudad(""); setGpsBarrio(""); }
-  };
-
-  const gpsLabel = () => {
-    if (!gpsNivel) return "📍 GPS";
-    if (gpsNivel === "provincia") return `🗺️ ${gpsProv}`;
-    if (gpsNivel === "ciudad")    return `🏙️ ${gpsCiudad}`;
-    return `🏘️ ${gpsBarrio || gpsCiudad}`;
-  };
-  const gpsNextLabel = () => {
-    if (gpsNivel === "provincia" && gpsCiudad) return `Acotar a ${gpsCiudad}`;
-    if (gpsNivel === "ciudad"   && gpsBarrio)  return `Acotar a ${gpsBarrio}`;
-    if (gpsNivel) return "Limpiar filtro";
-    return null;
-  };
-
-  // Label resumen ubicación activa
-  const ubiActiva = modoUbi === "gps" ? !!gpsNivel
-    : !!(manProv || manCiudad || manBarrio);
-
-  const ubiResumen = () => {
-    if (modoUbi === "gps") return gpsLabel();
-    const parts = [manProv, manCiudad, manBarrio].filter(Boolean);
-    return parts.length ? `📍 ${parts.join(", ")}` : "📍 Sin filtro";
-  };
+  const limpiarUbi = () => { setProvSel(""); setCiudadSel(""); setBarrioSel(""); };
 
   // ── Buscador ──
   const qLow = query.toLowerCase();
   const rubrosFiltered    = rubrosFlat.filter(r => r.nombre.toLowerCase().includes(qLow));
   const subrubrosFiltered = subrubrosFlat.filter(s => s.nombre.toLowerCase().includes(qLow));
   const subrubrosDeRubro  = rubroSel ? subrubrosFlat.filter(s => s.rubro_id === rubroSel.id) : [];
-
-  const limpiarBusqueda = () => { setQuery(""); setRubroSel(null); setSubrubroSel(null); setDropOpen(false); };
+  const limpiarBusqueda   = () => { setQuery(""); setRubroSel(null); setSubrubroSel(null); setDropOpen(false); };
   const selRubro    = (r: RubroFlat)    => { setRubroSel(r); setSubrubroSel(null); setQuery(r.nombre); setDropOpen(false); };
   const selSubrubro = (s: SubrubroFlat) => {
-    setRubroSel(rubrosFlat.find(r => r.id === s.rubro_id)||null);
+    setRubroSel(rubrosFlat.find(r => r.id === s.rubro_id) || null);
     setSubrubroSel(s); setQuery(s.nombre); setDropOpen(false);
   };
-  const toggleSubrubro = (rubroId: number, subId: number) =>
-    setSubrubrosActivos(p => ({ ...p, [rubroId]: p[rubroId] === subId ? null : subId }));
+  const toggleSub = (rubroId: number, subId: number) =>
+    setSubActivos(p => ({ ...p, [rubroId]: p[rubroId] === subId ? null : subId }));
 
-  // ── Filtrado de anuncios ──
+  // ── Filtrado ──
   const anunciosFiltrados = anuncios.filter(a => {
-    // Geo
     let geo = true;
-    if (modoUbi === "gps" && gpsNivel) {
-      if (gpsNivel === "provincia") geo = a.provincia?.toLowerCase().includes(gpsProv.toLowerCase());
-      if (gpsNivel === "ciudad")    geo = a.ciudad?.toLowerCase().includes(gpsCiudad.toLowerCase());
-      if (gpsNivel === "barrio")    geo = (a.barrio||a.ciudad)?.toLowerCase().includes((gpsBarrio||gpsCiudad).toLowerCase());
-    }
-    if (modoUbi === "manual") {
-      if (manBarrio) geo = (a.barrio||"").toLowerCase().includes(manBarrio.toLowerCase());
-      else if (manCiudad) geo = (a.ciudad||"").toLowerCase().includes(manCiudad.toLowerCase());
-      else if (manProv)   geo = (a.provincia||"").toLowerCase().includes(manProv.toLowerCase());
-    }
-    // Búsqueda texto
-    const matchQ = query && !rubroSel
-      ? a.titulo.toLowerCase().includes(qLow) : true;
-    return geo && matchQ;
+    if (barrioSel) geo = (a.barrio || "").toLowerCase().includes(barrioSel.toLowerCase());
+    else if (ciudadSel) geo = (a.ciudad || "").toLowerCase().includes(ciudadSel.toLowerCase());
+    else if (provSel)   geo = (a.provincia || "").toLowerCase().includes(provSel.toLowerCase());
+    return geo;
   });
 
+  const busquedaLibre = query.trim() !== "" && !rubroSel && !subrubroSel;
+  const resultadosTexto = busquedaLibre
+    ? anunciosFiltrados.filter(a => a.titulo.toLowerCase().includes(qLow))
+    : [];
+
+  const rubrosAMostrar = rubroSel ? rubros.filter(r => r.id === rubroSel.id) : rubros;
   const getAnunciosPorRubro = (rubro: Rubro) => {
     const subIds    = rubro.subrubros.map(s => s.id);
-    const subActivo = subrubrosActivos[rubro.id];
+    const subActivo = subActivos[rubro.id];
     return anunciosFiltrados.filter(a =>
       subActivo ? a.subrubro_id === subActivo : subIds.includes(a.subrubro_id)
     ).slice(0, 8);
   };
 
-  // Modo texto libre: busca en titulo, descripcion, rubro, subrubro
-  const busquedaLibre = query.trim() !== "" && !rubroSel && !subrubroSel;
-
-  const resultadosTexto = busquedaLibre
-    ? anunciosFiltrados.filter(a =>
-        a.titulo.toLowerCase().includes(qLow)
-      )
-    : [];
-
-  const rubrosAMostrar = rubroSel ? rubros.filter(r => r.id === rubroSel.id) : rubros;
-  const formatPrecio   = (precio: number, moneda: string) =>
+  const formatPrecio = (precio: number, moneda: string) =>
     !precio ? "Consultar" : `${moneda === "USD" ? "U$D" : "$"} ${precio.toLocaleString("es-AR")}`;
 
-  // ── Placeholder dinámico ──
-  const placeholderGeo = () => {
-    if (modoUbi === "manual") {
-      const lugar = manBarrio || manCiudad || manProv;
-      return lugar ? `¿Qué buscás en ${lugar}?` : "¿Qué buscás?";
-    }
-    if (gpsNivel === "barrio")    return `¿Qué buscás en ${gpsBarrio||gpsCiudad}?`;
-    if (gpsNivel === "ciudad")    return `¿Qué buscás en ${gpsCiudad}?`;
-    if (gpsNivel === "provincia") return `¿Qué buscás en ${gpsProv}?`;
-    return "¿Qué buscás?";
-  };
+  const placeholderQ = ubiLabel ? `¿Qué buscás en ${ubiLabel}?` : "¿Qué buscás?";
+  const ubiActiva    = !!(provSel || ciudadSel || barrioSel);
 
   return (
     <main style={{ paddingTop:"95px", paddingBottom:"130px", background:"#f4f4f2", minHeight:"100vh", fontFamily:"'Nunito', sans-serif" }}>
       <Header />
 
-      {/* ════ BARRA SUPERIOR ════ */}
-      <div style={{ background:"linear-gradient(135deg, #1a2a3a 0%, #243b55 100%)", padding:"14px 16px 16px", display:"flex", flexDirection:"column", gap:"10px" }}>
+      {/* ════ BARRA ════ */}
+      <div style={{ background:"linear-gradient(135deg, #1a2a3a 0%, #243b55 100%)", padding:"12px 16px 14px", display:"flex", flexDirection:"column", gap:"10px" }}>
 
-        {/* FILA 1: UBICACIÓN */}
-        <div style={{ display:"flex", gap:"8px" }}>
-          {/* Botón resumen ubicación → abre panel */}
-          <button onClick={() => setUbiPanel(v => !v)} style={{
-            flex:1, background: ubiActiva ? "rgba(212,160,23,0.2)" : "rgba(255,255,255,0.1)",
-            border:`2px solid ${ubiActiva ? "#d4a017" : "rgba(255,255,255,0.25)"}`,
-            borderRadius:"12px", padding:"10px 14px", fontSize:"13px", fontWeight:800,
-            color: ubiActiva ? "#d4a017" : "#fff", cursor:"pointer",
-            fontFamily:"'Nunito', sans-serif", textAlign:"left",
-            display:"flex", alignItems:"center", justifyContent:"space-between",
+        {/* FILA UBICACIÓN */}
+        <div style={{ display:"flex", gap:"8px", alignItems:"center" }}>
+
+          {/* PROVINCIA */}
+          <div style={{ flex:1, position:"relative" }}>
+            <select value={provSel} onChange={e => setProvSel(e.target.value)} style={selStyle(!provSel)}>
+              <option value="">🗺️ Provincia</option>
+              {provincias.map(p => <option key={p.id} value={p.nombre}>{p.nombre}</option>)}
+            </select>
+          </div>
+
+          {/* CIUDAD — aparece si hay provincia */}
+          {provSel && (
+            <div style={{ flex:1, position:"relative" }}>
+              <select value={ciudadSel} onChange={e => setCiudadSel(e.target.value)} style={selStyle(!ciudadSel)}>
+                <option value="">🏙️ Ciudad</option>
+                {ciudades.map(c => <option key={c.id} value={c.nombre}>{c.nombre}</option>)}
+              </select>
+            </div>
+          )}
+
+          {/* BARRIO — aparece si hay ciudad y barrios disponibles */}
+          {ciudadSel && barrios.length > 0 && (
+            <div style={{ flex:1, position:"relative" }}>
+              <select value={barrioSel} onChange={e => setBarrioSel(e.target.value)} style={selStyle(!barrioSel)}>
+                <option value="">🏘️ Barrio</option>
+                {barrios.map(b => <option key={b.id} value={b.nombre}>{b.nombre}</option>)}
+              </select>
+            </div>
+          )}
+
+          {/* BOTÓN GPS */}
+          <button onClick={detectarGPS} disabled={gpsLoading} title="Detectar mi ubicación" style={{
+            background: "rgba(212,160,23,0.2)", border:"2px solid rgba(212,160,23,0.5)",
+            borderRadius:"12px", width:"42px", height:"42px", flexShrink:0,
+            display:"flex", alignItems:"center", justifyContent:"center",
+            fontSize:"18px", cursor:"pointer", opacity: gpsLoading ? 0.6 : 1,
           }}>
-            <span>{ubiActiva ? ubiResumen() : "📍 ¿Dónde buscás?"}</span>
-            <span style={{ fontSize:"10px", opacity:0.7 }}>{ubiPanel ? "▲" : "▼"}</span>
+            {gpsLoading ? "⏳" : "📍"}
           </button>
 
-          {/* Si GPS activo → botón acotar */}
-          {modoUbi === "gps" && gpsNivel && gpsNextLabel() && (
-            <button onClick={avanzarGPS} style={{
-              background:"rgba(255,255,255,0.12)", border:"2px solid rgba(255,255,255,0.25)",
-              borderRadius:"12px", padding:"10px 12px", fontSize:"11px", fontWeight:800,
-              color:"#fff", cursor:"pointer", fontFamily:"'Nunito', sans-serif", whiteSpace:"nowrap", flexShrink:0,
-            }}>
-              {gpsNextLabel()} →
-            </button>
+          {/* LIMPIAR GEO */}
+          {ubiActiva && (
+            <button onClick={limpiarUbi} title="Limpiar filtro" style={{
+              background:"rgba(255,80,80,0.15)", border:"2px solid rgba(255,80,80,0.3)",
+              borderRadius:"12px", width:"42px", height:"42px", flexShrink:0,
+              display:"flex", alignItems:"center", justifyContent:"center",
+              fontSize:"16px", cursor:"pointer",
+            }}>✕</button>
           )}
         </div>
 
-        {/* PANEL UBICACIÓN */}
-        {ubiPanel && (
-          <div style={{ background:"rgba(255,255,255,0.06)", borderRadius:"14px", padding:"14px", border:"1px solid rgba(255,255,255,0.12)" }}>
-
-            {/* TABS GPS / MANUAL */}
-            <div style={{ display:"flex", gap:"8px", marginBottom:"14px" }}>
-              {[["gps","📡 GPS automático"],["manual","✏️ Ingresar manual"]] .map(([m, l]) => (
-                <button key={m} onClick={() => setModoUbi(m as ModoUbi)} style={{
-                  flex:1, background: modoUbi === m ? "#d4a017" : "rgba(255,255,255,0.1)",
-                  border:"none", borderRadius:"10px", padding:"8px", fontSize:"12px", fontWeight:800,
-                  color: modoUbi === m ? "#1a2a3a" : "#fff", cursor:"pointer", fontFamily:"'Nunito', sans-serif",
-                }}>{l}</button>
-              ))}
-            </div>
-
-            {/* GPS */}
-            {modoUbi === "gps" && (
-              <div style={{ display:"flex", flexDirection:"column", gap:"10px" }}>
-                <button onClick={detectarGPS} disabled={gpsLoading} style={{
-                  width:"100%", background: gpsNivel ? "rgba(39,174,96,0.2)" : "#d4a017",
-                  border:`2px solid ${gpsNivel ? "#27ae60" : "#d4a017"}`,
-                  borderRadius:"12px", padding:"12px", fontSize:"13px", fontWeight:900,
-                  color: gpsNivel ? "#27ae60" : "#1a2a3a", cursor:"pointer",
-                  fontFamily:"'Nunito', sans-serif", opacity: gpsLoading ? 0.7 : 1,
-                }}>
-                  {gpsLoading ? "⏳ Detectando..." : gpsNivel ? `✅ ${gpsLabel()} — Volver a detectar` : "📍 Detectar mi ubicación por GPS"}
-                </button>
-
-                {/* Niveles GPS detectados */}
-                {gpsNivel && (
-                  <div style={{ display:"flex", flexDirection:"column", gap:"6px" }}>
-                    {[
-                      { nivel:"provincia", label:`🗺️ ${gpsProv}`,          activo: gpsNivel === "provincia" },
-                      { nivel:"ciudad",    label:`🏙️ ${gpsCiudad}`,         activo: gpsNivel === "ciudad"    },
-                      ...(gpsBarrio ? [{ nivel:"barrio", label:`🏘️ ${gpsBarrio}`, activo: gpsNivel === "barrio" }] : []),
-                    ].map(item => (
-                      <button key={item.nivel} onClick={() => { setGpsNivel(item.nivel as any); setUbiPanel(false); }} style={{
-                        width:"100%", background: item.activo ? "rgba(212,160,23,0.25)" : "rgba(255,255,255,0.08)",
-                        border:`2px solid ${item.activo ? "#d4a017" : "rgba(255,255,255,0.15)"}`,
-                        borderRadius:"10px", padding:"10px 14px", fontSize:"13px", fontWeight:800,
-                        color: item.activo ? "#d4a017" : "#8a9aaa", cursor:"pointer",
-                        fontFamily:"'Nunito', sans-serif", textAlign:"left", display:"flex", alignItems:"center", justifyContent:"space-between",
-                      }}>
-                        {item.label}
-                        {item.activo && <span style={{ fontSize:"10px", background:"#d4a017", color:"#1a2a3a", borderRadius:"20px", padding:"2px 8px" }}>ACTIVO</span>}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* MANUAL */}
-            {modoUbi === "manual" && (
-              <div style={{ display:"flex", flexDirection:"column", gap:"10px" }}>
-
-                {/* PROVINCIA */}
-                <div>
-                  <div style={labelStyle}>🗺️ Provincia</div>
-                  <select value={manProv} onChange={e => setManProv(e.target.value)} style={selectStyle}>
-                    <option value="">Todas las provincias</option>
-                    {listaProvs.map(p => <option key={p} value={p}>{p}</option>)}
-                  </select>
-                </div>
-
-                {/* CIUDAD */}
-                {manProv && (
-                  <div>
-                    <div style={labelStyle}>🏙️ Ciudad</div>
-                    <select value={manCiudad} onChange={e => setManCiudad(e.target.value)} style={selectStyle}>
-                      <option value="">Todas las ciudades</option>
-                      {listaCiudades.map(c => <option key={c} value={c}>{c}</option>)}
-                    </select>
-                  </div>
-                )}
-
-                {/* BARRIO */}
-                {manCiudad && listaBarrios.length > 0 && (
-                  <div>
-                    <div style={labelStyle}>🏘️ Barrio</div>
-                    <select value={manBarrio} onChange={e => setManBarrio(e.target.value)} style={selectStyle}>
-                      <option value="">Todos los barrios</option>
-                      {listaBarrios.map(b => <option key={b} value={b}>{b}</option>)}
-                    </select>
-                  </div>
-                )}
-
-                {/* BOTÓN APLICAR */}
-                <button onClick={() => setUbiPanel(false)} style={{
-                  width:"100%", background:"linear-gradient(135deg, #d4a017, #f0c040)",
-                  border:"none", borderRadius:"12px", padding:"12px", fontSize:"13px",
-                  fontWeight:900, color:"#1a2a3a", cursor:"pointer", fontFamily:"'Nunito', sans-serif",
-                }}>
-                  ✅ Aplicar ubicación
-                </button>
-
-                {(manProv || manCiudad || manBarrio) && (
-                  <button onClick={() => { setManProv(""); setManCiudad(""); setManBarrio(""); }} style={{
-                    width:"100%", background:"none", border:"1px solid rgba(255,255,255,0.2)",
-                    borderRadius:"10px", padding:"8px", fontSize:"12px", fontWeight:700,
-                    color:"#8a9aaa", cursor:"pointer", fontFamily:"'Nunito', sans-serif",
-                  }}>
-                    ✕ Limpiar filtro de ubicación
-                  </button>
-                )}
-              </div>
-            )}
+        {/* CHIP UBICACIÓN ACTIVA */}
+        {ubiActiva && (
+          <div style={{ display:"flex", gap:"6px", flexWrap:"wrap" }}>
+            {[provSel, ciudadSel, barrioSel].filter(Boolean).map((label, i) => {
+              const iconos = ["🗺️","🏙️","🏘️"];
+              return (
+                <span key={i} style={{ background:"rgba(212,160,23,0.2)", border:"1px solid rgba(212,160,23,0.4)", borderRadius:"20px", padding:"3px 10px", fontSize:"11px", fontWeight:800, color:"#d4a017" }}>
+                  {iconos[i]} {label}
+                </span>
+              );
+            })}
           </div>
         )}
 
-        {/* FILA 2: BUSCADOR CON DROPDOWN */}
+        {/* BUSCADOR CON DROPDOWN */}
         <div style={{ position:"relative" }}>
           <div style={{ display:"flex", background:"#fff", borderRadius:"14px", boxShadow:"0 2px 8px rgba(0,0,0,0.2)", position:"relative", zIndex:10 }}>
             <div style={{ flex:1, position:"relative" }}>
@@ -407,7 +309,7 @@ export default function Buscar() {
                 value={query}
                 onChange={e => { setQuery(e.target.value); setRubroSel(null); setSubrubroSel(null); setDropOpen(true); }}
                 onFocus={() => setDropOpen(true)}
-                placeholder={placeholderGeo()}
+                placeholder={placeholderQ}
                 style={{ width:"100%", border:"none", padding:"12px 16px", fontFamily:"'Nunito', sans-serif", fontSize:"14px", color:"#2c2c2e", outline:"none", background:"transparent", boxSizing:"border-box", borderRadius:"14px 0 0 14px" }}
               />
               {(rubroSel || subrubroSel) && (
@@ -419,10 +321,10 @@ export default function Buscar() {
             {query && !rubroSel && (
               <button onClick={limpiarBusqueda} style={{ background:"none", border:"none", padding:"0 8px", cursor:"pointer", fontSize:"16px", color:"#9a9a9a" }}>✕</button>
             )}
-            <button onClick={() => setDropOpen(false)} style={{ background:"#d4a017", border:"none", padding:"0 18px", cursor:"pointer", fontSize:"16px", fontWeight:900, color:"#1a2a3a", borderRadius:"0 14px 14px 0", flexShrink:0 }}>🔍</button>
+            <button onClick={() => setDropOpen(false)} style={{ background:"#d4a017", border:"none", padding:"0 18px", cursor:"pointer", fontSize:"16px", color:"#1a2a3a", borderRadius:"0 14px 14px 0", flexShrink:0 }}>🔍</button>
           </div>
 
-          {/* DROPDOWN RUBROS */}
+          {/* DROPDOWN RUBROS/SUBRUBROS */}
           {dropOpen && (
             <div ref={dropRef} style={{ position:"absolute", top:"calc(100% + 6px)", left:0, right:0, background:"#fff", borderRadius:"14px", boxShadow:"0 8px 32px rgba(0,0,0,0.2)", zIndex:100, maxHeight:"300px", overflowY:"auto", border:"1px solid #e8e8e6" }}>
               {rubroSel && subrubrosDeRubro.length > 0 ? (
@@ -488,136 +390,107 @@ export default function Buscar() {
             </div>
           )}
         </div>
-
-        {/* CHIPS FILTROS ACTIVOS */}
-        {(ubiActiva || rubroSel) && (
-          <div style={{ display:"flex", gap:"6px", flexWrap:"wrap" }}>
-            {ubiActiva && (
-              <div style={{ background:"rgba(212,160,23,0.2)", borderRadius:"20px", padding:"4px 12px", fontSize:"11px", fontWeight:800, color:"#d4a017" }}>
-                {ubiResumen()}
-              </div>
-            )}
-            {rubroSel && (
-              <div onClick={limpiarBusqueda} style={{ background:"rgba(255,255,255,0.15)", borderRadius:"20px", padding:"4px 12px", fontSize:"11px", fontWeight:800, color:"#fff", cursor:"pointer" }}>
-                📂 {rubroSel.nombre}{subrubroSel ? ` → ${subrubroSel.nombre}` : ""} ✕
-              </div>
-            )}
-          </div>
-        )}
       </div>
 
-      {/* ════ LISTADO ════ */}
+      {/* ════ RESULTADOS ════ */}
       {loading ? (
         <div style={{ textAlign:"center", padding:"40px", color:"#9a9a9a", fontWeight:700 }}>Cargando...</div>
 
-      /* ── MODO TEXTO LIBRE ── */
       ) : busquedaLibre ? (
+        /* MODO TEXTO LIBRE — grilla plana */
         <div>
           <div style={{ padding:"14px 16px 8px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
             <span style={{ fontSize:"14px", fontWeight:900, color:"#1a2a3a" }}>
-              🔍 {resultadosTexto.length} resultado{resultadosTexto.length !== 1 ? "s" : ""} para <span style={{ color:"#d4a017" }}>"{query}"</span>
+              🔍 <span style={{ color:"#d4a017" }}>{resultadosTexto.length}</span> resultado{resultadosTexto.length !== 1 ? "s" : ""} para "{query}"
             </span>
             <button onClick={limpiarBusqueda} style={{ background:"none", border:"none", fontSize:"12px", fontWeight:700, color:"#9a9a9a", cursor:"pointer", fontFamily:"'Nunito', sans-serif" }}>✕ Limpiar</button>
           </div>
-
           {resultadosTexto.length === 0 ? (
             <div style={{ textAlign:"center", padding:"40px 20px" }}>
               <div style={{ fontSize:"40px", marginBottom:"12px" }}>🔍</div>
-              <div style={{ fontSize:"16px", fontWeight:800, color:"#1a2a3a", marginBottom:"6px" }}>Sin resultados</div>
+              <div style={{ fontSize:"15px", fontWeight:800, color:"#1a2a3a", marginBottom:"6px" }}>Sin resultados</div>
               <div style={{ fontSize:"13px", color:"#9a9a9a", fontWeight:600, marginBottom:"20px" }}>No encontramos anuncios para "{query}"</div>
-              <button onClick={limpiarBusqueda} style={{ background:"linear-gradient(135deg,#d4a017,#f0c040)", border:"none", borderRadius:"12px", padding:"12px 24px", fontSize:"13px", fontWeight:800, color:"#1a2a3a", cursor:"pointer", fontFamily:"'Nunito', sans-serif" }}>
-                Ver todos los anuncios
-              </button>
+              <button onClick={limpiarBusqueda} style={{ background:"linear-gradient(135deg,#d4a017,#f0c040)", border:"none", borderRadius:"12px", padding:"12px 24px", fontSize:"13px", fontWeight:800, color:"#1a2a3a", cursor:"pointer", fontFamily:"'Nunito', sans-serif" }}>Ver todos</button>
             </div>
           ) : (
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px", padding:"0 16px 16px" }}>
-              {resultadosTexto.map(a => {
-                const f = FUENTES[a.fuente] || FUENTES.nexonet;
-                return (
-                  <a key={a.id} href={`/anuncios/${a.id}`} style={{ textDecoration:"none" }}>
-                    <div style={{ background:"#fff", borderRadius:"14px", overflow:"hidden", boxShadow:"0 2px 10px rgba(0,0,0,0.08)", border:"1px solid #f0f0f0" }}>
-                      <div style={{ background:f.color, padding:"3px 8px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                        <span style={{ fontSize:"9px", fontWeight:900, color:f.texto, textTransform:"uppercase" }}>{f.label}</span>
-                        {a.flash && <span style={{ background:"#1a2a3a", color:"#d4a017", fontSize:"8px", fontWeight:900, padding:"1px 5px", borderRadius:"5px" }}>⚡Flash</span>}
-                      </div>
-                      <div style={{ width:"100%", height:"110px", background:"#f4f4f2", display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden" }}>
-                        {a.imagenes?.[0] ? <img src={a.imagenes[0]} alt={a.titulo} style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : <span style={{ fontSize:"36px" }}>📦</span>}
-                      </div>
-                      <div style={{ padding:"8px 10px 10px" }}>
-                        {/* Highlight del texto buscado */}
-                        <div style={{ fontSize:"12px", fontWeight:800, color:"#2c2c2e", marginBottom:"3px", overflow:"hidden", display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical" }}>
-                          {a.titulo.split(new RegExp(`(${query})`, "gi")).map((part, i) =>
-                            part.toLowerCase() === qLow
-                              ? <mark key={i} style={{ background:"#fff3cd", color:"#1a2a3a", borderRadius:"3px", padding:"0 2px" }}>{part}</mark>
-                              : part
-                          )}
-                        </div>
-                        <div style={{ fontSize:"14px", fontWeight:900, color:"#d4a017" }}>{formatPrecio(a.precio, a.moneda)}</div>
-                        <div style={{ fontSize:"10px", color:"#9a9a9a", fontWeight:600, marginTop:"2px" }}>📍 {a.ciudad}</div>
-                      </div>
-                    </div>
-                  </a>
-                );
-              })}
+              {resultadosTexto.map(a => <TarjetaCard key={a.id} a={a} qLow={qLow} query={query} formatPrecio={formatPrecio} />)}
             </div>
           )}
         </div>
 
-      /* ── MODO AGRUPADO POR RUBRO ── */
       ) : (
+        /* MODO RUBROS AGRUPADOS */
         rubrosAMostrar.map(rubro => {
           const items = getAnunciosPorRubro(rubro);
-          if (!rubroSel && items.length === 0) return null; // ocultar rubros vacíos
+          if (!rubroSel && items.length === 0) return null;
           return (
             <div key={rubro.id} style={{ marginBottom:"8px", background:"#fff", paddingBottom:"12px", borderBottom:"6px solid #f4f4f2" }}>
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"14px 16px 8px" }}>
                 <span style={{ fontSize:"16px", fontWeight:900, color:"#1a2a3a" }}>{rubro.nombre}</span>
-                <span style={{ fontSize:"12px", fontWeight:700, color:"#d4a017", cursor:"pointer" }}>Ver todos →</span>
+                <span style={{ fontSize:"12px", fontWeight:700, color:"#d4a017" }}>Ver todos →</span>
               </div>
               <div style={{ display:"flex", gap:"8px", padding:"0 16px 12px", overflowX:"auto", scrollbarWidth:"none" }}>
                 {rubro.subrubros.map(sub => (
-                  <button key={sub.id} onClick={() => toggleSubrubro(rubro.id, sub.id)} style={{
-                    background: subrubrosActivos[rubro.id] === sub.id ? "#1a2a3a" : "#f4f4f2",
-                    border:`2px solid ${subrubrosActivos[rubro.id] === sub.id ? "#1a2a3a" : "#e8e8e6"}`,
+                  <button key={sub.id} onClick={() => toggleSub(rubro.id, sub.id)} style={{
+                    background: subActivos[rubro.id] === sub.id ? "#1a2a3a" : "#f4f4f2",
+                    border:`2px solid ${subActivos[rubro.id] === sub.id ? "#1a2a3a" : "#e8e8e6"}`,
                     borderRadius:"20px", padding:"5px 14px", fontSize:"12px", fontWeight:700,
-                    color: subrubrosActivos[rubro.id] === sub.id ? "#d4a017" : "#2c2c2e",
+                    color: subActivos[rubro.id] === sub.id ? "#d4a017" : "#2c2c2e",
                     whiteSpace:"nowrap", cursor:"pointer", flexShrink:0, fontFamily:"'Nunito', sans-serif",
                   }}>{sub.nombre}</button>
                 ))}
               </div>
               {items.length === 0 ? (
-                <div style={{ padding:"12px 16px", color:"#9a9a9a", fontSize:"13px", fontWeight:600 }}>Sin anuncios{ubiActiva ? ` en ${ubiResumen().replace(/[📍🗺️🏙️🏘️]/g,"")}` : ""}</div>
+                <div style={{ padding:"12px 16px", color:"#9a9a9a", fontSize:"13px", fontWeight:600 }}>
+                  Sin anuncios{ubiActiva ? ` en ${barrioSel || ciudadSel || provSel}` : ""}
+                </div>
               ) : (
                 <div style={{ display:"flex", gap:"12px", padding:"0 16px", overflowX:"auto", scrollbarWidth:"none" }}>
-                  {items.map(a => {
-                    const f = FUENTES[a.fuente] || FUENTES.nexonet;
-                    return (
-                      <a key={a.id} href={`/anuncios/${a.id}`} style={{ textDecoration:"none", flexShrink:0, width:"160px" }}>
-                        <div style={{ background:"#fff", borderRadius:"14px", overflow:"hidden", boxShadow:"0 2px 10px rgba(0,0,0,0.08)", border:"1px solid #f0f0f0" }}>
-                          <div style={{ background:f.color, padding:"3px 8px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                            <span style={{ fontSize:"9px", fontWeight:900, color:f.texto, textTransform:"uppercase" }}>{f.label}</span>
-                            {a.flash && <span style={{ background:"#1a2a3a", color:"#d4a017", fontSize:"8px", fontWeight:900, padding:"1px 5px", borderRadius:"5px" }}>⚡Flash</span>}
-                          </div>
-                          <div style={{ width:"100%", height:"110px", background:"#f4f4f2", display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden" }}>
-                            {a.imagenes?.[0] ? <img src={a.imagenes[0]} alt={a.titulo} style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : <span style={{ fontSize:"40px" }}>📦</span>}
-                          </div>
-                          <div style={{ padding:"8px 10px 10px" }}>
-                            <div style={{ fontSize:"12px", fontWeight:800, color:"#2c2c2e", marginBottom:"3px", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{a.titulo}</div>
-                            <div style={{ fontSize:"14px", fontWeight:900, color:"#d4a017" }}>{formatPrecio(a.precio, a.moneda)}</div>
-                            <div style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:600, marginTop:"2px" }}>📍 {a.ciudad}</div>
-                          </div>
-                        </div>
-                      </a>
-                    );
-                  })}
+                  {items.map(a => <TarjetaCard key={a.id} a={a} formatPrecio={formatPrecio} horizontal />)}
                 </div>
               )}
             </div>
           );
         })
       )}
+
       <BottomNav />
     </main>
+  );
+}
+
+// ── Tarjeta reutilizable ──
+function TarjetaCard({ a, qLow, query, formatPrecio, horizontal }: {
+  a: any; qLow?: string; query?: string; formatPrecio: (p: number, m: string) => string; horizontal?: boolean;
+}) {
+  const f = FUENTES[a.fuente] || FUENTES.nexonet;
+  return (
+    <a href={`/anuncios/${a.id}`} style={{ textDecoration:"none", flexShrink: horizontal ? 0 : undefined, width: horizontal ? "160px" : undefined }}>
+      <div style={{ background:"#fff", borderRadius:"14px", overflow:"hidden", boxShadow:"0 2px 10px rgba(0,0,0,0.08)", border:"1px solid #f0f0f0" }}>
+        <div style={{ background:f.color, padding:"3px 8px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+          <span style={{ fontSize:"9px", fontWeight:900, color:f.texto, textTransform:"uppercase" }}>{f.label}</span>
+          {a.flash && <span style={{ background:"#1a2a3a", color:"#d4a017", fontSize:"8px", fontWeight:900, padding:"1px 5px", borderRadius:"5px" }}>⚡Flash</span>}
+        </div>
+        <div style={{ width:"100%", height:"110px", background:"#f4f4f2", display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden" }}>
+          {a.imagenes?.[0] ? <img src={a.imagenes[0]} alt={a.titulo} style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : <span style={{ fontSize:"36px" }}>📦</span>}
+        </div>
+        <div style={{ padding:"8px 10px 10px" }}>
+          <div style={{ fontSize:"12px", fontWeight:800, color:"#2c2c2e", marginBottom:"3px", overflow:"hidden", display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical" }}>
+            {qLow && query
+              ? a.titulo.split(new RegExp(`(${query})`, "gi")).map((part: string, i: number) =>
+                  part.toLowerCase() === qLow
+                    ? <mark key={i} style={{ background:"#fff3cd", color:"#1a2a3a", borderRadius:"3px", padding:"0 2px" }}>{part}</mark>
+                    : part
+                )
+              : a.titulo
+            }
+          </div>
+          <div style={{ fontSize:"14px", fontWeight:900, color:"#d4a017" }}>{formatPrecio(a.precio, a.moneda)}</div>
+          <div style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:600, marginTop:"2px" }}>📍 {a.ciudad}</div>
+        </div>
+      </div>
+    </a>
   );
 }
 
@@ -626,13 +499,12 @@ const iDrop = (activo: boolean): React.CSSProperties => ({
   background: activo ? "rgba(212,160,23,0.08)" : "transparent",
   borderLeft: activo ? "3px solid #d4a017" : "3px solid transparent",
 });
-const labelStyle: React.CSSProperties = {
-  fontSize:"11px", fontWeight:800, color:"rgba(255,255,255,0.7)",
-  textTransform:"uppercase", letterSpacing:"1px", marginBottom:"6px",
-};
-const selectStyle: React.CSSProperties = {
-  width:"100%", background:"rgba(255,255,255,0.12)", border:"2px solid rgba(255,255,255,0.2)",
-  borderRadius:"10px", padding:"10px 14px", fontSize:"13px", fontWeight:700,
-  color:"#fff", fontFamily:"'Nunito', sans-serif", outline:"none", cursor:"pointer",
-  appearance:"none", WebkitAppearance:"none",
-};
+
+const selStyle = (placeholder: boolean): React.CSSProperties => ({
+  width:"100%", background: placeholder ? "rgba(255,255,255,0.1)" : "rgba(212,160,23,0.2)",
+  border:`2px solid ${placeholder ? "rgba(255,255,255,0.2)" : "rgba(212,160,23,0.5)"}`,
+  borderRadius:"12px", padding:"10px 12px", fontSize:"12px", fontWeight:700,
+  color: placeholder ? "rgba(255,255,255,0.7)" : "#d4a017",
+  fontFamily:"'Nunito', sans-serif", outline:"none", cursor:"pointer",
+  appearance:"none", WebkitAppearance:"none", height:"42px",
+});

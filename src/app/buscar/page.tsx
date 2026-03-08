@@ -250,7 +250,7 @@ function BuscarInner() {
   };
 
   return (
-    <main style={{paddingTop:"95px",paddingBottom: modoConexion ? "200px" : "130px",background:"#f4f4f2",minHeight:"100vh",fontFamily:"'Nunito',sans-serif"}}>
+    <main style={{paddingTop:"95px",paddingBottom: modoConexion ? "280px" : "130px",background:"#f4f4f2",minHeight:"100vh",fontFamily:"'Nunito',sans-serif"}}>
       <Header />
 
       {/* BARRA */}
@@ -286,7 +286,7 @@ function BuscarInner() {
                 style={{width:"100%",border:"none",padding:"12px 16px",fontFamily:"'Nunito',sans-serif",fontSize:"14px",color:"#2c2c2e",outline:"none",background:"transparent",boxSizing:"border-box",borderRadius:"14px 0 0 14px"}}
               />
               {(rSel||sSel) && (
-                <div onClick={limpQ} style={{position:"absolute",right:"8px",top:"50%",transform:"translateY(-50%)",background:sSel?"#2980b9":"#d4a017",borderRadius:"20px",padding:"3px 10px",fontSize:"11px",fontWeight:800,color:sSel?"#fff":"#1a2a3a",cursor:"pointer"}}>
+                <div onClick={limpQ} style={{position:"absolute",right:"8px",top:"50%",transform:"translateY(-50%)",background:sSel?"#1db954":"#d4a017",borderRadius:"20px",padding:"3px 10px",fontSize:"11px",fontWeight:800,color:sSel?"#fff":"#1a2a3a",cursor:"pointer"}}>
                   {sSel?sSel.nombre:rSel!.nombre} ✕
                 </div>
               )}
@@ -339,7 +339,7 @@ function BuscarInner() {
         {/* BOTÓN MODO CONEXIÓN */}
         {session && !modoConexion && (
           <button onClick={activarModoConexion} style={{
-            background:"linear-gradient(135deg,#2980b9,#3a7bd5)",
+            background:"linear-gradient(135deg,#1db954,#17a844)",
             border:"none",borderRadius:"12px",padding:"11px 16px",
             display:"flex",alignItems:"center",justifyContent:"center",gap:"8px",
             cursor:"pointer",fontFamily:"'Nunito',sans-serif",
@@ -350,7 +350,7 @@ function BuscarInner() {
           </button>
         )}
         {modoConexion && (
-          <div style={{background:"linear-gradient(135deg,#1a3a5c,#2980b9)",borderRadius:"12px",padding:"11px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:"8px",border:"2px solid #3a9bd5"}}>
+          <div style={{background:"linear-gradient(135deg,#0d4a1f,#1db954)",borderRadius:"12px",padding:"11px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:"8px",border:"2px solid #1db954"}}>
             <div style={{display:"flex",alignItems:"center",gap:"8px"}}>
               <span style={{fontSize:"16px"}}>🔗</span>
               <span style={{fontSize:"13px",fontWeight:800,color:"#fff"}}>Modo Conexión activo</span>
@@ -365,7 +365,7 @@ function BuscarInner() {
 
       {/* BARRA SELECCIÓN cuando modo activo */}
       {modoConexion && (
-        <div style={{background:"#1a3a5c",padding:"10px 16px",display:"flex",alignItems:"center",gap:"10px",justifyContent:"space-between",position:"sticky",top:"95px",zIndex:50,borderBottom:"2px solid #2980b9"}}>
+        <div style={{background:"#0d4a1f",padding:"10px 16px",display:"flex",alignItems:"center",gap:"10px",justifyContent:"space-between",position:"sticky",top:"95px",zIndex:50,borderBottom:"2px solid #1db954"}}>
           <button onClick={todosSeleccionados ? deseleccionarTodos : seleccionarTodos} style={{background:"rgba(255,255,255,0.1)",border:"2px solid rgba(255,255,255,0.3)",borderRadius:"20px",padding:"6px 14px",fontSize:"12px",fontWeight:800,color:"#fff",cursor:"pointer",fontFamily:"'Nunito',sans-serif",whiteSpace:"nowrap"}}>
             {todosSeleccionados ? "✕ Deseleccionar todos" : "✅ Seleccionar todos"}
           </button>
@@ -427,13 +427,13 @@ function BuscarInner() {
 
       {/* ── BARRA FLOTANTE CONEXIÓN ── */}
       {modoConexion && (
-        <div style={{position:"fixed",bottom:"80px",left:0,right:0,zIndex:100,padding:"0 16px 12px"}}>
+        <div style={{position:"fixed",bottom:"148px",left:0,right:0,zIndex:100,padding:"0 16px 12px"}}>
           {resultadoConex ? (
             <div style={{background:"linear-gradient(135deg,#27ae60,#2ecc71)",borderRadius:"16px",padding:"16px 20px",textAlign:"center",fontSize:"14px",fontWeight:800,color:"#fff",boxShadow:"0 4px 20px rgba(39,174,96,0.4)"}}>
               {resultadoConex}
             </div>
           ) : (
-            <div style={{background:"linear-gradient(135deg,#1a2a3a,#243b55)",borderRadius:"16px",padding:"16px 20px",boxShadow:"0 4px 20px rgba(0,0,0,0.3)",border:"2px solid #2980b9"}}>
+            <div style={{background:"linear-gradient(135deg,#1a2a3a,#243b55)",borderRadius:"16px",padding:"16px 20px",boxShadow:"0 4px 20px rgba(0,0,0,0.3)",border:"2px solid #1db954"}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"12px"}}>
                 <div>
                   <div style={{fontSize:"13px",fontWeight:900,color:"#fff"}}>{seleccionados.size > 0 ? `${seleccionados.size} anuncio${seleccionados.size!==1?"s":""} seleccionado${seleccionados.size!==1?"s":""}` : "Ningún anuncio seleccionado"}</div>
@@ -450,7 +450,7 @@ function BuscarInner() {
                 <button
                   onClick={ejecutarConexion}
                   disabled={seleccionados.size===0 || conectando || seleccionados.size > bits}
-                  style={{flex:2,background:seleccionados.size===0||seleccionados.size>bits?"rgba(255,255,255,0.1)":"linear-gradient(135deg,#2980b9,#3a7bd5)",border:"none",borderRadius:"12px",padding:"13px",fontSize:"13px",fontWeight:800,color:seleccionados.size===0||seleccionados.size>bits?"#666":"#fff",cursor:seleccionados.size===0||seleccionados.size>bits?"not-allowed":"pointer",fontFamily:"'Nunito',sans-serif",display:"flex",alignItems:"center",justifyContent:"center",gap:"6px"}}
+                  style={{flex:2,background:seleccionados.size===0||seleccionados.size>bits?"rgba(255,255,255,0.1)":"linear-gradient(135deg,#1db954,#17a844)",border:"none",borderRadius:"12px",padding:"13px",fontSize:"13px",fontWeight:800,color:seleccionados.size===0||seleccionados.size>bits?"#666":"#fff",cursor:seleccionados.size===0||seleccionados.size>bits?"not-allowed":"pointer",fontFamily:"'Nunito',sans-serif",display:"flex",alignItems:"center",justifyContent:"center",gap:"6px"}}
                 >
                   {conectando ? "Conectando..." : `🔗 Conectar${seleccionados.size>0?` (${seleccionados.size} BIT)`:""}`}
                 </button>
@@ -477,10 +477,10 @@ function Tarjeta({ a, fmt, qLow, query, horizontal, modoConexion, seleccionado, 
     >
       {/* OVERLAY SELECCIÓN */}
       {modoConexion && (
-        <div style={{position:"absolute",inset:0,zIndex:10,borderRadius:"14px",border:`3px solid ${seleccionado?"#2980b9":"rgba(41,128,185,0.3)"}`,background:seleccionado?"rgba(41,128,185,0.15)":"transparent",transition:"all .15s",pointerEvents:"none"}} />
+        <div style={{position:"absolute",inset:0,zIndex:10,borderRadius:"14px",border:`3px solid ${seleccionado?"#1db954":"rgba(29,185,84,0.4)"}`,background:seleccionado?"rgba(29,185,84,0.15)":"transparent",transition:"all .15s",pointerEvents:"none"}} />
       )}
       {modoConexion && (
-        <div style={{position:"absolute",top:"8px",right:"8px",zIndex:11,width:"24px",height:"24px",borderRadius:"50%",background:seleccionado?"#2980b9":"rgba(255,255,255,0.9)",border:`2px solid ${seleccionado?"#2980b9":"#ccc"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"14px",boxShadow:"0 2px 6px rgba(0,0,0,0.2)"}}>
+        <div style={{position:"absolute",top:"8px",right:"8px",zIndex:11,width:"24px",height:"24px",borderRadius:"50%",background:seleccionado?"#1db954":"rgba(255,255,255,0.9)",border:`2px solid ${seleccionado?"#1db954":"#ccc"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"14px",boxShadow:"0 2px 6px rgba(0,0,0,0.2)"}}>
           {seleccionado && <span style={{color:"#fff",fontWeight:900}}>✓</span>}
         </div>
       )}

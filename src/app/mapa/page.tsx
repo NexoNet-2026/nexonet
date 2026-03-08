@@ -134,7 +134,7 @@ export default function Mapa() {
                 style={{width:"100%",border:"none",padding:"11px 16px",fontFamily:"'Nunito',sans-serif",fontSize:"14px",color:"#2c2c2e",outline:"none",background:"transparent",boxSizing:"border-box",borderRadius:"14px 0 0 14px"}}
               />
               {(rSel||sSel) && (
-                <div onClick={limpQ} style={{position:"absolute",right:"8px",top:"50%",transform:"translateY(-50%)",background:sSel?"#2980b9":"#d4a017",borderRadius:"20px",padding:"3px 10px",fontSize:"11px",fontWeight:800,color:sSel?"#fff":"#1a2a3a",cursor:"pointer"}}>
+                <div onClick={limpQ} style={{position:"absolute",right:"8px",top:"50%",transform:"translateY(-50%)",background:sSel?"#1db954":"#d4a017",borderRadius:"20px",padding:"3px 10px",fontSize:"11px",fontWeight:800,color:sSel?"#fff":"#1a2a3a",cursor:"pointer"}}>
                   {sSel?sSel.nombre:rSel!.nombre} ✕
                 </div>
               )}
@@ -164,14 +164,14 @@ export default function Mapa() {
 
         {/* BOTÓN MODO CONEXIÓN */}
         {session && !modoConexion && (
-          <button onClick={activarModoConexion} style={{background:"linear-gradient(135deg,#2980b9,#3a7bd5)",border:"none",borderRadius:"12px",padding:"10px 16px",display:"flex",alignItems:"center",justifyContent:"center",gap:"8px",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>
+          <button onClick={activarModoConexion} style={{background:"linear-gradient(135deg,#1db954,#17a844)",border:"none",borderRadius:"12px",padding:"10px 16px",display:"flex",alignItems:"center",justifyContent:"center",gap:"8px",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>
             <span style={{fontSize:"16px"}}>🔗</span>
             <span style={{fontSize:"13px",fontWeight:800,color:"#fff"}}>Modo Conexión</span>
             <span style={{background:"rgba(255,255,255,0.2)",borderRadius:"20px",padding:"2px 8px",fontSize:"11px",fontWeight:800,color:"#fff",marginLeft:"4px"}}>{bits} BIT</span>
           </button>
         )}
         {modoConexion && (
-          <div style={{background:"linear-gradient(135deg,#1a3a5c,#2980b9)",borderRadius:"12px",padding:"10px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",border:"2px solid #3a9bd5"}}>
+          <div style={{background:"linear-gradient(135deg,#0d4a1f,#1db954)",borderRadius:"12px",padding:"10px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",border:"2px solid #1db954"}}>
             <div style={{display:"flex",alignItems:"center",gap:"8px"}}>
               <span style={{fontSize:"16px"}}>🔗</span>
               <span style={{fontSize:"13px",fontWeight:800,color:"#fff"}}>Modo Conexión activo</span>
@@ -211,7 +211,7 @@ export default function Mapa() {
               <button onClick={()=>setAnuncioSel(null)} style={{background:"none",border:"none",fontSize:"16px",cursor:"pointer",color:"#9a9a9a"}}>✕</button>
               <a href={`/anuncios/${anuncioSel.id}`} style={{background:"#d4a017",color:"#1a2a3a",border:"none",borderRadius:"8px",padding:"4px 8px",fontSize:"11px",fontWeight:800,textDecoration:"none",textAlign:"center"}}>Ver →</a>
               {session && (
-                <button onClick={()=>{toggleSeleccion(anuncioSel.id);setModoConexion(true);}} style={{background:"#2980b9",border:"none",borderRadius:"8px",padding:"4px 8px",fontSize:"11px",fontWeight:800,color:"#fff",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>🔗</button>
+                <button onClick={()=>{toggleSeleccion(anuncioSel.id);setModoConexion(true);}} style={{background:"#1db954",border:"none",borderRadius:"8px",padding:"4px 8px",fontSize:"11px",fontWeight:800,color:"#fff",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>🔗</button>
               )}
             </div>
           </div>
@@ -221,7 +221,7 @@ export default function Mapa() {
         <div style={{position:"absolute",bottom:0,left:0,right:0,background:"#fff",padding:"8px 16px",display:"flex",justifyContent:"space-between",alignItems:"center",borderTop:"1px solid #e8e8e6",zIndex:999}}>
           <span style={{fontSize:"13px",fontWeight:700,color:"#666"}}>
             📍 {anunciosFiltrados.length} anuncio{anunciosFiltrados.length!==1?"s":""} en el mapa
-            {modoConexion && seleccionados.size>0 && <span style={{color:"#2980b9",marginLeft:"8px"}}>· {seleccionados.size} seleccionado{seleccionados.size!==1?"s":""}</span>}
+            {modoConexion && seleccionados.size>0 && <span style={{color:"#1db954",marginLeft:"8px"}}>· {seleccionados.size} seleccionado{seleccionados.size!==1?"s":""}</span>}
           </span>
           <a href="/buscar" style={{fontSize:"12px",fontWeight:700,color:"#d4a017",textDecoration:"none"}}>Ver en lista →</a>
         </div>
@@ -229,13 +229,13 @@ export default function Mapa() {
 
       {/* BARRA FLOTANTE CONEXIÓN */}
       {modoConexion && (
-        <div style={{position:"fixed",bottom:"80px",left:0,right:0,zIndex:100,padding:"0 16px 12px"}}>
+        <div style={{position:"fixed",bottom:"148px",left:0,right:0,zIndex:100,padding:"0 16px 12px"}}>
           {resultadoConex ? (
             <div style={{background:"linear-gradient(135deg,#27ae60,#2ecc71)",borderRadius:"16px",padding:"16px 20px",textAlign:"center",fontSize:"14px",fontWeight:800,color:"#fff",boxShadow:"0 4px 20px rgba(39,174,96,0.4)"}}>
               {resultadoConex}
             </div>
           ) : (
-            <div style={{background:"linear-gradient(135deg,#1a2a3a,#243b55)",borderRadius:"16px",padding:"16px 20px",boxShadow:"0 4px 20px rgba(0,0,0,0.3)",border:"2px solid #2980b9"}}>
+            <div style={{background:"linear-gradient(135deg,#1a2a3a,#243b55)",borderRadius:"16px",padding:"16px 20px",boxShadow:"0 4px 20px rgba(0,0,0,0.3)",border:"2px solid #1db954"}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"12px"}}>
                 <div>
                   <div style={{fontSize:"13px",fontWeight:900,color:"#fff"}}>{seleccionados.size>0?`${seleccionados.size} anuncio${seleccionados.size!==1?"s":""} seleccionado${seleccionados.size!==1?"s":""}` : "Tocá pines en el mapa"}</div>
@@ -245,7 +245,7 @@ export default function Mapa() {
               <div style={{display:"flex",gap:"10px"}}>
                 <button onClick={cancelarConexion} style={{flex:1,background:"rgba(255,255,255,0.08)",border:"2px solid rgba(255,255,255,0.15)",borderRadius:"12px",padding:"13px",fontSize:"13px",fontWeight:800,color:"#fff",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>Cancelar</button>
                 <button onClick={ejecutarConexion} disabled={seleccionados.size===0||conectando||seleccionados.size>bits}
-                  style={{flex:2,background:seleccionados.size===0||seleccionados.size>bits?"rgba(255,255,255,0.1)":"linear-gradient(135deg,#2980b9,#3a7bd5)",border:"none",borderRadius:"12px",padding:"13px",fontSize:"13px",fontWeight:800,color:seleccionados.size===0||seleccionados.size>bits?"#666":"#fff",cursor:seleccionados.size===0||seleccionados.size>bits?"not-allowed":"pointer",fontFamily:"'Nunito',sans-serif",display:"flex",alignItems:"center",justifyContent:"center",gap:"6px"}}>
+                  style={{flex:2,background:seleccionados.size===0||seleccionados.size>bits?"rgba(255,255,255,0.1)":"linear-gradient(135deg,#1db954,#17a844)",border:"none",borderRadius:"12px",padding:"13px",fontSize:"13px",fontWeight:800,color:seleccionados.size===0||seleccionados.size>bits?"#666":"#fff",cursor:seleccionados.size===0||seleccionados.size>bits?"not-allowed":"pointer",fontFamily:"'Nunito',sans-serif",display:"flex",alignItems:"center",justifyContent:"center",gap:"6px"}}>
                   {conectando?"Conectando...":`🔗 Conectar${seleccionados.size>0?` (${seleccionados.size} BIT)`:""}`}
                 </button>
               </div>

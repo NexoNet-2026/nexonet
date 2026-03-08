@@ -7,7 +7,7 @@ import { supabase } from "@/lib/supabase";
 
 const MapaLeaflet = dynamic(() => import("@/components/MapaLeaflet"), { ssr: false });
 
-type Anuncio = { id:number; titulo:string; precio:number; moneda:string; imagenes:string[]; lat:number; lng:number; ciudad:string; provincia:string; flash:boolean; subrubro_id:number };
+type Anuncio = { id:number; titulo:string; precio:number; moneda:string; rubro:string; imagenes:string[]; lat:number; lng:number; ciudad:string; provincia:string; flash:boolean; subrubro_id:number };
 type RubroFlat = { id:number; nombre:string };
 type SubrubroFlat = { id:number; nombre:string; rubro_id:number };
 
@@ -35,7 +35,7 @@ export default function Mapa() {
         setRFlat(rData.map((r:any) => ({id:r.id,nombre:r.nombre})));
         setSFlat(rData.flatMap((r:any) => (r.subrubros||[]).map((s:any) => ({id:s.id,nombre:s.nombre,rubro_id:r.id}))));
       }
-      if (aData) setAnuncios(aData as any);
+      if (aData) setAnuncios((aData as any[]).map(a => ({ ...a, rubro: "Otros", moneda: a.moneda || "ARS", imagenes: a.imagenes || [], flash: a.flash || false })));
       setLoading(false);
     });
   }, []);
@@ -158,7 +158,7 @@ export default function Mapa() {
             Cargando anuncios...
           </div>
         ) : (
-          <MapaLeaflet anuncios={anunciosFiltrados} onSeleccionar={setAnuncioSel} />
+          <MapaLeaflet anuncios={anunciosFiltrados as any} onSeleccionar={(a:any) => setAnuncioSel(a)} />
         )}
 
         {/* POPUP */}

@@ -261,17 +261,7 @@ export default function Home() {
           )}
         </div>
 
-        {/* CHIPS DE RUBROS — scroll horizontal */}
-        {!dropOpen && (
-          <div style={{ display:"flex", gap:"8px", marginTop:"14px", overflowX:"auto", scrollbarWidth:"none", paddingBottom:"2px" }}>
-            <button onClick={limpiar} style={chipStyle(!rubroSel)}>Todos</button>
-            {rubros.slice(0, 8).map(r => (
-              <button key={r.id} onClick={() => seleccionarRubro(r)} style={chipStyle(rubroSel?.id === r.id)}>
-                {r.nombre}
-              </button>
-            ))}
-          </div>
-        )}
+
       </div>
 
       {/* ACCIONES RÁPIDAS */}

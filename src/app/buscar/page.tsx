@@ -1,375 +1,284 @@
 "use client";
-import Header from "@/components/Header";
-import BottomNav from "@/components/BottomNav";
 import { useState, useEffect, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
+import Header from "@/components/Header";
+import BottomNav from "@/components/BottomNav";
 import { supabase } from "@/lib/supabase";
 
-type Subrubro     = { id: number; nombre: string };
-type Rubro        = { id: number; nombre: string; subrubros: Subrubro[] };
-type RubroFlat    = { id: number; nombre: string };
-type SubrubroFlat = { id: number; nombre: string; rubro_id: number };
-type Anuncio      = {
-  id: number; titulo: string; precio: number; moneda: string;
-  ciudad: string; provincia: string; barrio: string;
-  imagenes: string[]; flash: boolean; fuente: string; subrubro_id: number;
-};
-type Provincia = { id: number; nombre: string };
-type Ciudad    = { id: number; nombre: string; provincia_id: number };
-type Barrio    = { id: number; nombre: string; ciudad_id: number };
+type Anuncio = { id:number; titulo:string; precio:number; moneda:string; ciudad:string; provincia:string; barrio:string; imagenes:string[]; flash:boolean; fuente:string; subrubro_id:number };
+type Rubro = { id:number; nombre:string; subrubros:{id:number; nombre:string}[] };
+type RubroFlat = { id:number; nombre:string };
+type SubrubroFlat = { id:number; nombre:string; rubro_id:number };
+type Prov = { id:number; nombre:string };
+type Ciudad = { id:number; nombre:string; provincia_id:number };
+type Barrio = { id:number; nombre:string; ciudad_id:number };
 
-const FUENTES: Record<string, { color: string; texto: string; label: string }> = {
-  nexonet:       { color: "#d4a017", texto: "#1a2a3a", label: "NexoNet"        },
-  mercadolibre:  { color: "#ffe600", texto: "#333",    label: "Mercado Libre"  },
-  rosariogarage: { color: "#ff6b00", texto: "#fff",    label: "Rosario Garage" },
-  olx:           { color: "#00a884", texto: "#fff",    label: "OLX"            },
-  otro:          { color: "#888",    texto: "#fff",    label: "Externo"        },
+const F: Record<string,{color:string;texto:string;label:string}> = {
+  nexonet:      {color:"#d4a017",texto:"#1a2a3a",label:"NexoNet"},
+  mercadolibre: {color:"#ffe600",texto:"#333",   label:"Mercado Libre"},
+  rosariogarage:{color:"#ff6b00",texto:"#fff",   label:"Rosario Garage"},
+  olx:          {color:"#00a884",texto:"#fff",   label:"OLX"},
+  otro:         {color:"#888",   texto:"#fff",   label:"Externo"},
 };
 
 export default function Buscar() {
   return (
-    <Suspense fallback={
-      <main style={{ paddingTop:"95px", paddingBottom:"130px", background:"#f4f4f2", minHeight:"100vh", fontFamily:"'Nunito', sans-serif", display:"flex", alignItems:"center", justifyContent:"center" }}>
-        <div style={{ textAlign:"center", color:"#9a9a9a", fontWeight:700 }}>Cargando...</div>
-      </main>
-    }>
+    <Suspense fallback={<div style={{paddingTop:"95px",textAlign:"center",padding:"60px",color:"#9a9a9a",fontWeight:700}}>Cargando...</div>}>
       <BuscarInner />
     </Suspense>
   );
 }
 
 function BuscarInner() {
-  const searchParams = useSearchParams();
+  const sp = useSearchParams();
 
-  // ── Ubicación ──
-  const [provincias,  setProvincias]  = useState<Provincia[]>([]);
-  const [ciudades,    setCiudades]    = useState<Ciudad[]>([]);
-  const [barrios,     setBarrios]     = useState<Barrio[]>([]);
-  const [provSel,     setProvSel]     = useState("");
-  const [ciudadSel,   setCiudadSel]   = useState("");
-  const [barrioSel,   setBarrioSel]   = useState("");
-  const [gpsLoading,  setGpsLoading]  = useState(false);
-  const [ubiLabel,    setUbiLabel]    = useState("");
+  // Ubicación
+  const [provs,    setProvs]    = useState<Prov[]>([]);
+  const [ciudades, setCiudades] = useState<Ciudad[]>([]);
+  const [barrios,  setBarrios]  = useState<Barrio[]>([]);
+  const [provSel,  setProvSel]  = useState("");
+  const [ciudSel,  setCiudSel]  = useState("");
+  const [barrSel,  setBarrSel]  = useState("");
+  const [gpsLoad,  setGpsLoad]  = useState(false);
 
-  // ── Buscador dropdown ──
-  const [query,       setQuery]       = useState("");
-  const [rubroSel,    setRubroSel]    = useState<RubroFlat | null>(null);
-  const [subrubroSel, setSubrubroSel] = useState<SubrubroFlat | null>(null);
-  const [dropOpen,    setDropOpen]    = useState(false);
+  // Buscador
+  const [query,    setQuery]    = useState("");
+  const [rSel,     setRSel]     = useState<RubroFlat|null>(null);
+  const [sSel,     setSSel]     = useState<SubrubroFlat|null>(null);
+  const [dropOpen, setDropOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropRef  = useRef<HTMLDivElement>(null);
 
-  // ── Datos anuncios / rubros ──
-  const [rubros,        setRubros]        = useState<Rubro[]>([]);
-  const [rubrosFlat,    setRubrosFlat]    = useState<RubroFlat[]>([]);
-  const [subrubrosFlat, setSubrubrosFlat] = useState<SubrubroFlat[]>([]);
-  const [anuncios,      setAnuncios]      = useState<Anuncio[]>([]);
-  const [subActivos,    setSubActivos]    = useState<Record<number, number | null>>({});
-  const [loading,       setLoading]       = useState(true);
+  // Datos
+  const [rubros,   setRubros]   = useState<Rubro[]>([]);
+  const [rFlat,    setRFlat]    = useState<RubroFlat[]>([]);
+  const [sFlat,    setSFlat]    = useState<SubrubroFlat[]>([]);
+  const [anuncios, setAnuncios] = useState<Anuncio[]>([]);
+  const [subAct,   setSubAct]   = useState<Record<number,number|null>>({});
+  const [loading,  setLoading]  = useState(true);
 
-  // ── Cargar datos iniciales ──
   useEffect(() => {
-    const qParam = searchParams.get("q");
-    if (qParam) setQuery(qParam);
-    (window as any).__rP = searchParams.get("rubro");
-    (window as any).__sP = searchParams.get("subrubro");
+    if (sp.get("q")) setQuery(sp.get("q")!);
+    (window as any).__rP = sp.get("rubro");
+    (window as any).__sP = sp.get("subrubro");
 
-    const cargar = async () => {
-      const [{ data: provData }, { data: rData }, { data: aData }] = await Promise.all([
-        supabase.from("provincias").select("id, nombre").order("nombre"),
-        supabase.from("rubros").select("id, nombre, subrubros(id, nombre)").order("nombre"),
-        supabase.from("anuncios")
-          .select("id, titulo, precio, moneda, ciudad, provincia, barrio, imagenes, flash, fuente, subrubro_id")
-          .eq("estado", "activo").order("created_at", { ascending: false }).limit(100),
-      ]);
-
-      if (provData) setProvincias(provData);
+    Promise.all([
+      supabase.from("provincias").select("id,nombre").order("nombre"),
+      supabase.from("rubros").select("id,nombre,subrubros(id,nombre)").order("nombre"),
+      supabase.from("anuncios")
+        .select("id,titulo,precio,moneda,ciudad,provincia,barrio,imagenes,flash,fuente,subrubro_id")
+        .eq("estado","activo").order("created_at",{ascending:false}).limit(100),
+    ]).then(([{data:pData},{data:rData},{data:aData}]) => {
+      if (pData) setProvs(pData);
       if (rData) {
         setRubros(rData as any);
-        const flat = rData.map((r: any) => ({ id: r.id, nombre: r.nombre }));
-        setRubrosFlat(flat);
-        setSubrubrosFlat(rData.flatMap((r: any) =>
-          (r.subrubros || []).map((s: any) => ({ id: s.id, nombre: s.nombre, rubro_id: r.id }))
-        ));
-        const rP = (window as any).__rP;
-        const sP = (window as any).__sP;
-        if (rP) { const r = flat.find((x: RubroFlat) => x.id === parseInt(rP)); if (r) { setRubroSel(r); setQuery(r.nombre); } }
+        const rf = rData.map((r:any) => ({id:r.id,nombre:r.nombre}));
+        setRFlat(rf);
+        setSFlat(rData.flatMap((r:any) => (r.subrubros||[]).map((s:any) => ({id:s.id,nombre:s.nombre,rubro_id:r.id}))));
+        const rP = (window as any).__rP, sP = (window as any).__sP;
+        if (rP) { const r = rf.find((x:any) => x.id===parseInt(rP)); if(r){setRSel(r);setQuery(r.nombre);} }
         if (sP) {
-          const allS = rData.flatMap((r: any) => (r.subrubros||[]).map((s: any) => ({ id:s.id, nombre:s.nombre, rubro_id:r.id })));
-          const s = allS.find((x: SubrubroFlat) => x.id === parseInt(sP));
-          if (s) { setSubrubroSel(s); setQuery(s.nombre); }
+          const all = rData.flatMap((r:any) => (r.subrubros||[]).map((s:any) => ({id:s.id,nombre:s.nombre,rubro_id:r.id})));
+          const s = all.find((x:any) => x.id===parseInt(sP));
+          if(s){setSSel(s);setQuery(s.nombre);}
         }
       }
       if (aData) setAnuncios(aData as any);
       setLoading(false);
-    };
-    cargar();
+    });
   }, []);
 
-  // Cargar ciudades al seleccionar provincia
+  // Ciudades al cambiar provincia
   useEffect(() => {
-    setCiudadSel(""); setBarrioSel(""); setCiudades([]); setBarrios([]);
+    setCiudSel(""); setBarrSel(""); setCiudades([]); setBarrios([]);
     if (!provSel) return;
-    const prov = provincias.find(p => p.nombre === provSel);
-    if (!prov) return;
-    supabase.from("ciudades").select("id, nombre, provincia_id")
-      .eq("provincia_id", prov.id).order("nombre")
-      .then(({ data }) => { if (data) setCiudades(data); });
-  }, [provSel, provincias]);
+    const p = provs.find(x => x.nombre===provSel);
+    if (!p) return;
+    supabase.from("ciudades").select("id,nombre,provincia_id").eq("provincia_id",p.id).order("nombre")
+      .then(({data}) => { if(data) setCiudades(data); });
+  }, [provSel, provs]);
 
-  // Cargar barrios al seleccionar ciudad
+  // Barrios al cambiar ciudad
   useEffect(() => {
-    setBarrioSel(""); setBarrios([]);
-    if (!ciudadSel) return;
-    const ciudad = ciudades.find(c => c.nombre === ciudadSel);
-    if (!ciudad) return;
-    supabase.from("barrios").select("id, nombre, ciudad_id")
-      .eq("ciudad_id", ciudad.id).order("nombre")
-      .then(({ data }) => { if (data) setBarrios(data); });
-  }, [ciudadSel, ciudades]);
-
-  // Actualizar label de ubicación
-  useEffect(() => {
-    const parts = [provSel, ciudadSel, barrioSel].filter(Boolean);
-    setUbiLabel(parts.length ? parts[parts.length - 1] : "");
-  }, [provSel, ciudadSel, barrioSel]);
+    setBarrSel(""); setBarrios([]);
+    if (!ciudSel) return;
+    const c = ciudades.find(x => x.nombre===ciudSel);
+    if (!c) return;
+    supabase.from("barrios").select("id,nombre,ciudad_id").eq("ciudad_id",c.id).order("nombre")
+      .then(({data}) => { if(data) setBarrios(data); });
+  }, [ciudSel, ciudades]);
 
   // Cerrar dropdown afuera
   useEffect(() => {
-    const h = (e: MouseEvent) => {
+    const h = (e:MouseEvent) => {
       if (dropRef.current && !dropRef.current.contains(e.target as Node) &&
           inputRef.current && !inputRef.current.contains(e.target as Node))
         setDropOpen(false);
     };
-    document.addEventListener("mousedown", h);
-    return () => document.removeEventListener("mousedown", h);
+    document.addEventListener("mousedown",h);
+    return () => document.removeEventListener("mousedown",h);
   }, []);
 
-  // ── GPS ──
-  const detectarGPS = () => {
+  // GPS
+  const gps = () => {
     if (!navigator.geolocation) return alert("GPS no disponible");
-    setGpsLoading(true);
+    setGpsLoad(true);
     navigator.geolocation.getCurrentPosition(async pos => {
       try {
         const r = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json`);
         const d = await r.json();
-        const prov   = d.address?.state || "";
-        const ciudad = d.address?.city || d.address?.town || d.address?.village || "";
-        const barrio = d.address?.suburb || d.address?.neighbourhood || "";
-
-        // Buscar provincia en nuestra lista
-        const provMatch = provincias.find(p =>
-          p.nombre.toLowerCase().includes(prov.toLowerCase()) ||
-          prov.toLowerCase().includes(p.nombre.toLowerCase())
-        );
-        if (provMatch) {
-          setProvSel(provMatch.nombre);
-          // Esperar ciudades y setear
-          const { data: ciudadesData } = await supabase.from("ciudades")
-            .select("id, nombre, provincia_id").eq("provincia_id", provMatch.id).order("nombre");
-          if (ciudadesData) {
-            setCiudades(ciudadesData);
-            const ciudadMatch = ciudadesData.find((c: Ciudad) =>
-              c.nombre.toLowerCase().includes(ciudad.toLowerCase()) ||
-              ciudad.toLowerCase().includes(c.nombre.toLowerCase())
-            );
-            if (ciudadMatch) {
-              setCiudadSel(ciudadMatch.nombre);
-              const { data: barriosData } = await supabase.from("barrios")
-                .select("id, nombre, ciudad_id").eq("ciudad_id", ciudadMatch.id).order("nombre");
-              if (barriosData) {
-                setBarrios(barriosData);
-                const barrioMatch = barriosData.find((b: Barrio) =>
-                  b.nombre.toLowerCase().includes(barrio.toLowerCase()) ||
-                  barrio.toLowerCase().includes(b.nombre.toLowerCase())
-                );
-                if (barrioMatch) setBarrioSel(barrioMatch.nombre);
+        const pNom = d.address?.state||"";
+        const cNom = d.address?.city||d.address?.town||d.address?.village||"";
+        const bNom = d.address?.suburb||d.address?.neighbourhood||"";
+        const pm = provs.find(p => p.nombre.toLowerCase().includes(pNom.toLowerCase())||pNom.toLowerCase().includes(p.nombre.toLowerCase()));
+        if (pm) {
+          setProvSel(pm.nombre);
+          const {data:cd} = await supabase.from("ciudades").select("id,nombre,provincia_id").eq("provincia_id",pm.id).order("nombre");
+          if (cd) {
+            setCiudades(cd);
+            const cm = cd.find((c:any) => c.nombre.toLowerCase().includes(cNom.toLowerCase())||cNom.toLowerCase().includes(c.nombre.toLowerCase()));
+            if (cm) {
+              setCiudSel(cm.nombre);
+              const {data:bd} = await supabase.from("barrios").select("id,nombre,ciudad_id").eq("ciudad_id",cm.id).order("nombre");
+              if (bd) {
+                setBarrios(bd);
+                const bm = bd.find((b:any) => b.nombre.toLowerCase().includes(bNom.toLowerCase())||bNom.toLowerCase().includes(b.nombre.toLowerCase()));
+                if (bm) setBarrSel(bm.nombre);
               }
             }
           }
         }
-      } catch { alert("No se pudo obtener la ubicación"); }
-      setGpsLoading(false);
-    }, () => { alert("No se pudo acceder al GPS"); setGpsLoading(false); });
+      } catch { alert("Error al obtener ubicación"); }
+      setGpsLoad(false);
+    }, () => { alert("No se pudo acceder al GPS"); setGpsLoad(false); });
   };
 
-  const limpiarUbi = () => { setProvSel(""); setCiudadSel(""); setBarrioSel(""); };
+  const limpUbi = () => { setProvSel(""); setCiudSel(""); setBarrSel(""); };
+  const ubiActiva = !!(provSel||ciudSel||barrSel);
 
-  // ── Buscador ──
+  // Filtrado
   const qLow = query.toLowerCase();
-  const rubrosFiltered    = rubrosFlat.filter(r => r.nombre.toLowerCase().includes(qLow));
-  const subrubrosFiltered = subrubrosFlat.filter(s => s.nombre.toLowerCase().includes(qLow));
-  const subrubrosDeRubro  = rubroSel ? subrubrosFlat.filter(s => s.rubro_id === rubroSel.id) : [];
-  const limpiarBusqueda   = () => { setQuery(""); setRubroSel(null); setSubrubroSel(null); setDropOpen(false); };
-  const selRubro    = (r: RubroFlat)    => { setRubroSel(r); setSubrubroSel(null); setQuery(r.nombre); setDropOpen(false); };
-  const selSubrubro = (s: SubrubroFlat) => {
-    setRubroSel(rubrosFlat.find(r => r.id === s.rubro_id) || null);
-    setSubrubroSel(s); setQuery(s.nombre); setDropOpen(false);
-  };
-  const toggleSub = (rubroId: number, subId: number) =>
-    setSubActivos(p => ({ ...p, [rubroId]: p[rubroId] === subId ? null : subId }));
+  const rFilt = rFlat.filter(r => r.nombre.toLowerCase().includes(qLow));
+  const sFilt = sFlat.filter(s => s.nombre.toLowerCase().includes(qLow));
+  const sDRubro = rSel ? sFlat.filter(s => s.rubro_id===rSel.id) : [];
 
-  // ── Filtrado ──
-  const anunciosFiltrados = anuncios.filter(a => {
-    let geo = true;
-    if (barrioSel) geo = (a.barrio || "").toLowerCase().includes(barrioSel.toLowerCase());
-    else if (ciudadSel) geo = (a.ciudad || "").toLowerCase().includes(ciudadSel.toLowerCase());
-    else if (provSel)   geo = (a.provincia || "").toLowerCase().includes(provSel.toLowerCase());
-    return geo;
+  const limpQ  = () => { setQuery(""); setRSel(null); setSSel(null); setDropOpen(false); };
+  const selR   = (r:RubroFlat)    => { setRSel(r); setSSel(null); setQuery(r.nombre); setDropOpen(false); };
+  const selS   = (s:SubrubroFlat) => { setRSel(rFlat.find(r=>r.id===s.rubro_id)||null); setSSel(s); setQuery(s.nombre); setDropOpen(false); };
+  const togSub = (rId:number,sId:number) => setSubAct(p => ({...p,[rId]:p[rId]===sId?null:sId}));
+
+  const anuFilt = anuncios.filter(a => {
+    if (barrSel) return (a.barrio||"").toLowerCase().includes(barrSel.toLowerCase());
+    if (ciudSel) return (a.ciudad||"").toLowerCase().includes(ciudSel.toLowerCase());
+    if (provSel) return (a.provincia||"").toLowerCase().includes(provSel.toLowerCase());
+    return true;
   });
 
-  const busquedaLibre = query.trim() !== "" && !rubroSel && !subrubroSel;
-  const resultadosTexto = busquedaLibre
-    ? anunciosFiltrados.filter(a => a.titulo.toLowerCase().includes(qLow))
-    : [];
+  const busLibre = query.trim()!==""&&!rSel&&!sSel;
+  const resTxt   = busLibre ? anuFilt.filter(a=>a.titulo.toLowerCase().includes(qLow)) : [];
+  const rubrosM  = rSel ? rubros.filter(r=>r.id===rSel.id) : rubros;
 
-  const rubrosAMostrar = rubroSel ? rubros.filter(r => r.id === rubroSel.id) : rubros;
-  const getAnunciosPorRubro = (rubro: Rubro) => {
-    const subIds    = rubro.subrubros.map(s => s.id);
-    const subActivo = subActivos[rubro.id];
-    return anunciosFiltrados.filter(a =>
-      subActivo ? a.subrubro_id === subActivo : subIds.includes(a.subrubro_id)
-    ).slice(0, 8);
+  const getAnus = (rubro:Rubro) => {
+    const ids = rubro.subrubros.map(s=>s.id);
+    const sa  = subAct[rubro.id];
+    return anuFilt.filter(a => sa ? a.subrubro_id===sa : ids.includes(a.subrubro_id)).slice(0,8);
   };
 
-  const formatPrecio = (precio: number, moneda: string) =>
-    !precio ? "Consultar" : `${moneda === "USD" ? "U$D" : "$"} ${precio.toLocaleString("es-AR")}`;
-
-  const placeholderQ = ubiLabel ? `¿Qué buscás en ${ubiLabel}?` : "¿Qué buscás?";
-  const ubiActiva    = !!(provSel || ciudadSel || barrioSel);
+  const fmt = (p:number,m:string) => !p?"Consultar":`${m==="USD"?"U$D":"$"} ${p.toLocaleString("es-AR")}`;
+  const phQ  = barrSel?`¿Qué buscás en ${barrSel}?`:ciudSel?`¿Qué buscás en ${ciudSel}?`:provSel?`¿Qué buscás en ${provSel}?`:"¿Qué buscás?";
 
   return (
-    <main style={{ paddingTop:"95px", paddingBottom:"130px", background:"#f4f4f2", minHeight:"100vh", fontFamily:"'Nunito', sans-serif" }}>
+    <main style={{paddingTop:"95px",paddingBottom:"130px",background:"#f4f4f2",minHeight:"100vh",fontFamily:"'Nunito',sans-serif"}}>
       <Header />
 
-      {/* ════ BARRA ════ */}
-      <div style={{ background:"linear-gradient(135deg, #1a2a3a 0%, #243b55 100%)", padding:"12px 16px 14px", display:"flex", flexDirection:"column", gap:"10px" }}>
+      {/* BARRA */}
+      <div style={{background:"linear-gradient(135deg,#1a2a3a,#243b55)",padding:"12px 16px 14px",display:"flex",flexDirection:"column",gap:"10px"}}>
 
         {/* FILA UBICACIÓN */}
-        <div style={{ display:"flex", gap:"8px", alignItems:"center" }}>
-          <UbiSelect
-            value={provSel}
-            placeholder="🗺️ Provincia"
-            opciones={provincias.map(p => p.nombre)}
-            onChange={v => setProvSel(v)}
-          />
-          {provSel && (
-            <UbiSelect
-              value={ciudadSel}
-              placeholder="🏙️ Ciudad"
-              opciones={ciudades.map(c => c.nombre)}
-              onChange={v => setCiudadSel(v)}
-            />
-          )}
-          {ciudadSel && barrios.length > 0 && (
-            <UbiSelect
-              value={barrioSel}
-              placeholder="🏘️ Barrio"
-              opciones={barrios.map(b => b.nombre)}
-              onChange={v => setBarrioSel(v)}
-            />
-          )}
-          {/* GPS */}
-          <button onClick={detectarGPS} disabled={gpsLoading} title="Detectar mi ubicación" style={{
-            background:"rgba(212,160,23,0.2)", border:"2px solid rgba(212,160,23,0.5)",
-            borderRadius:"12px", width:"42px", height:"42px", flexShrink:0,
-            display:"flex", alignItems:"center", justifyContent:"center",
-            fontSize:"18px", cursor:"pointer", opacity:gpsLoading ? 0.6 : 1,
-          }}>
-            {gpsLoading ? "⏳" : "📍"}
+        <div style={{display:"flex",gap:"8px",alignItems:"center"}}>
+          <SelUbi value={provSel} placeholder="🗺️ Provincia" opciones={provs.map(p=>p.nombre)} onChange={setProvSel} />
+          {provSel && <SelUbi value={ciudSel} placeholder="🏙️ Ciudad" opciones={ciudades.map(c=>c.nombre)} onChange={setCiudSel} />}
+          {ciudSel && barrios.length>0 && <SelUbi value={barrSel} placeholder="🏘️ Barrio" opciones={barrios.map(b=>b.nombre)} onChange={setBarrSel} />}
+          <button onClick={gps} disabled={gpsLoad} title="GPS" style={{flexShrink:0,width:"42px",height:"42px",background:"rgba(212,160,23,0.2)",border:"2px solid rgba(212,160,23,0.5)",borderRadius:"12px",fontSize:"18px",cursor:"pointer",opacity:gpsLoad?0.6:1,display:"flex",alignItems:"center",justifyContent:"center"}}>
+            {gpsLoad?"⏳":"📍"}
           </button>
-          {ubiActiva && (
-            <button onClick={limpiarUbi} title="Limpiar" style={{
-              background:"rgba(255,80,80,0.15)", border:"2px solid rgba(255,80,80,0.3)",
-              borderRadius:"12px", width:"42px", height:"42px", flexShrink:0,
-              display:"flex", alignItems:"center", justifyContent:"center",
-              fontSize:"16px", cursor:"pointer",
-            }}>✕</button>
-          )}
+          {ubiActiva && <button onClick={limpUbi} style={{flexShrink:0,width:"42px",height:"42px",background:"rgba(255,80,80,0.15)",border:"2px solid rgba(255,80,80,0.3)",borderRadius:"12px",fontSize:"16px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>}
         </div>
 
-        {/* CHIPS ACTIVOS */}
+        {/* CHIPS */}
         {ubiActiva && (
-          <div style={{ display:"flex", gap:"6px", flexWrap:"wrap" }}>
-            {[provSel, ciudadSel, barrioSel].filter(Boolean).map((label, i) => (
-              <span key={i} style={{ background:"rgba(212,160,23,0.2)", border:"1px solid rgba(212,160,23,0.4)", borderRadius:"20px", padding:"3px 10px", fontSize:"11px", fontWeight:800, color:"#d4a017" }}>
-                {["🗺️","🏙️","🏘️"][i]} {label}
+          <div style={{display:"flex",gap:"6px",flexWrap:"wrap"}}>
+            {[provSel,ciudSel,barrSel].filter(Boolean).map((l,i)=>(
+              <span key={i} style={{background:"rgba(212,160,23,0.2)",border:"1px solid rgba(212,160,23,0.4)",borderRadius:"20px",padding:"3px 10px",fontSize:"11px",fontWeight:800,color:"#d4a017"}}>
+                {["🗺️","🏙️","🏘️"][i]} {l}
               </span>
             ))}
           </div>
         )}
 
-        {/* BUSCADOR CON DROPDOWN */}
-        <div style={{ position:"relative" }}>
-          <div style={{ display:"flex", background:"#fff", borderRadius:"14px", boxShadow:"0 2px 8px rgba(0,0,0,0.2)", position:"relative", zIndex:10 }}>
-            <div style={{ flex:1, position:"relative" }}>
-              <input
-                ref={inputRef}
-                type="text"
-                value={query}
-                onChange={e => { setQuery(e.target.value); setRubroSel(null); setSubrubroSel(null); setDropOpen(true); }}
-                onFocus={() => setDropOpen(true)}
-                placeholder={placeholderQ}
-                style={{ width:"100%", border:"none", padding:"12px 16px", fontFamily:"'Nunito', sans-serif", fontSize:"14px", color:"#2c2c2e", outline:"none", background:"transparent", boxSizing:"border-box", borderRadius:"14px 0 0 14px" }}
+        {/* BUSCADOR */}
+        <div style={{position:"relative"}}>
+          <div style={{display:"flex",background:"#fff",borderRadius:"14px",boxShadow:"0 2px 8px rgba(0,0,0,0.2)",zIndex:10,position:"relative"}}>
+            <div style={{flex:1,position:"relative"}}>
+              <input ref={inputRef} type="text" value={query}
+                onChange={e=>{setQuery(e.target.value);setRSel(null);setSSel(null);setDropOpen(true);}}
+                onFocus={()=>setDropOpen(true)}
+                placeholder={phQ}
+                style={{width:"100%",border:"none",padding:"12px 16px",fontFamily:"'Nunito',sans-serif",fontSize:"14px",color:"#2c2c2e",outline:"none",background:"transparent",boxSizing:"border-box",borderRadius:"14px 0 0 14px"}}
               />
-              {(rubroSel || subrubroSel) && (
-                <div onClick={limpiarBusqueda} style={{ position:"absolute", right:"8px", top:"50%", transform:"translateY(-50%)", background: subrubroSel ? "#2980b9" : "#d4a017", borderRadius:"20px", padding:"3px 10px", fontSize:"11px", fontWeight:800, color: subrubroSel ? "#fff" : "#1a2a3a", cursor:"pointer" }}>
-                  {subrubroSel ? subrubroSel.nombre : rubroSel!.nombre} ✕
+              {(rSel||sSel) && (
+                <div onClick={limpQ} style={{position:"absolute",right:"8px",top:"50%",transform:"translateY(-50%)",background:sSel?"#2980b9":"#d4a017",borderRadius:"20px",padding:"3px 10px",fontSize:"11px",fontWeight:800,color:sSel?"#fff":"#1a2a3a",cursor:"pointer"}}>
+                  {sSel?sSel.nombre:rSel!.nombre} ✕
                 </div>
               )}
             </div>
-            {query && !rubroSel && (
-              <button onClick={limpiarBusqueda} style={{ background:"none", border:"none", padding:"0 8px", cursor:"pointer", fontSize:"16px", color:"#9a9a9a" }}>✕</button>
-            )}
-            <button onClick={() => setDropOpen(false)} style={{ background:"#d4a017", border:"none", padding:"0 18px", cursor:"pointer", fontSize:"16px", color:"#1a2a3a", borderRadius:"0 14px 14px 0", flexShrink:0 }}>🔍</button>
+            {query&&!rSel && <button onClick={limpQ} style={{background:"none",border:"none",padding:"0 8px",cursor:"pointer",fontSize:"16px",color:"#9a9a9a"}}>✕</button>}
+            <button onClick={()=>setDropOpen(false)} style={{background:"#d4a017",border:"none",padding:"0 18px",cursor:"pointer",fontSize:"16px",color:"#1a2a3a",borderRadius:"0 14px 14px 0",flexShrink:0}}>🔍</button>
           </div>
 
-          {/* DROPDOWN RUBROS/SUBRUBROS */}
           {dropOpen && (
-            <div ref={dropRef} style={{ position:"absolute", top:"calc(100% + 6px)", left:0, right:0, background:"#fff", borderRadius:"14px", boxShadow:"0 8px 32px rgba(0,0,0,0.2)", zIndex:100, maxHeight:"300px", overflowY:"auto", border:"1px solid #e8e8e6" }}>
-              {rubroSel && subrubrosDeRubro.length > 0 ? (
+            <div ref={dropRef} style={{position:"absolute",top:"calc(100% + 6px)",left:0,right:0,background:"#fff",borderRadius:"14px",boxShadow:"0 8px 32px rgba(0,0,0,0.2)",zIndex:100,maxHeight:"300px",overflowY:"auto",border:"1px solid #e8e8e6"}}>
+              {rSel&&sDRubro.length>0 ? (
                 <>
-                  <div style={{ padding:"10px 14px 6px", fontSize:"10px", fontWeight:800, color:"#9a9a9a", textTransform:"uppercase", letterSpacing:"1px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                    <span>Subrubros de {rubroSel.nombre}</span>
-                    <button onClick={limpiarBusqueda} style={{ background:"none", border:"none", cursor:"pointer", fontSize:"11px", color:"#d4a017", fontWeight:800, fontFamily:"'Nunito', sans-serif" }}>← Todos</button>
+                  <div style={{padding:"10px 14px 6px",fontSize:"10px",fontWeight:800,color:"#9a9a9a",textTransform:"uppercase",letterSpacing:"1px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                    <span>Subrubros de {rSel.nombre}</span>
+                    <button onClick={limpQ} style={{background:"none",border:"none",cursor:"pointer",fontSize:"11px",color:"#d4a017",fontWeight:800,fontFamily:"'Nunito',sans-serif"}}>← Todos</button>
                   </div>
-                  <div onClick={() => { setSubrubroSel(null); setDropOpen(false); }} style={iDrop(false)}>
-                    <span>📋</span><div style={{ fontSize:"13px", fontWeight:800, color:"#1a2a3a" }}>Todos en {rubroSel.nombre}</div>
+                  <div onClick={()=>{setSSel(null);setDropOpen(false);}} style={dItem(false)}>
+                    <span>📋</span><div style={{fontSize:"13px",fontWeight:800,color:"#1a2a3a"}}>Todos en {rSel.nombre}</div>
                   </div>
-                  {subrubrosDeRubro.map(s => (
-                    <div key={s.id} onClick={() => selSubrubro(s)} style={iDrop(subrubroSel?.id === s.id)}>
-                      <span style={{ fontSize:"13px" }}>↳</span>
-                      <div style={{ fontSize:"13px", fontWeight:700, color:"#1a2a3a" }}>{s.nombre}</div>
+                  {sDRubro.map(s=>(
+                    <div key={s.id} onClick={()=>selS(s)} style={dItem(sSel?.id===s.id)}>
+                      <span style={{fontSize:"13px"}}>↳</span>
+                      <div style={{fontSize:"13px",fontWeight:700,color:"#1a2a3a"}}>{s.nombre}</div>
                     </div>
                   ))}
                 </>
               ) : (
                 <>
-                  {query === "" && <div style={{ padding:"10px 14px 4px", fontSize:"10px", fontWeight:800, color:"#9a9a9a", textTransform:"uppercase", letterSpacing:"1px" }}>Todos los rubros</div>}
-                  {query !== "" && rubrosFiltered.length === 0 && subrubrosFiltered.length === 0 && (
-                    <div style={{ padding:"20px", textAlign:"center", fontSize:"13px", color:"#9a9a9a", fontWeight:600 }}>Sin resultados para "{query}"</div>
-                  )}
-                  {rubrosFiltered.map(r => (
-                    <div key={r.id} onClick={() => selRubro(r)} style={iDrop(rubroSel?.id === r.id)}>
+                  {query===""&&<div style={{padding:"10px 14px 4px",fontSize:"10px",fontWeight:800,color:"#9a9a9a",textTransform:"uppercase",letterSpacing:"1px"}}>Todos los rubros</div>}
+                  {query!==""&&rFilt.length===0&&sFilt.length===0&&<div style={{padding:"20px",textAlign:"center",fontSize:"13px",color:"#9a9a9a",fontWeight:600}}>Sin resultados para "{query}"</div>}
+                  {rFilt.map(r=>(
+                    <div key={r.id} onClick={()=>selR(r)} style={dItem(rSel?.id===r.id)}>
                       <span>📂</span>
-                      <div style={{ flex:1 }}>
-                        <div style={{ fontSize:"13px", fontWeight:800, color:"#1a2a3a" }}>{r.nombre}</div>
-                        <div style={{ fontSize:"10px", color:"#9a9a9a", fontWeight:600 }}>{subrubrosFlat.filter(s => s.rubro_id === r.id).length} subrubros</div>
+                      <div style={{flex:1}}>
+                        <div style={{fontSize:"13px",fontWeight:800,color:"#1a2a3a"}}>{r.nombre}</div>
+                        <div style={{fontSize:"10px",color:"#9a9a9a",fontWeight:600}}>{sFlat.filter(s=>s.rubro_id===r.id).length} subrubros</div>
                       </div>
-                      <span style={{ fontSize:"12px", color:"#d4a017", fontWeight:800 }}>→</span>
+                      <span style={{fontSize:"12px",color:"#d4a017",fontWeight:800}}>→</span>
                     </div>
                   ))}
-                  {query !== "" && subrubrosFiltered.length > 0 && (
+                  {query!==""&&sFilt.length>0&&(
                     <>
-                      <div style={{ padding:"8px 14px 4px", fontSize:"10px", fontWeight:800, color:"#9a9a9a", textTransform:"uppercase", letterSpacing:"1px", borderTop:"1px solid #f0f0f0" }}>Subrubros</div>
-                      {subrubrosFiltered.slice(0, 5).map(s => {
-                        const r = rubrosFlat.find(x => x.id === s.rubro_id);
+                      <div style={{padding:"8px 14px 4px",fontSize:"10px",fontWeight:800,color:"#9a9a9a",textTransform:"uppercase",letterSpacing:"1px",borderTop:"1px solid #f0f0f0"}}>Subrubros</div>
+                      {sFilt.slice(0,5).map(s=>{
+                        const r=rFlat.find(x=>x.id===s.rubro_id);
                         return (
-                          <div key={s.id} onClick={() => selSubrubro(s)} style={iDrop(false)}>
-                            <span style={{ fontSize:"13px" }}>↳</span>
+                          <div key={s.id} onClick={()=>selS(s)} style={dItem(false)}>
+                            <span style={{fontSize:"13px"}}>↳</span>
                             <div>
-                              <div style={{ fontSize:"13px", fontWeight:700, color:"#1a2a3a" }}>{s.nombre}</div>
-                              {r && <div style={{ fontSize:"10px", color:"#9a9a9a", fontWeight:600 }}>en {r.nombre}</div>}
+                              <div style={{fontSize:"13px",fontWeight:700,color:"#1a2a3a"}}>{s.nombre}</div>
+                              {r&&<div style={{fontSize:"10px",color:"#9a9a9a",fontWeight:600}}>en {r.nombre}</div>}
                             </div>
                           </div>
                         );
@@ -378,12 +287,12 @@ function BuscarInner() {
                   )}
                 </>
               )}
-              {query !== "" && (
-                <div onClick={() => setDropOpen(false)} style={{ ...iDrop(false), borderTop:"1px solid #f0f0f0", background:"#f9f7f0" }}>
+              {query!==""&&(
+                <div onClick={()=>setDropOpen(false)} style={{...dItem(false),borderTop:"1px solid #f0f0f0",background:"#f9f7f0"}}>
                   <span>🔍</span>
                   <div>
-                    <div style={{ fontSize:"13px", fontWeight:800, color:"#d4a017" }}>Buscar "{query}"</div>
-                    <div style={{ fontSize:"10px", color:"#9a9a9a", fontWeight:600 }}>Ver todos los resultados</div>
+                    <div style={{fontSize:"13px",fontWeight:800,color:"#d4a017"}}>Buscar "{query}"</div>
+                    <div style={{fontSize:"10px",color:"#9a9a9a",fontWeight:600}}>Ver todos los resultados</div>
                   </div>
                 </div>
               )}
@@ -392,215 +301,133 @@ function BuscarInner() {
         </div>
       </div>
 
-      {/* ════ RESULTADOS ════ */}
+      {/* RESULTADOS */}
       {loading ? (
-        <div style={{ textAlign:"center", padding:"40px", color:"#9a9a9a", fontWeight:700 }}>Cargando...</div>
-
-      ) : busquedaLibre ? (
-        /* MODO TEXTO LIBRE — grilla plana */
+        <div style={{textAlign:"center",padding:"40px",color:"#9a9a9a",fontWeight:700}}>Cargando...</div>
+      ) : busLibre ? (
         <div>
-          <div style={{ padding:"14px 16px 8px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-            <span style={{ fontSize:"14px", fontWeight:900, color:"#1a2a3a" }}>
-              🔍 <span style={{ color:"#d4a017" }}>{resultadosTexto.length}</span> resultado{resultadosTexto.length !== 1 ? "s" : ""} para "{query}"
-            </span>
-            <button onClick={limpiarBusqueda} style={{ background:"none", border:"none", fontSize:"12px", fontWeight:700, color:"#9a9a9a", cursor:"pointer", fontFamily:"'Nunito', sans-serif" }}>✕ Limpiar</button>
+          <div style={{padding:"14px 16px 8px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <span style={{fontSize:"14px",fontWeight:900,color:"#1a2a3a"}}>🔍 <span style={{color:"#d4a017"}}>{resTxt.length}</span> resultado{resTxt.length!==1?"s":""} para "{query}"</span>
+            <button onClick={limpQ} style={{background:"none",border:"none",fontSize:"12px",fontWeight:700,color:"#9a9a9a",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>✕ Limpiar</button>
           </div>
-          {resultadosTexto.length === 0 ? (
-            <div style={{ textAlign:"center", padding:"40px 20px" }}>
-              <div style={{ fontSize:"40px", marginBottom:"12px" }}>🔍</div>
-              <div style={{ fontSize:"15px", fontWeight:800, color:"#1a2a3a", marginBottom:"6px" }}>Sin resultados</div>
-              <div style={{ fontSize:"13px", color:"#9a9a9a", fontWeight:600, marginBottom:"20px" }}>No encontramos anuncios para "{query}"</div>
-              <button onClick={limpiarBusqueda} style={{ background:"linear-gradient(135deg,#d4a017,#f0c040)", border:"none", borderRadius:"12px", padding:"12px 24px", fontSize:"13px", fontWeight:800, color:"#1a2a3a", cursor:"pointer", fontFamily:"'Nunito', sans-serif" }}>Ver todos</button>
+          {resTxt.length===0 ? (
+            <div style={{textAlign:"center",padding:"40px 20px"}}>
+              <div style={{fontSize:"40px",marginBottom:"12px"}}>🔍</div>
+              <div style={{fontSize:"15px",fontWeight:800,color:"#1a2a3a",marginBottom:"6px"}}>Sin resultados</div>
+              <div style={{fontSize:"13px",color:"#9a9a9a",fontWeight:600,marginBottom:"20px"}}>No encontramos anuncios para "{query}"</div>
+              <button onClick={limpQ} style={{background:"linear-gradient(135deg,#d4a017,#f0c040)",border:"none",borderRadius:"12px",padding:"12px 24px",fontSize:"13px",fontWeight:800,color:"#1a2a3a",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>Ver todos</button>
             </div>
           ) : (
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px", padding:"0 16px 16px" }}>
-              {resultadosTexto.map(a => <TarjetaCard key={a.id} a={a} qLow={qLow} query={query} formatPrecio={formatPrecio} />)}
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"12px",padding:"8px 16px 16px"}}>
+              {resTxt.map(a=><Tarjeta key={a.id} a={a} fmt={fmt} qLow={qLow} query={query} />)}
             </div>
           )}
         </div>
-
       ) : (
-        /* MODO RUBROS AGRUPADOS */
-        rubrosAMostrar.map(rubro => {
-          const items = getAnunciosPorRubro(rubro);
-          // Solo ocultar si hay filtro de ubicación activo Y no tiene anuncios
-          if (ubiActiva && !rubroSel && items.length === 0) return null;
+        rubrosM.map(rubro => {
+          const items = getAnus(rubro);
+          if (ubiActiva && !rSel && items.length===0) return null;
           return (
-            <div key={rubro.id} style={{ marginBottom:"8px", background:"#fff", paddingBottom:"12px", borderBottom:"6px solid #f4f4f2" }}>
-              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"14px 16px 8px" }}>
-                <span style={{ fontSize:"16px", fontWeight:900, color:"#1a2a3a" }}>{rubro.nombre}</span>
-                <span style={{ fontSize:"12px", fontWeight:700, color:"#d4a017" }}>Ver todos →</span>
+            <div key={rubro.id} style={{marginBottom:"8px",background:"#fff",paddingBottom:"12px",borderBottom:"6px solid #f4f4f2"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 16px 8px"}}>
+                <span style={{fontSize:"16px",fontWeight:900,color:"#1a2a3a"}}>{rubro.nombre}</span>
+                <span style={{fontSize:"12px",fontWeight:700,color:"#d4a017",cursor:"pointer"}}>Ver todos →</span>
               </div>
-              <div style={{ display:"flex", gap:"8px", padding:"0 16px 12px", overflowX:"auto", scrollbarWidth:"none" }}>
-                {rubro.subrubros.map(sub => (
-                  <button key={sub.id} onClick={() => toggleSub(rubro.id, sub.id)} style={{
-                    background: subActivos[rubro.id] === sub.id ? "#1a2a3a" : "#f4f4f2",
-                    border:`2px solid ${subActivos[rubro.id] === sub.id ? "#1a2a3a" : "#e8e8e6"}`,
-                    borderRadius:"20px", padding:"5px 14px", fontSize:"12px", fontWeight:700,
-                    color: subActivos[rubro.id] === sub.id ? "#d4a017" : "#2c2c2e",
-                    whiteSpace:"nowrap", cursor:"pointer", flexShrink:0, fontFamily:"'Nunito', sans-serif",
-                  }}>{sub.nombre}</button>
+              <div style={{display:"flex",gap:"8px",padding:"0 16px 12px",overflowX:"auto",scrollbarWidth:"none"}}>
+                {rubro.subrubros.map(sub=>(
+                  <button key={sub.id} onClick={()=>togSub(rubro.id,sub.id)} style={{background:subAct[rubro.id]===sub.id?"#1a2a3a":"#f4f4f2",border:`2px solid ${subAct[rubro.id]===sub.id?"#1a2a3a":"#e8e8e6"}`,borderRadius:"20px",padding:"5px 14px",fontSize:"12px",fontWeight:700,color:subAct[rubro.id]===sub.id?"#d4a017":"#2c2c2e",whiteSpace:"nowrap",cursor:"pointer",flexShrink:0,fontFamily:"'Nunito',sans-serif"}}>
+                    {sub.nombre}
+                  </button>
                 ))}
               </div>
-              {items.length === 0 ? (
-                <div style={{ padding:"12px 16px", color:"#9a9a9a", fontSize:"13px", fontWeight:600 }}>
-                  Sin anuncios{ubiActiva ? ` en ${barrioSel || ciudadSel || provSel}` : ""}
-                </div>
+              {items.length===0 ? (
+                <div style={{padding:"12px 16px",color:"#9a9a9a",fontSize:"13px",fontWeight:600}}>Sin anuncios{ubiActiva?` en ${barrSel||ciudSel||provSel}`:""}</div>
               ) : (
-                <div style={{ display:"flex", gap:"12px", padding:"0 16px", overflowX:"auto", scrollbarWidth:"none" }}>
-                  {items.map(a => <TarjetaCard key={a.id} a={a} formatPrecio={formatPrecio} horizontal />)}
+                <div style={{display:"flex",gap:"12px",padding:"0 16px",overflowX:"auto",scrollbarWidth:"none"}}>
+                  {items.map(a=><Tarjeta key={a.id} a={a} fmt={fmt} horizontal />)}
                 </div>
               )}
             </div>
           );
         })
       )}
-
       <BottomNav />
     </main>
   );
 }
 
-// ── Tarjeta reutilizable ──
-function TarjetaCard({ a, qLow, query, formatPrecio, horizontal }: {
-  a: any; qLow?: string; query?: string; formatPrecio: (p: number, m: string) => string; horizontal?: boolean;
-}) {
-  const f = FUENTES[a.fuente] || FUENTES.nexonet;
-  return (
-    <a href={`/anuncios/${a.id}`} style={{ textDecoration:"none", flexShrink: horizontal ? 0 : undefined, width: horizontal ? "160px" : undefined }}>
-      <div style={{ background:"#fff", borderRadius:"14px", overflow:"hidden", boxShadow:"0 2px 10px rgba(0,0,0,0.08)", border:"1px solid #f0f0f0" }}>
-        <div style={{ background:f.color, padding:"3px 8px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-          <span style={{ fontSize:"9px", fontWeight:900, color:f.texto, textTransform:"uppercase" }}>{f.label}</span>
-          {a.flash && <span style={{ background:"#1a2a3a", color:"#d4a017", fontSize:"8px", fontWeight:900, padding:"1px 5px", borderRadius:"5px" }}>⚡Flash</span>}
-        </div>
-        <div style={{ width:"100%", height:"110px", background:"#f4f4f2", display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden" }}>
-          {a.imagenes?.[0] ? <img src={a.imagenes[0]} alt={a.titulo} style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : <span style={{ fontSize:"36px" }}>📦</span>}
-        </div>
-        <div style={{ padding:"8px 10px 10px" }}>
-          <div style={{ fontSize:"12px", fontWeight:800, color:"#2c2c2e", marginBottom:"3px", overflow:"hidden", display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical" }}>
-            {qLow && query
-              ? a.titulo.split(new RegExp(`(${query})`, "gi")).map((part: string, i: number) =>
-                  part.toLowerCase() === qLow
-                    ? <mark key={i} style={{ background:"#fff3cd", color:"#1a2a3a", borderRadius:"3px", padding:"0 2px" }}>{part}</mark>
-                    : part
-                )
-              : a.titulo
-            }
-          </div>
-          <div style={{ fontSize:"14px", fontWeight:900, color:"#d4a017" }}>{formatPrecio(a.precio, a.moneda)}</div>
-          <div style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:600, marginTop:"2px" }}>📍 {a.ciudad}</div>
-        </div>
-      </div>
-    </a>
-  );
-}
-
-const iDrop = (activo: boolean): React.CSSProperties => ({
-  display:"flex", alignItems:"center", gap:"12px", padding:"12px 14px", cursor:"pointer",
-  background: activo ? "rgba(212,160,23,0.08)" : "transparent",
-  borderLeft: activo ? "3px solid #d4a017" : "3px solid transparent",
-});
-
-// ── Selector de ubicación custom (reemplaza <select> nativo) ──
-function UbiSelect({ value, placeholder, opciones, onChange }: {
-  value: string;
-  placeholder: string;
-  opciones: string[];
-  onChange: (v: string) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const [filtro, setFiltro] = useState("");
+function SelUbi({value,placeholder,opciones,onChange}:{value:string;placeholder:string;opciones:string[];onChange:(v:string)=>void}) {
+  const [open,  setOpen]  = useState(false);
+  const [filtro,setFiltro]= useState("");
   const ref = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const h = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false); setFiltro("");
-      }
-    };
-    document.addEventListener("mousedown", h);
-    return () => document.removeEventListener("mousedown", h);
-  }, []);
+  useEffect(()=>{
+    const h=(e:MouseEvent)=>{ if(ref.current&&!ref.current.contains(e.target as Node)){setOpen(false);setFiltro("");} };
+    document.addEventListener("mousedown",h);
+    return ()=>document.removeEventListener("mousedown",h);
+  },[]);
 
-  const filtradas = opciones.filter(o => o.toLowerCase().includes(filtro.toLowerCase()));
+  const lista = opciones.filter(o=>o.toLowerCase().includes(filtro.toLowerCase()));
 
   return (
-    <div ref={ref} style={{ flex:1, position:"relative", minWidth:0 }}>
-      {/* BOTÓN TRIGGER */}
-      <button
-        onClick={() => { setOpen(v => !v); setFiltro(""); }}
-        style={{
-          width:"100%", height:"42px",
-          background: value ? "#d4a017" : "rgba(255,255,255,0.12)",
-          border:`2px solid ${value ? "#d4a017" : "rgba(255,255,255,0.3)"}`,
-          borderRadius:"12px", padding:"0 10px",
-          fontSize:"12px", fontWeight:800,
-          color: value ? "#1a2a3a" : "#fff",
-          cursor:"pointer", fontFamily:"'Nunito', sans-serif",
-          display:"flex", alignItems:"center", justifyContent:"space-between",
-          gap:"4px", whiteSpace:"nowrap", overflow:"hidden",
-        }}
-      >
-        <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
-          {value || placeholder}
-        </span>
-        <span style={{ fontSize:"10px", opacity:0.7, flexShrink:0 }}>{open ? "▲" : "▼"}</span>
+    <div ref={ref} style={{flex:1,position:"relative",minWidth:0}}>
+      <button onClick={()=>{setOpen(v=>!v);setFiltro("");}} style={{width:"100%",height:"42px",background:value?"#d4a017":"rgba(255,255,255,0.12)",border:`2px solid ${value?"#d4a017":"rgba(255,255,255,0.3)"}`,borderRadius:"12px",padding:"0 10px",fontSize:"12px",fontWeight:800,color:value?"#1a2a3a":"#fff",cursor:"pointer",fontFamily:"'Nunito',sans-serif",display:"flex",alignItems:"center",justifyContent:"space-between",gap:"4px",overflow:"hidden"}}>
+        <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{value||placeholder}</span>
+        <span style={{fontSize:"10px",opacity:0.7,flexShrink:0}}>{open?"▲":"▼"}</span>
       </button>
-
-      {/* DROPDOWN */}
-      {open && (
-        <div style={{
-          position:"absolute", top:"calc(100% + 4px)", left:0, right:0, zIndex:200,
-          background:"#fff", borderRadius:"12px", boxShadow:"0 8px 32px rgba(0,0,0,0.25)",
-          border:"1px solid #e8e8e6", maxHeight:"260px", display:"flex", flexDirection:"column",
-          overflow:"hidden",
-        }}>
-          {/* BÚSQUEDA DENTRO DEL DROPDOWN */}
-          <div style={{ padding:"8px", borderBottom:"1px solid #f0f0f0", flexShrink:0 }}>
-            <input
-              autoFocus
-              type="text"
-              value={filtro}
-              onChange={e => setFiltro(e.target.value)}
-              placeholder="Buscar..."
-              style={{
-                width:"100%", border:"2px solid #e8e8e6", borderRadius:"8px",
-                padding:"7px 10px", fontSize:"13px", fontFamily:"'Nunito', sans-serif",
-                outline:"none", boxSizing:"border-box", color:"#1a2a3a",
-              }}
-            />
+      {open&&(
+        <div style={{position:"absolute",top:"calc(100% + 4px)",left:0,right:0,zIndex:300,background:"#fff",borderRadius:"12px",boxShadow:"0 8px 32px rgba(0,0,0,0.25)",border:"1px solid #e8e8e6",maxHeight:"260px",display:"flex",flexDirection:"column",overflow:"hidden"}}>
+          <div style={{padding:"8px",borderBottom:"1px solid #f0f0f0",flexShrink:0}}>
+            <input autoFocus type="text" value={filtro} onChange={e=>setFiltro(e.target.value)} placeholder="Buscar..."
+              style={{width:"100%",border:"2px solid #e8e8e6",borderRadius:"8px",padding:"7px 10px",fontSize:"13px",fontFamily:"'Nunito',sans-serif",outline:"none",boxSizing:"border-box",color:"#1a2a3a"}} />
           </div>
-          {/* OPCIONES */}
-          <div style={{ overflowY:"auto", flex:1 }}>
-            {value && (
-              <div
-                onClick={() => { onChange(""); setOpen(false); setFiltro(""); }}
-                style={{ padding:"10px 14px", fontSize:"12px", fontWeight:700, color:"#e74c3c", cursor:"pointer", borderBottom:"1px solid #f9f9f9", display:"flex", alignItems:"center", gap:"6px" }}
-              >
-                ✕ Limpiar selección
+          <div style={{overflowY:"auto",flex:1}}>
+            {value&&(
+              <div onClick={()=>{onChange("");setOpen(false);setFiltro("");}} style={{padding:"10px 14px",fontSize:"12px",fontWeight:700,color:"#e74c3c",cursor:"pointer",borderBottom:"1px solid #f9f9f9"}}>
+                ✕ Limpiar
               </div>
             )}
-            {filtradas.length === 0 ? (
-              <div style={{ padding:"16px", textAlign:"center", fontSize:"13px", color:"#9a9a9a" }}>Sin resultados</div>
-            ) : (
-              filtradas.map(o => (
-                <div
-                  key={o}
-                  onClick={() => { onChange(o); setOpen(false); setFiltro(""); }}
-                  style={{
-                    padding:"10px 14px", fontSize:"13px", fontWeight: o === value ? 800 : 600,
-                    color: o === value ? "#d4a017" : "#1a2a3a",
-                    background: o === value ? "rgba(212,160,23,0.08)" : "transparent",
-                    cursor:"pointer", borderLeft: o === value ? "3px solid #d4a017" : "3px solid transparent",
-                  }}
-                >
-                  {o}
-                </div>
-              ))
-            )}
+            {lista.length===0
+              ? <div style={{padding:"16px",textAlign:"center",fontSize:"13px",color:"#9a9a9a"}}>Sin resultados</div>
+              : lista.map(o=>(
+                  <div key={o} onClick={()=>{onChange(o);setOpen(false);setFiltro("");}}
+                    style={{padding:"10px 14px",fontSize:"13px",fontWeight:o===value?800:600,color:o===value?"#d4a017":"#1a2a3a",background:o===value?"rgba(212,160,23,0.08)":"transparent",cursor:"pointer",borderLeft:o===value?"3px solid #d4a017":"3px solid transparent"}}>
+                    {o}
+                  </div>
+                ))
+            }
           </div>
         </div>
       )}
     </div>
   );
 }
+
+function Tarjeta({a,fmt,qLow,query,horizontal}:{a:Anuncio;fmt:(p:number,m:string)=>string;qLow?:string;query?:string;horizontal?:boolean}) {
+  const f = F[a.fuente]||F.nexonet;
+  return (
+    <a href={`/anuncios/${a.id}`} style={{textDecoration:"none",flexShrink:horizontal?0:undefined,width:horizontal?"160px":undefined}}>
+      <div style={{background:"#fff",borderRadius:"14px",overflow:"hidden",boxShadow:"0 2px 10px rgba(0,0,0,0.08)",border:"1px solid #f0f0f0"}}>
+        <div style={{background:f.color,padding:"3px 8px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <span style={{fontSize:"9px",fontWeight:900,color:f.texto,textTransform:"uppercase"}}>{f.label}</span>
+          {a.flash&&<span style={{background:"#1a2a3a",color:"#d4a017",fontSize:"8px",fontWeight:900,padding:"1px 5px",borderRadius:"5px"}}>⚡Flash</span>}
+        </div>
+        <div style={{width:"100%",height:"110px",background:"#f4f4f2",display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden"}}>
+          {a.imagenes?.[0]?<img src={a.imagenes[0]} alt={a.titulo} style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<span style={{fontSize:"36px"}}>📦</span>}
+        </div>
+        <div style={{padding:"8px 10px 10px"}}>
+          <div style={{fontSize:"12px",fontWeight:800,color:"#2c2c2e",marginBottom:"3px",overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>
+            {qLow&&query
+              ? a.titulo.split(new RegExp(`(${query})`, "gi")).map((p:string,i:number)=>
+                  p.toLowerCase()===qLow?<mark key={i} style={{background:"#fff3cd",color:"#1a2a3a",borderRadius:"3px",padding:"0 2px"}}>{p}</mark>:p)
+              : a.titulo}
+          </div>
+          <div style={{fontSize:"14px",fontWeight:900,color:"#d4a017"}}>{fmt(a.precio,a.moneda)}</div>
+          <div style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600,marginTop:"2px"}}>📍 {a.ciudad}</div>
+        </div>
+      </div>
+    </a>
+  );
+}
+
+const dItem=(activo:boolean):React.CSSProperties=>({display:"flex",alignItems:"center",gap:"12px",padding:"12px 14px",cursor:"pointer",background:activo?"rgba(212,160,23,0.08)":"transparent",borderLeft:activo?"3px solid #d4a017":"3px solid transparent"});

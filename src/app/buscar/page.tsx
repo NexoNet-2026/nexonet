@@ -1,7 +1,7 @@
 "use client";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
@@ -27,6 +27,18 @@ const FUENTES: Record<string, { color: string; texto: string; label: string }> =
 };
 
 export default function Buscar() {
+  return (
+    <Suspense fallback={
+      <main style={{ paddingTop:"95px", paddingBottom:"130px", background:"#f4f4f2", minHeight:"100vh", fontFamily:"'Nunito', sans-serif", display:"flex", alignItems:"center", justifyContent:"center" }}>
+        <div style={{ textAlign:"center", color:"#9a9a9a", fontWeight:700 }}>Cargando...</div>
+      </main>
+    }>
+      <BuscarInner />
+    </Suspense>
+  );
+}
+
+function BuscarInner() {
   const searchParams = useSearchParams();
 
   // ── Ubicación ──

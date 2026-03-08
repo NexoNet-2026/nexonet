@@ -88,12 +88,14 @@ function BuscarInner() {
     });
   }, []);
 
-  // Ciudades al cambiar provincia
+  // Ciudades al cambiar provincia (solo si no hay ciudades ya cargadas para esta provincia)
   useEffect(() => {
-    setCiudSel(""); setBarrSel(""); setCiudades([]); setBarrios([]);
-    if (!provSel) return;
+    if (!provSel) { setCiudSel(""); setBarrSel(""); setCiudades([]); setBarrios([]); return; }
+    // Si ya tenemos ciudades cargadas para esta provincia, no resetear
     const p = provs.find(x => x.nombre===provSel);
     if (!p) return;
+    if (ciudades.length > 0 && ciudades[0].provincia_id === p.id) return; // ya cargadas por GPS
+    setCiudSel(""); setBarrSel(""); setBarrios([]);
     supabase.from("ciudades").select("id,nombre,provincia_id").eq("provincia_id",p.id).order("nombre")
       .then(({data}) => { if(data) setCiudades(data); });
   }, [provSel, provs]);
@@ -130,24 +132,52 @@ function BuscarInner() {
         const pNom = d.address?.state||"";
         const cNom = d.address?.city||d.address?.town||d.address?.village||"";
         const bNom = d.address?.suburb||d.address?.neighbourhood||"";
-        const pm = provs.find(p => p.nombre.toLowerCase().includes(pNom.toLowerCase())||pNom.toLowerCase().includes(p.nombre.toLowerCase()));
-        if (pm) {
-          setProvSel(pm.nombre);
-          const {data:cd} = await supabase.from("ciudades").select("id,nombre,provincia_id").eq("provincia_id",pm.id).order("nombre");
-          if (cd) {
-            setCiudades(cd);
-            const cm = cd.find((c:any) => c.nombre.toLowerCase().includes(cNom.toLowerCase())||cNom.toLowerCase().includes(c.nombre.toLowerCase()));
-            if (cm) {
-              setCiudSel(cm.nombre);
-              const {data:bd} = await supabase.from("barrios").select("id,nombre,ciudad_id").eq("ciudad_id",cm.id).order("nombre");
-              if (bd) {
-                setBarrios(bd);
-                const bm = bd.find((b:any) => b.nombre.toLowerCase().includes(bNom.toLowerCase())||bNom.toLowerCase().includes(b.nombre.toLowerCase()));
-                if (bm) setBarrSel(bm.nombre);
+
+        const pm = provs.find(p =>
+          p.nombre.toLowerCase().includes(pNom.toLowerCase()) ||
+          pNom.toLowerCase().includes(p.nombre.toLowerCase())
+        );
+        if (!pm) { alert(`No encontramos la provincia: ${pNom}`); setGpsLoad(false); return; }
+
+        // Cargar ciudades
+        const {data:cd} = await supabase.from("ciudades")
+          .select("id,nombre,provincia_id").eq("provincia_id",pm.id).order("nombre");
+
+        let ciudadFinal = "";
+        let barrioFinal = "";
+        let barriosFinal: Barrio[] = [];
+        let ciudadesFinal: Ciudad[] = cd || [];
+
+        if (cd && cNom) {
+          const cm = cd.find((c:any) =>
+            c.nombre.toLowerCase().includes(cNom.toLowerCase()) ||
+            cNom.toLowerCase().includes(c.nombre.toLowerCase())
+          );
+          if (cm) {
+            ciudadFinal = cm.nombre;
+            // Cargar barrios
+            const {data:bd} = await supabase.from("barrios")
+              .select("id,nombre,ciudad_id").eq("ciudad_id",cm.id).order("nombre");
+            if (bd) {
+              barriosFinal = bd;
+              if (bNom) {
+                const bm = bd.find((b:any) =>
+                  b.nombre.toLowerCase().includes(bNom.toLowerCase()) ||
+                  bNom.toLowerCase().includes(b.nombre.toLowerCase())
+                );
+                if (bm) barrioFinal = bm.nombre;
               }
             }
           }
         }
+
+        // Setear todo de una sola vez para evitar race conditions
+        setCiudades(ciudadesFinal);
+        setBarrios(barriosFinal);
+        setProvSel(pm.nombre);
+        setCiudSel(ciudadFinal);
+        setBarrSel(barrioFinal);
+
       } catch { alert("Error al obtener ubicación"); }
       setGpsLoad(false);
     }, () => { alert("No se pudo acceder al GPS"); setGpsLoad(false); });

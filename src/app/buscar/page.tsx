@@ -435,7 +435,8 @@ function BuscarInner() {
         /* MODO RUBROS AGRUPADOS */
         rubrosAMostrar.map(rubro => {
           const items = getAnunciosPorRubro(rubro);
-          if (!rubroSel && items.length === 0) return null;
+          // Solo ocultar si hay filtro de ubicación activo Y no tiene anuncios
+          if (ubiActiva && !rubroSel && items.length === 0) return null;
           return (
             <div key={rubro.id} style={{ marginBottom:"8px", background:"#fff", paddingBottom:"12px", borderBottom:"6px solid #f4f4f2" }}>
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"14px 16px 8px" }}>
@@ -513,10 +514,11 @@ const iDrop = (activo: boolean): React.CSSProperties => ({
 });
 
 const selStyle = (placeholder: boolean): React.CSSProperties => ({
-  width:"100%", background: placeholder ? "rgba(255,255,255,0.1)" : "rgba(212,160,23,0.2)",
-  border:`2px solid ${placeholder ? "rgba(255,255,255,0.2)" : "rgba(212,160,23,0.5)"}`,
+  width:"100%",
+  background: placeholder ? "rgba(255,255,255,0.12)" : "#1a2a3a",
+  border:`2px solid ${placeholder ? "rgba(255,255,255,0.25)" : "#d4a017"}`,
   borderRadius:"12px", padding:"10px 12px", fontSize:"12px", fontWeight:700,
-  color: placeholder ? "rgba(255,255,255,0.7)" : "#d4a017",
+  color: placeholder ? "#fff" : "#d4a017",
   fontFamily:"'Nunito', sans-serif", outline:"none", cursor:"pointer",
-  appearance:"none", WebkitAppearance:"none", height:"42px",
+  height:"42px",
 });

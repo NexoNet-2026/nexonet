@@ -19,13 +19,12 @@ export default function Publicar() {
   const [subrubroSeleccionado, setSubrubroSeleccionado] = useState<Subrubro | null>(null);
   const [loading, setLoading] = useState(false);
   const [subiendo, setSubiendo] = useState(false);
+  const [gpsLoading, setGpsLoading] = useState(false);
+  const [geoLoading, setGeoLoading] = useState(false);
+  const [coordenadas, setCoordenadas] = useState<{ lat: number; lng: number } | null>(null);
   const [form, setForm] = useState({
-    titulo: "",
-    descripcion: "",
-    precio: "",
-    moneda: "ARS",
-    ciudad: "",
-    provincia: "",
+    titulo: "", descripcion: "", precio: "",
+    moneda: "ARS", ciudad: "", provincia: "", direccion: "",
   });
   const [fotos, setFotos] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
@@ -48,10 +47,50 @@ export default function Publicar() {
     setSubrubrosFiltrados(subrubros.filter((s) => s.rubro_id === rubro.id));
   };
 
+  // GPS: obtener ubicación del dispositivo
+  const usarGPS = () => {
+    if (!navigator.geolocation) { alert("Tu dispositivo no soporta GPS"); return; }
+    setGpsLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude: lat, longitude: lng } = pos.coords;
+        setCoordenadas({ lat, lng });
+        // Reverse geocoding con OpenStreetMap
+        try {
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=es`);
+          const data = await res.json();
+          const ciudad = data.address?.city || data.address?.town || data.address?.village || "";
+          const provincia = data.address?.state || "";
+          const direccion = data.display_name || "";
+          setForm((prev) => ({ ...prev, ciudad, provincia, direccion }));
+        } catch {}
+        setGpsLoading(false);
+      },
+      () => { alert("No se pudo obtener la ubicación. Verificá los permisos."); setGpsLoading(false); }
+    );
+  };
+
+  // Geocoding: convertir dirección a coordenadas
+  const buscarDireccion = async () => {
+    if (!form.direccion) { alert("Escribí una dirección primero"); return; }
+    setGeoLoading(true);
+    try {
+      const query = `${form.direccion}, ${form.ciudad}, ${form.provincia}, Argentina`;
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`);
+      const data = await res.json();
+      if (data.length > 0) {
+        setCoordenadas({ lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) });
+        alert("✅ Ubicación encontrada en el mapa");
+      } else {
+        alert("No se encontró la dirección. Probá escribirla de otra forma.");
+      }
+    } catch { alert("Error al buscar la dirección."); }
+    setGeoLoading(false);
+  };
+
   const irADatos = () => {
     if (!rubroSeleccionado || !subrubroSeleccionado) return;
-    setPaso("datos");
-    setProgreso(100);
+    setPaso("datos"); setProgreso(100);
   };
 
   const agregarFoto = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -74,11 +113,9 @@ export default function Publicar() {
   const publicar = async () => {
     if (!form.titulo) { alert("El título es obligatorio"); return; }
     setLoading(true);
-
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) { alert("Tenés que iniciar sesión para publicar"); router.push("/login"); return; }
 
-    // 1. Crear anuncio sin imágenes primero
     const { data: anuncio, error } = await supabase.from("anuncios").insert({
       usuario_id: session.user.id,
       subrubro_id: subrubroSeleccionado?.id,
@@ -90,20 +127,19 @@ export default function Publicar() {
       provincia: form.provincia,
       imagenes: [],
       estado: "activo",
+      lat: coordenadas?.lat || null,
+      lng: coordenadas?.lng || null,
     }).select().single();
 
     if (error || !anuncio) { alert("Error al publicar. Intentá de nuevo."); setLoading(false); return; }
 
-    // 2. Subir fotos si hay
     let urls: string[] = [];
     if (fotos.length > 0) {
       setSubiendo(true);
       try {
         urls = await Promise.all(fotos.map((f, i) => subirFoto(f, anuncio.id, i)));
         await supabase.from("anuncios").update({ imagenes: urls }).eq("id", anuncio.id);
-      } catch (e) {
-        console.error("Error subiendo fotos", e);
-      }
+      } catch (e) { console.error("Error subiendo fotos", e); }
       setSubiendo(false);
     }
 
@@ -115,7 +151,6 @@ export default function Publicar() {
     <main style={{ paddingTop: "95px", paddingBottom: "130px", background: "#f4f4f2", minHeight: "100vh", fontFamily: "'Nunito', sans-serif" }}>
       <Header />
 
-      {/* SUB-HEADER */}
       <div style={{ background: "linear-gradient(135deg, #1a2a3a 0%, #243b55 100%)", padding: "12px 16px 0" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
           {paso === "datos" && (
@@ -130,17 +165,16 @@ export default function Publicar() {
             {rubroSeleccionado.nombre} → {subrubroSeleccionado.nombre}
           </div>
         )}
-        <div style={{ height: "4px", background: "rgba(255,255,255,0.15)", borderRadius: "2px", marginBottom: "0" }}>
+        <div style={{ height: "4px", background: "rgba(255,255,255,0.15)", borderRadius: "2px" }}>
           <div style={{ height: "100%", width: `${progreso}%`, background: "#d4a017", borderRadius: "2px", transition: "width .4s ease" }} />
         </div>
       </div>
 
       <div style={{ padding: "16px", maxWidth: "480px", margin: "0 auto" }}>
 
-        {/* PASO 1 — CATEGORÍA */}
+        {/* PASO 1 */}
         {paso === "categoria" && (
           <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-            {/* RUBROS */}
             <div style={cardStyle}>
               <h3 style={subtituloStyle}>Rubro</h3>
               <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
@@ -155,8 +189,6 @@ export default function Publicar() {
                 ))}
               </div>
             </div>
-
-            {/* SUBRUBROS */}
             {subrubrosFiltrados.length > 0 && (
               <div style={cardStyle}>
                 <h3 style={subtituloStyle}>Subrubro</h3>
@@ -173,7 +205,6 @@ export default function Publicar() {
                 </div>
               </div>
             )}
-
             <button onClick={irADatos} disabled={!rubroSeleccionado || !subrubroSeleccionado} style={{
               width: "100%", background: (!rubroSeleccionado || !subrubroSeleccionado) ? "#ccc" : "linear-gradient(135deg, #d4a017, #f0c040)",
               color: "#1a2a3a", border: "none", borderRadius: "12px", padding: "16px",
@@ -184,7 +215,7 @@ export default function Publicar() {
           </div>
         )}
 
-        {/* PASO 2 — DATOS */}
+        {/* PASO 2 */}
         {paso === "datos" && (
           <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
             <div style={cardStyle}>
@@ -208,6 +239,46 @@ export default function Publicar() {
               </div>
             </div>
 
+            {/* UBICACIÓN EN MAPA */}
+            <div style={cardStyle}>
+              <h3 style={subtituloStyle}>📍 Ubicación en el mapa</h3>
+
+              {/* GPS */}
+              <button onClick={usarGPS} disabled={gpsLoading} style={{
+                width: "100%", background: coordenadas ? "linear-gradient(135deg, #2d6a4f, #40916c)" : "linear-gradient(135deg, #1a2a3a, #243b55)",
+                color: "#fff", border: "none", borderRadius: "12px", padding: "14px",
+                fontSize: "14px", fontWeight: 800, cursor: "pointer", fontFamily: "'Nunito', sans-serif",
+                marginBottom: "12px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
+              }}>
+                {gpsLoading ? "📡 Obteniendo ubicación..." : coordenadas ? "✅ GPS obtenido" : "📡 Usar mi ubicación GPS"}
+              </button>
+
+              {/* DIRECCIÓN MANUAL */}
+              <label style={labelStyle}>O escribí la dirección</label>
+              <div style={{ display: "flex", gap: "8px" }}>
+                <input
+                  type="text"
+                  value={form.direccion}
+                  onChange={(e) => setForm({ ...form, direccion: e.target.value })}
+                  placeholder="Ej: San Martín 500, Rafaela"
+                  style={{ ...inputStyle, flex: 1 }}
+                />
+                <button onClick={buscarDireccion} disabled={geoLoading} style={{
+                  background: "#d4a017", border: "none", borderRadius: "10px", padding: "0 14px",
+                  fontSize: "13px", fontWeight: 800, color: "#1a2a3a", cursor: "pointer",
+                  fontFamily: "'Nunito', sans-serif", whiteSpace: "nowrap",
+                }}>
+                  {geoLoading ? "..." : "Buscar"}
+                </button>
+              </div>
+
+              {coordenadas && (
+                <div style={{ marginTop: "10px", padding: "10px 14px", background: "#f0f8f0", borderRadius: "10px", fontSize: "12px", fontWeight: 700, color: "#2d6a4f" }}>
+                  📍 Lat: {coordenadas.lat.toFixed(5)} | Lng: {coordenadas.lng.toFixed(5)}
+                </div>
+              )}
+            </div>
+
             {/* FOTOS */}
             <div style={cardStyle}>
               <h3 style={subtituloStyle}>📷 Fotos (hasta 5)</h3>
@@ -215,13 +286,13 @@ export default function Publicar() {
                 {previews.map((p, i) => (
                   <div key={i} style={{ width: "80px", height: "80px", borderRadius: "10px", overflow: "hidden", position: "relative" }}>
                     <img src={p} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                    <button onClick={() => { const nf = fotos.filter((_, j) => j !== i); setFotos(nf); setPreviews(nf.map((f) => URL.createObjectURL(f))); }} style={{ position: "absolute", top: "2px", right: "2px", background: "rgba(0,0,0,0.6)", border: "none", borderRadius: "50%", width: "20px", height: "20px", color: "#fff", fontSize: "12px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+                    <button onClick={() => { const nf = fotos.filter((_, j) => j !== i); setFotos(nf); setPreviews(nf.map((f) => URL.createObjectURL(f))); }}
+                      style={{ position: "absolute", top: "2px", right: "2px", background: "rgba(0,0,0,0.6)", border: "none", borderRadius: "50%", width: "20px", height: "20px", color: "#fff", fontSize: "12px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
                   </div>
                 ))}
                 {fotos.length < 5 && (
                   <label style={{ width: "80px", height: "80px", borderRadius: "10px", border: "2px dashed #d4a017", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: "24px", color: "#d4a017" }}>
-                    +
-                    <input type="file" accept="image/*" multiple onChange={agregarFoto} style={{ display: "none" }} />
+                    +<input type="file" accept="image/*" multiple onChange={agregarFoto} style={{ display: "none" }} />
                   </label>
                 )}
               </div>
@@ -251,28 +322,15 @@ function Campo({ label, value, onChange, placeholder, type = "text", textarea }:
   return (
     <div style={{ marginBottom: "14px" }}>
       <label style={labelStyle}>{label}</label>
-      {textarea ? (
-        <textarea value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} rows={4}
-          style={{ ...inputStyle, resize: "vertical" }} />
-      ) : (
-        <input type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} style={inputStyle} />
-      )}
+      {textarea
+        ? <textarea value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} rows={4} style={{ ...inputStyle, resize: "vertical" }} />
+        : <input type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} style={inputStyle} />
+      }
     </div>
   );
 }
 
-const cardStyle: React.CSSProperties = {
-  background: "#fff", borderRadius: "16px", padding: "20px", boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
-};
-const subtituloStyle: React.CSSProperties = {
-  fontSize: "15px", fontWeight: 900, color: "#1a2a3a", marginBottom: "14px",
-};
-const labelStyle: React.CSSProperties = {
-  display: "block", fontSize: "11px", fontWeight: 800, color: "#666",
-  textTransform: "uppercase", letterSpacing: "1px", marginBottom: "6px",
-};
-const inputStyle: React.CSSProperties = {
-  width: "100%", border: "2px solid #e8e8e6", borderRadius: "10px",
-  padding: "11px 14px", fontSize: "14px", fontFamily: "'Nunito', sans-serif",
-  color: "#2c2c2e", outline: "none", boxSizing: "border-box",
-};
+const cardStyle: React.CSSProperties = { background: "#fff", borderRadius: "16px", padding: "20px", boxShadow: "0 2px 10px rgba(0,0,0,0.06)" };
+const subtituloStyle: React.CSSProperties = { fontSize: "15px", fontWeight: 900, color: "#1a2a3a", marginBottom: "14px" };
+const labelStyle: React.CSSProperties = { display: "block", fontSize: "11px", fontWeight: 800, color: "#666", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "6px" };
+const inputStyle: React.CSSProperties = { width: "100%", border: "2px solid #e8e8e6", borderRadius: "10px", padding: "11px 14px", fontSize: "14px", fontFamily: "'Nunito', sans-serif", color: "#2c2c2e", outline: "none", boxSizing: "border-box" };

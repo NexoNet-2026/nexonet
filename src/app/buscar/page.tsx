@@ -40,7 +40,6 @@ function BuscarInner() {
   const [ciudSel,  setCiudSel]  = useState("");
   const [barrSel,  setBarrSel]  = useState("");
   const [gpsLoad,  setGpsLoad]  = useState(false);
-  const gpsSettingRef = useRef(false); // evita que useEffect resetee lo que pone el GPS
 
   // Buscador
   const [query,    setQuery]    = useState("");
@@ -89,26 +88,27 @@ function BuscarInner() {
     });
   }, []);
 
-  // Ciudades al cambiar provincia (se saltea si lo está seteando el GPS)
-  useEffect(() => {
-    if (gpsSettingRef.current) return; // GPS ya maneja todo
-    if (!provSel) { setCiudSel(""); setBarrSel(""); setCiudades([]); setBarrios([]); return; }
-    const p = provs.find(x => x.nombre===provSel);
+  // Ciudades al cambiar provincia MANUALMENTE
+  const cambiarProv = async (nombre: string) => {
+    setProvSel(nombre);
+    setCiudSel(""); setBarrSel(""); setCiudades([]); setBarrios([]);
+    if (!nombre) return;
+    const p = provs.find(x => x.nombre === nombre);
     if (!p) return;
-    setCiudSel(""); setBarrSel(""); setBarrios([]);
-    supabase.from("ciudades").select("id,nombre,provincia_id").eq("provincia_id",p.id).order("nombre")
-      .then(({data}) => { if(data) setCiudades(data); });
-  }, [provSel, provs]);
+    const {data} = await supabase.from("ciudades").select("id,nombre,provincia_id").eq("provincia_id",p.id).order("nombre");
+    if (data) setCiudades(data);
+  };
 
-  // Barrios al cambiar ciudad
-  useEffect(() => {
+  // Barrios al cambiar ciudad MANUALMENTE
+  const cambiarCiud = async (nombre: string) => {
+    setCiudSel(nombre);
     setBarrSel(""); setBarrios([]);
-    if (!ciudSel) return;
-    const c = ciudades.find(x => x.nombre===ciudSel);
+    if (!nombre) return;
+    const c = ciudades.find(x => x.nombre === nombre);
     if (!c) return;
-    supabase.from("barrios").select("id,nombre,ciudad_id").eq("ciudad_id",c.id).order("nombre")
-      .then(({data}) => { if(data) setBarrios(data); });
-  }, [ciudSel, ciudades]);
+    const {data} = await supabase.from("barrios").select("id,nombre,ciudad_id").eq("ciudad_id",c.id).order("nombre");
+    if (data) setBarrios(data);
+  };
 
   // Cerrar dropdown afuera
   useEffect(() => {
@@ -170,15 +170,12 @@ function BuscarInner() {
           }
         }
 
-        // Activar flag ANTES de setear provincia para que useEffect no resetee
-        gpsSettingRef.current = true;
+        // Setear todo directo sin pasar por useEffect
         setCiudades(ciudadesFinal);
         setBarrios(barriosFinal);
         setProvSel(pm.nombre);
         setCiudSel(ciudadFinal);
         setBarrSel(barrioFinal);
-        // Desactivar flag en el siguiente tick
-        setTimeout(() => { gpsSettingRef.current = false; }, 100);
 
       } catch { alert("Error al obtener ubicación"); }
       setGpsLoad(false);
@@ -228,8 +225,8 @@ function BuscarInner() {
 
         {/* FILA UBICACIÓN */}
         <div style={{display:"flex",gap:"8px",alignItems:"center"}}>
-          <SelUbi value={provSel} placeholder="🗺️ Provincia" opciones={provs.map(p=>p.nombre)} onChange={setProvSel} />
-          {provSel && <SelUbi value={ciudSel} placeholder="🏙️ Ciudad" opciones={ciudades.map(c=>c.nombre)} onChange={setCiudSel} />}
+          <SelUbi value={provSel} placeholder="🗺️ Provincia" opciones={provs.map(p=>p.nombre)} onChange={cambiarProv} />
+          {provSel && <SelUbi value={ciudSel} placeholder="🏙️ Ciudad" opciones={ciudades.map(c=>c.nombre)} onChange={cambiarCiud} />}
           {ciudSel && barrios.length>0 && <SelUbi value={barrSel} placeholder="🏘️ Barrio" opciones={barrios.map(b=>b.nombre)} onChange={setBarrSel} />}
           <button onClick={gps} disabled={gpsLoad} title="GPS" style={{flexShrink:0,width:"42px",height:"42px",background:"rgba(212,160,23,0.2)",border:"2px solid rgba(212,160,23,0.5)",borderRadius:"12px",fontSize:"18px",cursor:"pointer",opacity:gpsLoad?0.6:1,display:"flex",alignItems:"center",justifyContent:"center"}}>
             {gpsLoad?"⏳":"📍"}

@@ -60,6 +60,7 @@ export default function Publicar() {
   const [archivosPrev, setArchivosPrev] = useState<string[]>([]);
   const [archivoExpandido, setArchivoExpandido] = useState<number|null>(null);
   const [popupArchivo, setPopupArchivo] = useState(false);
+  const [driveLinks, setDriveLinks] = useState<string[]>([]);
 
   useEffect(() => {
     const cargar = async () => {
@@ -473,8 +474,8 @@ export default function Publicar() {
                     {["▶️","📸","👤","🛍️","🔗"].map(i => <span key={i}>{i}</span>)}
                   </div>
                   {/* DEMO: botón para habilitar sin pagar (en producción esto lo habilita el backend tras el pago) */}
-                  <button onClick={() => setLinksHabilitados(true)} style={{ width:"100%", marginTop:"12px", background:"none", border:"2px solid #d4a017", borderRadius:"10px", padding:"8px", fontSize:"11px", fontWeight:700, color:"#d4a017", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
-                    [DEMO] Habilitar sin pagar
+                  <button onClick={() => setPopupLink(true)} style={{ width:"100%", marginTop:"12px", background:"linear-gradient(135deg,#d4a017,#f0c040)", border:"none", borderRadius:"10px", padding:"10px", fontSize:"12px", fontWeight:800, color:"#1a2a3a", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
+                    💰 Comprar para habilitar — $500
                   </button>
                 </div>
               ) : (
@@ -543,12 +544,13 @@ export default function Publicar() {
                   <div style={{ display:"flex", justifyContent:"center", gap:"10px", fontSize:"22px" }}>
                     {["📄","🖼️","📊","🎵","📦"].map(i => <span key={i}>{i}</span>)}
                   </div>
-                  <button onClick={() => setArchivosHabilitados(true)} style={{ width:"100%", marginTop:"12px", background:"none", border:"2px solid #d4a017", borderRadius:"10px", padding:"8px", fontSize:"11px", fontWeight:700, color:"#d4a017", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
-                    [DEMO] Habilitar sin pagar
+                  <button onClick={() => setPopupArchivo(true)} style={{ width:"100%", marginTop:"12px", background:"linear-gradient(135deg,#d4a017,#f0c040)", border:"none", borderRadius:"10px", padding:"10px", fontSize:"12px", fontWeight:800, color:"#1a2a3a", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
+                    💰 Comprar para habilitar — $500
                   </button>
                 </div>
               ) : (
-                <div style={{ display:"flex", flexDirection:"column", gap:"10px" }}>
+                <div style={{ display:"flex", flexDirection:"column", gap:"12px" }}>
+                  {/* MINIATURAS */}
                   {archivos.length>0 && (
                     <div style={{ display:"flex", gap:"10px", flexWrap:"wrap" }}>
                       {archivos.map((f,i) => (
@@ -567,14 +569,61 @@ export default function Publicar() {
                       ))}
                     </div>
                   )}
-                  {archivos.length<5 && (
-                    <label style={{ background:"linear-gradient(135deg,#1a2a3a,#243b55)", borderRadius:"12px", padding:"14px", display:"flex", alignItems:"center", justifyContent:"center", gap:"8px", cursor:"pointer", color:"#fff", fontSize:"13px", fontWeight:800 }}>
-                      📎 Seleccionar archivos
-                      <input type="file" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.mp3,.mp4" onChange={agregarArchivo} style={{ display:"none" }} />
-                    </label>
+
+                  {/* LINKS DE DRIVE/DROPBOX */}
+                  {driveLinks.length>0 && (
+                    <div style={{ display:"flex", flexDirection:"column", gap:"8px" }}>
+                      {driveLinks.map((dl,i) => (
+                        <div key={i} style={{ display:"flex", gap:"8px", alignItems:"center", background:"#f4f4f2", borderRadius:"10px", padding:"10px 12px", border:"2px solid #e8e8e6" }}>
+                          <span style={{ fontSize:"18px" }}>{dl.includes("drive")?"📂":dl.includes("dropbox")?"📦":"🔗"}</span>
+                          <div style={{ flex:1, fontSize:"12px", color:"#555", fontWeight:600, wordBreak:"break-all", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{dl}</div>
+                          <button onClick={() => setDriveLinks(driveLinks.filter((_,j)=>j!==i))} style={{ background:"none", border:"none", color:"#e74c3c", fontSize:"16px", cursor:"pointer", flexShrink:0 }}>✕</button>
+                        </div>
+                      ))}
+                    </div>
                   )}
+
+                  {/* BOTONES DE CARGA */}
+                  {archivos.length<5 && (
+                    <div style={{ display:"flex", gap:"8px" }}>
+                      <label style={{ flex:1, background:"linear-gradient(135deg,#1a2a3a,#243b55)", borderRadius:"12px", padding:"12px", display:"flex", alignItems:"center", justifyContent:"center", gap:"6px", cursor:"pointer", color:"#fff", fontSize:"12px", fontWeight:800 }}>
+                        📷 Cámara
+                        <input type="file" accept="image/*" capture="environment" onChange={agregarArchivo} style={{ display:"none" }} />
+                      </label>
+                      <label style={{ flex:1, background:"linear-gradient(135deg,#243b55,#2c4a6e)", borderRadius:"12px", padding:"12px", display:"flex", alignItems:"center", justifyContent:"center", gap:"6px", cursor:"pointer", color:"#fff", fontSize:"12px", fontWeight:800 }}>
+                        💻 Desde PC
+                        <input type="file" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.mp3,.mp4" onChange={agregarArchivo} style={{ display:"none" }} />
+                      </label>
+                    </div>
+                  )}
+
+                  {/* LINK DRIVE / DROPBOX */}
+                  <div>
+                    <label style={labelStyle}>Link de Drive / Dropbox</label>
+                    <div style={{ display:"flex", gap:"8px" }}>
+                      <input
+                        type="url"
+                        placeholder="https://drive.google.com/... o dropbox.com/..."
+                        id="driveInput"
+                        style={{...inputStyle, flex:1, fontSize:"13px", padding:"10px 12px"}}
+                      />
+                      <button onClick={() => {
+                        const inp = (document.getElementById("driveInput") as HTMLInputElement);
+                        const val = inp?.value?.trim();
+                        if (!val) return;
+                        if (!val.includes("drive.google") && !val.includes("dropbox") && !val.startsWith("http")) {
+                          alert("Pegá un link válido de Drive o Dropbox"); return;
+                        }
+                        setDriveLinks([...driveLinks, val]);
+                        if (inp) inp.value = "";
+                      }} style={{ background:"#d4a017", border:"none", borderRadius:"10px", padding:"0 14px", fontSize:"13px", fontWeight:800, color:"#1a2a3a", cursor:"pointer", fontFamily:"'Nunito',sans-serif", whiteSpace:"nowrap" }}>
+                        + Agregar
+                      </button>
+                    </div>
+                  </div>
+
                   <div style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:600, textAlign:"center" }}>
-                    {archivos.length}/5 archivos · Tocá una miniatura para agrandar
+                    {archivos.length} archivo{archivos.length!==1?"s":""} + {driveLinks.length} link{driveLinks.length!==1?"s":""} de nube · Toca miniatura para agrandar
                   </div>
                 </div>
               )}

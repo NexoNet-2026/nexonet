@@ -221,6 +221,8 @@ export default function Publicar() {
         {/* PASO 2 */}
         {paso === "datos" && (
           <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+
+            {/* TÍTULO Y DESCRIPCIÓN */}
             <div style={cardStyle}>
               <Campo label="Título *" value={form.titulo} onChange={(v) => setForm({ ...form, titulo: v })} placeholder="Ej: iPhone 14 Pro 128GB" />
               <Campo label="Descripción" value={form.descripcion} onChange={(v) => setForm({ ...form, descripcion: v })} placeholder="Describí tu producto o servicio..." textarea />
@@ -236,45 +238,72 @@ export default function Publicar() {
                   </select>
                 </div>
               </div>
-              <div style={{ display: "flex", gap: "10px" }}>
+            </div>
+
+            {/* UBICACIÓN PRIMERO */}
+            <div style={cardStyle}>
+              <h3 style={subtituloStyle}>📍 Ubicación</h3>
+
+              {/* BOTÓN GPS */}
+              <button onClick={usarGPS} disabled={gpsLoading} style={{
+                width: "100%",
+                background: coordenadas
+                  ? "linear-gradient(135deg, #2d6a4f, #40916c)"
+                  : "linear-gradient(135deg, #1a2a3a, #243b55)",
+                color: "#fff", border: "none", borderRadius: "12px", padding: "14px",
+                fontSize: "14px", fontWeight: 800, cursor: "pointer",
+                fontFamily: "'Nunito', sans-serif", marginBottom: "12px",
+                display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
+              }}>
+                {gpsLoading ? "📡 Obteniendo ubicación..." : coordenadas ? "✅ Ubicación GPS obtenida" : "📡 Usar mi ubicación GPS"}
+              </button>
+
+              {/* RESULTADO GPS */}
+              {coordenadas && (
+                <div style={{ padding: "10px 14px", background: "#f0f8f0", borderRadius: "10px", marginBottom: "12px" }}>
+                  <div style={{ fontSize: "12px", fontWeight: 800, color: "#2d6a4f", marginBottom: "2px" }}>
+                    📍 {form.ciudad}{form.provincia ? `, ${form.provincia}` : ""}
+                  </div>
+                  <div style={{ fontSize: "11px", color: "#666" }}>
+                    Lat: {coordenadas.lat.toFixed(5)} | Lng: {coordenadas.lng.toFixed(5)}
+                  </div>
+                </div>
+              )}
+
+              {/* SEPARADOR */}
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "12px" }}>
+                <div style={{ flex: 1, height: "1px", background: "#e8e8e6" }} />
+                <span style={{ fontSize: "11px", fontWeight: 700, color: "#9a9a9a" }}>O completá manualmente</span>
+                <div style={{ flex: 1, height: "1px", background: "#e8e8e6" }} />
+              </div>
+
+              {/* CIUDAD Y PROVINCIA MANUAL */}
+              <div style={{ display: "flex", gap: "10px", marginBottom: "12px" }}>
                 <Campo label="Ciudad" value={form.ciudad} onChange={(v) => setForm({ ...form, ciudad: v })} placeholder="Tu ciudad" />
                 <Campo label="Provincia" value={form.provincia} onChange={(v) => setForm({ ...form, provincia: v })} placeholder="Provincia" />
               </div>
-            </div>
 
-            {/* UBICACIÓN */}
-            <div style={cardStyle}>
-              <h3 style={subtituloStyle}>📍 Ubicación en el mapa</h3>
-              <button onClick={usarGPS} disabled={gpsLoading} style={{
-                width: "100%", background: coordenadas ? "linear-gradient(135deg, #2d6a4f, #40916c)" : "linear-gradient(135deg, #1a2a3a, #243b55)",
-                color: "#fff", border: "none", borderRadius: "12px", padding: "14px",
-                fontSize: "14px", fontWeight: 800, cursor: "pointer", fontFamily: "'Nunito', sans-serif",
-                marginBottom: "12px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
-              }}>
-                {gpsLoading ? "📡 Obteniendo ubicación..." : coordenadas ? "✅ GPS obtenido" : "📡 Usar mi ubicación GPS"}
-              </button>
-              <label style={labelStyle}>O escribí la dirección</label>
+              {/* DIRECCIÓN MANUAL */}
+              <label style={labelStyle}>Dirección</label>
               <div style={{ display: "flex", gap: "8px" }}>
-                <input type="text" value={form.direccion} onChange={(e) => setForm({ ...form, direccion: e.target.value })}
-                  placeholder="Ej: San Martín 500, Rafaela" style={{ ...inputStyle, flex: 1 }} />
+                <input
+                  type="text"
+                  value={form.direccion}
+                  onChange={(e) => setForm({ ...form, direccion: e.target.value })}
+                  placeholder="Ej: San Martín 500, Rafaela"
+                  style={{ ...inputStyle, flex: 1 }}
+                />
                 <button onClick={buscarDireccion} disabled={geoLoading} style={{
                   background: "#d4a017", border: "none", borderRadius: "10px", padding: "0 14px",
                   fontSize: "13px", fontWeight: 800, color: "#1a2a3a", cursor: "pointer",
                   fontFamily: "'Nunito', sans-serif", whiteSpace: "nowrap",
                 }}>{geoLoading ? "..." : "Buscar"}</button>
               </div>
-              {coordenadas && (
-                <div style={{ marginTop: "10px", padding: "10px 14px", background: "#f0f8f0", borderRadius: "10px", fontSize: "12px", fontWeight: 700, color: "#2d6a4f" }}>
-                  📍 Lat: {coordenadas.lat.toFixed(5)} | Lng: {coordenadas.lng.toFixed(5)}
-                </div>
-              )}
             </div>
 
             {/* FOTOS */}
             <div style={cardStyle}>
               <h3 style={subtituloStyle}>📷 Fotos (hasta 5)</h3>
-
-              {/* PREVIEWS */}
               <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginBottom: "14px" }}>
                 {previews.map((p, i) => (
                   <div key={i} style={{ width: "80px", height: "80px", borderRadius: "10px", overflow: "hidden", position: "relative" }}>
@@ -288,12 +317,8 @@ export default function Publicar() {
                   </div>
                 ))}
               </div>
-
-              {/* BOTONES CÁMARA Y GALERÍA */}
               {fotos.length < 5 && (
                 <div style={{ display: "flex", gap: "10px" }}>
-
-                  {/* CÁMARA */}
                   <label style={{
                     flex: 1, background: "linear-gradient(135deg, #1a2a3a, #243b55)",
                     borderRadius: "12px", padding: "14px", display: "flex",
@@ -301,16 +326,8 @@ export default function Publicar() {
                     cursor: "pointer", color: "#fff", fontSize: "13px", fontWeight: 800,
                   }}>
                     📷 Cámara
-                    <input
-                      type="file"
-                      accept="image/*"
-                      capture="environment"
-                      onChange={agregarFotos}
-                      style={{ display: "none" }}
-                    />
+                    <input type="file" accept="image/*" capture="environment" onChange={agregarFotos} style={{ display: "none" }} />
                   </label>
-
-                  {/* GALERÍA */}
                   <label style={{
                     flex: 1, background: "linear-gradient(135deg, #d4a017, #f0c040)",
                     borderRadius: "12px", padding: "14px", display: "flex",
@@ -318,15 +335,8 @@ export default function Publicar() {
                     cursor: "pointer", color: "#1a2a3a", fontSize: "13px", fontWeight: 800,
                   }}>
                     🖼️ Galería
-                    <input
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      onChange={agregarFotos}
-                      style={{ display: "none" }}
-                    />
+                    <input type="file" accept="image/*" multiple onChange={agregarFotos} style={{ display: "none" }} />
                   </label>
-
                 </div>
               )}
             </div>

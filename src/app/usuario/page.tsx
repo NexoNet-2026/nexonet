@@ -37,6 +37,7 @@ export default function Usuario() {
   const [totalAnuncios, setTotalAnuncios] = useState(0);
   const [anunciosActivos, setAnunciosActivos] = useState(0);
   const [gruposCreados, setGruposCreados] = useState(0);
+  const [popupEmpresa, setPopupEmpresa] = useState(false);
 
   const [personal, setPersonal] = useState({
     nombre_usuario: "", nombre: "", apellido: "",
@@ -273,11 +274,13 @@ export default function Usuario() {
                 </div>
               </div>
             ) : (
-              <div onClick={()=>router.push("/mis-anuncios")} style={{ background:"linear-gradient(135deg, #2c1a1a, #4a2020)", borderRadius:"16px", padding:"20px", textAlign:"center", cursor:"pointer" }}>
+              <div style={{ background:"linear-gradient(135deg, #2c1a1a, #4a2020)", borderRadius:"16px", padding:"20px", textAlign:"center" }}>
                 <div style={{ fontSize:"32px", marginBottom:"8px" }}>🏢</div>
                 <div style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:"20px", color:"#f0a040", letterSpacing:"1px", marginBottom:"4px" }}>Perfil de empresa</div>
-                <div style={{ fontSize:"12px", color:"#e88a8a", fontWeight:600, marginBottom:"16px" }}>Disponible con BIT Empresa × 50</div>
-                <div style={{ background:"#c0392b", borderRadius:"10px", padding:"10px 20px", display:"inline-block", fontSize:"12px", fontWeight:900, color:"#fff" }}>Ver planes →</div>
+                <div style={{ fontSize:"12px", color:"#e88a8a", fontWeight:600, marginBottom:"16px" }}>Activá tu perfil empresarial con BIT Empresa × 50</div>
+                <button onClick={()=>setPopupEmpresa(true)} style={{ background:"linear-gradient(135deg, #c0392b, #e74c3c)", border:"none", borderRadius:"12px", padding:"12px 24px", fontSize:"13px", fontWeight:900, color:"#fff", cursor:"pointer", fontFamily:"'Nunito', sans-serif", letterSpacing:"0.5px" }}>
+                  🏢 Comprar Anuncios BIT EMPRESA
+                </button>
               </div>
             )}
 
@@ -423,6 +426,64 @@ export default function Usuario() {
           </div>
         )}
       </div>
+      {/* ══ POPUP COMPRAR BIT EMPRESA ══ */}
+      {popupEmpresa && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", display:"flex", alignItems:"flex-end", justifyContent:"center", zIndex:200 }} onClick={()=>setPopupEmpresa(false)}>
+          <div style={{ background:"#fff", borderRadius:"24px 24px 0 0", padding:"24px 20px", width:"100%", maxWidth:"480px", maxHeight:"90vh", overflowY:"auto" }} onClick={e=>e.stopPropagation()}>
+
+            {/* HEADER */}
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"20px" }}>
+              <div style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:"22px", color:"#c0392b", letterSpacing:"1px" }}>🏢 BIT Empresa × 50</div>
+              <button onClick={()=>setPopupEmpresa(false)} style={{ background:"#f4f4f2", border:"none", borderRadius:"50%", width:"32px", height:"32px", fontSize:"16px", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>✕</button>
+            </div>
+
+            {/* DETALLE */}
+            <div style={{ background:"linear-gradient(135deg, #2c1a1a, #3a2020)", borderRadius:"16px", padding:"20px", marginBottom:"16px" }}>
+              <div style={{ fontSize:"12px", fontWeight:700, color:"#e88a8a", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"14px" }}>Estás comprando</div>
+              {[
+                { e:"✅", t:"50 anuncios adicionales",        s:"Se suman a tus 3 anuncios FREE" },
+                { e:"🔗", t:"1.000 BIT Conexión por anuncio", s:"50.000 BIT Conexión en total"  },
+                { e:"🏢", t:"Perfil empresarial completo",     s:"Nombre, teléfono, dirección comercial" },
+                { e:"🕐", t:"Horómetro de disponibilidad",    s:"Horarios por día + feriados nacionales" },
+                { e:"📅", t:"Vigencia 30 días renovables",    s:"Se renueva mensualmente" },
+              ].map(item => (
+                <div key={item.t} style={{ display:"flex", alignItems:"flex-start", gap:"12px", marginBottom:"12px" }}>
+                  <div style={{ width:"36px", height:"36px", borderRadius:"10px", background:"rgba(192,57,43,0.3)", border:"1px solid rgba(192,57,43,0.5)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"18px", flexShrink:0 }}>{item.e}</div>
+                  <div>
+                    <div style={{ fontSize:"13px", fontWeight:900, color:"#fff" }}>{item.t}</div>
+                    <div style={{ fontSize:"11px", color:"#e88a8a", fontWeight:600, marginTop:"2px" }}>{item.s}</div>
+                  </div>
+                </div>
+              ))}
+              {/* HORÓMETRO DEMO */}
+              <div style={{ background:"rgba(255,255,255,0.08)", borderRadius:"12px", padding:"12px 14px", marginTop:"4px" }}>
+                <div style={{ fontSize:"11px", fontWeight:800, color:"#e88a8a", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"8px" }}>🕐 Horario de disponibilidad (demo)</div>
+                {[["Lun — Vie","09:00 — 18:00",false],["Sábado","09:00 — 13:00",false],["Domingo","Cerrado",true]].map(([d,h,cerrado])=>(
+                  <div key={d as string} style={{ display:"flex", justifyContent:"space-between", fontSize:"12px", fontWeight:700, color:"#fff", marginBottom:"4px" }}>
+                    <span>{d}</span>
+                    <span style={{ color: cerrado ? "#e74c3c" : "#2ecc71" }}>{h}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* PRECIO */}
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"16px", padding:"0 4px" }}>
+              <div style={{ fontSize:"13px", fontWeight:700, color:"#666" }}>Total a pagar</div>
+              <div style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:"36px", color:"#c0392b" }}>$10.000</div>
+            </div>
+
+            {/* BOTÓN COMPRAR */}
+            <button onClick={()=>{ setPopupEmpresa(false); router.push("/comprar"); }} style={{ width:"100%", background:"linear-gradient(135deg, #c0392b, #e74c3c)", border:"none", borderRadius:"14px", padding:"18px", fontSize:"16px", fontWeight:900, color:"#fff", cursor:"pointer", fontFamily:"'Nunito', sans-serif", letterSpacing:"1px", textTransform:"uppercase", marginBottom:"8px" }}>
+              Comprar ahora →
+            </button>
+            <button onClick={()=>setPopupEmpresa(false)} style={{ width:"100%", background:"none", border:"none", padding:"10px", fontSize:"13px", fontWeight:800, color:"#9a9a9a", cursor:"pointer", fontFamily:"'Nunito', sans-serif" }}>
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
+
       <BottomNav />
     </main>
   );

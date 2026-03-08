@@ -28,12 +28,12 @@ export default function Home() {
   useEffect(() => {
     const cargar = async () => {
       const { data } = await supabase
-  .from("anuncios")
-  .select(`id, titulo, precio, moneda, ciudad, provincia, imagenes, flash, estado,
-    subrubro_id, subrubros!inner(nombre, rubros!inner(nombre))`)
-  .eq("estado", "activo")
-  .order("created_at", { ascending: false })
-  .limit(20);
+        .from("anuncios")
+        .select(`id, titulo, precio, moneda, ciudad, provincia, imagenes, flash, estado,
+          subrubro_id, subrubros!inner(nombre, rubros!inner(nombre))`)
+        .eq("estado", "activo")
+        .order("created_at", { ascending: false })
+        .limit(20);
 
       if (data) {
         const mapped = data.map((a: any) => ({
@@ -66,11 +66,11 @@ export default function Home() {
       <Header />
 
       {/* HERO */}
-      <div style={{ background: "linear-gradient(135deg, #1a2a3a 0%, #243b55 100%)", padding: "28px 16px 32px", textAlign: "center" }}>
+      <div style={{ background: "linear-gradient(135deg, #1a2a3a 0%, #243b55 100%)", padding: "18px 16px 14px", textAlign: "center" }}>
         <div style={{ fontSize: "13px", fontWeight: 700, color: "#d4a017", letterSpacing: "2px", textTransform: "uppercase", marginBottom: "4px" }}>
           Conectando Oportunidades
         </div>
-        <div style={{ fontSize: "12px", color: "#7a8fa0", marginBottom: "20px", fontWeight: 600 }}>
+        <div style={{ fontSize: "12px", color: "#7a8fa0", marginBottom: "10px", fontWeight: 600 }}>
           Conectando a la Comunidad
         </div>
         <div style={{ display: "flex", background: "#fff", borderRadius: "12px", overflow: "hidden", boxShadow: "0 4px 20px rgba(0,0,0,0.25)", maxWidth: "500px", margin: "0 auto" }}>
@@ -79,19 +79,17 @@ export default function Home() {
         </div>
       </div>
 
-      {/* ACCIONES RÁPIDAS */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: "10px", padding: "16px", alignItems: "center" }}>
+      {/* ACCIONES RÁPIDAS — solo Ver en Lista y Ver en Mapa */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", padding: "14px 16px" }}>
         <a href="/buscar" style={accionStyle}>
-          <div style={{ fontSize: "24px", marginBottom: "6px" }}>📋</div>
-          <div style={accionLabelStyle}>Ver en Lista</div>
+          <div style={{ fontSize: "28px", marginBottom: "6px" }}>📋</div>
+          <div style={accionTituloStyle}>Ver en Lista</div>
+          <div style={accionSubStyle}>Todos los anuncios</div>
         </a>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
-          <a href="/publicar" style={btnPublicarStyle}>➕</a>
-          <span style={{ fontSize: "10px", fontWeight: 800, textTransform: "uppercase", letterSpacing: "1px", color: "#2c2c2e" }}>Publicar</span>
-        </div>
         <a href="/mapa" style={accionStyle}>
-          <div style={{ fontSize: "24px", marginBottom: "6px" }}>🗺️</div>
-          <div style={accionLabelStyle}>Ver en Mapa</div>
+          <div style={{ fontSize: "28px", marginBottom: "6px" }}>🗺️</div>
+          <div style={accionTituloStyle}>Ver en Mapa</div>
+          <div style={accionSubStyle}>Anuncios cerca tuyo</div>
         </a>
       </div>
 
@@ -112,30 +110,16 @@ export default function Home() {
         <div style={{ textAlign: "center", padding: "40px", color: "#9a9a9a", fontWeight: 700 }}>Cargando anuncios...</div>
       ) : (
         <>
-          {/* SLIDER DESTACADOS */}
           {destacados.length > 0 && (
             <Seccion titulo="⚡ Destacados">
               {destacados.map((a) => <Tarjeta key={a.id} anuncio={a} formatPrecio={formatPrecio} />)}
             </Seccion>
           )}
-
-          {/* SLIDER RECIENTES */}
           <Seccion titulo="🕐 Recién publicados">
             {recientes.map((a) => <Tarjeta key={a.id} anuncio={a} formatPrecio={formatPrecio} />)}
           </Seccion>
         </>
       )}
-
-      {/* MAPA PREVIEW */}
-      <a href="/mapa" style={{ display: "block", margin: "0 16px 20px", borderRadius: "16px", overflow: "hidden", boxShadow: "0 4px 16px rgba(0,0,0,0.1)", textDecoration: "none", position: "relative" }}>
-        <div style={{ height: "180px", background: "linear-gradient(135deg, #c8d8e8, #b0c4d8)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "8px" }}>
-          <span style={{ fontSize: "40px" }}>🗺️</span>
-          <span style={{ fontWeight: 800, fontSize: "13px", color: "#1a2a3a", letterSpacing: "1px" }}>Ver anuncios en el mapa</span>
-        </div>
-        <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "linear-gradient(transparent, rgba(26,42,58,0.8))", padding: "16px", color: "white", fontWeight: 800, fontSize: "14px" }}>
-          📍 Anuncios cerca tuyo
-        </div>
-      </a>
 
       <BottomNav />
     </main>
@@ -180,15 +164,16 @@ function Tarjeta({ anuncio, formatPrecio }: { anuncio: Anuncio; formatPrecio: (p
 }
 
 const accionStyle: React.CSSProperties = {
-  background: "#fff", borderRadius: "14px", padding: "14px 10px", textAlign: "center",
-  boxShadow: "0 2px 8px rgba(0,0,0,0.08)", cursor: "pointer", textDecoration: "none", color: "#2c2c2e", display: "block",
+  background: "linear-gradient(135deg, #1a2a3a 0%, #243b55 100%)",
+  borderRadius: "16px", padding: "18px 10px", textAlign: "center",
+  boxShadow: "0 4px 12px rgba(0,0,0,0.15)", cursor: "pointer",
+  textDecoration: "none", color: "#fff", display: "block",
+  border: "1px solid rgba(255,255,255,0.08)",
 };
-const accionLabelStyle: React.CSSProperties = {
-  fontSize: "11px", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.5px", lineHeight: 1.2,
+const accionTituloStyle: React.CSSProperties = {
+  fontSize: "13px", fontWeight: 900, textTransform: "uppercase",
+  letterSpacing: "0.5px", color: "#fff", marginBottom: "2px",
 };
-const btnPublicarStyle: React.CSSProperties = {
-  background: "#d4a017", color: "#1a2a3a", border: "none", borderRadius: "50%",
-  width: "68px", height: "68px", fontSize: "30px", cursor: "pointer",
-  boxShadow: "0 4px 16px rgba(212,160,23,0.45)", display: "flex",
-  alignItems: "center", justifyContent: "center", textDecoration: "none",
+const accionSubStyle: React.CSSProperties = {
+  fontSize: "11px", fontWeight: 600, color: "#8a9aaa",
 };

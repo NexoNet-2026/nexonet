@@ -40,6 +40,7 @@ function BuscarInner() {
   const [ciudSel,  setCiudSel]  = useState("");
   const [barrSel,  setBarrSel]  = useState("");
   const [gpsLoad,  setGpsLoad]  = useState(false);
+  const gpsSettingRef = useRef(false); // evita que useEffect resetee lo que pone el GPS
 
   // Buscador
   const [query,    setQuery]    = useState("");
@@ -88,13 +89,12 @@ function BuscarInner() {
     });
   }, []);
 
-  // Ciudades al cambiar provincia (solo si no hay ciudades ya cargadas para esta provincia)
+  // Ciudades al cambiar provincia (se saltea si lo está seteando el GPS)
   useEffect(() => {
+    if (gpsSettingRef.current) return; // GPS ya maneja todo
     if (!provSel) { setCiudSel(""); setBarrSel(""); setCiudades([]); setBarrios([]); return; }
-    // Si ya tenemos ciudades cargadas para esta provincia, no resetear
     const p = provs.find(x => x.nombre===provSel);
     if (!p) return;
-    if (ciudades.length > 0 && ciudades[0].provincia_id === p.id) return; // ya cargadas por GPS
     setCiudSel(""); setBarrSel(""); setBarrios([]);
     supabase.from("ciudades").select("id,nombre,provincia_id").eq("provincia_id",p.id).order("nombre")
       .then(({data}) => { if(data) setCiudades(data); });
@@ -137,7 +137,7 @@ function BuscarInner() {
           p.nombre.toLowerCase().includes(pNom.toLowerCase()) ||
           pNom.toLowerCase().includes(p.nombre.toLowerCase())
         );
-        if (!pm) { alert(`No encontramos la provincia: ${pNom}`); setGpsLoad(false); return; }
+        if (!pm) { setGpsLoad(false); return; }
 
         // Cargar ciudades
         const {data:cd} = await supabase.from("ciudades")
@@ -146,7 +146,7 @@ function BuscarInner() {
         let ciudadFinal = "";
         let barrioFinal = "";
         let barriosFinal: Barrio[] = [];
-        let ciudadesFinal: Ciudad[] = cd || [];
+        let ciudadesFinal: Ciudad[] = cd||[];
 
         if (cd && cNom) {
           const cm = cd.find((c:any) =>
@@ -155,7 +155,6 @@ function BuscarInner() {
           );
           if (cm) {
             ciudadFinal = cm.nombre;
-            // Cargar barrios
             const {data:bd} = await supabase.from("barrios")
               .select("id,nombre,ciudad_id").eq("ciudad_id",cm.id).order("nombre");
             if (bd) {
@@ -171,12 +170,15 @@ function BuscarInner() {
           }
         }
 
-        // Setear todo de una sola vez para evitar race conditions
+        // Activar flag ANTES de setear provincia para que useEffect no resetee
+        gpsSettingRef.current = true;
         setCiudades(ciudadesFinal);
         setBarrios(barriosFinal);
         setProvSel(pm.nombre);
         setCiudSel(ciudadFinal);
         setBarrSel(barrioFinal);
+        // Desactivar flag en el siguiente tick
+        setTimeout(() => { gpsSettingRef.current = false; }, 100);
 
       } catch { alert("Error al obtener ubicación"); }
       setGpsLoad(false);

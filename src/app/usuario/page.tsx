@@ -84,6 +84,15 @@ export default function Usuario() {
   const toggleHorario = (dia: string) =>
     setHorarios({ ...horarios, [dia]: { ...horarios[dia], activo: !horarios[dia].activo } });
 
+  // Si toca la pestaña Anuncios, va directo a /mis-anuncios
+  const handleSeccion = (id: Seccion) => {
+    if (id === "anuncios") {
+      router.push("/mis-anuncios");
+      return;
+    }
+    setSeccion(id);
+  };
+
   return (
     <main style={{ paddingTop: "95px", paddingBottom: "130px", background: "#f4f4f2", minHeight: "100vh", fontFamily: "'Nunito', sans-serif" }}>
       <Header />
@@ -98,7 +107,6 @@ export default function Usuario() {
             <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "22px", color: "#fff", letterSpacing: "1px" }}>{perfil?.nombre_usuario || "---"}</div>
             <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "16px", color: "#d4a017", letterSpacing: "2px" }}>{perfil?.codigo || "---"}</div>
           </div>
-          {/* BOTÓN CERRAR SESIÓN */}
           <button onClick={cerrarSesion} style={{
             background: "rgba(255,80,80,0.15)", border: "1px solid rgba(255,80,80,0.4)",
             borderRadius: "10px", padding: "6px 12px", color: "#ff6b6b",
@@ -112,7 +120,7 @@ export default function Usuario() {
         {/* TABS */}
         <div style={{ display: "flex" }}>
           {secciones.map((s) => (
-            <button key={s.id} onClick={() => setSeccion(s.id)} style={{
+            <button key={s.id} onClick={() => handleSeccion(s.id)} style={{
               flex: 1, background: "none", border: "none",
               borderBottom: seccion === s.id ? "3px solid #d4a017" : "3px solid transparent",
               padding: "10px 4px", cursor: "pointer",
@@ -169,26 +177,6 @@ export default function Usuario() {
             </div>
 
             <button onClick={guardar} style={btnPrincipalStyle}>Guardar cambios</button>
-          </div>
-        )}
-
-        {/* ── ANUNCIOS ── */}
-        {seccion === "anuncios" && (
-          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px", marginBottom: "4px" }}>
-              {[{ n: "0", label: "Publicados" }, { n: "0", label: "Flash" }, { n: "0", label: "Vencidos" }].map((s) => (
-                <div key={s.label} style={{ background: "#fff", borderRadius: "12px", padding: "14px 10px", textAlign: "center", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
-                  <div style={{ fontSize: "22px", fontWeight: 900, color: "#d4a017" }}>{s.n}</div>
-                  <div style={{ fontSize: "11px", fontWeight: 700, color: "#666", textTransform: "uppercase", letterSpacing: "0.5px" }}>{s.label}</div>
-                </div>
-              ))}
-            </div>
-            <div style={{ ...cardStyle, textAlign: "center", padding: "40px 20px" }}>
-              <div style={{ fontSize: "48px", marginBottom: "12px" }}>📋</div>
-              <div style={{ fontSize: "15px", fontWeight: 800, color: "#1a2a3a", marginBottom: "8px" }}>Todavía no tenés anuncios</div>
-              <div style={{ fontSize: "13px", color: "#9a9a9a", marginBottom: "20px" }}>Publicá tu primer anuncio gratis</div>
-              <button onClick={() => router.push("/publicar")} style={btnPrincipalStyle}>➕ Publicar anuncio</button>
-            </div>
           </div>
         )}
 

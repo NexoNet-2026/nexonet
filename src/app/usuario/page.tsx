@@ -36,6 +36,7 @@ export default function Usuario() {
   const [guardando, setGuardando] = useState(false);
   const [totalAnuncios, setTotalAnuncios] = useState(0);
   const [anunciosActivos, setAnunciosActivos] = useState(0);
+  const [gruposCreados, setGruposCreados] = useState(0);
 
   const [personal, setPersonal] = useState({
     nombre_usuario: "", nombre: "", apellido: "",
@@ -87,10 +88,12 @@ export default function Usuario() {
         if (data.feriados)    setFeriados(data.feriados);
       }
 
-      const { count: total } = await supabase.from("anuncios").select("*",{count:"exact",head:true}).eq("usuario_id", session.user.id);
+      const { count: total }  = await supabase.from("anuncios").select("*",{count:"exact",head:true}).eq("usuario_id", session.user.id);
       const { count: activos } = await supabase.from("anuncios").select("*",{count:"exact",head:true}).eq("usuario_id", session.user.id).eq("estado","activo");
+      const { count: grupos }  = await supabase.from("grupos").select("*",{count:"exact",head:true}).eq("creador_id", session.user.id);
       setTotalAnuncios(total || 0);
       setAnunciosActivos(activos || 0);
+      setGruposCreados(grupos || 0);
     };
     cargar();
   }, []);
@@ -145,15 +148,18 @@ export default function Usuario() {
   const toggleE = (k:string) => setVisE(v=>({...v,[k]:!v[k]}));
 
   // ── STATS ──
-  const bits          = perfil?.bits              || 0;
-  const bitsPromo     = perfil?.bits_promo        || 0;
-  const bitsGastados  = perfil?.bits_gastados     || 0;
-  const promoGastados = perfil?.bits_promo_gastados || 0;
-  const totalConsum   = bitsGastados + promoGastados;
-  const totalVistas   = perfil?.total_vistas      || 0;
-  const totalConex    = perfil?.total_conexiones  || 0;
-  const gruposUnidos  = perfil?.grupos_unidos     || 0;
-  const estrellas     = totalConsum; // 1 estrella por cada BIT consumido
+  const bitsNexonet   = perfil?.bits                 || 0;
+  const bitsPromotor  = perfil?.bits_promo           || 0;
+  const bitsFree      = perfil?.bits_free            || 0;
+  const bitsGastados  = perfil?.bits_gastados        || 0;
+  const promoGastados = perfil?.bits_promo_gastados  || 0;
+  const freeGastados  = perfil?.bits_free_gastados   || 0;
+  const totalConsum   = bitsGastados + promoGastados + freeGastados;
+  // Estrellas = BIT Nexonet consumidos + BIT NexoPromotor ganados (histórico)
+  const estrellas     = bitsGastados + (perfil?.bits_promo_total || 0);
+  const totalVistas   = perfil?.total_vistas         || 0;
+  const totalConex    = perfil?.total_conexiones     || 0;
+  const gruposUnidos  = perfil?.grupos_unidos        || 0;
 
   const insigniaActual = INSIGNIAS.find(i => totalConsum >= i.min && totalConsum <= i.max) || INSIGNIAS[0];
   const idxActual      = INSIGNIAS.findIndex(i => i === insigniaActual);
@@ -161,27 +167,39 @@ export default function Usuario() {
   const progreso       = insigniaSig
     ? Math.min(100, ((totalConsum - insigniaActual.min) / (insigniaSig.min - insigniaActual.min)) * 100)
     : 100;
-  const estrellasVis   = Math.min(5, Math.floor(totalConsum / 100));
 
   return (
     <main style={{ paddingTop:"95px", paddingBottom:"130px", background:"#f4f4f2", minHeight:"100vh", fontFamily:"'Nunito', sans-serif" }}>
       <Header />
 
-      {/* HERO */}
-      <div style={{ background:"linear-gradient(135deg, #1a2a3a 0%, #243b55 100%)", padding:"20px 16px 0" }}>
-        <div style={{ display:"flex", alignItems:"center", gap:"14px", marginBottom:"16px" }}>
-          <div style={{ width:"60px", height:"60px", borderRadius:"50%", background:"linear-gradient(135deg, #d4a017, #f0c040)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"28px", boxShadow:"0 4px 16px rgba(212,160,23,0.4)", flexShrink:0 }}>
+      {/* ── HERO ── */}
+      <div style={{ background:"linear-gradient(135deg, #1a2a3a 0%, #243b55 100%)", padding:"16px 16px 0" }}>
+        <div style={{ display:"flex", alignItems:"center", gap:"14px", marginBottom:"10px" }}>
+          <div style={{ width:"56px", height:"56px", borderRadius:"50%", background:"linear-gradient(135deg, #d4a017, #f0c040)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"26px", boxShadow:"0 4px 16px rgba(212,160,23,0.4)", flexShrink:0 }}>
             {esEmpresa ? "🏢" : "👤"}
           </div>
-          <div style={{ flex:1 }}>
-            <div style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:"22px", color:"#fff", letterSpacing:"1px" }}>{perfil?.nombre_usuario||"---"}</div>
-            <div style={{ display:"flex", alignItems:"center", gap:"8px" }}>
-              <div style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:"16px", color:"#d4a017", letterSpacing:"2px" }}>{perfil?.codigo||"---"}</div>
-              <div style={{ background:insigniaActual.color, borderRadius:"8px", padding:"2px 8px", fontSize:"9px", fontWeight:900, color:"#fff" }}>{insigniaActual.emoji} {insigniaActual.nombre.toUpperCase()}</div>
+          <div style={{ flex:1, minWidth:0 }}>
+            {/* NOMBRE */}
+            <div style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:"22px", color:"#fff", letterSpacing:"1px", lineHeight:1.1 }}>
+              {perfil?.nombre_usuario||"---"}
+            </div>
+            {/* CÓDIGO */}
+            <div style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:"14px", color:"#d4a017", letterSpacing:"2px", lineHeight:1.2 }}>
+              {perfil?.codigo||"---"}
+            </div>
+            {/* INSIGNIA en línea propia, abajo */}
+            <div style={{ marginTop:"4px" }}>
+              <span style={{ background:insigniaActual.color, borderRadius:"20px", padding:"3px 10px", fontSize:"10px", fontWeight:900, color:"#fff", letterSpacing:"0.5px" }}>
+                {insigniaActual.emoji} {insigniaActual.nombre.toUpperCase()}
+              </span>
             </div>
           </div>
-          <button onClick={cerrarSesion} style={{ background:"rgba(255,80,80,0.15)", border:"1px solid rgba(255,80,80,0.4)", borderRadius:"10px", padding:"6px 12px", color:"#ff6b6b", fontSize:"12px", fontWeight:800, cursor:"pointer", fontFamily:"'Nunito', sans-serif" }}>🚪 Salir</button>
+          <button onClick={cerrarSesion} style={{ background:"rgba(255,80,80,0.15)", border:"1px solid rgba(255,80,80,0.4)", borderRadius:"10px", padding:"6px 12px", color:"#ff6b6b", fontSize:"12px", fontWeight:800, cursor:"pointer", fontFamily:"'Nunito', sans-serif", flexShrink:0 }}>
+            🚪 Salir
+          </button>
         </div>
+
+        {/* TABS */}
         <div style={{ display:"flex" }}>
           {([["datos","👤","Datos"],["estadisticas","📊","Stats"],["promotor","⭐","Promotor"]] as [Seccion,string,string][]).map(([id,e,l]) => (
             <button key={id} onClick={()=>setSeccion(id)} style={{ flex:1, background:"none", border:"none", borderBottom:seccion===id?"3px solid #d4a017":"3px solid transparent", padding:"10px 4px", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:"2px" }}>
@@ -273,59 +291,44 @@ export default function Usuario() {
         {seccion === "estadisticas" && (
           <div style={{ display:"flex", flexDirection:"column", gap:"14px" }}>
 
-            {/* BIT CONEXIÓN */}
-            <div style={C}>
-              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:"10px" }}>
-                <div>
-                  <div style={{ fontSize:"11px", fontWeight:800, color:"#9a9a9a", textTransform:"uppercase", letterSpacing:"1px" }}>BIT Conexión</div>
-                  <div style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:"48px", color:"#d4a017", lineHeight:1 }}>{bits.toLocaleString()}</div>
-                  <div style={{ fontSize:"11px", fontWeight:700, color:"#9a9a9a" }}>disponibles</div>
-                </div>
-                <div style={{ textAlign:"right" }}>
-                  <div style={{ fontSize:"11px", fontWeight:800, color:"#9a9a9a", textTransform:"uppercase", letterSpacing:"1px" }}>Consumidos</div>
-                  <div style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:"32px", color:"#1a2a3a" }}>{bitsGastados.toLocaleString()}</div>
-                  <div style={{ fontSize:"10px", color:"#9a9a9a", fontWeight:600 }}>Total: {(bits+bitsGastados).toLocaleString()}</div>
-                </div>
-              </div>
-              <div style={{ height:"8px", background:"#f0f0f0", borderRadius:"4px", overflow:"hidden" }}>
-                <div style={{ height:"100%", width:`${bits>0?Math.min(100,(bits/(bits+bitsGastados||1))*100):0}%`, background:"linear-gradient(90deg, #d4a017, #f0c040)", borderRadius:"4px" }} />
-              </div>
-            </div>
+            {/* ── BIT NEXONET ── */}
+            <BitCard
+              titulo="BIT NexoNet"
+              color="#d4a017"
+              disponibles={bitsNexonet}
+              consumidos={bitsGastados}
+              descripcion="BIT de conexión para anuncios y funciones de la plataforma"
+            />
 
-            {/* BIT PROMOCIÓN */}
-            <div style={{ ...C, border:"2px solid rgba(39,174,96,0.25)" }}>
-              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:"10px" }}>
-                <div>
-                  <div style={{ display:"flex", alignItems:"center", gap:"8px", marginBottom:"4px" }}>
-                    <div style={{ fontSize:"11px", fontWeight:800, color:"#27ae60", textTransform:"uppercase", letterSpacing:"1px" }}>BIT Promoción</div>
-                    <div style={{ background:"rgba(39,174,96,0.15)", border:"1px solid rgba(39,174,96,0.4)", borderRadius:"20px", padding:"2px 8px", fontSize:"9px", fontWeight:900, color:"#27ae60" }}>♻️ REEMBOLSABLE</div>
-                  </div>
-                  <div style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:"48px", color:"#27ae60", lineHeight:1 }}>{bitsPromo.toLocaleString()}</div>
-                  <div style={{ fontSize:"11px", fontWeight:700, color:"#9a9a9a" }}>disponibles</div>
-                </div>
-                <div style={{ textAlign:"right" }}>
-                  <div style={{ fontSize:"11px", fontWeight:800, color:"#9a9a9a", textTransform:"uppercase", letterSpacing:"1px" }}>Consumidos</div>
-                  <div style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:"32px", color:"#1a2a3a" }}>{promoGastados.toLocaleString()}</div>
-                  <div style={{ fontSize:"10px", color:"#9a9a9a", fontWeight:600 }}>Total: {(bitsPromo+promoGastados).toLocaleString()}</div>
-                </div>
-              </div>
-              <div style={{ height:"8px", background:"#f0f0f0", borderRadius:"4px", overflow:"hidden", marginBottom:"12px" }}>
-                <div style={{ height:"100%", width:`${bitsPromo>0?Math.min(100,(bitsPromo/(bitsPromo+promoGastados||1))*100):0}%`, background:"linear-gradient(90deg, #27ae60, #2ecc71)", borderRadius:"4px" }} />
-              </div>
-              <button style={{ width:"100%", background:"rgba(39,174,96,0.1)", border:"1px solid rgba(39,174,96,0.3)", borderRadius:"10px", padding:"10px", fontSize:"12px", fontWeight:800, color:"#27ae60", cursor:"pointer", fontFamily:"'Nunito', sans-serif" }}>
-                ♻️ Solicitar reembolso de BIT Promoción
-              </button>
-            </div>
+            {/* ── BIT NEXOPROMOTOR ── */}
+            <BitCard
+              titulo="BIT NexoPromotor"
+              color="#27ae60"
+              disponibles={bitsPromotor}
+              consumidos={promoGastados}
+              descripcion="BIT obtenidos como promotor — reembolsables ante solicitud"
+              reembolsable
+            />
 
-            {/* MÉTRICAS 2×3 */}
+            {/* ── BIT NEXOFREE ── */}
+            <BitCard
+              titulo="BIT NexoFree"
+              color="#2980b9"
+              disponibles={bitsFree}
+              consumidos={freeGastados}
+              descripcion="BIT de respaldo garantizado — aval legal ante eventualidades"
+              free
+            />
+
+            {/* ── MÉTRICAS ── */}
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:"10px" }}>
               {[
-                { n:totalVistas.toLocaleString(),   l:"Visitas",          e:"👁️" },
-                { n:totalConex.toLocaleString(),     l:"Conexiones",       e:"🔗" },
-                { n:String(anunciosActivos),          l:"Activos",          e:"✅" },
-                { n:String(totalAnuncios),            l:"Total publicados", e:"📋" },
-                { n:String(gruposUnidos),             l:"Grupos unidos",    e:"👥" },
-                { n:estrellas.toLocaleString(),       l:"BIT consumidos",   e:"⭐" },
+                { n:totalVistas.toLocaleString(),    l:"Visitas",          e:"👁️" },
+                { n:totalConex.toLocaleString(),      l:"Conexiones",       e:"🔗" },
+                { n:String(anunciosActivos),           l:"Activos",          e:"✅" },
+                { n:String(totalAnuncios),             l:"Total publicados", e:"📋" },
+                { n:String(gruposUnidos),              l:"Grupos unidos",    e:"👥" },
+                { n:String(gruposCreados),             l:"Grupos creados",   e:"🏗️" },
               ].map(s => (
                 <div key={s.l} style={{ background:"#fff", borderRadius:"14px", padding:"14px 8px", textAlign:"center", boxShadow:"0 2px 8px rgba(0,0,0,0.06)" }}>
                   <div style={{ fontSize:"22px", marginBottom:"4px" }}>{s.e}</div>
@@ -335,10 +338,10 @@ export default function Usuario() {
               ))}
             </div>
 
-            {/* INSIGNIA */}
+            {/* ── INSIGNIA ── */}
             <div style={{ ...C, background:`linear-gradient(135deg, ${insigniaActual.color}15, ${insigniaActual.color}05)`, border:`2px solid ${insigniaActual.color}30` }}>
               <div style={{ fontSize:"11px", fontWeight:800, color:"#9a9a9a", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"14px" }}>🏅 Insignia de reputación</div>
-              <div style={{ display:"flex", alignItems:"center", gap:"16px", marginBottom:"16px" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:"16px", marginBottom:"14px" }}>
                 <div style={{ width:"64px", height:"64px", borderRadius:"50%", background:`${insigniaActual.color}20`, border:`3px solid ${insigniaActual.color}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"32px", flexShrink:0 }}>
                   {insigniaActual.emoji}
                 </div>
@@ -360,7 +363,6 @@ export default function Usuario() {
                   </div>
                 </>
               )}
-              {/* TODAS LAS INSIGNIAS */}
               <div style={{ display:"flex", gap:"4px", justifyContent:"space-between" }}>
                 {INSIGNIAS.map(ins => {
                   const ok = totalConsum >= ins.min;
@@ -374,22 +376,20 @@ export default function Usuario() {
               </div>
             </div>
 
-            {/* ESTRELLAS */}
+            {/* ── ESTRELLAS ── */}
             <div style={C}>
-              <div style={{ fontSize:"11px", fontWeight:800, color:"#9a9a9a", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"12px" }}>⭐ Estrellas ganadas</div>
-              <div style={{ display:"flex", alignItems:"center", gap:"14px", marginBottom:"12px" }}>
-                <div style={{ display:"flex", gap:"4px" }}>
-                  {[1,2,3,4,5].map(n => (
-                    <span key={n} style={{ fontSize:"28px", filter:n<=estrellasVis?"none":"grayscale(1) opacity(0.2)" }}>⭐</span>
-                  ))}
+              <div style={{ fontSize:"11px", fontWeight:800, color:"#9a9a9a", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"14px" }}>⭐ Estrellas ganadas</div>
+              <div style={{ display:"flex", alignItems:"center", gap:"16px", marginBottom:"12px" }}>
+                <div style={{ width:"64px", height:"64px", borderRadius:"50%", background:"rgba(212,160,23,0.15)", border:"3px solid #d4a017", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"32px", flexShrink:0 }}>
+                  ⭐
                 </div>
                 <div>
-                  <div style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:"32px", color:"#d4a017", lineHeight:1 }}>{estrellas.toLocaleString()}</div>
+                  <div style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:"42px", color:"#d4a017", lineHeight:1 }}>{estrellas.toLocaleString()}</div>
                   <div style={{ fontSize:"11px", fontWeight:700, color:"#9a9a9a" }}>estrellas totales</div>
                 </div>
               </div>
               <div style={{ background:"#f9f7f0", borderRadius:"10px", padding:"10px 14px", fontSize:"11px", fontWeight:700, color:"#888", lineHeight:1.7 }}>
-                1 estrella por cada BIT consumido · Aumentan tu visibilidad y reputación frente a otros usuarios
+                Las estrellas se acumulan por cada BIT NexoNet consumido y por los BIT NexoPromotor ganados · Reflejan tu actividad y reputación en la plataforma
               </div>
             </div>
 
@@ -425,6 +425,48 @@ export default function Usuario() {
       </div>
       <BottomNav />
     </main>
+  );
+}
+
+// ── TARJETA BIT ──
+function BitCard({ titulo, color, disponibles, consumidos, descripcion, reembolsable, free }:{
+  titulo:string; color:string; disponibles:number; consumidos:number;
+  descripcion:string; reembolsable?:boolean; free?:boolean;
+}) {
+  const total = disponibles + consumidos;
+  const pct   = total > 0 ? Math.min(100, (disponibles / total) * 100) : 0;
+  return (
+    <div style={{ ...C, border:`2px solid ${color}25` }}>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:"10px" }}>
+        <div>
+          <div style={{ display:"flex", alignItems:"center", gap:"8px", marginBottom:"4px" }}>
+            <div style={{ fontSize:"11px", fontWeight:800, color, textTransform:"uppercase", letterSpacing:"1px" }}>{titulo}</div>
+            {reembolsable && (
+              <div style={{ background:`rgba(39,174,96,0.15)`, border:`1px solid rgba(39,174,96,0.4)`, borderRadius:"20px", padding:"2px 8px", fontSize:"9px", fontWeight:900, color:"#27ae60" }}>♻️ REEMBOLSABLE</div>
+            )}
+            {free && (
+              <div style={{ background:`rgba(41,128,185,0.15)`, border:`1px solid rgba(41,128,185,0.4)`, borderRadius:"20px", padding:"2px 8px", fontSize:"9px", fontWeight:900, color:"#2980b9" }}>🛡️ RESPALDO</div>
+            )}
+          </div>
+          <div style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:"48px", color, lineHeight:1 }}>{disponibles.toLocaleString()}</div>
+          <div style={{ fontSize:"11px", fontWeight:700, color:"#9a9a9a" }}>disponibles</div>
+        </div>
+        <div style={{ textAlign:"right" }}>
+          <div style={{ fontSize:"11px", fontWeight:800, color:"#9a9a9a", textTransform:"uppercase", letterSpacing:"1px" }}>Consumidos</div>
+          <div style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:"32px", color:"#1a2a3a" }}>{consumidos.toLocaleString()}</div>
+          <div style={{ fontSize:"10px", color:"#9a9a9a", fontWeight:600 }}>Total: {total.toLocaleString()}</div>
+        </div>
+      </div>
+      <div style={{ height:"8px", background:"#f0f0f0", borderRadius:"4px", overflow:"hidden", marginBottom:"8px" }}>
+        <div style={{ height:"100%", width:`${pct}%`, background:`linear-gradient(90deg, ${color}cc, ${color})`, borderRadius:"4px", transition:"width .4s" }} />
+      </div>
+      <div style={{ fontSize:"11px", fontWeight:600, color:"#9a9a9a", lineHeight:1.5 }}>{descripcion}</div>
+      {reembolsable && (
+        <button style={{ marginTop:"10px", width:"100%", background:`rgba(39,174,96,0.1)`, border:`1px solid rgba(39,174,96,0.3)`, borderRadius:"10px", padding:"10px", fontSize:"12px", fontWeight:800, color:"#27ae60", cursor:"pointer", fontFamily:"'Nunito', sans-serif" }}>
+          ♻️ Solicitar reembolso de BIT NexoPromotor
+        </button>
+      )}
+    </div>
   );
 }
 
@@ -479,6 +521,6 @@ function FilaHorario({ label, activo, desde, hasta, onToggle, onDesde, onHasta, 
   );
 }
 
-const C:React.CSSProperties = { background:"#fff", borderRadius:"16px", padding:"20px", boxShadow:"0 2px 10px rgba(0,0,0,0.06)" };
+const C:React.CSSProperties  = { background:"#fff", borderRadius:"16px", padding:"20px", boxShadow:"0 2px 10px rgba(0,0,0,0.06)" };
 const BTN:React.CSSProperties = { width:"100%", background:"linear-gradient(135deg, #d4a017, #f0c040)", color:"#1a2a3a", border:"none", borderRadius:"12px", padding:"16px", fontSize:"15px", fontWeight:800, fontFamily:"'Nunito', sans-serif", cursor:"pointer", letterSpacing:"1px", textTransform:"uppercase" };
 const THS = (c:string):React.CSSProperties => ({ fontSize:"12px", fontWeight:900, color:c, textTransform:"uppercase", letterSpacing:"1px", marginBottom:"12px" });

@@ -47,7 +47,6 @@ export default function Publicar() {
     setSubrubrosFiltrados(subrubros.filter((s) => s.rubro_id === rubro.id));
   };
 
-  // GPS: obtener ubicación del dispositivo
   const usarGPS = () => {
     if (!navigator.geolocation) { alert("Tu dispositivo no soporta GPS"); return; }
     setGpsLoading(true);
@@ -55,7 +54,6 @@ export default function Publicar() {
       async (pos) => {
         const { latitude: lat, longitude: lng } = pos.coords;
         setCoordenadas({ lat, lng });
-        // Reverse geocoding con OpenStreetMap
         try {
           const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=es`);
           const data = await res.json();
@@ -70,7 +68,6 @@ export default function Publicar() {
     );
   };
 
-  // Geocoding: convertir dirección a coordenadas
   const buscarDireccion = async () => {
     if (!form.direccion) { alert("Escribí una dirección primero"); return; }
     setGeoLoading(true);
@@ -93,12 +90,18 @@ export default function Publicar() {
     setPaso("datos"); setProgreso(100);
   };
 
-  const agregarFoto = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const agregarFotos = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (fotos.length + files.length > 5) { alert("Máximo 5 fotos"); return; }
     const nuevas = [...fotos, ...files].slice(0, 5);
     setFotos(nuevas);
     setPreviews(nuevas.map((f) => URL.createObjectURL(f)));
+  };
+
+  const eliminarFoto = (i: number) => {
+    const nf = fotos.filter((_, j) => j !== i);
+    setFotos(nf);
+    setPreviews(nf.map((f) => URL.createObjectURL(f)));
   };
 
   const subirFoto = async (file: File, anuncioId: number, index: number): Promise<string> => {
@@ -239,11 +242,9 @@ export default function Publicar() {
               </div>
             </div>
 
-            {/* UBICACIÓN EN MAPA */}
+            {/* UBICACIÓN */}
             <div style={cardStyle}>
               <h3 style={subtituloStyle}>📍 Ubicación en el mapa</h3>
-
-              {/* GPS */}
               <button onClick={usarGPS} disabled={gpsLoading} style={{
                 width: "100%", background: coordenadas ? "linear-gradient(135deg, #2d6a4f, #40916c)" : "linear-gradient(135deg, #1a2a3a, #243b55)",
                 color: "#fff", border: "none", borderRadius: "12px", padding: "14px",
@@ -252,26 +253,16 @@ export default function Publicar() {
               }}>
                 {gpsLoading ? "📡 Obteniendo ubicación..." : coordenadas ? "✅ GPS obtenido" : "📡 Usar mi ubicación GPS"}
               </button>
-
-              {/* DIRECCIÓN MANUAL */}
               <label style={labelStyle}>O escribí la dirección</label>
               <div style={{ display: "flex", gap: "8px" }}>
-                <input
-                  type="text"
-                  value={form.direccion}
-                  onChange={(e) => setForm({ ...form, direccion: e.target.value })}
-                  placeholder="Ej: San Martín 500, Rafaela"
-                  style={{ ...inputStyle, flex: 1 }}
-                />
+                <input type="text" value={form.direccion} onChange={(e) => setForm({ ...form, direccion: e.target.value })}
+                  placeholder="Ej: San Martín 500, Rafaela" style={{ ...inputStyle, flex: 1 }} />
                 <button onClick={buscarDireccion} disabled={geoLoading} style={{
                   background: "#d4a017", border: "none", borderRadius: "10px", padding: "0 14px",
                   fontSize: "13px", fontWeight: 800, color: "#1a2a3a", cursor: "pointer",
                   fontFamily: "'Nunito', sans-serif", whiteSpace: "nowrap",
-                }}>
-                  {geoLoading ? "..." : "Buscar"}
-                </button>
+                }}>{geoLoading ? "..." : "Buscar"}</button>
               </div>
-
               {coordenadas && (
                 <div style={{ marginTop: "10px", padding: "10px 14px", background: "#f0f8f0", borderRadius: "10px", fontSize: "12px", fontWeight: 700, color: "#2d6a4f" }}>
                   📍 Lat: {coordenadas.lat.toFixed(5)} | Lng: {coordenadas.lng.toFixed(5)}
@@ -282,20 +273,62 @@ export default function Publicar() {
             {/* FOTOS */}
             <div style={cardStyle}>
               <h3 style={subtituloStyle}>📷 Fotos (hasta 5)</h3>
-              <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+
+              {/* PREVIEWS */}
+              <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginBottom: "14px" }}>
                 {previews.map((p, i) => (
                   <div key={i} style={{ width: "80px", height: "80px", borderRadius: "10px", overflow: "hidden", position: "relative" }}>
                     <img src={p} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                    <button onClick={() => { const nf = fotos.filter((_, j) => j !== i); setFotos(nf); setPreviews(nf.map((f) => URL.createObjectURL(f))); }}
-                      style={{ position: "absolute", top: "2px", right: "2px", background: "rgba(0,0,0,0.6)", border: "none", borderRadius: "50%", width: "20px", height: "20px", color: "#fff", fontSize: "12px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+                    <button onClick={() => eliminarFoto(i)} style={{
+                      position: "absolute", top: "2px", right: "2px", background: "rgba(0,0,0,0.6)",
+                      border: "none", borderRadius: "50%", width: "20px", height: "20px",
+                      color: "#fff", fontSize: "12px", cursor: "pointer",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }}>✕</button>
                   </div>
                 ))}
-                {fotos.length < 5 && (
-                  <label style={{ width: "80px", height: "80px", borderRadius: "10px", border: "2px dashed #d4a017", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: "24px", color: "#d4a017" }}>
-                    +<input type="file" accept="image/*" multiple onChange={agregarFoto} style={{ display: "none" }} />
-                  </label>
-                )}
               </div>
+
+              {/* BOTONES CÁMARA Y GALERÍA */}
+              {fotos.length < 5 && (
+                <div style={{ display: "flex", gap: "10px" }}>
+
+                  {/* CÁMARA */}
+                  <label style={{
+                    flex: 1, background: "linear-gradient(135deg, #1a2a3a, #243b55)",
+                    borderRadius: "12px", padding: "14px", display: "flex",
+                    alignItems: "center", justifyContent: "center", gap: "8px",
+                    cursor: "pointer", color: "#fff", fontSize: "13px", fontWeight: 800,
+                  }}>
+                    📷 Cámara
+                    <input
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      onChange={agregarFotos}
+                      style={{ display: "none" }}
+                    />
+                  </label>
+
+                  {/* GALERÍA */}
+                  <label style={{
+                    flex: 1, background: "linear-gradient(135deg, #d4a017, #f0c040)",
+                    borderRadius: "12px", padding: "14px", display: "flex",
+                    alignItems: "center", justifyContent: "center", gap: "8px",
+                    cursor: "pointer", color: "#1a2a3a", fontSize: "13px", fontWeight: 800,
+                  }}>
+                    🖼️ Galería
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={agregarFotos}
+                      style={{ display: "none" }}
+                    />
+                  </label>
+
+                </div>
+              )}
             </div>
 
             <button onClick={publicar} disabled={loading || subiendo} style={{

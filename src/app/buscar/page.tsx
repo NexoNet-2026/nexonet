@@ -127,42 +127,42 @@ function BuscarInner() {
     setGpsLoad(true);
     navigator.geolocation.getCurrentPosition(async pos => {
       try {
-        const r = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json`);
+        const r = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json&accept-language=es`);
         const d = await r.json();
-        const pNom = d.address?.state||"";
-        const cNom = d.address?.city||d.address?.town||d.address?.village||"";
-        const bNom = d.address?.suburb||d.address?.neighbourhood||"";
 
-        const pm = provs.find(p =>
-          p.nombre.toLowerCase().includes(pNom.toLowerCase()) ||
-          pNom.toLowerCase().includes(p.nombre.toLowerCase())
-        );
+        // Nominatim usa campos distintos según la zona de Argentina
+        const addr = d.address || {};
+        const pNom = addr.state || addr.region || "";
+        const cNom = addr.city || addr.town || addr.village || addr.municipality || addr.county || addr.district || "";
+        const bNom = addr.suburb || addr.neighbourhood || addr.quarter || "";
+
+        // Normalizar: quitar acentos y pasar a minúsculas para comparar
+        const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+        const pm = provs.find(p => norm(p.nombre).includes(norm(pNom)) || norm(pNom).includes(norm(p.nombre)));
         if (!pm) { setGpsLoad(false); return; }
 
-        // Cargar ciudades
-        const {data:cd} = await supabase.from("ciudades")
+        const {data:cd, error:ce} = await supabase.from("ciudades")
           .select("id,nombre,provincia_id").eq("provincia_id",pm.id).order("nombre");
 
         let ciudadFinal = "";
         let barrioFinal = "";
         let barriosFinal: Barrio[] = [];
-        let ciudadesFinal: Ciudad[] = cd||[];
+        let ciudadesFinal: Ciudad[] = cd || [];
 
-        if (cd && cNom) {
+        if (cd && cd.length > 0 && cNom) {
           const cm = cd.find((c:any) =>
-            c.nombre.toLowerCase().includes(cNom.toLowerCase()) ||
-            cNom.toLowerCase().includes(c.nombre.toLowerCase())
+            norm(c.nombre).includes(norm(cNom)) || norm(cNom).includes(norm(c.nombre))
           );
           if (cm) {
             ciudadFinal = cm.nombre;
             const {data:bd} = await supabase.from("barrios")
               .select("id,nombre,ciudad_id").eq("ciudad_id",cm.id).order("nombre");
-            if (bd) {
+            if (bd && bd.length > 0) {
               barriosFinal = bd;
               if (bNom) {
                 const bm = bd.find((b:any) =>
-                  b.nombre.toLowerCase().includes(bNom.toLowerCase()) ||
-                  bNom.toLowerCase().includes(b.nombre.toLowerCase())
+                  norm(b.nombre).includes(norm(bNom)) || norm(bNom).includes(norm(b.nombre))
                 );
                 if (bm) barrioFinal = bm.nombre;
               }
@@ -170,14 +170,13 @@ function BuscarInner() {
           }
         }
 
-        // Setear todo directo sin pasar por useEffect
         setCiudades(ciudadesFinal);
         setBarrios(barriosFinal);
         setProvSel(pm.nombre);
         setCiudSel(ciudadFinal);
         setBarrSel(barrioFinal);
 
-      } catch { alert("Error al obtener ubicación"); }
+      } catch(err) { alert("Error al obtener ubicación"); }
       setGpsLoad(false);
     }, () => { alert("No se pudo acceder al GPS"); setGpsLoad(false); });
   };

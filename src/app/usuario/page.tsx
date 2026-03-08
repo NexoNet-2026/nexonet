@@ -1,487 +1,318 @@
 "use client";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
-type Seccion = "datos" | "estadisticas" | "promotor";
-
-const DIAS_SEMANA = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
-const FERIADOS_ARG: Record<string, string> = {
-  "01/01": "Año Nuevo",          "24/03": "Día de la Memoria",
-  "02/04": "Día de Malvinas",    "01/05": "Día del Trabajador",
-  "25/05": "Revolución de Mayo", "17/06": "Paso a la Inmortalidad de Güemes",
-  "09/07": "Independencia",      "17/08": "San Martín",
-  "12/10": "Diversidad Cultural","20/11": "Soberanía Nacional",
-  "08/12": "Inmaculada",         "25/12": "Navidad",
+const FUENTES: Record<string, { label: string; color: string; texto: string }> = {
+  nexonet:       { label: "NexoNet",        color: "#d4a017", texto: "#1a2a3a" },
+  mercadolibre:  { label: "Mercado Libre",  color: "#ffe600", texto: "#333"    },
+  rosariogarage: { label: "Rosario Garage", color: "#ff6b00", texto: "#fff"    },
+  olx:           { label: "OLX",            color: "#00a884", texto: "#fff"    },
+  otro:          { label: "Externo",        color: "#888",    texto: "#fff"    },
 };
 
-const INSIGNIAS = [
-  { min: 0,     max: 99,       nombre: "Nexo Nuevo",     emoji: "🌱", color: "#6a8aaa" },
-  { min: 100,   max: 499,      nombre: "Nexo Activo",    emoji: "⚡", color: "#27ae60" },
-  { min: 500,   max: 1499,     nombre: "Nexo Conectado", emoji: "🔗", color: "#2980b9" },
-  { min: 1500,  max: 4999,     nombre: "Nexo Pro",       emoji: "🏆", color: "#d4a017" },
-  { min: 5000,  max: 14999,    nombre: "Nexo Élite",     emoji: "💎", color: "#8e44ad" },
-  { min: 15000, max: Infinity, nombre: "Nexo Leyenda",   emoji: "🌟", color: "#c0392b" },
-];
+type Anuncio = {
+  id: number; titulo: string; precio: number; moneda: string;
+  ciudad: string; provincia: string; imagenes: string[];
+  flash: boolean; fuente: string; envio_gratis: boolean;
+  mas_vendido: boolean; tienda_oficial: boolean;
+  descuento_cantidad: boolean; presupuesto_sin_cargo: boolean;
+  conexion_habilitada: boolean; descuento_porcentaje: number;
+  subrubro: string; rubro: string;
+};
 
-type Horario = { desde: string; hasta: string; activo: boolean };
-type Vis = Record<string, boolean>;
+type Rubro = { id: number; nombre: string };
+type Subrubro = { id: number; nombre: string; rubro_id: number };
 
-export default function Usuario() {
+export default function Home() {
   const router = useRouter();
-  const [seccion, setSeccion] = useState<Seccion>("datos");
-  const [perfil, setPerfil]   = useState<any>(null);
-  const [guardando, setGuardando] = useState(false);
-  const [totalAnuncios, setTotalAnuncios] = useState(0);
-  const [anunciosActivos, setAnunciosActivos] = useState(0);
-  const [gruposCreados, setGruposCreados] = useState(0);
-  const [popupEmpresa, setPopupEmpresa] = useState(false);
+  const [todos, setTodos]           = useState<Anuncio[]>([]);
+  const [rubros, setRubros]         = useState<Rubro[]>([]);
+  const [subrubros, setSubrubros]   = useState<Subrubro[]>([]);
+  const [loading, setLoading]       = useState(true);
 
-  const [personal, setPersonal] = useState({
-    nombre_usuario: "", nombre: "", apellido: "",
-    whatsapp: "", provincia: "", ciudad: "", barrio: "", direccion: "",
-    lat: "", lng: "",
-  });
-  const [visP, setVisP] = useState<Vis>({
-    nombre_usuario: true, nombre_apellido: true, whatsapp: false,
-    provincia: true, ciudad: true, barrio: false, direccion: false,
-  });
-  const [emp, setEmp] = useState({
-    nombre_empresa: "", telefono: "", whatsapp_empresa: "",
-    provincia_empresa: "", ciudad_empresa: "", barrio_empresa: "",
-    direccion_empresa: "", lat_empresa: "", lng_empresa: "",
-  });
-  const [visE, setVisE] = useState<Vis>({
-    nombre_empresa: true, telefono: false, whatsapp_empresa: false,
-    provincia_empresa: true, ciudad_empresa: true,
-    barrio_empresa: false, direccion_empresa: false,
-  });
-  const [horarios, setHorarios] = useState<Record<string, Horario>>({
-    Lunes:     { desde:"09:00", hasta:"18:00", activo:true  },
-    Martes:    { desde:"09:00", hasta:"18:00", activo:true  },
-    Miércoles: { desde:"09:00", hasta:"18:00", activo:true  },
-    Jueves:    { desde:"09:00", hasta:"18:00", activo:true  },
-    Viernes:   { desde:"09:00", hasta:"18:00", activo:true  },
-    Sábado:    { desde:"09:00", hasta:"13:00", activo:false },
-    Domingo:   { desde:"09:00", hasta:"13:00", activo:false },
-  });
-  const [feriados, setFeriados] = useState<Record<string, Horario>>(() =>
-    Object.fromEntries(Object.keys(FERIADOS_ARG).map(f => [f, { activo:false, desde:"10:00", hasta:"16:00" }]))
-  );
-
-  const esEmpresa = perfil?.plan === "nexoempresa";
+  // ── Buscador con dropdown ──
+  const [query, setQuery]           = useState("");
+  const [rubroSel, setRubroSel]     = useState<Rubro | null>(null);
+  const [subrubroSel, setSubrubroSel] = useState<Subrubro | null>(null);
+  const [dropOpen, setDropOpen]     = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const dropRef  = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const cargar = async () => {
-      const { data:{ session } } = await supabase.auth.getSession();
-      if (!session) { router.push("/login"); return; }
-
-      const { data } = await supabase.from("usuarios").select("*").eq("id", session.user.id).single();
-      if (data) {
-        setPerfil(data);
-        setPersonal({ nombre_usuario:data.nombre_usuario||"", nombre:data.nombre||"", apellido:data.apellido||"", whatsapp:data.whatsapp||"", provincia:data.provincia||"", ciudad:data.ciudad||"", barrio:data.barrio||"", direccion:data.direccion||"", lat:data.lat||"", lng:data.lng||"" });
-        if (data.vis_personal) setVisP(data.vis_personal);
-        setEmp({ nombre_empresa:data.nombre_empresa||"", telefono:data.telefono||"", whatsapp_empresa:data.whatsapp_empresa||"", provincia_empresa:data.provincia_empresa||"", ciudad_empresa:data.ciudad_empresa||"", barrio_empresa:data.barrio_empresa||"", direccion_empresa:data.direccion_empresa||"", lat_empresa:data.lat_empresa||"", lng_empresa:data.lng_empresa||"" });
-        if (data.vis_empresa) setVisE(data.vis_empresa);
-        if (data.horarios)    setHorarios(data.horarios);
-        if (data.feriados)    setFeriados(data.feriados);
+      const [{ data: rData }, { data: sData }, { data: aData }] = await Promise.all([
+        supabase.from("rubros").select("id, nombre").order("nombre"),
+        supabase.from("subrubros").select("id, nombre, rubro_id").order("nombre"),
+        supabase.from("anuncios").select(`
+          id, titulo, precio, moneda, ciudad, provincia, imagenes, flash,
+          fuente, envio_gratis, mas_vendido, tienda_oficial, descuento_cantidad,
+          presupuesto_sin_cargo, conexion_habilitada, descuento_porcentaje,
+          subrubros!inner(nombre, rubros!inner(nombre))
+        `).eq("estado", "activo").order("created_at", { ascending: false }).limit(40),
+      ]);
+      if (rData) setRubros(rData);
+      if (sData) setSubrubros(sData);
+      if (aData) {
+        setTodos(aData.map((a: any) => ({
+          id: a.id, titulo: a.titulo, precio: a.precio, moneda: a.moneda,
+          ciudad: a.ciudad, provincia: a.provincia, imagenes: a.imagenes || [],
+          flash: a.flash || false, fuente: a.fuente || "nexonet",
+          envio_gratis: a.envio_gratis || false, mas_vendido: a.mas_vendido || false,
+          tienda_oficial: a.tienda_oficial || false, descuento_cantidad: a.descuento_cantidad || false,
+          presupuesto_sin_cargo: a.presupuesto_sin_cargo || false,
+          conexion_habilitada: a.conexion_habilitada || false,
+          descuento_porcentaje: a.descuento_porcentaje || 0,
+          subrubro: a.subrubros?.nombre || "",
+          rubro: a.subrubros?.rubros?.nombre || "",
+        })));
       }
-
-      const { count: total }  = await supabase.from("anuncios").select("*",{count:"exact",head:true}).eq("usuario_id", session.user.id);
-      const { count: activos } = await supabase.from("anuncios").select("*",{count:"exact",head:true}).eq("usuario_id", session.user.id).eq("estado","activo");
-      const { count: grupos }  = await supabase.from("grupos").select("*",{count:"exact",head:true}).eq("creador_id", session.user.id);
-      setTotalAnuncios(total || 0);
-      setAnunciosActivos(activos || 0);
-      setGruposCreados(grupos || 0);
+      setLoading(false);
     };
     cargar();
   }, []);
 
-  const geolocPersonal = () => {
-    if (!navigator.geolocation) return alert("GPS no disponible");
-    navigator.geolocation.getCurrentPosition(async pos => {
-      const {latitude:lat, longitude:lng} = pos.coords;
-      try {
-        const r = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`);
-        const d = await r.json();
-        setPersonal(p => ({ ...p, lat:String(lat), lng:String(lng), ciudad:d.address?.city||d.address?.town||d.address?.village||p.ciudad, provincia:d.address?.state||p.provincia, barrio:d.address?.suburb||d.address?.neighbourhood||p.barrio, direccion:(`${d.address?.road||""} ${d.address?.house_number||""}`).trim()||p.direccion }));
-        alert("✅ Ubicación personal detectada");
-      } catch { alert("Error al obtener dirección"); }
-    }, () => alert("No se pudo acceder al GPS"));
+  // Cerrar dropdown al clickear afuera
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (dropRef.current && !dropRef.current.contains(e.target as Node) &&
+          inputRef.current && !inputRef.current.contains(e.target as Node)) {
+        setDropOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  // Filtrado del dropdown: rubros + subrubros que coincidan con query
+  const queryLow = query.toLowerCase();
+  const rubrosFiltered   = rubros.filter(r => r.nombre.toLowerCase().includes(queryLow));
+  const subrubrosFiltered = subrubros.filter(s => s.nombre.toLowerCase().includes(queryLow));
+
+  // Anuncios filtrados según selección
+  const anunciosFiltrados = todos.filter(a => {
+    const matchRubro    = rubroSel    ? a.rubro    === rubroSel.nombre    : true;
+    const matchSubrubro = subrubroSel ? a.subrubro === subrubroSel.nombre : true;
+    const matchQuery    = query && !rubroSel && !subrubroSel
+      ? a.titulo.toLowerCase().includes(queryLow) ||
+        a.rubro.toLowerCase().includes(queryLow)  ||
+        a.subrubro.toLowerCase().includes(queryLow)
+      : true;
+    return matchRubro && matchSubrubro && matchQuery;
+  });
+
+  const destacados = anunciosFiltrados.filter(a => a.flash).slice(0, 6);
+  const recientes  = anunciosFiltrados.slice(0, 8);
+
+  const limpiar = () => {
+    setQuery(""); setRubroSel(null); setSubrubroSel(null); setDropOpen(false);
   };
 
-  const geolocEmpresa = () => {
-    if (!navigator.geolocation) return alert("GPS no disponible");
-    navigator.geolocation.getCurrentPosition(async pos => {
-      const {latitude:lat, longitude:lng} = pos.coords;
-      try {
-        const r = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`);
-        const d = await r.json();
-        setEmp(e => ({ ...e, lat_empresa:String(lat), lng_empresa:String(lng), ciudad_empresa:d.address?.city||d.address?.town||d.address?.village||e.ciudad_empresa, provincia_empresa:d.address?.state||e.provincia_empresa, barrio_empresa:d.address?.suburb||d.address?.neighbourhood||e.barrio_empresa, direccion_empresa:(`${d.address?.road||""} ${d.address?.house_number||""}`).trim()||e.direccion_empresa }));
-        alert("✅ Ubicación empresa detectada");
-      } catch { alert("Error al obtener dirección"); }
-    }, () => alert("No se pudo acceder al GPS"));
+  const seleccionarRubro = (r: Rubro) => {
+    setRubroSel(r); setSubrubroSel(null);
+    setQuery(r.nombre); setDropOpen(false);
   };
 
-  const guardar = async () => {
-    const { data:{ session } } = await supabase.auth.getSession();
-    if (!session) return;
-    setGuardando(true);
-    await supabase.from("usuarios").update({
-      nombre_usuario:personal.nombre_usuario, nombre:personal.nombre, apellido:personal.apellido,
-      whatsapp:personal.whatsapp, provincia:personal.provincia, ciudad:personal.ciudad,
-      barrio:personal.barrio, direccion:personal.direccion,
-      lat:personal.lat||null, lng:personal.lng||null, vis_personal:visP,
-      nombre_empresa:emp.nombre_empresa, telefono:emp.telefono, whatsapp_empresa:emp.whatsapp_empresa,
-      provincia_empresa:emp.provincia_empresa, ciudad_empresa:emp.ciudad_empresa,
-      barrio_empresa:emp.barrio_empresa, direccion_empresa:emp.direccion_empresa,
-      lat_empresa:emp.lat_empresa||null, lng_empresa:emp.lng_empresa||null, vis_empresa:visE,
-      horarios, feriados,
-    }).eq("id", session.user.id);
-    setGuardando(false);
-    alert("¡Cambios guardados!");
+  const seleccionarSubrubro = (s: Subrubro) => {
+    const rubro = rubros.find(r => r.id === s.rubro_id) || null;
+    setRubroSel(rubro); setSubrubroSel(s);
+    setQuery(s.nombre); setDropOpen(false);
   };
 
-  const cerrarSesion = async () => { await supabase.auth.signOut(); router.push("/"); };
-  const toggleP = (k:string) => setVisP(v=>({...v,[k]:!v[k]}));
-  const toggleE = (k:string) => setVisE(v=>({...v,[k]:!v[k]}));
+  const irABuscar = () => {
+    const params = new URLSearchParams();
+    if (rubroSel)    params.set("rubro",    String(rubroSel.id));
+    if (subrubroSel) params.set("subrubro", String(subrubroSel.id));
+    if (query && !rubroSel) params.set("q", query);
+    router.push(`/buscar?${params.toString()}`);
+  };
 
-  // ── STATS ──
-  const bitsNexonet   = perfil?.bits                 || 0;
-  const bitsPromotor  = perfil?.bits_promo           || 0;
-  const bitsFree      = perfil?.bits_free            || 0;
-  const bitsGastados  = perfil?.bits_gastados        || 0;
-  const promoGastados = perfil?.bits_promo_gastados  || 0;
-  const freeGastados  = perfil?.bits_free_gastados   || 0;
-  const totalConsum   = bitsGastados + promoGastados + freeGastados;
-  // Estrellas = BIT Nexonet consumidos + BIT NexoPromotor ganados (histórico)
-  const estrellas     = bitsGastados + (perfil?.bits_promo_total || 0);
-  const totalVistas   = perfil?.total_vistas         || 0;
-  const totalConex    = perfil?.total_conexiones     || 0;
-  const gruposUnidos  = perfil?.grupos_unidos        || 0;
+  const formatPrecio = (precio: number, moneda: string) =>
+    !precio ? "Consultar" : `${moneda === "USD" ? "U$D" : "$"} ${precio.toLocaleString("es-AR")}`;
 
-  const insigniaActual = INSIGNIAS.find(i => totalConsum >= i.min && totalConsum <= i.max) || INSIGNIAS[0];
-  const idxActual      = INSIGNIAS.findIndex(i => i === insigniaActual);
-  const insigniaSig    = INSIGNIAS[idxActual + 1];
-  const progreso       = insigniaSig
-    ? Math.min(100, ((totalConsum - insigniaActual.min) / (insigniaSig.min - insigniaActual.min)) * 100)
-    : 100;
+  // Subrubros del rubro seleccionado (para segunda fila del dropdown)
+  const subrubrosDeRubro = rubroSel
+    ? subrubros.filter(s => s.rubro_id === rubroSel.id)
+    : [];
 
   return (
     <main style={{ paddingTop:"95px", paddingBottom:"130px", background:"#f4f4f2", minHeight:"100vh", fontFamily:"'Nunito', sans-serif" }}>
       <Header />
 
-      {/* ── HERO ── */}
-      <div style={{ background:"linear-gradient(135deg, #1a2a3a 0%, #243b55 100%)", padding:"16px 16px 0" }}>
-        <div style={{ display:"flex", alignItems:"center", gap:"14px", marginBottom:"10px" }}>
-          <div style={{ width:"56px", height:"56px", borderRadius:"50%", background:"linear-gradient(135deg, #d4a017, #f0c040)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"26px", boxShadow:"0 4px 16px rgba(212,160,23,0.4)", flexShrink:0 }}>
-            {esEmpresa ? "🏢" : "👤"}
-          </div>
-          <div style={{ flex:1, minWidth:0 }}>
-            {/* NOMBRE */}
-            <div style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:"22px", color:"#fff", letterSpacing:"1px", lineHeight:1.1 }}>
-              {perfil?.nombre_usuario||"---"}
-            </div>
-            {/* CÓDIGO */}
-            <div style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:"14px", color:"#d4a017", letterSpacing:"2px", lineHeight:1.2 }}>
-              {perfil?.codigo||"---"}
-            </div>
-            {/* INSIGNIA en línea propia, abajo */}
-            <div style={{ marginTop:"4px" }}>
-              <span style={{ background:insigniaActual.color, borderRadius:"20px", padding:"3px 10px", fontSize:"10px", fontWeight:900, color:"#fff", letterSpacing:"0.5px" }}>
-                {insigniaActual.emoji} {insigniaActual.nombre.toUpperCase()}
-              </span>
-            </div>
-          </div>
-          <button onClick={cerrarSesion} style={{ background:"rgba(255,80,80,0.15)", border:"1px solid rgba(255,80,80,0.4)", borderRadius:"10px", padding:"6px 12px", color:"#ff6b6b", fontSize:"12px", fontWeight:800, cursor:"pointer", fontFamily:"'Nunito', sans-serif", flexShrink:0 }}>
-            🚪 Salir
-          </button>
+      {/* HERO */}
+      <div style={{ background:"linear-gradient(135deg, #1a2a3a 0%, #243b55 100%)", padding:"18px 16px 20px" }}>
+        <div style={{ fontSize:"13px", fontWeight:700, color:"#d4a017", letterSpacing:"2px", textTransform:"uppercase", marginBottom:"4px", textAlign:"center" }}>
+          Conectando Oportunidades
+        </div>
+        <div style={{ fontSize:"12px", color:"#7a8fa0", marginBottom:"14px", fontWeight:600, textAlign:"center" }}>
+          Conectando a la Comunidad
         </div>
 
-        {/* TABS */}
-        <div style={{ display:"flex" }}>
-          {([["datos","👤","Datos"],["estadisticas","📊","Stats"],["promotor","⭐","Promotor"]] as [Seccion,string,string][]).map(([id,e,l]) => (
-            <button key={id} onClick={()=>setSeccion(id)} style={{ flex:1, background:"none", border:"none", borderBottom:seccion===id?"3px solid #d4a017":"3px solid transparent", padding:"10px 4px", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:"2px" }}>
-              <span style={{ fontSize:"16px" }}>{e}</span>
-              <span style={{ fontSize:"9px", fontWeight:800, color:seccion===id?"#d4a017":"#8a9aaa", textTransform:"uppercase", letterSpacing:"0.5px" }}>{l}</span>
-            </button>
-          ))}
-          <button onClick={()=>router.push("/mis-anuncios")} style={{ flex:1, background:"none", border:"none", borderBottom:"3px solid transparent", padding:"10px 4px", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:"2px" }}>
-            <span style={{ fontSize:"16px" }}>📋</span>
-            <span style={{ fontSize:"9px", fontWeight:800, color:"#8a9aaa", textTransform:"uppercase", letterSpacing:"0.5px" }}>Anuncios</span>
-          </button>
-        </div>
-      </div>
-
-      <div style={{ padding:"16px", maxWidth:"480px", margin:"0 auto" }}>
-
-        {/* ═══ DATOS ═══ */}
-        {seccion === "datos" && (
-          <div style={{ display:"flex", flexDirection:"column", gap:"14px" }}>
-            <div style={C}>
-              <ST>👤 Datos personales</ST>
-              <Campo label="Nombre de usuario" valor={personal.nombre_usuario} onChange={v=>setPersonal(p=>({...p,nombre_usuario:v}))} visible={visP.nombre_usuario} onToggle={()=>toggleP("nombre_usuario")} />
-              <Campo label="Nombre y apellido" valor={`${personal.nombre}${personal.apellido?" "+personal.apellido:""}`} onChange={v=>{const pts=v.split(" ");setPersonal(p=>({...p,nombre:pts[0]||"",apellido:pts.slice(1).join(" ")}))}} visible={visP.nombre_apellido} onToggle={()=>toggleP("nombre_apellido")} placeholder="Nombre Apellido" />
-              <Campo label="WhatsApp" valor={personal.whatsapp} onChange={v=>setPersonal(p=>({...p,whatsapp:v}))} visible={visP.whatsapp} onToggle={()=>toggleP("whatsapp")} placeholder="Ej: 3492123456" icono="📱" />
-              <GPS onClick={geolocPersonal} ok={!!personal.lat} label="Geolocalizar mi ubicación" />
-              <Campo label="Provincia" valor={personal.provincia} onChange={v=>setPersonal(p=>({...p,provincia:v}))} visible={visP.provincia} onToggle={()=>toggleP("provincia")} placeholder="Ej: Santa Fe" icono="🗺️" />
-              <Campo label="Ciudad" valor={personal.ciudad} onChange={v=>setPersonal(p=>({...p,ciudad:v}))} visible={visP.ciudad} onToggle={()=>toggleP("ciudad")} placeholder="Ej: Rosario" icono="🏙️" />
-              <Campo label="Barrio" valor={personal.barrio} onChange={v=>setPersonal(p=>({...p,barrio:v}))} visible={visP.barrio} onToggle={()=>toggleP("barrio")} placeholder="Ej: Centro" icono="🏘️" />
-              <Campo label="Dirección" valor={personal.direccion} onChange={v=>setPersonal(p=>({...p,direccion:v}))} visible={visP.direccion} onToggle={()=>toggleP("direccion")} placeholder="Calle y número" icono="🏠" />
+        {/* BUSCADOR */}
+        <div style={{ position:"relative", maxWidth:"500px", margin:"0 auto" }}>
+          <div style={{ display:"flex", background:"#fff", borderRadius:"14px", overflow:"visible", boxShadow:"0 4px 20px rgba(0,0,0,0.25)", position:"relative", zIndex:10 }}>
+            <div style={{ flex:1, position:"relative" }}>
+              <input
+                ref={inputRef}
+                type="text"
+                value={query}
+                onChange={e => { setQuery(e.target.value); setRubroSel(null); setSubrubroSel(null); setDropOpen(true); }}
+                onFocus={() => setDropOpen(true)}
+                placeholder="Rubro, subrubro o producto..."
+                style={{ width:"100%", border:"none", padding:"14px 16px", fontFamily:"'Nunito', sans-serif", fontSize:"14px", color:"#2c2c2e", outline:"none", background:"transparent", boxSizing:"border-box", borderRadius:"14px 0 0 14px" }}
+              />
+              {/* TAG de selección activa */}
+              {(rubroSel || subrubroSel) && (
+                <div style={{ position:"absolute", right:"8px", top:"50%", transform:"translateY(-50%)", background:rubroSel?"#d4a017":"#2980b9", borderRadius:"20px", padding:"3px 10px", fontSize:"11px", fontWeight:800, color:rubroSel&&!subrubroSel?"#1a2a3a":"#fff", display:"flex", alignItems:"center", gap:"4px", cursor:"pointer" }} onClick={limpiar}>
+                  {subrubroSel ? subrubroSel.nombre : rubroSel!.nombre} ✕
+                </div>
+              )}
             </div>
-
-            {esEmpresa ? (
-              <div style={{ ...C, border:"2px solid rgba(192,57,43,0.25)" }}>
-                <ST color="#c0392b">🏢 Datos de la empresa</ST>
-                <Campo label="Nombre de la empresa" valor={emp.nombre_empresa} onChange={v=>setEmp(e=>({...e,nombre_empresa:v}))} visible={visE.nombre_empresa} onToggle={()=>toggleE("nombre_empresa")} placeholder="Nombre comercial" highlight />
-                <Campo label="Teléfono fijo" valor={emp.telefono} onChange={v=>setEmp(e=>({...e,telefono:v}))} visible={visE.telefono} onToggle={()=>toggleE("telefono")} placeholder="Ej: 0341-4123456" icono="☎️" />
-                <Campo label="WhatsApp empresa" valor={emp.whatsapp_empresa} onChange={v=>setEmp(e=>({...e,whatsapp_empresa:v}))} visible={visE.whatsapp_empresa} onToggle={()=>toggleE("whatsapp_empresa")} placeholder="Ej: 3412345678" icono="📱" />
-                <GPS onClick={geolocEmpresa} ok={!!emp.lat_empresa} label="Geolocalizar ubicación comercial" color="#c0392b" />
-                <Campo label="Provincia" valor={emp.provincia_empresa} onChange={v=>setEmp(e=>({...e,provincia_empresa:v}))} visible={visE.provincia_empresa} onToggle={()=>toggleE("provincia_empresa")} placeholder="Ej: Santa Fe" icono="🗺️" />
-                <Campo label="Ciudad" valor={emp.ciudad_empresa} onChange={v=>setEmp(e=>({...e,ciudad_empresa:v}))} visible={visE.ciudad_empresa} onToggle={()=>toggleE("ciudad_empresa")} placeholder="Ej: Rosario" icono="🏙️" />
-                <Campo label="Barrio" valor={emp.barrio_empresa} onChange={v=>setEmp(e=>({...e,barrio_empresa:v}))} visible={visE.barrio_empresa} onToggle={()=>toggleE("barrio_empresa")} placeholder="Ej: Palermo" icono="🏘️" />
-                <Campo label="Dirección comercial" valor={emp.direccion_empresa} onChange={v=>setEmp(e=>({...e,direccion_empresa:v}))} visible={visE.direccion_empresa} onToggle={()=>toggleE("direccion_empresa")} placeholder="Calle y número" icono="🏪" highlight />
-                <div style={{ borderTop:"1px solid #f0e8e8", paddingTop:"16px", marginTop:"6px" }}>
-                  <div style={THS("#c0392b")}>🕐 Horarios de atención</div>
-                  <div style={{ display:"flex", flexDirection:"column", gap:"8px" }}>
-                    {DIAS_SEMANA.map(dia => (
-                      <FilaHorario key={dia} label={dia} activo={horarios[dia].activo} desde={horarios[dia].desde} hasta={horarios[dia].hasta}
-                        onToggle={()=>setHorarios(h=>({...h,[dia]:{...h[dia],activo:!h[dia].activo}}))}
-                        onDesde={v=>setHorarios(h=>({...h,[dia]:{...h[dia],desde:v}}))}
-                        onHasta={v=>setHorarios(h=>({...h,[dia]:{...h[dia],hasta:v}}))} />
-                    ))}
-                  </div>
-                </div>
-                <div style={{ borderTop:"1px solid #f0e8e8", paddingTop:"16px", marginTop:"14px" }}>
-                  <div style={THS("#c0392b")}>📅 Feriados nacionales</div>
-                  <div style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:600, marginBottom:"12px" }}>Activá los feriados en que abrís</div>
-                  <div style={{ display:"flex", flexDirection:"column", gap:"8px" }}>
-                    {Object.entries(FERIADOS_ARG).map(([fecha, nombre]) => {
-                      const [dd,mm] = fecha.split("/");
-                      const M = ["","Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
-                      return (
-                        <FilaHorario key={fecha} label={`${dd} ${M[parseInt(mm)]} — ${nombre}`}
-                          activo={feriados[fecha]?.activo||false} desde={feriados[fecha]?.desde||"10:00"} hasta={feriados[fecha]?.hasta||"16:00"}
-                          onToggle={()=>setFeriados(f=>({...f,[fecha]:{...f[fecha],activo:!f[fecha]?.activo}}))}
-                          onDesde={v=>setFeriados(f=>({...f,[fecha]:{...f[fecha],desde:v}}))}
-                          onHasta={v=>setFeriados(f=>({...f,[fecha]:{...f[fecha],hasta:v}}))}
-                          esFeriado />
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div style={{ background:"linear-gradient(135deg, #2c1a1a, #4a2020)", borderRadius:"16px", padding:"20px", textAlign:"center" }}>
-                <div style={{ fontSize:"32px", marginBottom:"8px" }}>🏢</div>
-                <div style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:"20px", color:"#f0a040", letterSpacing:"1px", marginBottom:"4px" }}>Perfil de empresa</div>
-                <div style={{ fontSize:"12px", color:"#e88a8a", fontWeight:600, marginBottom:"16px" }}>Activá tu perfil empresarial con BIT Empresa × 50</div>
-                <button onClick={()=>setPopupEmpresa(true)} style={{ background:"linear-gradient(135deg, #c0392b, #e74c3c)", border:"none", borderRadius:"12px", padding:"12px 24px", fontSize:"13px", fontWeight:900, color:"#fff", cursor:"pointer", fontFamily:"'Nunito', sans-serif", letterSpacing:"0.5px" }}>
-                  🏢 Comprar Anuncios BIT EMPRESA
-                </button>
-              </div>
+            {query && (
+              <button onClick={limpiar} style={{ background:"none", border:"none", padding:"0 8px", cursor:"pointer", fontSize:"16px", color:"#9a9a9a" }}>✕</button>
             )}
-
-            <button onClick={guardar} disabled={guardando} style={{ ...BTN, opacity:guardando?0.7:1 }}>
-              {guardando ? "Guardando..." : "Guardar cambios"}
-            </button>
+            <button onClick={irABuscar} style={{ background:"#d4a017", border:"none", padding:"0 18px", cursor:"pointer", fontSize:"18px", borderRadius:"0 14px 14px 0", flexShrink:0 }}>🔍</button>
           </div>
-        )}
 
-        {/* ═══ ESTADÍSTICAS ═══ */}
-        {seccion === "estadisticas" && (
-          <div style={{ display:"flex", flexDirection:"column", gap:"14px" }}>
+          {/* DROPDOWN */}
+          {dropOpen && (
+            <div ref={dropRef} style={{ position:"absolute", top:"calc(100% + 6px)", left:0, right:0, background:"#fff", borderRadius:"14px", boxShadow:"0 8px 32px rgba(0,0,0,0.2)", zIndex:100, maxHeight:"320px", overflowY:"auto", border:"1px solid #e8e8e6" }}>
 
-            {/* ── BIT NEXONET ── */}
-            <BitCard
-              titulo="BIT NexoNet"
-              color="#d4a017"
-              disponibles={bitsNexonet}
-              consumidos={bitsGastados}
-              descripcion="BIT de conexión para anuncios y funciones de la plataforma"
-            />
-
-            {/* ── BIT NEXOPROMOTOR ── */}
-            <BitCard
-              titulo="BIT NexoPromotor"
-              color="#27ae60"
-              disponibles={bitsPromotor}
-              consumidos={promoGastados}
-              descripcion="BIT obtenidos como promotor — reembolsables ante solicitud"
-              reembolsable
-            />
-
-            {/* ── BIT NEXOFREE ── */}
-            <BitCard
-              titulo="BIT NexoFree"
-              color="#2980b9"
-              disponibles={bitsFree}
-              consumidos={freeGastados}
-              descripcion="BIT de respaldo garantizado — aval legal ante eventualidades"
-              free
-            />
-
-            {/* ── MÉTRICAS ── */}
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:"10px" }}>
-              {[
-                { n:totalVistas.toLocaleString(),    l:"Visitas",          e:"👁️" },
-                { n:totalConex.toLocaleString(),      l:"Conexiones",       e:"🔗" },
-                { n:String(anunciosActivos),           l:"Activos",          e:"✅" },
-                { n:String(totalAnuncios),             l:"Total publicados", e:"📋" },
-                { n:String(gruposUnidos),              l:"Grupos unidos",    e:"👥" },
-                { n:String(gruposCreados),             l:"Grupos creados",   e:"🏗️" },
-              ].map(s => (
-                <div key={s.l} style={{ background:"#fff", borderRadius:"14px", padding:"14px 8px", textAlign:"center", boxShadow:"0 2px 8px rgba(0,0,0,0.06)" }}>
-                  <div style={{ fontSize:"22px", marginBottom:"4px" }}>{s.e}</div>
-                  <div style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:"22px", color:"#d4a017" }}>{s.n}</div>
-                  <div style={{ fontSize:"9px", fontWeight:700, color:"#666", textTransform:"uppercase", letterSpacing:"0.5px", lineHeight:1.3 }}>{s.l}</div>
-                </div>
-              ))}
-            </div>
-
-            {/* ── INSIGNIA ── */}
-            <div style={{ ...C, background:`linear-gradient(135deg, ${insigniaActual.color}15, ${insigniaActual.color}05)`, border:`2px solid ${insigniaActual.color}30` }}>
-              <div style={{ fontSize:"11px", fontWeight:800, color:"#9a9a9a", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"14px" }}>🏅 Insignia de reputación</div>
-              <div style={{ display:"flex", alignItems:"center", gap:"16px", marginBottom:"14px" }}>
-                <div style={{ width:"64px", height:"64px", borderRadius:"50%", background:`${insigniaActual.color}20`, border:`3px solid ${insigniaActual.color}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"32px", flexShrink:0 }}>
-                  {insigniaActual.emoji}
-                </div>
-                <div style={{ flex:1 }}>
-                  <div style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:"24px", color:insigniaActual.color, letterSpacing:"1px" }}>{insigniaActual.nombre}</div>
-                  <div style={{ fontSize:"11px", fontWeight:700, color:"#9a9a9a" }}>{totalConsum.toLocaleString()} BIT consumidos en total</div>
-                  {insigniaSig && <div style={{ fontSize:"10px", color:"#9a9a9a", marginTop:"2px" }}>Próxima: <span style={{ color:insigniaSig.color, fontWeight:800 }}>{insigniaSig.emoji} {insigniaSig.nombre}</span> en {(insigniaSig.min - totalConsum).toLocaleString()} BIT</div>}
-                </div>
-              </div>
-              {insigniaSig && (
+              {/* Si hay rubro seleccionado → mostrar subrubros */}
+              {rubroSel && subrubrosDeRubro.length > 0 ? (
                 <>
-                  <div style={{ height:"8px", background:"#f0f0f0", borderRadius:"4px", overflow:"hidden", marginBottom:"4px" }}>
-                    <div style={{ height:"100%", width:`${progreso}%`, background:`linear-gradient(90deg, ${insigniaActual.color}, ${insigniaSig.color})`, borderRadius:"4px", transition:"width .4s" }} />
+                  <div style={{ padding:"10px 14px 6px", fontSize:"10px", fontWeight:800, color:"#9a9a9a", textTransform:"uppercase", letterSpacing:"1px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                    <span>Subrubros de {rubroSel.nombre}</span>
+                    <button onClick={limpiar} style={{ background:"none", border:"none", cursor:"pointer", fontSize:"11px", color:"#d4a017", fontWeight:800, fontFamily:"'Nunito', sans-serif" }}>← Todos los rubros</button>
                   </div>
-                  <div style={{ display:"flex", justifyContent:"space-between", fontSize:"10px", fontWeight:700, color:"#9a9a9a", marginBottom:"14px" }}>
-                    <span>{insigniaActual.nombre}</span>
-                    <span>{Math.round(progreso)}%</span>
-                    <span>{insigniaSig.nombre}</span>
+                  <div onClick={() => { setSubrubroSel(null); setDropOpen(false); }} style={itemDropStyle(false)}>
+                    <span style={{ fontSize:"16px" }}>📋</span>
+                    <div>
+                      <div style={{ fontSize:"13px", fontWeight:800, color:"#1a2a3a" }}>Todos en {rubroSel.nombre}</div>
+                    </div>
                   </div>
+                  {subrubrosDeRubro.map(s => (
+                    <div key={s.id} onClick={() => seleccionarSubrubro(s)} style={itemDropStyle(subrubroSel?.id === s.id)}>
+                      <span style={{ fontSize:"14px" }}>↳</span>
+                      <div>
+                        <div style={{ fontSize:"13px", fontWeight:700, color:"#1a2a3a" }}>{s.nombre}</div>
+                      </div>
+                    </div>
+                  ))}
+                </>
+              ) : (
+                <>
+                  {/* Sin rubro seleccionado → rubros y subrubros filtrados */}
+                  {query === "" && (
+                    <div style={{ padding:"10px 14px 6px", fontSize:"10px", fontWeight:800, color:"#9a9a9a", textTransform:"uppercase", letterSpacing:"1px" }}>Todos los rubros</div>
+                  )}
+                  {query !== "" && rubrosFiltered.length === 0 && subrubrosFiltered.length === 0 && (
+                    <div style={{ padding:"20px", textAlign:"center", fontSize:"13px", color:"#9a9a9a", fontWeight:600 }}>Sin resultados para "{query}"</div>
+                  )}
+
+                  {/* RUBROS */}
+                  {rubrosFiltered.map(r => (
+                    <div key={r.id} onClick={() => seleccionarRubro(r)} style={itemDropStyle(rubroSel?.id === r.id)}>
+                      <span style={{ fontSize:"18px" }}>📂</span>
+                      <div style={{ flex:1 }}>
+                        <div style={{ fontSize:"13px", fontWeight:800, color:"#1a2a3a" }}>{r.nombre}</div>
+                        <div style={{ fontSize:"10px", color:"#9a9a9a", fontWeight:600 }}>
+                          {subrubros.filter(s => s.rubro_id === r.id).length} subrubros
+                        </div>
+                      </div>
+                      <span style={{ fontSize:"12px", color:"#d4a017", fontWeight:800 }}>→</span>
+                    </div>
+                  ))}
+
+                  {/* SUBRUBROS (solo cuando se está escribiendo) */}
+                  {query !== "" && subrubrosFiltered.length > 0 && (
+                    <>
+                      <div style={{ padding:"8px 14px 4px", fontSize:"10px", fontWeight:800, color:"#9a9a9a", textTransform:"uppercase", letterSpacing:"1px", borderTop:"1px solid #f0f0f0" }}>Subrubros</div>
+                      {subrubrosFiltered.slice(0, 5).map(s => {
+                        const rubro = rubros.find(r => r.id === s.rubro_id);
+                        return (
+                          <div key={s.id} onClick={() => seleccionarSubrubro(s)} style={itemDropStyle(false)}>
+                            <span style={{ fontSize:"14px" }}>↳</span>
+                            <div>
+                              <div style={{ fontSize:"13px", fontWeight:700, color:"#1a2a3a" }}>{s.nombre}</div>
+                              {rubro && <div style={{ fontSize:"10px", color:"#9a9a9a", fontWeight:600 }}>en {rubro.nombre}</div>}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </>
+                  )}
                 </>
               )}
-              <div style={{ display:"flex", gap:"4px", justifyContent:"space-between" }}>
-                {INSIGNIAS.map(ins => {
-                  const ok = totalConsum >= ins.min;
-                  return (
-                    <div key={ins.nombre} style={{ flex:1, textAlign:"center", opacity:ok?1:0.25 }}>
-                      <div style={{ fontSize:"18px" }}>{ins.emoji}</div>
-                      <div style={{ fontSize:"8px", fontWeight:700, color:ok?ins.color:"#9a9a9a", textTransform:"uppercase", lineHeight:1.2, marginTop:"2px" }}>{ins.nombre.split(" ")[1]||ins.nombre}</div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
 
-            {/* ── ESTRELLAS ── */}
-            <div style={C}>
-              <div style={{ fontSize:"11px", fontWeight:800, color:"#9a9a9a", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"14px" }}>⭐ Estrellas ganadas</div>
-              <div style={{ display:"flex", alignItems:"center", gap:"16px", marginBottom:"12px" }}>
-                <div style={{ width:"64px", height:"64px", borderRadius:"50%", background:"rgba(212,160,23,0.15)", border:"3px solid #d4a017", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"32px", flexShrink:0 }}>
-                  ⭐
-                </div>
-                <div>
-                  <div style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:"42px", color:"#d4a017", lineHeight:1 }}>{estrellas.toLocaleString()}</div>
-                  <div style={{ fontSize:"11px", fontWeight:700, color:"#9a9a9a" }}>estrellas totales</div>
-                </div>
-              </div>
-              <div style={{ background:"#f9f7f0", borderRadius:"10px", padding:"10px 14px", fontSize:"11px", fontWeight:700, color:"#888", lineHeight:1.7 }}>
-                Las estrellas se acumulan por cada BIT NexoNet consumido y por los BIT NexoPromotor ganados · Reflejan tu actividad y reputación en la plataforma
-              </div>
-            </div>
-
-          </div>
-        )}
-
-        {/* ═══ PROMOTOR ═══ */}
-        {seccion === "promotor" && (
-          <div style={{ display:"flex", flexDirection:"column", gap:"14px" }}>
-            <div style={{ background:"linear-gradient(135deg, #1a2a3a, #243b55)", borderRadius:"16px", padding:"24px 20px", textAlign:"center" }}>
-              <div style={{ fontSize:"40px", marginBottom:"8px" }}>⭐</div>
-              <div style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:"28px", color:"#d4a017", letterSpacing:"2px", marginBottom:"4px" }}>Nexo Promotor</div>
-              <div style={{ fontSize:"13px", color:"#8a9aaa", fontWeight:600, marginBottom:"20px" }}>Ganá el 30% por cada referido que se registre</div>
-              <div style={{ background:"rgba(212,160,23,0.15)", borderRadius:"12px", padding:"16px", marginBottom:"16px" }}>
-                <div style={{ fontSize:"12px", color:"#8a9aaa", fontWeight:600, marginBottom:"4px" }}>Tu código de promotor</div>
-                <div style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:"28px", color:"#d4a017", letterSpacing:"4px" }}>{perfil?.codigo||"---"}</div>
-              </div>
-              <button style={BTN}>Compartir mi código</button>
-            </div>
-            <div style={C}>
-              <ST>📊 Mis referidos</ST>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:"10px" }}>
-                {[{n:"0",l:"Referidos"},{n:"$0",l:"Ganado"},{n:"0",l:"Este mes"}].map(s=>(
-                  <div key={s.l} style={{ textAlign:"center" }}>
-                    <div style={{ fontSize:"22px", fontWeight:900, color:"#d4a017" }}>{s.n}</div>
-                    <div style={{ fontSize:"11px", fontWeight:700, color:"#666", textTransform:"uppercase" }}>{s.l}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-      {/* ══ POPUP COMPRAR BIT EMPRESA ══ */}
-      {popupEmpresa && (
-        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", display:"flex", alignItems:"flex-end", justifyContent:"center", zIndex:200 }} onClick={()=>setPopupEmpresa(false)}>
-          <div style={{ background:"#fff", borderRadius:"24px 24px 0 0", padding:"24px 20px", width:"100%", maxWidth:"480px", maxHeight:"90vh", overflowY:"auto" }} onClick={e=>e.stopPropagation()}>
-
-            {/* HEADER */}
-            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"20px" }}>
-              <div style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:"22px", color:"#c0392b", letterSpacing:"1px" }}>🏢 BIT Empresa × 50</div>
-              <button onClick={()=>setPopupEmpresa(false)} style={{ background:"#f4f4f2", border:"none", borderRadius:"50%", width:"32px", height:"32px", fontSize:"16px", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>✕</button>
-            </div>
-
-            {/* DETALLE */}
-            <div style={{ background:"linear-gradient(135deg, #2c1a1a, #3a2020)", borderRadius:"16px", padding:"20px", marginBottom:"16px" }}>
-              <div style={{ fontSize:"12px", fontWeight:700, color:"#e88a8a", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"14px" }}>Estás comprando</div>
-              {[
-                { e:"✅", t:"50 anuncios adicionales",        s:"Se suman a tus 3 anuncios FREE" },
-                { e:"🔗", t:"1.000 BIT Conexión por anuncio", s:"50.000 BIT Conexión en total"  },
-                { e:"🏢", t:"Perfil empresarial completo",     s:"Nombre, teléfono, dirección comercial" },
-                { e:"🕐", t:"Horómetro de disponibilidad",    s:"Horarios por día + feriados nacionales" },
-                { e:"📅", t:"Vigencia 30 días renovables",    s:"Se renueva mensualmente" },
-              ].map(item => (
-                <div key={item.t} style={{ display:"flex", alignItems:"flex-start", gap:"12px", marginBottom:"12px" }}>
-                  <div style={{ width:"36px", height:"36px", borderRadius:"10px", background:"rgba(192,57,43,0.3)", border:"1px solid rgba(192,57,43,0.5)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"18px", flexShrink:0 }}>{item.e}</div>
+              {/* BUSCAR TEXTO LIBRE */}
+              {query !== "" && (
+                <div onClick={irABuscar} style={{ ...itemDropStyle(false), borderTop:"1px solid #f0f0f0", background:"#f9f7f0" }}>
+                  <span style={{ fontSize:"18px" }}>🔍</span>
                   <div>
-                    <div style={{ fontSize:"13px", fontWeight:900, color:"#fff" }}>{item.t}</div>
-                    <div style={{ fontSize:"11px", color:"#e88a8a", fontWeight:600, marginTop:"2px" }}>{item.s}</div>
+                    <div style={{ fontSize:"13px", fontWeight:800, color:"#d4a017" }}>Buscar "{query}"</div>
+                    <div style={{ fontSize:"10px", color:"#9a9a9a", fontWeight:600 }}>Ver todos los resultados</div>
                   </div>
                 </div>
-              ))}
-              {/* HORÓMETRO DEMO */}
-              <div style={{ background:"rgba(255,255,255,0.08)", borderRadius:"12px", padding:"12px 14px", marginTop:"4px" }}>
-                <div style={{ fontSize:"11px", fontWeight:800, color:"#e88a8a", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"8px" }}>🕐 Horario de disponibilidad (demo)</div>
-                {[["Lun — Vie","09:00 — 18:00",false],["Sábado","09:00 — 13:00",false],["Domingo","Cerrado",true]].map(([d,h,cerrado])=>(
-                  <div key={d as string} style={{ display:"flex", justifyContent:"space-between", fontSize:"12px", fontWeight:700, color:"#fff", marginBottom:"4px" }}>
-                    <span>{d}</span>
-                    <span style={{ color: cerrado ? "#e74c3c" : "#2ecc71" }}>{h}</span>
-                  </div>
-                ))}
-              </div>
+              )}
             </div>
-
-            {/* PRECIO */}
-            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"16px", padding:"0 4px" }}>
-              <div style={{ fontSize:"13px", fontWeight:700, color:"#666" }}>Total a pagar</div>
-              <div style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:"36px", color:"#c0392b" }}>$10.000</div>
-            </div>
-
-            {/* BOTÓN COMPRAR */}
-            <button onClick={()=>{ setPopupEmpresa(false); router.push("/comprar"); }} style={{ width:"100%", background:"linear-gradient(135deg, #c0392b, #e74c3c)", border:"none", borderRadius:"14px", padding:"18px", fontSize:"16px", fontWeight:900, color:"#fff", cursor:"pointer", fontFamily:"'Nunito', sans-serif", letterSpacing:"1px", textTransform:"uppercase", marginBottom:"8px" }}>
-              Comprar ahora →
-            </button>
-            <button onClick={()=>setPopupEmpresa(false)} style={{ width:"100%", background:"none", border:"none", padding:"10px", fontSize:"13px", fontWeight:800, color:"#9a9a9a", cursor:"pointer", fontFamily:"'Nunito', sans-serif" }}>
-              Cancelar
-            </button>
-          </div>
+          )}
         </div>
+
+
+      </div>
+
+      {/* ACCIONES RÁPIDAS */}
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10px", padding:"14px 16px" }}>
+        <a href="/buscar" style={accionStyle}>
+          <div style={{ fontSize:"28px", marginBottom:"6px" }}>📋</div>
+          <div style={accionTituloStyle}>Ver en Lista</div>
+          <div style={accionSubStyle}>Todos los anuncios</div>
+        </a>
+        <a href="/mapa" style={accionStyle}>
+          <div style={{ fontSize:"28px", marginBottom:"6px" }}>🗺️</div>
+          <div style={accionTituloStyle}>Ver en Mapa</div>
+          <div style={accionSubStyle}>Anuncios cerca tuyo</div>
+        </a>
+      </div>
+
+      {/* FILTRO ACTIVO */}
+      {(rubroSel || subrubroSel) && (
+        <div style={{ padding:"0 16px 12px", display:"flex", alignItems:"center", gap:"8px" }}>
+          <div style={{ background:"#1a2a3a", borderRadius:"20px", padding:"6px 14px", fontSize:"12px", fontWeight:800, color:"#d4a017", display:"flex", alignItems:"center", gap:"8px" }}>
+            {rubroSel && <span>📂 {rubroSel.nombre}</span>}
+            {subrubroSel && <span>↳ {subrubroSel.nombre}</span>}
+          </div>
+          <button onClick={limpiar} style={{ background:"rgba(0,0,0,0.08)", border:"none", borderRadius:"20px", padding:"6px 12px", fontSize:"11px", fontWeight:800, color:"#666", cursor:"pointer", fontFamily:"'Nunito', sans-serif" }}>
+            ✕ Limpiar
+          </button>
+        </div>
+      )}
+
+      {loading ? (
+        <div style={{ textAlign:"center", padding:"40px", color:"#9a9a9a", fontWeight:700 }}>Cargando anuncios...</div>
+      ) : anunciosFiltrados.length === 0 ? (
+        <div style={{ textAlign:"center", padding:"40px 20px" }}>
+          <div style={{ fontSize:"40px", marginBottom:"12px" }}>🔍</div>
+          <div style={{ fontSize:"16px", fontWeight:800, color:"#1a2a3a", marginBottom:"6px" }}>Sin anuncios</div>
+          <div style={{ fontSize:"13px", color:"#9a9a9a", fontWeight:600, marginBottom:"20px" }}>No encontramos resultados para tu búsqueda</div>
+          <button onClick={limpiar} style={{ background:"linear-gradient(135deg,#d4a017,#f0c040)", border:"none", borderRadius:"12px", padding:"12px 24px", fontSize:"13px", fontWeight:800, color:"#1a2a3a", cursor:"pointer", fontFamily:"'Nunito', sans-serif" }}>
+            Ver todos los anuncios
+          </button>
+        </div>
+      ) : (
+        <>
+          {destacados.length > 0 && (
+            <Seccion titulo="⚡ Destacados" rubroId={rubroSel?.id}>
+              {destacados.map(a => <Tarjeta key={a.id} anuncio={a} formatPrecio={formatPrecio} />)}
+            </Seccion>
+          )}
+          <Seccion titulo={rubroSel ? `📂 ${rubroSel.nombre}${subrubroSel ? ` → ${subrubroSel.nombre}` : ""}` : "🕐 Recién publicados"} rubroId={rubroSel?.id}>
+            {recientes.map(a => <Tarjeta key={a.id} anuncio={a} formatPrecio={formatPrecio} />)}
+          </Seccion>
+        </>
       )}
 
       <BottomNav />
@@ -489,99 +320,81 @@ export default function Usuario() {
   );
 }
 
-// ── TARJETA BIT ──
-function BitCard({ titulo, color, disponibles, consumidos, descripcion, reembolsable, free }:{
-  titulo:string; color:string; disponibles:number; consumidos:number;
-  descripcion:string; reembolsable?:boolean; free?:boolean;
-}) {
-  const total = disponibles + consumidos;
-  const pct   = total > 0 ? Math.min(100, (disponibles / total) * 100) : 0;
+const itemDropStyle = (activo: boolean): React.CSSProperties => ({
+  display:"flex", alignItems:"center", gap:"12px", padding:"12px 14px",
+  cursor:"pointer", background: activo ? "rgba(212,160,23,0.08)" : "transparent",
+  borderLeft: activo ? "3px solid #d4a017" : "3px solid transparent",
+  transition:"background .15s",
+});
+
+const chipStyle = (activo: boolean): React.CSSProperties => ({
+  background: activo ? "#d4a017" : "rgba(255,255,255,0.15)",
+  border: `2px solid ${activo ? "#d4a017" : "rgba(255,255,255,0.25)"}`,
+  borderRadius:"20px", padding:"5px 14px", fontSize:"12px", fontWeight:700,
+  color: activo ? "#1a2a3a" : "#fff", whiteSpace:"nowrap",
+  cursor:"pointer", flexShrink:0, fontFamily:"'Nunito', sans-serif",
+  transition:"all .2s",
+});
+
+function Seccion({ titulo, children, rubroId }: { titulo: string; children: React.ReactNode; rubroId?: number }) {
+  const href = rubroId ? `/buscar?rubro=${rubroId}` : "/buscar";
   return (
-    <div style={{ ...C, border:`2px solid ${color}25` }}>
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:"10px" }}>
-        <div>
-          <div style={{ display:"flex", alignItems:"center", gap:"8px", marginBottom:"4px" }}>
-            <div style={{ fontSize:"11px", fontWeight:800, color, textTransform:"uppercase", letterSpacing:"1px" }}>{titulo}</div>
-            {reembolsable && (
-              <div style={{ background:`rgba(39,174,96,0.15)`, border:`1px solid rgba(39,174,96,0.4)`, borderRadius:"20px", padding:"2px 8px", fontSize:"9px", fontWeight:900, color:"#27ae60" }}>♻️ REEMBOLSABLE</div>
-            )}
-            {free && (
-              <div style={{ background:`rgba(41,128,185,0.15)`, border:`1px solid rgba(41,128,185,0.4)`, borderRadius:"20px", padding:"2px 8px", fontSize:"9px", fontWeight:900, color:"#2980b9" }}>🛡️ RESPALDO</div>
-            )}
+    <div style={{ marginBottom:"20px" }}>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"0 16px 10px" }}>
+        <span style={{ fontSize:"16px", fontWeight:900 }}>{titulo}</span>
+        <a href={href} style={{ fontSize:"12px", fontWeight:700, color:"#d4a017", textDecoration:"none" }}>Ver todos →</a>
+      </div>
+      <div style={{ display:"flex", gap:"12px", padding:"0 16px 8px", overflowX:"auto", scrollbarWidth:"none" }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function Tarjeta({ anuncio, formatPrecio }: { anuncio: Anuncio; formatPrecio: (p: number, m: string) => string }) {
+  const imagen = anuncio.imagenes?.[0];
+  const fuente = FUENTES[anuncio.fuente] || FUENTES.nexonet;
+  const badges = [
+    anuncio.envio_gratis          && { label:"Envío gratis",     color:"#00a884", texto:"#fff"    },
+    anuncio.mas_vendido           && { label:"Más vendido",      color:"#e63946", texto:"#fff"    },
+    anuncio.tienda_oficial        && { label:"Tienda oficial",   color:"#1a2a3a", texto:"#d4a017" },
+    anuncio.conexion_habilitada   && { label:"🔗 Conexión",      color:"#3a7bd5", texto:"#fff"    },
+    anuncio.presupuesto_sin_cargo && { label:"Presup. gratis",   color:"#6a0dad", texto:"#fff"    },
+    anuncio.descuento_cantidad    && { label:"Desc. x cantidad", color:"#2d6a4f", texto:"#fff"    },
+    anuncio.descuento_porcentaje > 0 && { label:`${anuncio.descuento_porcentaje}% OFF`, color:"#e63946", texto:"#fff" },
+  ].filter(Boolean) as { label:string; color:string; texto:string }[];
+
+  return (
+    <a href={`/anuncios/${anuncio.id}`} style={{ textDecoration:"none", flexShrink:0, width:"190px" }}>
+      <div style={{ background:"#fff", borderRadius:"16px", overflow:"hidden", boxShadow:"0 2px 10px rgba(0,0,0,0.08)", cursor:"pointer" }}>
+        <div style={{ background:fuente.color, padding:"4px 10px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+          <span style={{ fontSize:"10px", fontWeight:900, color:fuente.texto, textTransform:"uppercase", letterSpacing:"0.5px" }}>{fuente.label}</span>
+          {anuncio.flash && <span style={{ background:"#1a2a3a", color:"#d4a017", fontSize:"9px", fontWeight:900, padding:"1px 6px", borderRadius:"6px" }}>⚡ Flash</span>}
+        </div>
+        <div style={{ width:"100%", height:"120px", background:"#e8e8e6", display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden" }}>
+          {imagen
+            ? <img src={imagen} alt={anuncio.titulo} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+            : <span style={{ fontSize:"40px" }}>📦</span>
+          }
+        </div>
+        {badges.length > 0 && (
+          <div style={{ display:"flex", flexWrap:"wrap", gap:"4px", padding:"6px 8px 0" }}>
+            {badges.slice(0, 3).map((b, i) => (
+              <span key={i} style={{ background:b.color, color:b.texto, fontSize:"9px", fontWeight:800, padding:"2px 6px", borderRadius:"6px" }}>{b.label}</span>
+            ))}
           </div>
-          <div style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:"48px", color, lineHeight:1 }}>{disponibles.toLocaleString()}</div>
-          <div style={{ fontSize:"11px", fontWeight:700, color:"#9a9a9a" }}>disponibles</div>
-        </div>
-        <div style={{ textAlign:"right" }}>
-          <div style={{ fontSize:"11px", fontWeight:800, color:"#9a9a9a", textTransform:"uppercase", letterSpacing:"1px" }}>Consumidos</div>
-          <div style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:"32px", color:"#1a2a3a" }}>{consumidos.toLocaleString()}</div>
-          <div style={{ fontSize:"10px", color:"#9a9a9a", fontWeight:600 }}>Total: {total.toLocaleString()}</div>
+        )}
+        <div style={{ padding:"8px 10px 12px" }}>
+          <div style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:700, marginBottom:"2px", textTransform:"uppercase", letterSpacing:"0.5px" }}>{anuncio.subrubro}</div>
+          <div style={{ fontSize:"13px", fontWeight:800, color:"#2c2c2e", marginBottom:"3px", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{anuncio.titulo}</div>
+          <div style={{ fontSize:"15px", fontWeight:900, color:"#d4a017" }}>{formatPrecio(anuncio.precio, anuncio.moneda)}</div>
+          <div style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:600, marginTop:"2px" }}>📍 {anuncio.ciudad}, {anuncio.provincia}</div>
         </div>
       </div>
-      <div style={{ height:"8px", background:"#f0f0f0", borderRadius:"4px", overflow:"hidden", marginBottom:"8px" }}>
-        <div style={{ height:"100%", width:`${pct}%`, background:`linear-gradient(90deg, ${color}cc, ${color})`, borderRadius:"4px", transition:"width .4s" }} />
-      </div>
-      <div style={{ fontSize:"11px", fontWeight:600, color:"#9a9a9a", lineHeight:1.5 }}>{descripcion}</div>
-      {reembolsable && (
-        <button style={{ marginTop:"10px", width:"100%", background:`rgba(39,174,96,0.1)`, border:`1px solid rgba(39,174,96,0.3)`, borderRadius:"10px", padding:"10px", fontSize:"12px", fontWeight:800, color:"#27ae60", cursor:"pointer", fontFamily:"'Nunito', sans-serif" }}>
-          ♻️ Solicitar reembolso de BIT NexoPromotor
-        </button>
-      )}
-    </div>
+    </a>
   );
 }
 
-function ST({ children, color="#1a2a3a" }:{ children:React.ReactNode; color?:string }) {
-  return <div style={{ fontSize:"13px", fontWeight:900, color, textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:"16px" }}>{children}</div>;
-}
-function GPS({ onClick, ok, label, color="#27ae60" }:{ onClick:()=>void; ok:boolean; label:string; color?:string }) {
-  return (
-    <button onClick={onClick} style={{ width:"100%", background:`${color}12`, border:`2px solid ${color}40`, borderRadius:"10px", padding:"10px 14px", fontSize:"13px", fontWeight:800, color, cursor:"pointer", fontFamily:"'Nunito', sans-serif", textAlign:"left", marginBottom:"14px", display:"flex", alignItems:"center", gap:"6px" }}>
-      📍 {label}{ok&&<span style={{ fontSize:"10px", color:"#27ae60", fontWeight:700 }}>✓ detectada</span>}
-    </button>
-  );
-}
-function Campo({ label, valor, onChange, visible, onToggle, placeholder, icono, highlight }:{
-  label:string; valor:string; onChange:(v:string)=>void;
-  visible:boolean; onToggle:()=>void; placeholder?:string; icono?:string; highlight?:boolean;
-}) {
-  return (
-    <div style={{ marginBottom:"14px" }}>
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"6px" }}>
-        <label style={{ fontSize:"11px", fontWeight:800, color:highlight?"#c0392b":"#666", textTransform:"uppercase", letterSpacing:"1px" }}>{icono&&`${icono} `}{label}</label>
-        <button onClick={onToggle} style={{ background:visible?"rgba(212,160,23,0.15)":"#f4f4f2", border:`1px solid ${visible?"#d4a017":"#e8e8e6"}`, borderRadius:"6px", padding:"2px 8px", fontSize:"10px", fontWeight:800, color:visible?"#d4a017":"#9a9a9a", cursor:"pointer", fontFamily:"'Nunito', sans-serif" }}>
-          {visible?"👁️ Se ve":"🙈 Oculto"}
-        </button>
-      </div>
-      <input type="text" value={valor} onChange={e=>onChange(e.target.value)} placeholder={placeholder}
-        style={{ width:"100%", border:`2px solid ${highlight?"rgba(192,57,43,0.25)":"#e8e8e6"}`, borderRadius:"10px", padding:"11px 14px", fontSize:"14px", fontFamily:"'Nunito', sans-serif", color:"#2c2c2e", outline:"none", boxSizing:"border-box", background:highlight?"rgba(192,57,43,0.02)":"#fff" }} />
-    </div>
-  );
-}
-function FilaHorario({ label, activo, desde, hasta, onToggle, onDesde, onHasta, esFeriado }:{
-  label:string; activo:boolean; desde:string; hasta:string;
-  onToggle:()=>void; onDesde:(v:string)=>void; onHasta:(v:string)=>void; esFeriado?:boolean;
-}) {
-  const color = esFeriado ? "#c0392b" : "#d4a017";
-  return (
-    <div style={{ display:"flex", alignItems:"center", gap:"8px", flexWrap:"wrap" }}>
-      <button onClick={onToggle} style={{ width:"28px", height:"28px", borderRadius:"8px", flexShrink:0, background:activo?color:"#f4f4f2", border:`2px solid ${activo?color:"#e8e8e6"}`, cursor:"pointer", fontSize:"13px", display:"flex", alignItems:"center", justifyContent:"center", color:"#fff", fontWeight:900 }}>
-        {activo?"✓":""}
-      </button>
-      <span style={{ fontSize:"12px", fontWeight:700, color:activo?"#1a2a3a":"#9a9a9a", flex:1, minWidth:"130px" }}>{label}</span>
-      {activo ? (
-        <div style={{ display:"flex", alignItems:"center", gap:"4px" }}>
-          <input type="time" value={desde} onChange={e=>onDesde(e.target.value)} style={{ border:"2px solid #e8e8e6", borderRadius:"8px", padding:"4px 6px", fontSize:"12px", fontFamily:"'Nunito', sans-serif", outline:"none", color:"#1a2a3a" }} />
-          <span style={{ fontSize:"11px", color:"#9a9a9a" }}>a</span>
-          <input type="time" value={hasta} onChange={e=>onHasta(e.target.value)} style={{ border:"2px solid #e8e8e6", borderRadius:"8px", padding:"4px 6px", fontSize:"12px", fontFamily:"'Nunito', sans-serif", outline:"none", color:"#1a2a3a" }} />
-        </div>
-      ) : (
-        <span style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:600 }}>{esFeriado?"Cerrado":"No disponible"}</span>
-      )}
-    </div>
-  );
-}
-
-const C:React.CSSProperties  = { background:"#fff", borderRadius:"16px", padding:"20px", boxShadow:"0 2px 10px rgba(0,0,0,0.06)" };
-const BTN:React.CSSProperties = { width:"100%", background:"linear-gradient(135deg, #d4a017, #f0c040)", color:"#1a2a3a", border:"none", borderRadius:"12px", padding:"16px", fontSize:"15px", fontWeight:800, fontFamily:"'Nunito', sans-serif", cursor:"pointer", letterSpacing:"1px", textTransform:"uppercase" };
-const THS = (c:string):React.CSSProperties => ({ fontSize:"12px", fontWeight:900, color:c, textTransform:"uppercase", letterSpacing:"1px", marginBottom:"12px" });
+const accionStyle: React.CSSProperties = { background:"linear-gradient(135deg, #1a2a3a 0%, #243b55 100%)", borderRadius:"16px", padding:"18px 10px", textAlign:"center", boxShadow:"0 4px 12px rgba(0,0,0,0.15)", cursor:"pointer", textDecoration:"none", color:"#fff", display:"block", border:"1px solid rgba(255,255,255,0.08)" };
+const accionTituloStyle: React.CSSProperties = { fontSize:"13px", fontWeight:900, textTransform:"uppercase", letterSpacing:"0.5px", color:"#fff", marginBottom:"2px" };
+const accionSubStyle: React.CSSProperties = { fontSize:"11px", fontWeight:600, color:"#8a9aaa" };

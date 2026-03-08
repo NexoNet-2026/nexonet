@@ -335,15 +335,15 @@ export default function MisAnuncios() {
             </div>
             <div style={{ background: "#f4f4f2", borderRadius: "12px", padding: "14px", marginBottom: "14px", fontSize: "13px", color: "#444", lineHeight: 1.6 }}>
               {popupBit === "flash" && "Tu anuncio aparece destacado con fondo dorado en la parte superior de los listados."}
-              {popupBit === "posicion" && "Tu anuncio aparece primero en su categoría y en el mapa con pin verde."}
-              {popupBit === "conexion" && "Sumá más conexiones disponibles para este anuncio."}
+              {popupBit === "posicion" && "Tu anuncio aparece primero según el alcance que elijas: barrio, ciudad, provincia o todo el país."}
+              {popupBit === "conexion" && "Sumá más conexiones disponibles para este anuncio. Con Ilimitadas nunca te quedás sin."}
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "14px" }}>
               {(popupBit === "flash"
                 ? [["⚡ Flash 7 días","$500"],["⚡ Flash 15 días","$900"],["⚡ Flash 30 días","$1.500"]]
                 : popupBit === "posicion"
-                ? [["📌 Posición 15 días","$700"],["📌 Posición 30 días","$1.200"]]
-                : [["🔗 + 100 conexiones","$300"],["🔗 + 500 conexiones","$1.000"],["🔗 + 1000 conexiones","$1.800"]]
+                ? [["📌 1° en barrio","$500"],["📌 1° en ciudad","$1.000"],["📌 1° en provincia","$3.000"],["📌 1° en el país","$10.000"]]
+                : [["🔗 1.000 conexiones","$1.000"],["🔗 5.000 conexiones","$4.000"],["🔗 Ilimitadas × 30 días","$9.000"]]
               ).map(([label, precio]) => (
                 <div key={label} onClick={() => router.push("/comprar")} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "linear-gradient(135deg, #1a2a3a, #243b55)", borderRadius: "12px", padding: "14px 16px", cursor: "pointer" }}>
                   <span style={{ fontSize: "13px", fontWeight: 800, color: "#fff" }}>{label}</span>

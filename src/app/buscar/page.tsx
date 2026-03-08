@@ -1,11 +1,11 @@
 "use client";
 import { useState, useEffect, useRef, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
 import { supabase } from "@/lib/supabase";
 
-type Anuncio = { id:number; titulo:string; precio:number; moneda:string; ciudad:string; provincia:string; barrio:string; imagenes:string[]; flash:boolean; fuente:string; subrubro_id:number };
+type Anuncio = { id:number; titulo:string; precio:number; moneda:string; ciudad:string; provincia:string; barrio:string; imagenes:string[]; flash:boolean; fuente:string; subrubro_id:number; usuario_id:string };
 type Rubro = { id:number; nombre:string; subrubros:{id:number; nombre:string}[] };
 type RubroFlat = { id:number; nombre:string };
 type SubrubroFlat = { id:number; nombre:string; rubro_id:number };
@@ -31,6 +31,7 @@ export default function Buscar() {
 
 function BuscarInner() {
   const sp = useSearchParams();
+  const router = useRouter();
 
   // Ubicación
   const [provs,    setProvs]    = useState<Prov[]>([]);
@@ -57,6 +58,26 @@ function BuscarInner() {
   const [subAct,   setSubAct]   = useState<Record<number,number|null>>({});
   const [loading,  setLoading]  = useState(true);
 
+  // Sesión
+  const [session,  setSession]  = useState<any>(null);
+  const [bits,     setBits]     = useState(0);
+
+  // ── MODO CONEXIÓN ──
+  const [modoConexion,   setModoConexion]   = useState(false);
+  const [seleccionados,  setSeleccionados]  = useState<Set<number>>(new Set());
+  const [conectando,     setConectando]     = useState(false);
+  const [resultadoConex, setResultadoConex] = useState<string|null>(null);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session: s } }) => {
+      setSession(s);
+      if (s) {
+        supabase.from("usuarios").select("bits").eq("id", s.user.id).single()
+          .then(({ data }) => { if (data) setBits(data.bits || 0); });
+      }
+    });
+  }, []);
+
   useEffect(() => {
     if (sp.get("q")) setQuery(sp.get("q")!);
     (window as any).__rP = sp.get("rubro");
@@ -66,7 +87,7 @@ function BuscarInner() {
       supabase.from("provincias").select("id,nombre").order("nombre"),
       supabase.from("rubros").select("id,nombre,subrubros(id,nombre)").order("nombre"),
       supabase.from("anuncios")
-        .select("id,titulo,precio,moneda,ciudad,provincia,barrio,imagenes,flash,fuente,subrubro_id")
+        .select("id,titulo,precio,moneda,ciudad,provincia,barrio,imagenes,flash,fuente,subrubro_id,usuario_id")
         .eq("estado","activo").order("created_at",{ascending:false}).limit(100),
     ]).then(([{data:pData},{data:rData},{data:aData}]) => {
       if (pData) setProvs(pData);
@@ -88,40 +109,30 @@ function BuscarInner() {
     });
   }, []);
 
-  // Ciudades al cambiar provincia MANUALMENTE
   const cambiarProv = async (nombre: string) => {
-    setProvSel(nombre);
-    setCiudSel(""); setBarrSel(""); setCiudades([]); setBarrios([]);
+    setProvSel(nombre); setCiudSel(""); setBarrSel(""); setCiudades([]); setBarrios([]);
     if (!nombre) return;
-    const p = provs.find(x => x.nombre === nombre);
-    if (!p) return;
+    const p = provs.find(x => x.nombre===nombre); if (!p) return;
     const {data} = await supabase.from("ciudades").select("id,nombre,provincia_id").eq("provincia_id",p.id).order("nombre");
     if (data) setCiudades(data);
   };
-
-  // Barrios al cambiar ciudad MANUALMENTE
   const cambiarCiud = async (nombre: string) => {
-    setCiudSel(nombre);
-    setBarrSel(""); setBarrios([]);
+    setCiudSel(nombre); setBarrSel(""); setBarrios([]);
     if (!nombre) return;
-    const c = ciudades.find(x => x.nombre === nombre);
-    if (!c) return;
+    const c = ciudades.find(x => x.nombre===nombre); if (!c) return;
     const {data} = await supabase.from("barrios").select("id,nombre,ciudad_id").eq("ciudad_id",c.id).order("nombre");
     if (data) setBarrios(data);
   };
 
-  // Cerrar dropdown afuera
   useEffect(() => {
     const h = (e:MouseEvent) => {
       if (dropRef.current && !dropRef.current.contains(e.target as Node) &&
           inputRef.current && !inputRef.current.contains(e.target as Node))
         setDropOpen(false);
     };
-    document.addEventListener("mousedown",h);
-    return () => document.removeEventListener("mousedown",h);
+    document.addEventListener("mousedown",h); return () => document.removeEventListener("mousedown",h);
   }, []);
 
-  // GPS
   const gps = () => {
     if (!navigator.geolocation) return alert("GPS no disponible");
     setGpsLoad(true);
@@ -129,54 +140,22 @@ function BuscarInner() {
       try {
         const r = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json&accept-language=es`);
         const d = await r.json();
-
-        // Nominatim usa campos distintos según la zona de Argentina
-        const addr = d.address || {};
-        const pNom = addr.state || addr.region || "";
-        const cNom = addr.city || addr.town || addr.village || addr.municipality || addr.county || addr.district || "";
-        const bNom = addr.suburb || addr.neighbourhood || addr.quarter || "";
-
-        // Normalizar: quitar acentos y pasar a minúsculas para comparar
-        const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-
-        const pm = provs.find(p => norm(p.nombre).includes(norm(pNom)) || norm(pNom).includes(norm(p.nombre)));
+        const norm = (s:string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+        const pNom = d.address?.state||""; const cNom = d.address?.city||d.address?.town||d.address?.village||d.address?.municipality||""; const bNom = d.address?.suburb||d.address?.neighbourhood||"";
+        const pm = provs.find(p => norm(p.nombre).includes(norm(pNom))||norm(pNom).includes(norm(p.nombre)));
         if (!pm) { setGpsLoad(false); return; }
-
-        const {data:cd, error:ce} = await supabase.from("ciudades")
-          .select("id,nombre,provincia_id").eq("provincia_id",pm.id).order("nombre");
-
-        let ciudadFinal = "";
-        let barrioFinal = "";
-        let barriosFinal: Barrio[] = [];
-        let ciudadesFinal: Ciudad[] = cd || [];
-
-        if (cd && cd.length > 0 && cNom) {
-          const cm = cd.find((c:any) =>
-            norm(c.nombre).includes(norm(cNom)) || norm(cNom).includes(norm(c.nombre))
-          );
+        const {data:cd} = await supabase.from("ciudades").select("id,nombre,provincia_id").eq("provincia_id",pm.id).order("nombre");
+        let cF="",bF="",bsF:Barrio[]=[],csF:Ciudad[]=cd||[];
+        if (cd&&cNom) {
+          const cm = cd.find((c:any) => norm(c.nombre).includes(norm(cNom))||norm(cNom).includes(norm(c.nombre)));
           if (cm) {
-            ciudadFinal = cm.nombre;
-            const {data:bd} = await supabase.from("barrios")
-              .select("id,nombre,ciudad_id").eq("ciudad_id",cm.id).order("nombre");
-            if (bd && bd.length > 0) {
-              barriosFinal = bd;
-              if (bNom) {
-                const bm = bd.find((b:any) =>
-                  norm(b.nombre).includes(norm(bNom)) || norm(bNom).includes(norm(b.nombre))
-                );
-                if (bm) barrioFinal = bm.nombre;
-              }
-            }
+            cF=cm.nombre;
+            const {data:bd} = await supabase.from("barrios").select("id,nombre,ciudad_id").eq("ciudad_id",cm.id).order("nombre");
+            if (bd&&bd.length>0) { bsF=bd; const bm=bd.find((b:any)=>norm(b.nombre).includes(norm(bNom))||norm(bNom).includes(norm(b.nombre))); if(bm)bF=bm.nombre; }
           }
         }
-
-        setCiudades(ciudadesFinal);
-        setBarrios(barriosFinal);
-        setProvSel(pm.nombre);
-        setCiudSel(ciudadFinal);
-        setBarrSel(barrioFinal);
-
-      } catch(err) { alert("Error al obtener ubicación"); }
+        setCiudades(csF); setBarrios(bsF); setProvSel(pm.nombre); setCiudSel(cF); setBarrSel(bF);
+      } catch { alert("Error al obtener ubicación"); }
       setGpsLoad(false);
     }, () => { alert("No se pudo acceder al GPS"); setGpsLoad(false); });
   };
@@ -184,18 +163,17 @@ function BuscarInner() {
   const limpUbi = () => { setProvSel(""); setCiudSel(""); setBarrSel(""); };
   const ubiActiva = !!(provSel||ciudSel||barrSel);
 
-  // Filtrado
   const qLow = query.toLowerCase();
   const rFilt = rFlat.filter(r => r.nombre.toLowerCase().includes(qLow));
   const sFilt = sFlat.filter(s => s.nombre.toLowerCase().includes(qLow));
   const sDRubro = rSel ? sFlat.filter(s => s.rubro_id===rSel.id) : [];
-
   const limpQ  = () => { setQuery(""); setRSel(null); setSSel(null); setDropOpen(false); };
   const selR   = (r:RubroFlat)    => { setRSel(r); setSSel(null); setQuery(r.nombre); setDropOpen(false); };
   const selS   = (s:SubrubroFlat) => { setRSel(rFlat.find(r=>r.id===s.rubro_id)||null); setSSel(s); setQuery(s.nombre); setDropOpen(false); };
   const togSub = (rId:number,sId:number) => setSubAct(p => ({...p,[rId]:p[rId]===sId?null:sId}));
 
   const anuFilt = anuncios.filter(a => {
+    if (session && a.usuario_id === session.user.id) return false; // no mostrar propios
     if (barrSel) return (a.barrio||"").toLowerCase().includes(barrSel.toLowerCase());
     if (ciudSel) return (a.ciudad||"").toLowerCase().includes(ciudSel.toLowerCase());
     if (provSel) return (a.provincia||"").toLowerCase().includes(provSel.toLowerCase());
@@ -205,35 +183,89 @@ function BuscarInner() {
   const busLibre = query.trim()!==""&&!rSel&&!sSel;
   const resTxt   = busLibre ? anuFilt.filter(a=>a.titulo.toLowerCase().includes(qLow)) : [];
   const rubrosM  = rSel ? rubros.filter(r=>r.id===rSel.id) : rubros;
-
-  const getAnus = (rubro:Rubro) => {
+  const getAnus  = (rubro:Rubro) => {
     const ids = rubro.subrubros.map(s=>s.id);
     const sa  = subAct[rubro.id];
     return anuFilt.filter(a => sa ? a.subrubro_id===sa : ids.includes(a.subrubro_id)).slice(0,8);
   };
 
+  // Lista plana de anuncios visibles según filtros activos
+  const anunciosVisibles: Anuncio[] = busLibre ? resTxt :
+    rubrosM.flatMap(r => getAnus(r));
+
   const fmt = (p:number,m:string) => !p?"Consultar":`${m==="USD"?"U$D":"$"} ${p.toLocaleString("es-AR")}`;
   const phQ  = barrSel?`¿Qué buscás en ${barrSel}?`:ciudSel?`¿Qué buscás en ${ciudSel}?`:provSel?`¿Qué buscás en ${provSel}?`:"¿Qué buscás?";
 
+  // ── CONEXIÓN ──
+  const toggleSeleccion = (id:number) => {
+    const s = new Set(seleccionados);
+    s.has(id) ? s.delete(id) : s.add(id);
+    setSeleccionados(s);
+  };
+  const seleccionarTodos = () => setSeleccionados(new Set(anunciosVisibles.map(a=>a.id)));
+  const deseleccionarTodos = () => setSeleccionados(new Set());
+  const todosSeleccionados = anunciosVisibles.length > 0 && seleccionados.size === anunciosVisibles.length;
+
+  const activarModoConexion = () => {
+    if (!session) { router.push("/login"); return; }
+    setModoConexion(true); setSeleccionados(new Set());
+  };
+  const cancelarConexion = () => { setModoConexion(false); setSeleccionados(new Set()); setResultadoConex(null); };
+
+  const ejecutarConexion = async () => {
+    if (seleccionados.size === 0) return;
+    if (bits < seleccionados.size) {
+      alert(`No tenés suficientes BIT. Necesitás ${seleccionados.size} BIT, tenés ${bits}.`); return;
+    }
+    setConectando(true);
+    const ids = Array.from(seleccionados);
+
+    // Obtener usuario_id de cada anuncio seleccionado
+    const { data: anuData } = await supabase.from("anuncios").select("id,usuario_id,conexiones").in("id", ids);
+
+    if (anuData) {
+      // Incrementar conexiones en cada anuncio
+      await Promise.all(anuData.map((a:any) =>
+        supabase.from("anuncios").update({ conexiones: (a.conexiones||0)+1 }).eq("id",a.id)
+      ));
+      // Insertar notificaciones
+      await supabase.from("notificaciones").insert(
+        anuData.map((a:any) => ({
+          usuario_id: a.usuario_id,
+          emisor_id:  session.user.id,
+          anuncio_id: a.id,
+          tipo: "conexion",
+        }))
+      );
+      // Descontar BIT al usuario
+      const nuevosBits = bits - ids.length;
+      await supabase.from("usuarios").update({ bits: nuevosBits, bits_gastados: bits - nuevosBits }).eq("id", session.user.id);
+      setBits(nuevosBits);
+    }
+
+    setResultadoConex(`✅ Te conectaste con ${ids.length} anuncio${ids.length!==1?"s":""}. Usaste ${ids.length} BIT.`);
+    setConectando(false);
+    setSeleccionados(new Set());
+    setTimeout(() => { cancelarConexion(); }, 3000);
+  };
+
   return (
-    <main style={{paddingTop:"95px",paddingBottom:"130px",background:"#f4f4f2",minHeight:"100vh",fontFamily:"'Nunito',sans-serif"}}>
+    <main style={{paddingTop:"95px",paddingBottom: modoConexion ? "200px" : "130px",background:"#f4f4f2",minHeight:"100vh",fontFamily:"'Nunito',sans-serif"}}>
       <Header />
 
       {/* BARRA */}
       <div style={{background:"linear-gradient(135deg,#1a2a3a,#243b55)",padding:"12px 16px 14px",display:"flex",flexDirection:"column",gap:"10px"}}>
-
         {/* FILA UBICACIÓN */}
         <div style={{display:"flex",gap:"8px",alignItems:"center"}}>
           <SelUbi value={provSel} placeholder="🗺️ Provincia" opciones={provs.map(p=>p.nombre)} onChange={cambiarProv} />
           {provSel && <SelUbi value={ciudSel} placeholder="🏙️ Ciudad" opciones={ciudades.map(c=>c.nombre)} onChange={cambiarCiud} />}
           {ciudSel && barrios.length>0 && <SelUbi value={barrSel} placeholder="🏘️ Barrio" opciones={barrios.map(b=>b.nombre)} onChange={setBarrSel} />}
-          <button onClick={gps} disabled={gpsLoad} title="GPS" style={{flexShrink:0,width:"42px",height:"42px",background:"rgba(212,160,23,0.2)",border:"2px solid rgba(212,160,23,0.5)",borderRadius:"12px",fontSize:"18px",cursor:"pointer",opacity:gpsLoad?0.6:1,display:"flex",alignItems:"center",justifyContent:"center"}}>
+          <button onClick={gps} disabled={gpsLoad} style={{flexShrink:0,width:"42px",height:"42px",background:"rgba(212,160,23,0.2)",border:"2px solid rgba(212,160,23,0.5)",borderRadius:"12px",fontSize:"18px",cursor:"pointer",opacity:gpsLoad?0.6:1,display:"flex",alignItems:"center",justifyContent:"center"}}>
             {gpsLoad?"⏳":"📍"}
           </button>
           {ubiActiva && <button onClick={limpUbi} style={{flexShrink:0,width:"42px",height:"42px",background:"rgba(255,80,80,0.15)",border:"2px solid rgba(255,80,80,0.3)",borderRadius:"12px",fontSize:"16px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>}
         </div>
 
-        {/* CHIPS */}
         {ubiActiva && (
           <div style={{display:"flex",gap:"6px",flexWrap:"wrap"}}>
             {[provSel,ciudSel,barrSel].filter(Boolean).map((l,i)=>(
@@ -250,8 +282,7 @@ function BuscarInner() {
             <div style={{flex:1,position:"relative"}}>
               <input ref={inputRef} type="text" value={query}
                 onChange={e=>{setQuery(e.target.value);setRSel(null);setSSel(null);setDropOpen(true);}}
-                onFocus={()=>setDropOpen(true)}
-                placeholder={phQ}
+                onFocus={()=>setDropOpen(true)} placeholder={phQ}
                 style={{width:"100%",border:"none",padding:"12px 16px",fontFamily:"'Nunito',sans-serif",fontSize:"14px",color:"#2c2c2e",outline:"none",background:"transparent",boxSizing:"border-box",borderRadius:"14px 0 0 14px"}}
               />
               {(rSel||sSel) && (
@@ -263,7 +294,6 @@ function BuscarInner() {
             {query&&!rSel && <button onClick={limpQ} style={{background:"none",border:"none",padding:"0 8px",cursor:"pointer",fontSize:"16px",color:"#9a9a9a"}}>✕</button>}
             <button onClick={()=>setDropOpen(false)} style={{background:"#d4a017",border:"none",padding:"0 18px",cursor:"pointer",fontSize:"16px",color:"#1a2a3a",borderRadius:"0 14px 14px 0",flexShrink:0}}>🔍</button>
           </div>
-
           {dropOpen && (
             <div ref={dropRef} style={{position:"absolute",top:"calc(100% + 6px)",left:0,right:0,background:"#fff",borderRadius:"14px",boxShadow:"0 8px 32px rgba(0,0,0,0.2)",zIndex:100,maxHeight:"300px",overflowY:"auto",border:"1px solid #e8e8e6"}}>
               {rSel&&sDRubro.length>0 ? (
@@ -272,13 +302,10 @@ function BuscarInner() {
                     <span>Subrubros de {rSel.nombre}</span>
                     <button onClick={limpQ} style={{background:"none",border:"none",cursor:"pointer",fontSize:"11px",color:"#d4a017",fontWeight:800,fontFamily:"'Nunito',sans-serif"}}>← Todos</button>
                   </div>
-                  <div onClick={()=>{setSSel(null);setDropOpen(false);}} style={dItem(false)}>
-                    <span>📋</span><div style={{fontSize:"13px",fontWeight:800,color:"#1a2a3a"}}>Todos en {rSel.nombre}</div>
-                  </div>
+                  <div onClick={()=>{setSSel(null);setDropOpen(false);}} style={dItem(false)}><span>📋</span><div style={{fontSize:"13px",fontWeight:800,color:"#1a2a3a"}}>Todos en {rSel.nombre}</div></div>
                   {sDRubro.map(s=>(
                     <div key={s.id} onClick={()=>selS(s)} style={dItem(sSel?.id===s.id)}>
-                      <span style={{fontSize:"13px"}}>↳</span>
-                      <div style={{fontSize:"13px",fontWeight:700,color:"#1a2a3a"}}>{s.nombre}</div>
+                      <span style={{fontSize:"13px"}}>↳</span><div style={{fontSize:"13px",fontWeight:700,color:"#1a2a3a"}}>{s.nombre}</div>
                     </div>
                   ))}
                 </>
@@ -289,45 +316,64 @@ function BuscarInner() {
                   {rFilt.map(r=>(
                     <div key={r.id} onClick={()=>selR(r)} style={dItem(rSel?.id===r.id)}>
                       <span>📂</span>
-                      <div style={{flex:1}}>
-                        <div style={{fontSize:"13px",fontWeight:800,color:"#1a2a3a"}}>{r.nombre}</div>
-                        <div style={{fontSize:"10px",color:"#9a9a9a",fontWeight:600}}>{sFlat.filter(s=>s.rubro_id===r.id).length} subrubros</div>
-                      </div>
+                      <div style={{flex:1}}><div style={{fontSize:"13px",fontWeight:800,color:"#1a2a3a"}}>{r.nombre}</div><div style={{fontSize:"10px",color:"#9a9a9a",fontWeight:600}}>{sFlat.filter(s=>s.rubro_id===r.id).length} subrubros</div></div>
                       <span style={{fontSize:"12px",color:"#d4a017",fontWeight:800}}>→</span>
                     </div>
                   ))}
-                  {query!==""&&sFilt.length>0&&(
-                    <>
-                      <div style={{padding:"8px 14px 4px",fontSize:"10px",fontWeight:800,color:"#9a9a9a",textTransform:"uppercase",letterSpacing:"1px",borderTop:"1px solid #f0f0f0"}}>Subrubros</div>
-                      {sFilt.slice(0,5).map(s=>{
-                        const r=rFlat.find(x=>x.id===s.rubro_id);
-                        return (
-                          <div key={s.id} onClick={()=>selS(s)} style={dItem(false)}>
-                            <span style={{fontSize:"13px"}}>↳</span>
-                            <div>
-                              <div style={{fontSize:"13px",fontWeight:700,color:"#1a2a3a"}}>{s.nombre}</div>
-                              {r&&<div style={{fontSize:"10px",color:"#9a9a9a",fontWeight:600}}>en {r.nombre}</div>}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </>
-                  )}
+                  {query!==""&&sFilt.length>0&&(<>
+                    <div style={{padding:"8px 14px 4px",fontSize:"10px",fontWeight:800,color:"#9a9a9a",textTransform:"uppercase",letterSpacing:"1px",borderTop:"1px solid #f0f0f0"}}>Subrubros</div>
+                    {sFilt.slice(0,5).map(s=>{const r=rFlat.find(x=>x.id===s.rubro_id);return(
+                      <div key={s.id} onClick={()=>selS(s)} style={dItem(false)}>
+                        <span style={{fontSize:"13px"}}>↳</span>
+                        <div><div style={{fontSize:"13px",fontWeight:700,color:"#1a2a3a"}}>{s.nombre}</div>{r&&<div style={{fontSize:"10px",color:"#9a9a9a",fontWeight:600}}>en {r.nombre}</div>}</div>
+                      </div>
+                    );})}
+                  </>)}
                 </>
               )}
-              {query!==""&&(
-                <div onClick={()=>setDropOpen(false)} style={{...dItem(false),borderTop:"1px solid #f0f0f0",background:"#f9f7f0"}}>
-                  <span>🔍</span>
-                  <div>
-                    <div style={{fontSize:"13px",fontWeight:800,color:"#d4a017"}}>Buscar "{query}"</div>
-                    <div style={{fontSize:"10px",color:"#9a9a9a",fontWeight:600}}>Ver todos los resultados</div>
-                  </div>
-                </div>
-              )}
+              {query!==""&&(<div onClick={()=>setDropOpen(false)} style={{...dItem(false),borderTop:"1px solid #f0f0f0",background:"#f9f7f0"}}><span>🔍</span><div><div style={{fontSize:"13px",fontWeight:800,color:"#d4a017"}}>Buscar "{query}"</div><div style={{fontSize:"10px",color:"#9a9a9a",fontWeight:600}}>Ver todos los resultados</div></div></div>)}
             </div>
           )}
         </div>
+
+        {/* BOTÓN MODO CONEXIÓN */}
+        {session && !modoConexion && (
+          <button onClick={activarModoConexion} style={{
+            background:"linear-gradient(135deg,#2980b9,#3a7bd5)",
+            border:"none",borderRadius:"12px",padding:"11px 16px",
+            display:"flex",alignItems:"center",justifyContent:"center",gap:"8px",
+            cursor:"pointer",fontFamily:"'Nunito',sans-serif",
+          }}>
+            <span style={{fontSize:"16px"}}>🔗</span>
+            <span style={{fontSize:"13px",fontWeight:800,color:"#fff"}}>Modo Conexión</span>
+            <span style={{background:"rgba(255,255,255,0.2)",borderRadius:"20px",padding:"2px 8px",fontSize:"11px",fontWeight:800,color:"#fff",marginLeft:"4px"}}>{bits} BIT</span>
+          </button>
+        )}
+        {modoConexion && (
+          <div style={{background:"linear-gradient(135deg,#1a3a5c,#2980b9)",borderRadius:"12px",padding:"11px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:"8px",border:"2px solid #3a9bd5"}}>
+            <div style={{display:"flex",alignItems:"center",gap:"8px"}}>
+              <span style={{fontSize:"16px"}}>🔗</span>
+              <span style={{fontSize:"13px",fontWeight:800,color:"#fff"}}>Modo Conexión activo</span>
+            </div>
+            <div style={{display:"flex",gap:"8px",alignItems:"center"}}>
+              <span style={{background:"rgba(255,255,255,0.15)",borderRadius:"20px",padding:"3px 10px",fontSize:"12px",fontWeight:800,color:"#fff"}}>{bits} BIT</span>
+              <button onClick={cancelarConexion} style={{background:"rgba(255,255,255,0.15)",border:"none",borderRadius:"8px",padding:"4px 10px",fontSize:"12px",fontWeight:800,color:"#fff",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>✕ Salir</button>
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* BARRA SELECCIÓN cuando modo activo */}
+      {modoConexion && (
+        <div style={{background:"#1a3a5c",padding:"10px 16px",display:"flex",alignItems:"center",gap:"10px",justifyContent:"space-between",position:"sticky",top:"95px",zIndex:50,borderBottom:"2px solid #2980b9"}}>
+          <button onClick={todosSeleccionados ? deseleccionarTodos : seleccionarTodos} style={{background:"rgba(255,255,255,0.1)",border:"2px solid rgba(255,255,255,0.3)",borderRadius:"20px",padding:"6px 14px",fontSize:"12px",fontWeight:800,color:"#fff",cursor:"pointer",fontFamily:"'Nunito',sans-serif",whiteSpace:"nowrap"}}>
+            {todosSeleccionados ? "✕ Deseleccionar todos" : "✅ Seleccionar todos"}
+          </button>
+          <div style={{fontSize:"12px",fontWeight:700,color:"rgba(255,255,255,0.8)",whiteSpace:"nowrap"}}>
+            {seleccionados.size > 0 ? `${seleccionados.size} selec. · ${seleccionados.size} BIT` : "Tocá los anuncios"}
+          </div>
+        </div>
+      )}
 
       {/* RESULTADOS */}
       {loading ? (
@@ -342,12 +388,11 @@ function BuscarInner() {
             <div style={{textAlign:"center",padding:"40px 20px"}}>
               <div style={{fontSize:"40px",marginBottom:"12px"}}>🔍</div>
               <div style={{fontSize:"15px",fontWeight:800,color:"#1a2a3a",marginBottom:"6px"}}>Sin resultados</div>
-              <div style={{fontSize:"13px",color:"#9a9a9a",fontWeight:600,marginBottom:"20px"}}>No encontramos anuncios para "{query}"</div>
               <button onClick={limpQ} style={{background:"linear-gradient(135deg,#d4a017,#f0c040)",border:"none",borderRadius:"12px",padding:"12px 24px",fontSize:"13px",fontWeight:800,color:"#1a2a3a",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>Ver todos</button>
             </div>
           ) : (
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"12px",padding:"8px 16px 16px"}}>
-              {resTxt.map(a=><Tarjeta key={a.id} a={a} fmt={fmt} qLow={qLow} query={query} />)}
+              {resTxt.map(a=><Tarjeta key={a.id} a={a} fmt={fmt} qLow={qLow} query={query} modoConexion={modoConexion} seleccionado={seleccionados.has(a.id)} onToggle={()=>toggleSeleccion(a.id)} />)}
             </div>
           )}
         </div>
@@ -372,32 +417,101 @@ function BuscarInner() {
                 <div style={{padding:"12px 16px",color:"#9a9a9a",fontSize:"13px",fontWeight:600}}>Sin anuncios{ubiActiva?` en ${barrSel||ciudSel||provSel}`:""}</div>
               ) : (
                 <div style={{display:"flex",gap:"12px",padding:"0 16px",overflowX:"auto",scrollbarWidth:"none"}}>
-                  {items.map(a=><Tarjeta key={a.id} a={a} fmt={fmt} horizontal />)}
+                  {items.map(a=><Tarjeta key={a.id} a={a} fmt={fmt} horizontal modoConexion={modoConexion} seleccionado={seleccionados.has(a.id)} onToggle={()=>toggleSeleccion(a.id)} />)}
                 </div>
               )}
             </div>
           );
         })
       )}
+
+      {/* ── BARRA FLOTANTE CONEXIÓN ── */}
+      {modoConexion && (
+        <div style={{position:"fixed",bottom:"80px",left:0,right:0,zIndex:100,padding:"0 16px 12px"}}>
+          {resultadoConex ? (
+            <div style={{background:"linear-gradient(135deg,#27ae60,#2ecc71)",borderRadius:"16px",padding:"16px 20px",textAlign:"center",fontSize:"14px",fontWeight:800,color:"#fff",boxShadow:"0 4px 20px rgba(39,174,96,0.4)"}}>
+              {resultadoConex}
+            </div>
+          ) : (
+            <div style={{background:"linear-gradient(135deg,#1a2a3a,#243b55)",borderRadius:"16px",padding:"16px 20px",boxShadow:"0 4px 20px rgba(0,0,0,0.3)",border:"2px solid #2980b9"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"12px"}}>
+                <div>
+                  <div style={{fontSize:"13px",fontWeight:900,color:"#fff"}}>{seleccionados.size > 0 ? `${seleccionados.size} anuncio${seleccionados.size!==1?"s":""} seleccionado${seleccionados.size!==1?"s":""}` : "Ningún anuncio seleccionado"}</div>
+                  <div style={{fontSize:"11px",color:"#8a9aaa",fontWeight:600,marginTop:"2px"}}>Costo: {seleccionados.size} BIT · Tenés {bits} BIT disponibles</div>
+                </div>
+                {seleccionados.size > bits && (
+                  <div style={{background:"rgba(231,76,60,0.2)",border:"1px solid rgba(231,76,60,0.4)",borderRadius:"8px",padding:"4px 10px",fontSize:"11px",fontWeight:800,color:"#e74c3c"}}>Sin BIT</div>
+                )}
+              </div>
+              <div style={{display:"flex",gap:"10px"}}>
+                <button onClick={cancelarConexion} style={{flex:1,background:"rgba(255,255,255,0.08)",border:"2px solid rgba(255,255,255,0.15)",borderRadius:"12px",padding:"13px",fontSize:"13px",fontWeight:800,color:"#fff",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>
+                  Cancelar
+                </button>
+                <button
+                  onClick={ejecutarConexion}
+                  disabled={seleccionados.size===0 || conectando || seleccionados.size > bits}
+                  style={{flex:2,background:seleccionados.size===0||seleccionados.size>bits?"rgba(255,255,255,0.1)":"linear-gradient(135deg,#2980b9,#3a7bd5)",border:"none",borderRadius:"12px",padding:"13px",fontSize:"13px",fontWeight:800,color:seleccionados.size===0||seleccionados.size>bits?"#666":"#fff",cursor:seleccionados.size===0||seleccionados.size>bits?"not-allowed":"pointer",fontFamily:"'Nunito',sans-serif",display:"flex",alignItems:"center",justifyContent:"center",gap:"6px"}}
+                >
+                  {conectando ? "Conectando..." : `🔗 Conectar${seleccionados.size>0?` (${seleccionados.size} BIT)`:""}`}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       <BottomNav />
     </main>
   );
 }
 
-function SelUbi({value,placeholder,opciones,onChange}:{value:string;placeholder:string;opciones:string[];onChange:(v:string)=>void}) {
-  const [open,  setOpen]  = useState(false);
-  const [filtro,setFiltro]= useState("");
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(()=>{
-    const h=(e:MouseEvent)=>{ if(ref.current&&!ref.current.contains(e.target as Node)){setOpen(false);setFiltro("");} };
-    document.addEventListener("mousedown",h);
-    return ()=>document.removeEventListener("mousedown",h);
-  },[]);
-
-  const lista = opciones.filter(o=>o.toLowerCase().includes(filtro.toLowerCase()));
-
+function Tarjeta({ a, fmt, qLow, query, horizontal, modoConexion, seleccionado, onToggle }: {
+  a:Anuncio; fmt:(p:number,m:string)=>string; qLow?:string; query?:string;
+  horizontal?:boolean; modoConexion:boolean; seleccionado:boolean; onToggle:()=>void;
+}) {
+  const f = F[a.fuente]||F.nexonet;
   return (
+    <div
+      onClick={modoConexion ? onToggle : undefined}
+      style={{flexShrink:horizontal?0:undefined,width:horizontal?"160px":undefined,position:"relative",cursor:modoConexion?"pointer":undefined}}
+    >
+      {/* OVERLAY SELECCIÓN */}
+      {modoConexion && (
+        <div style={{position:"absolute",inset:0,zIndex:10,borderRadius:"14px",border:`3px solid ${seleccionado?"#2980b9":"rgba(41,128,185,0.3)"}`,background:seleccionado?"rgba(41,128,185,0.15)":"transparent",transition:"all .15s",pointerEvents:"none"}} />
+      )}
+      {modoConexion && (
+        <div style={{position:"absolute",top:"8px",right:"8px",zIndex:11,width:"24px",height:"24px",borderRadius:"50%",background:seleccionado?"#2980b9":"rgba(255,255,255,0.9)",border:`2px solid ${seleccionado?"#2980b9":"#ccc"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"14px",boxShadow:"0 2px 6px rgba(0,0,0,0.2)"}}>
+          {seleccionado && <span style={{color:"#fff",fontWeight:900}}>✓</span>}
+        </div>
+      )}
+      <a href={modoConexion ? undefined : `/anuncios/${a.id}`} style={{textDecoration:"none",display:"block"}} onClick={e=>modoConexion&&e.preventDefault()}>
+        <div style={{background:"#fff",borderRadius:"14px",overflow:"hidden",boxShadow:"0 2px 10px rgba(0,0,0,0.08)",border:"1px solid #f0f0f0"}}>
+          <div style={{background:f.color,padding:"3px 8px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <span style={{fontSize:"9px",fontWeight:900,color:f.texto,textTransform:"uppercase"}}>{f.label}</span>
+            {a.flash&&<span style={{background:"#1a2a3a",color:"#d4a017",fontSize:"8px",fontWeight:900,padding:"1px 5px",borderRadius:"5px"}}>⚡Flash</span>}
+          </div>
+          <div style={{width:"100%",height:"110px",background:"#f4f4f2",display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden"}}>
+            {a.imagenes?.[0]?<img src={a.imagenes[0]} alt={a.titulo} style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<span style={{fontSize:"36px"}}>📦</span>}
+          </div>
+          <div style={{padding:"8px 10px 10px"}}>
+            <div style={{fontSize:"12px",fontWeight:800,color:"#2c2c2e",marginBottom:"3px",overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>
+              {qLow&&query ? a.titulo.split(new RegExp(`(${query})`, "gi")).map((p:string,i:number)=>
+                p.toLowerCase()===qLow?<mark key={i} style={{background:"#fff3cd",color:"#1a2a3a",borderRadius:"3px",padding:"0 2px"}}>{p}</mark>:p) : a.titulo}
+            </div>
+            <div style={{fontSize:"14px",fontWeight:900,color:"#d4a017"}}>{fmt(a.precio,a.moneda)}</div>
+            <div style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600,marginTop:"2px"}}>📍 {a.ciudad}</div>
+          </div>
+        </div>
+      </a>
+    </div>
+  );
+}
+
+function SelUbi({value,placeholder,opciones,onChange}:{value:string;placeholder:string;opciones:string[];onChange:(v:string)=>void}) {
+  const [open,setOpen]=useState(false);const [filtro,setFiltro]=useState("");const ref=useRef<HTMLDivElement>(null);
+  useEffect(()=>{const h=(e:MouseEvent)=>{if(ref.current&&!ref.current.contains(e.target as Node)){setOpen(false);setFiltro("");}};document.addEventListener("mousedown",h);return()=>document.removeEventListener("mousedown",h);},[]);
+  const lista=opciones.filter(o=>o.toLowerCase().includes(filtro.toLowerCase()));
+  return(
     <div ref={ref} style={{flex:1,position:"relative",minWidth:0}}>
       <button onClick={()=>{setOpen(v=>!v);setFiltro("");}} style={{width:"100%",height:"42px",background:value?"#d4a017":"rgba(255,255,255,0.12)",border:`2px solid ${value?"#d4a017":"rgba(255,255,255,0.3)"}`,borderRadius:"12px",padding:"0 10px",fontSize:"12px",fontWeight:800,color:value?"#1a2a3a":"#fff",cursor:"pointer",fontFamily:"'Nunito',sans-serif",display:"flex",alignItems:"center",justifyContent:"space-between",gap:"4px",overflow:"hidden"}}>
         <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{value||placeholder}</span>
@@ -406,55 +520,16 @@ function SelUbi({value,placeholder,opciones,onChange}:{value:string;placeholder:
       {open&&(
         <div style={{position:"absolute",top:"calc(100% + 4px)",left:0,right:0,zIndex:300,background:"#fff",borderRadius:"12px",boxShadow:"0 8px 32px rgba(0,0,0,0.25)",border:"1px solid #e8e8e6",maxHeight:"260px",display:"flex",flexDirection:"column",overflow:"hidden"}}>
           <div style={{padding:"8px",borderBottom:"1px solid #f0f0f0",flexShrink:0}}>
-            <input autoFocus type="text" value={filtro} onChange={e=>setFiltro(e.target.value)} placeholder="Buscar..."
-              style={{width:"100%",border:"2px solid #e8e8e6",borderRadius:"8px",padding:"7px 10px",fontSize:"13px",fontFamily:"'Nunito',sans-serif",outline:"none",boxSizing:"border-box",color:"#1a2a3a"}} />
+            <input autoFocus type="text" value={filtro} onChange={e=>setFiltro(e.target.value)} placeholder="Buscar..." style={{width:"100%",border:"2px solid #e8e8e6",borderRadius:"8px",padding:"7px 10px",fontSize:"13px",fontFamily:"'Nunito',sans-serif",outline:"none",boxSizing:"border-box",color:"#1a2a3a"}}/>
           </div>
           <div style={{overflowY:"auto",flex:1}}>
-            {value&&(
-              <div onClick={()=>{onChange("");setOpen(false);setFiltro("");}} style={{padding:"10px 14px",fontSize:"12px",fontWeight:700,color:"#e74c3c",cursor:"pointer",borderBottom:"1px solid #f9f9f9"}}>
-                ✕ Limpiar
-              </div>
-            )}
-            {lista.length===0
-              ? <div style={{padding:"16px",textAlign:"center",fontSize:"13px",color:"#9a9a9a"}}>Sin resultados</div>
-              : lista.map(o=>(
-                  <div key={o} onClick={()=>{onChange(o);setOpen(false);setFiltro("");}}
-                    style={{padding:"10px 14px",fontSize:"13px",fontWeight:o===value?800:600,color:o===value?"#d4a017":"#1a2a3a",background:o===value?"rgba(212,160,23,0.08)":"transparent",cursor:"pointer",borderLeft:o===value?"3px solid #d4a017":"3px solid transparent"}}>
-                    {o}
-                  </div>
-                ))
-            }
+            {value&&<div onClick={()=>{onChange("");setOpen(false);setFiltro("");}} style={{padding:"10px 14px",fontSize:"12px",fontWeight:700,color:"#e74c3c",cursor:"pointer",borderBottom:"1px solid #f9f9f9"}}>✕ Limpiar</div>}
+            {lista.length===0?<div style={{padding:"16px",textAlign:"center",fontSize:"13px",color:"#9a9a9a"}}>Sin resultados</div>
+            :lista.map(o=><div key={o} onClick={()=>{onChange(o);setOpen(false);setFiltro("");}} style={{padding:"10px 14px",fontSize:"13px",fontWeight:o===value?800:600,color:o===value?"#d4a017":"#1a2a3a",background:o===value?"rgba(212,160,23,0.08)":"transparent",cursor:"pointer",borderLeft:o===value?"3px solid #d4a017":"3px solid transparent"}}>{o}</div>)}
           </div>
         </div>
       )}
     </div>
-  );
-}
-
-function Tarjeta({a,fmt,qLow,query,horizontal}:{a:Anuncio;fmt:(p:number,m:string)=>string;qLow?:string;query?:string;horizontal?:boolean}) {
-  const f = F[a.fuente]||F.nexonet;
-  return (
-    <a href={`/anuncios/${a.id}`} style={{textDecoration:"none",flexShrink:horizontal?0:undefined,width:horizontal?"160px":undefined}}>
-      <div style={{background:"#fff",borderRadius:"14px",overflow:"hidden",boxShadow:"0 2px 10px rgba(0,0,0,0.08)",border:"1px solid #f0f0f0"}}>
-        <div style={{background:f.color,padding:"3px 8px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-          <span style={{fontSize:"9px",fontWeight:900,color:f.texto,textTransform:"uppercase"}}>{f.label}</span>
-          {a.flash&&<span style={{background:"#1a2a3a",color:"#d4a017",fontSize:"8px",fontWeight:900,padding:"1px 5px",borderRadius:"5px"}}>⚡Flash</span>}
-        </div>
-        <div style={{width:"100%",height:"110px",background:"#f4f4f2",display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden"}}>
-          {a.imagenes?.[0]?<img src={a.imagenes[0]} alt={a.titulo} style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<span style={{fontSize:"36px"}}>📦</span>}
-        </div>
-        <div style={{padding:"8px 10px 10px"}}>
-          <div style={{fontSize:"12px",fontWeight:800,color:"#2c2c2e",marginBottom:"3px",overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>
-            {qLow&&query
-              ? a.titulo.split(new RegExp(`(${query})`, "gi")).map((p:string,i:number)=>
-                  p.toLowerCase()===qLow?<mark key={i} style={{background:"#fff3cd",color:"#1a2a3a",borderRadius:"3px",padding:"0 2px"}}>{p}</mark>:p)
-              : a.titulo}
-          </div>
-          <div style={{fontSize:"14px",fontWeight:900,color:"#d4a017"}}>{fmt(a.precio,a.moneda)}</div>
-          <div style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600,marginTop:"2px"}}>📍 {a.ciudad}</div>
-        </div>
-      </div>
-    </a>
   );
 }
 

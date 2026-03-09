@@ -228,6 +228,7 @@ export default function Mapa() {
       </div>
 
       {/* BARRA FLOTANTE CONEXIÓN */}
+      {/* ── BARRA FLOTANTE CONEXIÓN ── */}
       {modoConexion && (
         <div style={{position:"fixed",bottom:"90px",left:0,right:0,zIndex:100,padding:"0 16px 12px"}}>
           {resultadoConex ? (
@@ -254,46 +255,6 @@ export default function Mapa() {
                   style={{flex:2,background:seleccionados.size===0||seleccionados.size>bits?"rgba(26,42,58,0.12)":"#1a2a3a",border:"none",borderRadius:"10px",padding:"10px",fontSize:"13px",fontWeight:900,color:seleccionados.size===0||seleccionados.size>bits?"rgba(26,42,58,0.3)":"#d4a017",cursor:seleccionados.size===0||seleccionados.size>bits?"not-allowed":"pointer",fontFamily:"'Nunito',sans-serif",boxShadow:seleccionados.size===0||seleccionados.size>bits?"none":"0 3px 0 #000a"}}
                 >
                   {conectando?"Conectando...":seleccionados.size>0?`Conectar (${seleccionados.size} BIT)`:"Conectar"}
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div style={{background:"linear-gradient(135deg,#f0c040,#d4a017)",borderRadius:"14px",padding:"11px 14px",boxShadow:"0 4px 0 #a07810",display:"flex",alignItems:"center",gap:"10px"}}>
-              <div style={{flex:1,minWidth:0}}>
-                <div style={{display:"flex",alignItems:"center",gap:"8px",flexWrap:"wrap"}}>
-                  <span style={{fontSize:"13px",fontWeight:900,color:"#1a2a3a"}}>
-                    {seleccionados.size>0?`🔗 ${seleccionados.size} anuncio${seleccionados.size!==1?"s":""}` : "Tocá anuncios"}
-                  </span>
-                  <span style={{background:"rgba(26,42,58,0.15)",borderRadius:"20px",padding:"2px 9px",fontSize:"11px",fontWeight:800,color:"#1a2a3a",whiteSpace:"nowrap"}}>
-                    {seleccionados.size} BIT · tenés {bits}
-                  </span>
-                  {seleccionados.size > bits && <span style={{background:"#e74c3c",borderRadius:"20px",padding:"2px 8px",fontSize:"10px",fontWeight:800,color:"#fff"}}>Sin BIT</span>}
-                </div>
-              </div>
-              <button onClick={cancelarConexion} style={{flexShrink:0,background:"rgba(26,42,58,0.18)",border:"2px solid rgba(26,42,58,0.25)",borderRadius:"10px",padding:"9px 14px",fontSize:"12px",fontWeight:800,color:"#1a2a3a",cursor:"pointer",fontFamily:"'Nunito',sans-serif",whiteSpace:"nowrap"}}>
-                ✕ Salir
-              </button>
-              <button
-                onClick={ejecutarConexion}
-                disabled={seleccionados.size===0||conectando||seleccionados.size>bits}
-                style={{flexShrink:0,background:seleccionados.size===0||seleccionados.size>bits?"rgba(26,42,58,0.12)":"#1a2a3a",border:"none",borderRadius:"10px",padding:"9px 18px",fontSize:"13px",fontWeight:900,color:seleccionados.size===0||seleccionados.size>bits?"rgba(26,42,58,0.35)":"#d4a017",cursor:seleccionados.size===0||seleccionados.size>bits?"not-allowed":"pointer",fontFamily:"'Nunito',sans-serif",whiteSpace:"nowrap",boxShadow:seleccionados.size===0||seleccionados.size>bits?"none":"inset 0 0 0 0, 0 3px 0 #000a"}}
-              >
-                {conectando?"...":seleccionados.size>0?`Conectar (${seleccionados.size})`:"Conectar"}
-              </button>
-            </div>
-          ) : (
-            <div style={{background:"linear-gradient(135deg,#f0c040,#d4a017)",borderRadius:"16px",padding:"16px 20px",boxShadow:"0 6px 0 #a07810, 0 8px 24px rgba(212,160,23,0.5)",border:"2px solid #f0c040"}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"12px"}}>
-                <div>
-                  <div style={{fontSize:"13px",fontWeight:900,color:"#1a2a3a"}}>{seleccionados.size>0?`${seleccionados.size} anuncio${seleccionados.size!==1?"s":""} seleccionado${seleccionados.size!==1?"s":""}` : "Tocá pines en el mapa"}</div>
-                  <div style={{fontSize:"11px",color:"rgba(26,42,58,0.7)",fontWeight:700,marginTop:"2px"}}>Costo: {seleccionados.size} BIT · Tenés {bits} BIT</div>
-                </div>
-              </div>
-              <div style={{display:"flex",gap:"10px"}}>
-                <button onClick={cancelarConexion} style={{flex:1,background:"rgba(26,42,58,0.15)",border:"2px solid rgba(26,42,58,0.3)",borderRadius:"12px",padding:"13px",fontSize:"13px",fontWeight:800,color:"#1a2a3a",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>Cancelar</button>
-                <button onClick={ejecutarConexion} disabled={seleccionados.size===0||conectando||seleccionados.size>bits}
-                  style={{flex:2,background:seleccionados.size===0||seleccionados.size>bits?"rgba(255,255,255,0.08)":"linear-gradient(135deg,#f0c040,#d4a017)",border:"none",borderRadius:"12px",padding:"13px",fontSize:"13px",fontWeight:800,color:seleccionados.size===0||seleccionados.size>bits?"#666":"#1a2a3a",boxShadow:seleccionados.size===0||seleccionados.size>bits?"none":"0 4px 0 #a07810, 0 6px 16px rgba(212,160,23,0.4)",cursor:seleccionados.size===0||seleccionados.size>bits?"not-allowed":"pointer",fontFamily:"'Nunito',sans-serif",display:"flex",alignItems:"center",justifyContent:"center",gap:"6px"}}>
-                  {conectando?"Conectando...":`🔗 Conectar${seleccionados.size>0?` (${seleccionados.size} BIT)`:""}`}
                 </button>
               </div>
             </div>

@@ -433,6 +433,29 @@ function BuscarInner() {
               {resultadoConex}
             </div>
           ) : (
+            <div style={{background:"linear-gradient(135deg,#f0c040,#d4a017)",borderRadius:"14px",padding:"12px 14px",boxShadow:"0 4px 0 #a07810"}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"10px"}}>
+                <span style={{fontSize:"13px",fontWeight:900,color:"#1a2a3a"}}>
+                  {seleccionados.size>0?`🔗 ${seleccionados.size} anuncio${seleccionados.size!==1?"s":""} · ${seleccionados.size} BIT`:"Tocá los anuncios"}
+                </span>
+                <span style={{background:"rgba(26,42,58,0.15)",borderRadius:"20px",padding:"2px 10px",fontSize:"11px",fontWeight:800,color:"#1a2a3a"}}>
+                  Tenés {bits} BIT
+                </span>
+              </div>
+              <div style={{display:"flex",gap:"10px"}}>
+                <button onClick={cancelarConexion} style={{flex:1,background:"rgba(26,42,58,0.18)",border:"2px solid rgba(26,42,58,0.25)",borderRadius:"10px",padding:"10px",fontSize:"13px",fontWeight:800,color:"#1a2a3a",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>
+                  ✕ Salir
+                </button>
+                <button
+                  onClick={ejecutarConexion}
+                  disabled={seleccionados.size===0||conectando||seleccionados.size>bits}
+                  style={{flex:2,background:seleccionados.size===0||seleccionados.size>bits?"rgba(26,42,58,0.12)":"#1a2a3a",border:"none",borderRadius:"10px",padding:"10px",fontSize:"13px",fontWeight:900,color:seleccionados.size===0||seleccionados.size>bits?"rgba(26,42,58,0.3)":"#d4a017",cursor:seleccionados.size===0||seleccionados.size>bits?"not-allowed":"pointer",fontFamily:"'Nunito',sans-serif",boxShadow:seleccionados.size===0||seleccionados.size>bits?"none":"0 3px 0 #000a"}}
+                >
+                  {conectando?"Conectando...":seleccionados.size>0?`Conectar (${seleccionados.size} BIT)`:"Conectar"}
+                </button>
+              </div>
+            </div>
+          ) : (
             <div style={{background:"linear-gradient(135deg,#f0c040,#d4a017)",borderRadius:"14px",padding:"11px 14px",boxShadow:"0 4px 0 #a07810",display:"flex",alignItems:"center",gap:"10px"}}>
               <div style={{flex:1,minWidth:0}}>
                 <div style={{display:"flex",alignItems:"center",gap:"8px",flexWrap:"wrap"}}>

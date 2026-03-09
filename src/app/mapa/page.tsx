@@ -171,17 +171,17 @@ export default function Mapa() {
           </button>
         )}
         {modoConexion && (
-          <div style={{background:"linear-gradient(135deg,#1a2a3a,#243b55)",borderRadius:"12px",padding:"10px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",border:"2px solid #d4a017"}}>
+          <div style={{background:"linear-gradient(135deg,#f0c040,#d4a017)",borderRadius:"12px",padding:"10px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",border:"2px solid #f0c040",boxShadow:"0 4px 0 #a07810"}}>
             <div style={{display:"flex",alignItems:"center",gap:"8px"}}>
               <span style={{fontSize:"16px"}}>🔗</span>
-              <span style={{fontSize:"13px",fontWeight:800,color:"#fff"}}>Modo Conexión activo</span>
-              <span style={{background:"rgba(255,255,255,0.15)",borderRadius:"20px",padding:"2px 8px",fontSize:"11px",fontWeight:800,color:"#fff"}}>{bits} BIT</span>
+              <span style={{fontSize:"13px",fontWeight:800,color:"#1a2a3a"}}>Modo Conexión activo</span>
+              <span style={{background:"rgba(26,42,58,0.15)",borderRadius:"20px",padding:"2px 8px",fontSize:"11px",fontWeight:800,color:"#1a2a3a"}}>{bits} BIT</span>
             </div>
             <div style={{display:"flex",gap:"8px",alignItems:"center"}}>
-              <button onClick={todosSelec?deseleccionarTodos:seleccionarTodos} style={{background:"rgba(255,255,255,0.15)",border:"none",borderRadius:"8px",padding:"5px 10px",fontSize:"11px",fontWeight:800,color:"#fff",cursor:"pointer",fontFamily:"'Nunito',sans-serif",whiteSpace:"nowrap"}}>
+              <button onClick={todosSelec?deseleccionarTodos:seleccionarTodos} style={{background:"rgba(26,42,58,0.15)",border:"none",borderRadius:"8px",padding:"5px 10px",fontSize:"11px",fontWeight:800,color:"#1a2a3a",cursor:"pointer",fontFamily:"'Nunito',sans-serif",whiteSpace:"nowrap"}}>
                 {todosSelec?"✕ Todos":"✅ Todos"}
               </button>
-              <button onClick={cancelarConexion} style={{background:"rgba(255,80,80,0.2)",border:"none",borderRadius:"8px",padding:"5px 10px",fontSize:"11px",fontWeight:800,color:"#ffaaaa",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>✕ Salir</button>
+              <button onClick={cancelarConexion} style={{background:"rgba(26,42,58,0.2)",border:"none",borderRadius:"8px",padding:"5px 10px",fontSize:"11px",fontWeight:800,color:"#1a2a3a",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>✕ Salir</button>
             </div>
           </div>
         )}
@@ -229,21 +229,21 @@ export default function Mapa() {
 
       {/* BARRA FLOTANTE CONEXIÓN */}
       {modoConexion && (
-        <div style={{position:"fixed",bottom:"85px",left:0,right:0,zIndex:100,padding:"0 16px 12px"}}>
+        <div style={{position:"fixed",bottom:"72px",left:0,right:0,zIndex:100,padding:"0 16px 12px"}}>
           {resultadoConex ? (
             <div style={{background:"linear-gradient(135deg,#27ae60,#2ecc71)",borderRadius:"16px",padding:"16px 20px",textAlign:"center",fontSize:"14px",fontWeight:800,color:"#fff",boxShadow:"0 4px 20px rgba(39,174,96,0.4)"}}>
               {resultadoConex}
             </div>
           ) : (
-            <div style={{background:"linear-gradient(135deg,#1a2a3a,#243b55)",borderRadius:"16px",padding:"16px 20px",boxShadow:"0 4px 20px rgba(212,160,23,0.5)",border:"2px solid #c49010"}}>
+            <div style={{background:"linear-gradient(135deg,#f0c040,#d4a017)",borderRadius:"16px",padding:"16px 20px",boxShadow:"0 6px 0 #a07810, 0 8px 24px rgba(212,160,23,0.5)",border:"2px solid #f0c040"}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"12px"}}>
                 <div>
-                  <div style={{fontSize:"13px",fontWeight:900,color:"#fff"}}>{seleccionados.size>0?`${seleccionados.size} anuncio${seleccionados.size!==1?"s":""} seleccionado${seleccionados.size!==1?"s":""}` : "Tocá pines en el mapa"}</div>
-                  <div style={{fontSize:"11px",color:"rgba(255,255,255,0.75)",fontWeight:600,marginTop:"2px"}}>Costo: {seleccionados.size} BIT · Tenés {bits} BIT</div>
+                  <div style={{fontSize:"13px",fontWeight:900,color:"#1a2a3a"}}>{seleccionados.size>0?`${seleccionados.size} anuncio${seleccionados.size!==1?"s":""} seleccionado${seleccionados.size!==1?"s":""}` : "Tocá pines en el mapa"}</div>
+                  <div style={{fontSize:"11px",color:"rgba(26,42,58,0.7)",fontWeight:700,marginTop:"2px"}}>Costo: {seleccionados.size} BIT · Tenés {bits} BIT</div>
                 </div>
               </div>
               <div style={{display:"flex",gap:"10px"}}>
-                <button onClick={cancelarConexion} style={{flex:1,background:"rgba(255,255,255,0.08)",border:"2px solid rgba(255,255,255,0.15)",borderRadius:"12px",padding:"13px",fontSize:"13px",fontWeight:800,color:"#fff",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>Cancelar</button>
+                <button onClick={cancelarConexion} style={{flex:1,background:"rgba(26,42,58,0.15)",border:"2px solid rgba(26,42,58,0.3)",borderRadius:"12px",padding:"13px",fontSize:"13px",fontWeight:800,color:"#1a2a3a",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>Cancelar</button>
                 <button onClick={ejecutarConexion} disabled={seleccionados.size===0||conectando||seleccionados.size>bits}
                   style={{flex:2,background:seleccionados.size===0||seleccionados.size>bits?"rgba(255,255,255,0.08)":"linear-gradient(135deg,#f0c040,#d4a017)",border:"none",borderRadius:"12px",padding:"13px",fontSize:"13px",fontWeight:800,color:seleccionados.size===0||seleccionados.size>bits?"#666":"#1a2a3a",boxShadow:seleccionados.size===0||seleccionados.size>bits?"none":"0 4px 0 #a07810, 0 6px 16px rgba(212,160,23,0.4)",cursor:seleccionados.size===0||seleccionados.size>bits?"not-allowed":"pointer",fontFamily:"'Nunito',sans-serif",display:"flex",alignItems:"center",justifyContent:"center",gap:"6px"}}>
                   {conectando?"Conectando...":`🔗 Conectar${seleccionados.size>0?` (${seleccionados.size} BIT)`:""}`}

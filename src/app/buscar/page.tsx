@@ -350,14 +350,14 @@ function BuscarInner() {
           </button>
         )}
         {modoConexion && (
-          <div style={{background:"linear-gradient(135deg,#1a2a3a,#243b55)",borderRadius:"12px",padding:"11px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:"8px",border:"2px solid #d4a017"}}>
+          <div style={{background:"linear-gradient(135deg,#f0c040,#d4a017)",borderRadius:"12px",padding:"11px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:"8px",border:"2px solid #f0c040",boxShadow:"0 4px 0 #a07810"}}>
             <div style={{display:"flex",alignItems:"center",gap:"8px"}}>
               <span style={{fontSize:"16px"}}>🔗</span>
-              <span style={{fontSize:"13px",fontWeight:800,color:"#fff"}}>Modo Conexión activo</span>
+              <span style={{fontSize:"13px",fontWeight:800,color:"#1a2a3a"}}>Modo Conexión activo</span>
             </div>
             <div style={{display:"flex",gap:"8px",alignItems:"center"}}>
               <span style={{background:"rgba(255,255,255,0.15)",borderRadius:"20px",padding:"3px 10px",fontSize:"12px",fontWeight:800,color:"#fff"}}>{bits} BIT</span>
-              <button onClick={cancelarConexion} style={{background:"rgba(255,255,255,0.15)",border:"none",borderRadius:"8px",padding:"4px 10px",fontSize:"12px",fontWeight:800,color:"#fff",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>✕ Salir</button>
+              <button onClick={cancelarConexion} style={{background:"rgba(26,42,58,0.15)",border:"none",borderRadius:"8px",padding:"4px 10px",fontSize:"12px",fontWeight:800,color:"#1a2a3a",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>✕ Salir</button>
             </div>
           </div>
         )}
@@ -365,11 +365,11 @@ function BuscarInner() {
 
       {/* BARRA SELECCIÓN cuando modo activo */}
       {modoConexion && (
-        <div style={{background:"linear-gradient(135deg,#1a2a3a,#243b55)",padding:"10px 16px",display:"flex",alignItems:"center",gap:"10px",justifyContent:"space-between",position:"sticky",top:"95px",zIndex:50,borderBottom:"3px solid #d4a017",boxShadow:"0 3px 0 #a07810"}}>
-          <button onClick={todosSeleccionados ? deseleccionarTodos : seleccionarTodos} style={{background:"rgba(255,255,255,0.1)",border:"2px solid rgba(255,255,255,0.3)",borderRadius:"20px",padding:"6px 14px",fontSize:"12px",fontWeight:800,color:"#fff",cursor:"pointer",fontFamily:"'Nunito',sans-serif",whiteSpace:"nowrap"}}>
+        <div style={{background:"linear-gradient(135deg,#f0c040,#d4a017)",padding:"10px 16px",display:"flex",alignItems:"center",gap:"10px",justifyContent:"space-between",position:"sticky",top:"95px",zIndex:50,boxShadow:"0 4px 0 #a07810"}}>
+          <button onClick={todosSeleccionados ? deseleccionarTodos : seleccionarTodos} style={{background:"rgba(26,42,58,0.15)",border:"2px solid rgba(26,42,58,0.25)",borderRadius:"20px",padding:"6px 14px",fontSize:"12px",fontWeight:800,color:"#1a2a3a",cursor:"pointer",fontFamily:"'Nunito',sans-serif",whiteSpace:"nowrap"}}>
             {todosSeleccionados ? "✕ Deseleccionar todos" : "✅ Seleccionar todos"}
           </button>
-          <div style={{fontSize:"12px",fontWeight:700,color:"rgba(255,255,255,0.8)",whiteSpace:"nowrap"}}>
+          <div style={{fontSize:"12px",fontWeight:700,color:"rgba(26,42,58,0.75)",whiteSpace:"nowrap"}}>
             {seleccionados.size > 0 ? `${seleccionados.size} selec. · ${seleccionados.size} BIT` : "Tocá los anuncios"}
           </div>
         </div>
@@ -433,11 +433,11 @@ function BuscarInner() {
               {resultadoConex}
             </div>
           ) : (
-            <div style={{background:"linear-gradient(135deg,#1a2a3a,#243b55)",borderRadius:"16px",padding:"16px 20px",boxShadow:"0 4px 20px rgba(212,160,23,0.5)",border:"2px solid #c49010"}}>
+            <div style={{background:"linear-gradient(135deg,#f0c040,#d4a017)",borderRadius:"16px",padding:"16px 20px",boxShadow:"0 6px 0 #a07810, 0 8px 24px rgba(212,160,23,0.5)",border:"2px solid #f0c040"}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"12px"}}>
                 <div>
-                  <div style={{fontSize:"13px",fontWeight:900,color:"#fff"}}>{seleccionados.size > 0 ? `${seleccionados.size} anuncio${seleccionados.size!==1?"s":""} seleccionado${seleccionados.size!==1?"s":""}` : "Ningún anuncio seleccionado"}</div>
-                  <div style={{fontSize:"11px",color:"rgba(255,255,255,0.75)",fontWeight:600,marginTop:"2px"}}>Costo: {seleccionados.size} BIT · Tenés {bits} BIT disponibles</div>
+                  <div style={{fontSize:"13px",fontWeight:900,color:"#1a2a3a"}}>{seleccionados.size > 0 ? `${seleccionados.size} anuncio${seleccionados.size!==1?"s":""} seleccionado${seleccionados.size!==1?"s":""}` : "Ningún anuncio seleccionado"}</div>
+                  <div style={{fontSize:"11px",color:"rgba(26,42,58,0.7)",fontWeight:700,marginTop:"2px"}}>Costo: {seleccionados.size} BIT · Tenés {bits} BIT disponibles</div>
                 </div>
                 {seleccionados.size > bits && (
                   <div style={{background:"rgba(231,76,60,0.2)",border:"1px solid rgba(231,76,60,0.4)",borderRadius:"8px",padding:"4px 10px",fontSize:"11px",fontWeight:800,color:"#e74c3c"}}>Sin BIT</div>

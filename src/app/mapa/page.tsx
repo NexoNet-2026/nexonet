@@ -26,12 +26,8 @@ export default function Mapa() {
   const inputRef = useRef<HTMLInputElement>(null);
   const dropRef  = useRef<HTMLDivElement>(null);
 
-  // Sesión y BIT
   const [session,        setSession]        = useState<any>(null);
-  const [sessionReady,   setSessionReady]   = useState(false);
   const [bits,           setBits]           = useState(0);
-
-  // Modo conexión
   const [modoConexion,   setModoConexion]   = useState(false);
   const [seleccionados,  setSeleccionados]  = useState<Set<number>>(new Set());
   const [conectando,     setConectando]     = useState(false);
@@ -40,7 +36,6 @@ export default function Mapa() {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session: s } }) => {
       setSession(s);
-      setSessionReady(true);
       if (s) supabase.from("usuarios").select("bits").eq("id", s.user.id).single()
         .then(({data}) => { if(data) setBits(data.bits||0); });
     });
@@ -87,15 +82,14 @@ export default function Mapa() {
 
   const fmt = (p:number,m:string) => !p?"Consultar":`${m==="USD"?"U$D":"$"} ${p.toLocaleString("es-AR")}`;
 
-  // ── CONEXIÓN ──
   const toggleSeleccion = (id:number) => {
     const s = new Set(seleccionados);
     s.has(id) ? s.delete(id) : s.add(id);
     setSeleccionados(s);
   };
-  const seleccionarTodos    = () => setSeleccionados(new Set(anunciosFiltrados.map(a=>a.id)));
-  const deseleccionarTodos  = () => setSeleccionados(new Set());
-  const todosSeleccionados  = anunciosFiltrados.length>0 && seleccionados.size===anunciosFiltrados.length;
+  const seleccionarTodos   = () => setSeleccionados(new Set(anunciosFiltrados.map(a=>a.id)));
+  const deseleccionarTodos = () => setSeleccionados(new Set());
+  const todosSelec = anunciosFiltrados.length>0 && seleccionados.size===anunciosFiltrados.length;
 
   const activarModoConexion = () => {
     if (!session) { router.push("/login"); return; }
@@ -121,17 +115,12 @@ export default function Mapa() {
     setTimeout(() => cancelarConexion(), 3000);
   };
 
-  // Altura dinámica de la barra superior según estado
-  const altoBarra = sessionReady && (session || modoConexion)
-    ? (modoConexion ? 220 : 185)
-    : 155;
-
   return (
     <div style={{fontFamily:"'Nunito',sans-serif"}}>
       <Header />
 
-      {/* BARRA BUSCADOR FIJA */}
-      <div style={{position:"fixed",top:"60px",left:0,right:0,background:"linear-gradient(135deg,#1a2a3a,#243b55)",padding:"10px 16px",zIndex:99,display:"flex",flexDirection:"column",gap:"8px"}}>
+      {/* BARRA BUSCADOR */}
+      <div style={{position:"fixed",top:"130px",left:0,right:0,background:"linear-gradient(135deg,#1a2a3a,#243b55)",padding:"10px 16px",zIndex:99,display:"flex",flexDirection:"column",gap:"8px"}}>
 
         {/* BUSCADOR */}
         <div style={{position:"relative"}}>
@@ -172,13 +161,8 @@ export default function Mapa() {
         </div>
 
         {/* BOTÓN MODO CONEXIÓN */}
-        {sessionReady && session && !modoConexion && (
-          <button onClick={activarModoConexion} style={{
-            background:"linear-gradient(135deg,#f0c040,#d4a017)",
-            border:"none",borderRadius:"12px",padding:"11px 16px",
-            display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:"3px",
-            cursor:"pointer",fontFamily:"'Nunito',sans-serif",boxShadow:"0 4px 0 #a07810",
-          }}>
+        {session && !modoConexion && (
+          <button onClick={activarModoConexion} style={{background:"linear-gradient(135deg,#f0c040,#d4a017)",border:"none",borderRadius:"12px",padding:"11px 16px",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:"3px",cursor:"pointer",fontFamily:"'Nunito',sans-serif",boxShadow:"0 4px 0 #a07810"}}>
             <div style={{display:"flex",alignItems:"center",gap:"8px"}}>
               <span style={{fontSize:"16px"}}>🔗</span>
               <span style={{fontSize:"13px",fontWeight:900,color:"#1a2a3a"}}>Modo Conexión</span>
@@ -186,35 +170,26 @@ export default function Mapa() {
             <span style={{background:"rgba(26,42,58,0.18)",borderRadius:"20px",padding:"2px 10px",fontSize:"11px",fontWeight:800,color:"#1a2a3a"}}>{bits} BIT disponibles</span>
           </button>
         )}
-        {sessionReady && modoConexion && (
-          <div style={{background:"linear-gradient(135deg,#f0c040,#d4a017)",borderRadius:"12px",padding:"11px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:"8px",border:"2px solid #f0c040",boxShadow:"0 4px 0 #a07810"}}>
+        {modoConexion && (
+          <div style={{background:"linear-gradient(135deg,#f0c040,#d4a017)",borderRadius:"12px",padding:"10px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",border:"2px solid #f0c040",boxShadow:"0 4px 0 #a07810"}}>
             <div style={{display:"flex",alignItems:"center",gap:"8px"}}>
               <span style={{fontSize:"16px"}}>🔗</span>
               <span style={{fontSize:"13px",fontWeight:800,color:"#1a2a3a"}}>Modo Conexión activo</span>
+              <span style={{background:"rgba(26,42,58,0.15)",borderRadius:"20px",padding:"2px 8px",fontSize:"11px",fontWeight:800,color:"#1a2a3a"}}>{bits} BIT</span>
             </div>
             <div style={{display:"flex",gap:"8px",alignItems:"center"}}>
-              <span style={{background:"rgba(255,255,255,0.15)",borderRadius:"20px",padding:"3px 10px",fontSize:"12px",fontWeight:800,color:"#fff"}}>{bits} BIT</span>
-              <button onClick={cancelarConexion} style={{background:"rgba(26,42,58,0.15)",border:"none",borderRadius:"8px",padding:"4px 10px",fontSize:"12px",fontWeight:800,color:"#1a2a3a",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>✕ Salir</button>
+              <button onClick={todosSelec?deseleccionarTodos:seleccionarTodos} style={{background:"rgba(26,42,58,0.15)",border:"none",borderRadius:"8px",padding:"5px 10px",fontSize:"11px",fontWeight:800,color:"#1a2a3a",cursor:"pointer",fontFamily:"'Nunito',sans-serif",whiteSpace:"nowrap"}}>
+                {todosSelec?"✕ Todos":"✅ Todos"}
+              </button>
+              <button onClick={cancelarConexion} style={{background:"rgba(26,42,58,0.2)",border:"none",borderRadius:"8px",padding:"5px 10px",fontSize:"11px",fontWeight:800,color:"#1a2a3a",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>✕ Salir</button>
             </div>
           </div>
         )}
 
-        {/* BARRA SELECCIÓN dentro de la barra fija */}
-        {modoConexion && (
-          <div style={{background:"rgba(255,255,255,0.12)",borderRadius:"12px",padding:"8px 12px",display:"flex",alignItems:"center",gap:"10px",justifyContent:"space-between"}}>
-            <button onClick={todosSeleccionados ? deseleccionarTodos : seleccionarTodos} style={{background:"rgba(212,160,23,0.2)",border:"2px solid rgba(212,160,23,0.5)",borderRadius:"20px",padding:"6px 14px",fontSize:"12px",fontWeight:800,color:"#fff",cursor:"pointer",fontFamily:"'Nunito',sans-serif",whiteSpace:"nowrap"}}>
-              {todosSeleccionados ? "✕ Deseleccionar todos" : "✅ Seleccionar todos"}
-            </button>
-            <div style={{fontSize:"12px",fontWeight:700,color:"rgba(255,255,255,0.75)",whiteSpace:"nowrap"}}>
-              {seleccionados.size > 0 ? `${seleccionados.size} selec. · ${seleccionados.size} BIT` : "Tocá los pins"}
-            </div>
-          </div>
-        )}
-
-      </div>{/* fin BARRA FIJA */}
+      </div>{/* fin BARRA */}
 
       {/* MAPA */}
-      <div style={{position:"fixed",top:`${altoBarra}px`,left:0,right:0,bottom:modoConexion?"190px":"65px"}}>
+      <div style={{position:"fixed",top:modoConexion?"290px":"240px",left:0,right:0,bottom:modoConexion?"190px":"130px"}}>
         {loading ? (
           <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100%",background:"#f4f4f2",fontSize:"14px",fontWeight:700,color:"#9a9a9a"}}>Cargando anuncios...</div>
         ) : (
@@ -255,7 +230,7 @@ export default function Mapa() {
 
       {/* BARRA FLOTANTE CONEXIÓN */}
       {modoConexion && (
-        <div style={{position:"fixed",bottom:"70px",left:0,right:0,zIndex:100,padding:"0 16px 12px"}}>
+        <div style={{position:"fixed",bottom:"110px",left:0,right:0,zIndex:100,padding:"0 16px 12px"}}>
           {resultadoConex ? (
             <div style={{background:"linear-gradient(135deg,#f0c040,#d4a017)",borderRadius:"14px",padding:"14px 18px",textAlign:"center",fontSize:"14px",fontWeight:900,color:"#1a2a3a",boxShadow:"0 4px 0 #a07810"}}>
               {resultadoConex}
@@ -264,7 +239,7 @@ export default function Mapa() {
             <div style={{background:"linear-gradient(135deg,#1a2a3a,#243b55)",borderRadius:"14px",padding:"12px 14px",boxShadow:"0 6px 0 #0a1015",border:"2px solid #d4a017"}}>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"10px"}}>
                 <span style={{fontSize:"13px",fontWeight:900,color:"#fff"}}>
-                  {seleccionados.size>0?`🔗 ${seleccionados.size} anuncio${seleccionados.size!==1?"s":""} · ${seleccionados.size} BIT`:"Tocá los pins del mapa"}
+                  {seleccionados.size>0?`🔗 ${seleccionados.size} anuncio${seleccionados.size!==1?"s":""} · ${seleccionados.size} BIT`:"Tocá los anuncios"}
                 </span>
                 <span style={{background:"rgba(212,160,23,0.2)",borderRadius:"20px",padding:"2px 10px",fontSize:"11px",fontWeight:800,color:"#d4a017",border:"1px solid rgba(212,160,23,0.4)"}}>
                   Tenés {bits} BIT

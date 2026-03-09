@@ -59,9 +59,8 @@ function BuscarInner() {
   const [loading,  setLoading]  = useState(true);
 
   // Sesión
-  const [session,      setSession]      = useState<any>(null);
-  const [sessionReady, setSessionReady] = useState(false);
-  const [bits,         setBits]         = useState(0);
+  const [session,  setSession]  = useState<any>(null);
+  const [bits,     setBits]     = useState(0);
 
   // ── MODO CONEXIÓN ──
   const [modoConexion,   setModoConexion]   = useState(false);
@@ -72,7 +71,6 @@ function BuscarInner() {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session: s } }) => {
       setSession(s);
-      setSessionReady(true);
       if (s) {
         supabase.from("usuarios").select("bits").eq("id", s.user.id).single()
           .then(({ data }) => { if (data) setBits(data.bits || 0); });
@@ -175,7 +173,7 @@ function BuscarInner() {
   const togSub = (rId:number,sId:number) => setSubAct(p => ({...p,[rId]:p[rId]===sId?null:sId}));
 
   const anuFilt = anuncios.filter(a => {
-    if (session && a.usuario_id === session.user.id) return false;
+    if (session && a.usuario_id === session.user.id) return false; // no mostrar propios
     if (barrSel) return (a.barrio||"").toLowerCase().includes(barrSel.toLowerCase());
     if (ciudSel) return (a.ciudad||"").toLowerCase().includes(ciudSel.toLowerCase());
     if (provSel) return (a.provincia||"").toLowerCase().includes(provSel.toLowerCase());
@@ -191,7 +189,9 @@ function BuscarInner() {
     return anuFilt.filter(a => sa ? a.subrubro_id===sa : ids.includes(a.subrubro_id)).slice(0,8);
   };
 
-  const anunciosVisibles: Anuncio[] = busLibre ? resTxt : rubrosM.flatMap(r => getAnus(r));
+  // Lista plana de anuncios visibles según filtros activos
+  const anunciosVisibles: Anuncio[] = busLibre ? resTxt :
+    rubrosM.flatMap(r => getAnus(r));
 
   const fmt = (p:number,m:string) => !p?"Consultar":`${m==="USD"?"U$D":"$"} ${p.toLocaleString("es-AR")}`;
   const phQ  = barrSel?`¿Qué buscás en ${barrSel}?`:ciudSel?`¿Qué buscás en ${ciudSel}?`:provSel?`¿Qué buscás en ${provSel}?`:"¿Qué buscás?";
@@ -202,9 +202,9 @@ function BuscarInner() {
     s.has(id) ? s.delete(id) : s.add(id);
     setSeleccionados(s);
   };
-  const seleccionarTodos    = () => setSeleccionados(new Set(anunciosVisibles.map(a=>a.id)));
-  const deseleccionarTodos  = () => setSeleccionados(new Set());
-  const todosSeleccionados  = anunciosVisibles.length > 0 && seleccionados.size === anunciosVisibles.length;
+  const seleccionarTodos = () => setSeleccionados(new Set(anunciosVisibles.map(a=>a.id)));
+  const deseleccionarTodos = () => setSeleccionados(new Set());
+  const todosSeleccionados = anunciosVisibles.length > 0 && seleccionados.size === anunciosVisibles.length;
 
   const activarModoConexion = () => {
     if (!session) { router.push("/login"); return; }
@@ -219,11 +219,16 @@ function BuscarInner() {
     }
     setConectando(true);
     const ids = Array.from(seleccionados);
+
+    // Obtener usuario_id de cada anuncio seleccionado
     const { data: anuData } = await supabase.from("anuncios").select("id,usuario_id,conexiones").in("id", ids);
+
     if (anuData) {
+      // Incrementar conexiones en cada anuncio
       await Promise.all(anuData.map((a:any) =>
         supabase.from("anuncios").update({ conexiones: (a.conexiones||0)+1 }).eq("id",a.id)
       ));
+      // Insertar notificaciones
       await supabase.from("notificaciones").insert(
         anuData.map((a:any) => ({
           usuario_id: a.usuario_id,
@@ -232,10 +237,12 @@ function BuscarInner() {
           tipo: "conexion",
         }))
       );
+      // Descontar BIT al usuario
       const nuevosBits = bits - ids.length;
       await supabase.from("usuarios").update({ bits: nuevosBits, bits_gastados: bits - nuevosBits }).eq("id", session.user.id);
       setBits(nuevosBits);
     }
+
     setResultadoConex(`✅ Te conectaste con ${ids.length} anuncio${ids.length!==1?"s":""}. Usaste ${ids.length} BIT.`);
     setConectando(false);
     setSeleccionados(new Set());
@@ -248,7 +255,6 @@ function BuscarInner() {
 
       {/* BARRA */}
       <div style={{background:"linear-gradient(135deg,#1a2a3a,#243b55)",padding:"12px 16px 14px",display:"flex",flexDirection:"column",gap:"10px"}}>
-
         {/* FILA UBICACIÓN */}
         <div style={{display:"flex",gap:"8px",alignItems:"center"}}>
           <SelUbi value={provSel} placeholder="🗺️ Provincia" opciones={provs.map(p=>p.nombre)} onChange={cambiarProv} />
@@ -280,7 +286,7 @@ function BuscarInner() {
                 style={{width:"100%",border:"none",padding:"12px 16px",fontFamily:"'Nunito',sans-serif",fontSize:"14px",color:"#2c2c2e",outline:"none",background:"transparent",boxSizing:"border-box",borderRadius:"14px 0 0 14px"}}
               />
               {(rSel||sSel) && (
-                <div onClick={limpQ} style={{position:"absolute",right:"8px",top:"50%",transform:"translateY(-50%)",background:"#d4a017",borderRadius:"20px",padding:"3px 10px",fontSize:"11px",fontWeight:800,color:sSel?"#fff":"#1a2a3a",cursor:"pointer"}}>
+                <div onClick={limpQ} style={{position:"absolute",right:"8px",top:"50%",transform:"translateY(-50%)",background:sSel?"#d4a017":"#d4a017",borderRadius:"20px",padding:"3px 10px",fontSize:"11px",fontWeight:800,color:sSel?"#fff":"#1a2a3a",cursor:"pointer"}}>
                   {sSel?sSel.nombre:rSel!.nombre} ✕
                 </div>
               )}
@@ -331,7 +337,7 @@ function BuscarInner() {
         </div>
 
         {/* BOTÓN MODO CONEXIÓN */}
-        {sessionReady && session && !modoConexion && (
+        {session && !modoConexion && (
           <button onClick={activarModoConexion} style={{
             background:"linear-gradient(135deg,#f0c040,#d4a017)",
             border:"none",borderRadius:"12px",padding:"11px 16px",
@@ -345,7 +351,7 @@ function BuscarInner() {
             <span style={{background:"rgba(26,42,58,0.18)",borderRadius:"20px",padding:"2px 10px",fontSize:"11px",fontWeight:800,color:"#1a2a3a"}}>{bits} BIT disponibles</span>
           </button>
         )}
-        {sessionReady && modoConexion && (
+        {modoConexion && (
           <div style={{background:"linear-gradient(135deg,#f0c040,#d4a017)",borderRadius:"12px",padding:"11px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:"8px",border:"2px solid #f0c040",boxShadow:"0 4px 0 #a07810"}}>
             <div style={{display:"flex",alignItems:"center",gap:"8px"}}>
               <span style={{fontSize:"16px"}}>🔗</span>
@@ -357,8 +363,7 @@ function BuscarInner() {
             </div>
           </div>
         )}
-
-      </div>{/* fin BARRA */}
+      </div>
 
       {/* BARRA SELECCIÓN cuando modo activo */}
       {modoConexion && (
@@ -421,7 +426,6 @@ function BuscarInner() {
           );
         })
       )}
-
       {/* ── BARRA FLOTANTE CONEXIÓN ── */}
       {modoConexion && (
         <div style={{position:"fixed",bottom:"110px",left:0,right:0,zIndex:100,padding:"0 16px 12px"}}>
@@ -471,6 +475,7 @@ function Tarjeta({ a, fmt, qLow, query, horizontal, modoConexion, seleccionado, 
       onClick={modoConexion ? onToggle : undefined}
       style={{flexShrink:horizontal?0:undefined,width:horizontal?"160px":undefined,position:"relative",cursor:modoConexion?"pointer":undefined}}
     >
+      {/* OVERLAY SELECCIÓN */}
       {modoConexion && (
         <div style={{position:"absolute",inset:0,zIndex:10,borderRadius:"14px",border:`3px solid ${seleccionado?"#d4a017":"rgba(212,160,23,0.4)"}`,background:seleccionado?"rgba(212,160,23,0.15)":"transparent",transition:"all .15s",pointerEvents:"none"}} />
       )}

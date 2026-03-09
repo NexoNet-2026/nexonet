@@ -120,7 +120,7 @@ export default function Mapa() {
       <Header />
 
       {/* BARRA BUSCADOR */}
-      <div style={{position:"fixed",top:"130px",left:0,right:0,background:"linear-gradient(135deg,#1a2a3a,#243b55)",padding:"10px 16px",zIndex:99,display:"flex",flexDirection:"column",gap:"8px"}}>
+      <div style={{position:"fixed",top:"100px",left:0,right:0,background:"linear-gradient(135deg,#1a2a3a,#243b55)",padding:"10px 16px",zIndex:99,display:"flex",flexDirection:"column",gap:"8px"}}>
 
         {/* BUSCADOR */}
         <div style={{position:"relative"}}>
@@ -167,7 +167,7 @@ export default function Mapa() {
               <span style={{fontSize:"16px"}}>🔗</span>
               <span style={{fontSize:"13px",fontWeight:900,color:"#1a2a3a"}}>Modo Conexión</span>
             </div>
-            <span style={{background:"rgba(26,42,58,0.18)",borderRadius:"20px",padding:"2px 10px",fontSize:"11px",fontWeight:800,color:"#1a2a3a"}}>{bits} BIT disponibles</span>
+            <span style={{background:"rgba(26,42,58,0.18)",borderRadius:"20px",padding:"20px 10px",fontSize:"11px",fontWeight:800,color:"#1a2a3a"}}>{bits} BIT disponibles</span>
           </button>
         )}
         {modoConexion && (

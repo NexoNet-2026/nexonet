@@ -20,6 +20,7 @@ type Anuncio = {
   mas_vendido: boolean; tienda_oficial: boolean;
   descuento_cantidad: boolean; presupuesto_sin_cargo: boolean;
   conexion_habilitada: boolean; descuento_porcentaje: number;
+  bits_posicion: number;
   subrubro: string; rubro: string;
 };
 
@@ -50,8 +51,9 @@ export default function Home() {
           id, titulo, precio, moneda, ciudad, provincia, imagenes, flash,
           fuente, envio_gratis, mas_vendido, tienda_oficial, descuento_cantidad,
           presupuesto_sin_cargo, conexion_habilitada, descuento_porcentaje,
+          bits_posicion, created_at,
           subrubros!inner(nombre, rubros!inner(nombre))
-        `).eq("estado", "activo").order("created_at", { ascending: false }).limit(40),
+        `).eq("estado", "activo").order("created_at", { ascending: false }).limit(80),
       ]);
       if (rData) setRubros(rData);
       if (sData) setSubrubros(sData);
@@ -65,6 +67,7 @@ export default function Home() {
           presupuesto_sin_cargo: a.presupuesto_sin_cargo || false,
           conexion_habilitada: a.conexion_habilitada || false,
           descuento_porcentaje: a.descuento_porcentaje || 0,
+          bits_posicion: a.bits_posicion || 0,
           subrubro: a.subrubros?.nombre || "",
           rubro: a.subrubros?.rubros?.nombre || "",
         })));
@@ -103,8 +106,10 @@ export default function Home() {
     return matchRubro && matchSubrubro && matchQuery;
   });
 
-  const destacados = anunciosFiltrados.filter(a => a.flash).slice(0, 6);
-  const recientes  = anunciosFiltrados.slice(0, 8);
+  const destacados = anunciosFiltrados.filter(a => a.bits_posicion > 0)
+    .sort((a, b) => b.bits_posicion - a.bits_posicion).slice(0, 10);
+  const flashAnuncios = anunciosFiltrados.filter(a => a.flash).slice(0, 10);
+  const recientes  = anunciosFiltrados.slice(0, 10);
 
   const limpiar = () => {
     setQuery(""); setRubroSel(null); setSubrubroSel(null); setDropOpen(false);
@@ -305,11 +310,16 @@ export default function Home() {
       ) : (
         <>
           {destacados.length > 0 && (
-            <Seccion titulo="⚡ Destacados" rubroId={rubroSel?.id}>
-              {destacados.map(a => <Tarjeta key={a.id} anuncio={a} formatPrecio={formatPrecio} />)}
+            <Seccion titulo="⭐ Anuncios Destacados" rubroId={rubroSel?.id} acento="#d4a017" bg="linear-gradient(135deg,rgba(212,160,23,0.08),rgba(212,160,23,0.03))">
+              {destacados.map(a => <Tarjeta key={a.id} anuncio={a} formatPrecio={formatPrecio} highlight="destacado" />)}
             </Seccion>
           )}
-          <Seccion titulo={rubroSel ? `📂 ${rubroSel.nombre}${subrubroSel ? ` → ${subrubroSel.nombre}` : ""}` : "🕐 Recién publicados"} rubroId={rubroSel?.id}>
+          {flashAnuncios.length > 0 && (
+            <Seccion titulo="⚡ Anuncios Flash" rubroId={rubroSel?.id} acento="#e63946" bg="linear-gradient(135deg,rgba(230,57,70,0.06),rgba(230,57,70,0.02))">
+              {flashAnuncios.map(a => <Tarjeta key={a.id} anuncio={a} formatPrecio={formatPrecio} highlight="flash" />)}
+            </Seccion>
+          )}
+          <Seccion titulo={rubroSel ? `📂 ${rubroSel.nombre}${subrubroSel ? ` → ${subrubroSel.nombre}` : ""}` : "🕐 Recién publicados"} rubroId={rubroSel?.id} acento="#3a7bd5">
             {recientes.map(a => <Tarjeta key={a.id} anuncio={a} formatPrecio={formatPrecio} />)}
           </Seccion>
         </>
@@ -327,22 +337,21 @@ const itemDropStyle = (activo: boolean): React.CSSProperties => ({
   transition:"background .15s",
 });
 
-const chipStyle = (activo: boolean): React.CSSProperties => ({
-  background: activo ? "#d4a017" : "rgba(255,255,255,0.15)",
-  border: `2px solid ${activo ? "#d4a017" : "rgba(255,255,255,0.25)"}`,
-  borderRadius:"20px", padding:"5px 14px", fontSize:"12px", fontWeight:700,
-  color: activo ? "#1a2a3a" : "#fff", whiteSpace:"nowrap",
-  cursor:"pointer", flexShrink:0, fontFamily:"'Nunito', sans-serif",
-  transition:"all .2s",
-});
 
-function Seccion({ titulo, children, rubroId }: { titulo: string; children: React.ReactNode; rubroId?: number }) {
+function Seccion({ titulo, children, rubroId, acento = "#d4a017", bg }: {
+  titulo: string; children: React.ReactNode; rubroId?: number; acento?: string; bg?: string;
+}) {
   const href = rubroId ? `/buscar?rubro=${rubroId}` : "/buscar";
   return (
-    <div style={{ marginBottom:"20px" }}>
+    <div style={{ marginBottom:"24px", background: bg || "transparent", borderRadius: bg ? "0" : undefined, padding: bg ? "14px 0 4px" : "0" }}>
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"0 16px 10px" }}>
-        <span style={{ fontSize:"16px", fontWeight:900 }}>{titulo}</span>
-        <a href={href} style={{ fontSize:"12px", fontWeight:700, color:"#d4a017", textDecoration:"none" }}>Ver todos →</a>
+        <div style={{ display:"flex", alignItems:"center", gap:"8px" }}>
+          <div style={{ width:"3px", height:"18px", background: acento, borderRadius:"2px" }} />
+          <span style={{ fontSize:"16px", fontWeight:900, color:"#1a2a3a" }}>{titulo}</span>
+        </div>
+        <a href={href} style={{ fontSize:"12px", fontWeight:700, color: acento, textDecoration:"none", display:"flex", alignItems:"center", gap:"3px" }}>
+          Ver todos <span style={{ fontSize:"14px" }}>→</span>
+        </a>
       </div>
       <div style={{ display:"flex", gap:"12px", padding:"0 16px 8px", overflowX:"auto", scrollbarWidth:"none" }}>
         {children}
@@ -351,7 +360,9 @@ function Seccion({ titulo, children, rubroId }: { titulo: string; children: Reac
   );
 }
 
-function Tarjeta({ anuncio, formatPrecio }: { anuncio: Anuncio; formatPrecio: (p: number, m: string) => string }) {
+function Tarjeta({ anuncio, formatPrecio, highlight }: {
+  anuncio: Anuncio; formatPrecio: (p: number, m: string) => string; highlight?: "destacado" | "flash";
+}) {
   const imagen = anuncio.imagenes?.[0];
   const fuente = FUENTES[anuncio.fuente] || FUENTES.nexonet;
   const badges = [
@@ -364,12 +375,27 @@ function Tarjeta({ anuncio, formatPrecio }: { anuncio: Anuncio; formatPrecio: (p
     anuncio.descuento_porcentaje > 0 && { label:`${anuncio.descuento_porcentaje}% OFF`, color:"#e63946", texto:"#fff" },
   ].filter(Boolean) as { label:string; color:string; texto:string }[];
 
+  const borderTop = highlight === "destacado"
+    ? "3px solid #d4a017"
+    : highlight === "flash"
+    ? "3px solid #e63946"
+    : "none";
+
+  const shadowExtra = highlight === "destacado"
+    ? "0 4px 16px rgba(212,160,23,0.18)"
+    : highlight === "flash"
+    ? "0 4px 16px rgba(230,57,70,0.15)"
+    : "0 2px 10px rgba(0,0,0,0.08)";
+
   return (
     <a href={`/anuncios/${anuncio.id}`} style={{ textDecoration:"none", flexShrink:0, width:"190px" }}>
-      <div style={{ background:"#fff", borderRadius:"16px", overflow:"hidden", boxShadow:"0 2px 10px rgba(0,0,0,0.08)", cursor:"pointer" }}>
+      <div style={{ background:"#fff", borderRadius:"16px", overflow:"hidden", boxShadow: shadowExtra, cursor:"pointer", borderTop }}>
         <div style={{ background:fuente.color, padding:"4px 10px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
           <span style={{ fontSize:"10px", fontWeight:900, color:fuente.texto, textTransform:"uppercase", letterSpacing:"0.5px" }}>{fuente.label}</span>
-          {anuncio.flash && <span style={{ background:"#1a2a3a", color:"#d4a017", fontSize:"9px", fontWeight:900, padding:"1px 6px", borderRadius:"6px" }}>⚡ Flash</span>}
+          <div style={{ display:"flex", gap:"4px", alignItems:"center" }}>
+            {highlight === "destacado" && <span style={{ background:"#d4a017", color:"#1a2a3a", fontSize:"9px", fontWeight:900, padding:"1px 6px", borderRadius:"6px" }}>⭐ Dest.</span>}
+            {(highlight === "flash" || anuncio.flash) && <span style={{ background:"#1a2a3a", color:"#d4a017", fontSize:"9px", fontWeight:900, padding:"1px 6px", borderRadius:"6px" }}>⚡ Flash</span>}
+          </div>
         </div>
         <div style={{ width:"100%", height:"120px", background:"#e8e8e6", display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden" }}>
           {imagen

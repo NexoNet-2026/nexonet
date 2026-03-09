@@ -229,17 +229,17 @@ export default function Mapa() {
 
       {/* BARRA FLOTANTE CONEXIÓN */}
       {modoConexion && (
-        <div style={{position:"fixed",bottom:"148px",left:0,right:0,zIndex:100,padding:"0 16px 12px"}}>
+        <div style={{position:"fixed",bottom:"85px",left:0,right:0,zIndex:100,padding:"0 16px 12px"}}>
           {resultadoConex ? (
             <div style={{background:"linear-gradient(135deg,#27ae60,#2ecc71)",borderRadius:"16px",padding:"16px 20px",textAlign:"center",fontSize:"14px",fontWeight:800,color:"#fff",boxShadow:"0 4px 20px rgba(39,174,96,0.4)"}}>
               {resultadoConex}
             </div>
           ) : (
-            <div style={{background:"linear-gradient(135deg,#1a2a3a,#243b55)",borderRadius:"16px",padding:"16px 20px",boxShadow:"0 4px 20px rgba(0,0,0,0.3)",border:"2px solid #1db954"}}>
+            <div style={{background:"linear-gradient(135deg,#0d4a1f,#1db954)",borderRadius:"16px",padding:"16px 20px",boxShadow:"0 4px 20px rgba(29,185,84,0.5)",border:"2px solid #17a844"}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"12px"}}>
                 <div>
                   <div style={{fontSize:"13px",fontWeight:900,color:"#fff"}}>{seleccionados.size>0?`${seleccionados.size} anuncio${seleccionados.size!==1?"s":""} seleccionado${seleccionados.size!==1?"s":""}` : "Tocá pines en el mapa"}</div>
-                  <div style={{fontSize:"11px",color:"#8a9aaa",fontWeight:600,marginTop:"2px"}}>Costo: {seleccionados.size} BIT · Tenés {bits} BIT</div>
+                  <div style={{fontSize:"11px",color:"rgba(255,255,255,0.75)",fontWeight:600,marginTop:"2px"}}>Costo: {seleccionados.size} BIT · Tenés {bits} BIT</div>
                 </div>
               </div>
               <div style={{display:"flex",gap:"10px"}}>

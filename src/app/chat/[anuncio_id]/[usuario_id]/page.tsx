@@ -143,7 +143,7 @@ export default function ChatPage() {
       <Header />
 
       {/* ── BARRA SUPERIOR CHAT ── */}
-      <div style={{ position:"fixed", top:"60px", left:0, right:0, zIndex:90, background:"linear-gradient(135deg,#1a2a3a,#243b55)", padding:"10px 16px", display:"flex", alignItems:"center", gap:"12px", boxShadow:"0 2px 12px rgba(0,0,0,0.3)" }}>
+      <div style={{ position:"fixed", top:"100px", left:0, right:0, zIndex:90, background:"linear-gradient(135deg,#1a2a3a,#243b55)", padding:"10px 16px", display:"flex", alignItems:"center", gap:"12px", boxShadow:"0 2px 12px rgba(0,0,0,0.3)" }}>
         <button onClick={()=>router.back()} style={{ background:"rgba(255,255,255,0.1)", border:"none", borderRadius:"10px", padding:"6px 10px", color:"#fff", fontSize:"18px", cursor:"pointer" }}>‹</button>
 
         {/* Avatar */}
@@ -168,7 +168,7 @@ export default function ChatPage() {
       </div>
 
       {/* ── MENSAJES ── */}
-      <div style={{ flex:1, overflowY:"auto", padding:"130px 16px 100px", display:"flex", flexDirection:"column", gap:"8px" }}>
+      <div style={{ flex:1, overflowY:"auto", padding:"170px 16px 100px", display:"flex", flexDirection:"column", gap:"8px" }}>
         {mensajes.length === 0 && (
           <div style={{ textAlign:"center", padding:"40px 20px", color:"#9a9a9a" }}>
             <div style={{ fontSize:"40px", marginBottom:"12px" }}>💬</div>

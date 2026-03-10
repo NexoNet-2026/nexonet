@@ -1,7 +1,7 @@
 "use client";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { PRODUCTOS } from "@/lib/productos";
@@ -18,7 +18,7 @@ const CBU   = "0000003100012345678900";
 const TITULAR = "NexoNet Argentina S.A.S.";
 const CUIT  = "30-71234567-8";
 
-export default function ComprarPage() {
+function ComprarInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [cat, setCat]         = useState<string>(searchParams.get("cat") || "conexion");
@@ -263,5 +263,13 @@ export default function ComprarPage() {
 
       <BottomNav />
     </main>
+  );
+}
+
+export default function ComprarPage() {
+  return (
+    <Suspense fallback={null}>
+      <ComprarInner />
+    </Suspense>
   );
 }

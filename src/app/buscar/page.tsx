@@ -340,26 +340,26 @@ function BuscarInner() {
         {session && !modoConexion && (
           <button onClick={activarModoConexion} style={{
             background:"linear-gradient(135deg,#f0c040,#d4a017)",
-            border:"none",borderRadius:"12px",padding:"11px 16px",
-            display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:"3px",
-            cursor:"pointer",fontFamily:"'Nunito',sans-serif",boxShadow:"0 4px 0 #a07810",
+            border:"none",borderRadius:"12px",padding:"8px 16px",
+            display:"flex",flexDirection:"row",alignItems:"center",justifyContent:"space-between",gap:"10px",
+            cursor:"pointer",fontFamily:"'Nunito',sans-serif",boxShadow:"0 4px 0 #a07810",width:"100%",
           }}>
             <div style={{display:"flex",alignItems:"center",gap:"8px"}}>
-              <span style={{fontSize:"16px"}}>🔗</span>
-              <span style={{fontSize:"13px",fontWeight:900,color:"#1a2a3a"}}>Modo Conexión</span>
+              <span style={{fontSize:"15px"}}>🔗</span>
+              <span style={{fontSize:"13px",fontWeight:900,color:"#1a2a3a"}}>Conectarme con:</span>
             </div>
-            <span style={{background:"rgba(26,42,58,0.18)",borderRadius:"20px",padding:"2px 10px",fontSize:"11px",fontWeight:800,color:"#1a2a3a"}}>{bits} BIT disponibles</span>
+            <span style={{background:"rgba(26,42,58,0.18)",borderRadius:"20px",padding:"3px 12px",fontSize:"12px",fontWeight:800,color:"#1a2a3a",whiteSpace:"nowrap"}}>{bits} BIT disponibles</span>
           </button>
         )}
         {modoConexion && (
-          <div style={{background:"linear-gradient(135deg,#f0c040,#d4a017)",borderRadius:"12px",padding:"11px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:"8px",border:"2px solid #f0c040",boxShadow:"0 4px 0 #a07810"}}>
+          <div style={{background:"linear-gradient(135deg,#f0c040,#d4a017)",borderRadius:"12px",padding:"8px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:"8px",boxShadow:"0 4px 0 #a07810"}}>
             <div style={{display:"flex",alignItems:"center",gap:"8px"}}>
-              <span style={{fontSize:"16px"}}>🔗</span>
-              <span style={{fontSize:"13px",fontWeight:800,color:"#1a2a3a"}}>Modo Conexión activo</span>
+              <span style={{fontSize:"15px"}}>🔗</span>
+              <span style={{fontSize:"13px",fontWeight:900,color:"#1a2a3a"}}>Conectándome a:</span>
             </div>
             <div style={{display:"flex",gap:"8px",alignItems:"center"}}>
-              <span style={{background:"rgba(255,255,255,0.15)",borderRadius:"20px",padding:"3px 10px",fontSize:"12px",fontWeight:800,color:"#fff"}}>{bits} BIT</span>
-              <button onClick={cancelarConexion} style={{background:"rgba(26,42,58,0.15)",border:"none",borderRadius:"8px",padding:"4px 10px",fontSize:"12px",fontWeight:800,color:"#1a2a3a",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>✕ Salir</button>
+              <span style={{background:"rgba(26,42,58,0.18)",borderRadius:"20px",padding:"3px 10px",fontSize:"11px",fontWeight:800,color:"#1a2a3a"}}>{bits} BIT</span>
+              <button onClick={cancelarConexion} style={{background:"rgba(26,42,58,0.2)",border:"none",borderRadius:"8px",padding:"4px 10px",fontSize:"12px",fontWeight:800,color:"#1a2a3a",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>✕ Salir</button>
             </div>
           </div>
         )}

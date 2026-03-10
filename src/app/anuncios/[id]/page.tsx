@@ -166,6 +166,9 @@ export default function AnuncioDetalle() {
         </div>
         <button onClick={() => router.back()} style={{ position:"absolute", top:"44px", left:"12px", background:"rgba(0,0,0,0.5)", border:"none", borderRadius:"50%", width:"36px", height:"36px", color:"#fff", fontSize:"18px", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>←</button>
         {esPropio && (
+          <button onClick={() => router.push("/usuario")} style={{ position:"absolute", top:"44px", left:"58px", background:"linear-gradient(135deg,#f0c040,#d4a017)", border:"none", borderRadius:"20px", padding:"6px 14px", fontSize:"12px", fontWeight:900, color:"#1a2a3a", cursor:"pointer", fontFamily:"'Nunito',sans-serif", boxShadow:"0 3px 0 #a07810" }}>👤 Mi Perfil</button>
+        )}
+        {esPropio && (
           <button onClick={() => setEditando(true)} style={{ position:"absolute", top:"44px", right:"12px", background:"rgba(212,160,23,0.85)", border:"none", borderRadius:"20px", padding:"6px 14px", fontSize:"12px", fontWeight:800, color:"#1a2a3a", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>✏️ Editar</button>
         )}
         {imagenes.length > 1 && (

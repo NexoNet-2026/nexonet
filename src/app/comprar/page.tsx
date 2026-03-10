@@ -54,9 +54,9 @@ const CUIT = "30-71234567-8";
 
 export default function ComprarPage() {
   const router = useRouter();
-  const [seleccionado, setSeleccionado] = useState<number | null>(1); // 1000 BIT por defecto
-  const [popup, setPopup] = useState(false);
-  const [popupConfirm, setPopupConfirm] = useState(false);
+  const [seleccionado, setSeleccionado] = useState<number | null>(1000);
+  const [popupMetodo, setPopupMetodo] = useState(false);
+  const [metodo, setMetodo] = useState<string | null>(null);
   const [copiado, setCopiado] = useState<string | null>(null);
 
   const paquete = PAQUETES.find(p => p.bits === seleccionado);
@@ -156,21 +156,14 @@ export default function ComprarPage() {
         )}
 
         <button
-          onClick={()=>setPopup(true)}
+          onClick={()=>setPopupMetodo(true)}
           disabled={!seleccionado}
           style={{ width:"100%", background:"linear-gradient(135deg,#f0c040,#d4a017)", border:"none", borderRadius:"14px", padding:"16px", fontSize:"16px", fontWeight:900, color:"#1a2a3a", cursor:"pointer", fontFamily:"'Nunito',sans-serif", boxShadow:"0 5px 0 #a07810", letterSpacing:"0.5px", marginBottom:"12px" }}
         >
           ⚡ Pagar con transferencia
         </button>
 
-        {/* Formas de pago chips */}
-        <div style={{ display:"flex", gap:"8px", justifyContent:"center", flexWrap:"wrap", marginBottom:"20px" }}>
-          {["🔵 MercadoPago", "💳 Tarjeta", "🟢 Débito"].map(fp => (
-            <div key={fp} style={{ background:"#fff", borderRadius:"20px", padding:"6px 14px", fontSize:"11px", fontWeight:700, color:"#9a9a9a", boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }}>
-              {fp} <span style={{ color:"#bbb", fontSize:"9px" }}>· Próximamente</span>
-            </div>
-          ))}
-        </div>
+
 
         {/* Info BIT */}
         <div style={{ background:"#fff", borderRadius:"16px", padding:"16px", boxShadow:"0 2px 8px rgba(0,0,0,0.05)" }}>
@@ -192,8 +185,84 @@ export default function ComprarPage() {
         </div>
       </div>
 
+      {/* ══ POPUP MÉTODO DE PAGO ══ */}
+      {popupMetodo && paquete && !metodo && (
+        <div style={{ position:"fixed", inset:0, zIndex:200, background:"rgba(0,0,0,0.7)", display:"flex", alignItems:"flex-end", padding:"16px" }}>
+          <div style={{ width:"100%", background:"#fff", borderRadius:"20px 20px 16px 16px", padding:"24px 20px 20px", boxShadow:"0 -8px 40px rgba(0,0,0,0.3)" }}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"6px" }}>
+              <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"22px", color:"#1a2a3a", letterSpacing:"1px" }}>💳 Método de pago</div>
+              <button onClick={()=>setPopupMetodo(false)} style={{ background:"#f0f0f0", border:"none", borderRadius:"50%", width:"32px", height:"32px", fontSize:"16px", cursor:"pointer" }}>✕</button>
+            </div>
+            <div style={{ fontSize:"12px", color:"#9a9a9a", fontWeight:600, marginBottom:"20px" }}>
+              {paquete.bits.toLocaleString()} BIT · ${paquete.precio.toLocaleString()} ARS
+            </div>
+
+            <div style={{ display:"flex", flexDirection:"column", gap:"10px" }}>
+              {/* Transferencia */}
+              <button onClick={()=>setMetodo("transferencia")}
+                style={{ display:"flex", alignItems:"center", gap:"14px", background:"#f8f8f8", border:"2px solid #e8e8e8", borderRadius:"14px", padding:"16px", cursor:"pointer", width:"100%", textAlign:"left" }}>
+                <div style={{ width:"44px", height:"44px", borderRadius:"12px", background:"linear-gradient(135deg,#1a2a3a,#243b55)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"22px", flexShrink:0 }}>🏦</div>
+                <div style={{ flex:1 }}>
+                  <div style={{ fontSize:"15px", fontWeight:900, color:"#1a2a3a" }}>Transferencia bancaria</div>
+                  <div style={{ fontSize:"11px", color:"#27ae60", fontWeight:700, marginTop:"2px" }}>✓ Disponible · Acreditación en 24hs</div>
+                </div>
+                <span style={{ fontSize:"20px", color:"#d4a017" }}>›</span>
+              </button>
+
+              {/* MercadoPago */}
+              <button onClick={()=>setMetodo("mp")}
+                style={{ display:"flex", alignItems:"center", gap:"14px", background:"#f8f8f8", border:"2px solid #e8e8e8", borderRadius:"14px", padding:"16px", cursor:"pointer", width:"100%", textAlign:"left", opacity:0.7 }}>
+                <div style={{ width:"44px", height:"44px", borderRadius:"12px", background:"linear-gradient(135deg,#009ee3,#007bbd)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"22px", flexShrink:0 }}>🔵</div>
+                <div style={{ flex:1 }}>
+                  <div style={{ fontSize:"15px", fontWeight:900, color:"#1a2a3a" }}>MercadoPago</div>
+                  <div style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:700, marginTop:"2px" }}>🔒 Próximamente</div>
+                </div>
+                <span style={{ fontSize:"20px", color:"#ccc" }}>›</span>
+              </button>
+
+              {/* Tarjeta crédito */}
+              <button onClick={()=>setMetodo("tarjeta")}
+                style={{ display:"flex", alignItems:"center", gap:"14px", background:"#f8f8f8", border:"2px solid #e8e8e8", borderRadius:"14px", padding:"16px", cursor:"pointer", width:"100%", textAlign:"left", opacity:0.7 }}>
+                <div style={{ width:"44px", height:"44px", borderRadius:"12px", background:"linear-gradient(135deg,#e74c3c,#c0392b)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"22px", flexShrink:0 }}>💳</div>
+                <div style={{ flex:1 }}>
+                  <div style={{ fontSize:"15px", fontWeight:900, color:"#1a2a3a" }}>Tarjeta de crédito / débito</div>
+                  <div style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:700, marginTop:"2px" }}>🔒 Próximamente</div>
+                </div>
+                <span style={{ fontSize:"20px", color:"#ccc" }}>›</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══ POPUP PRÓXIMAMENTE ══ */}
+      {popupMetodo && paquete && (metodo === "mp" || metodo === "tarjeta") && (
+        <div style={{ position:"fixed", inset:0, zIndex:200, background:"rgba(0,0,0,0.7)", display:"flex", alignItems:"center", justifyContent:"center", padding:"24px" }}>
+          <div style={{ background:"#fff", borderRadius:"20px", padding:"32px 24px", textAlign:"center", maxWidth:"340px", width:"100%", boxShadow:"0 8px 40px rgba(0,0,0,0.3)" }}>
+            <div style={{ fontSize:"52px", marginBottom:"12px" }}>🔒</div>
+            <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"26px", color:"#1a2a3a", letterSpacing:"1px", marginBottom:"8px" }}>
+              {metodo === "mp" ? "MercadoPago" : "Tarjeta"} — Próximamente
+            </div>
+            <div style={{ fontSize:"13px", color:"#9a9a9a", fontWeight:600, lineHeight:1.7, marginBottom:"24px" }}>
+              Estamos integrando este método de pago.<br/>
+              Por ahora podés abonar por <strong style={{ color:"#1a2a3a" }}>transferencia bancaria</strong> y tus BIT se acreditan en menos de 24hs.
+            </div>
+            <div style={{ display:"flex", flexDirection:"column", gap:"10px" }}>
+              <button onClick={()=>setMetodo("transferencia")}
+                style={{ background:"linear-gradient(135deg,#f0c040,#d4a017)", border:"none", borderRadius:"12px", padding:"14px", fontSize:"14px", fontWeight:900, color:"#1a2a3a", cursor:"pointer", fontFamily:"'Nunito',sans-serif", boxShadow:"0 4px 0 #a07810" }}>
+                🏦 Pagar por transferencia
+              </button>
+              <button onClick={()=>{ setMetodo(null); setPopupMetodo(false); }}
+                style={{ background:"#f0f0f0", border:"none", borderRadius:"12px", padding:"12px", fontSize:"13px", fontWeight:800, color:"#666", cursor:"pointer" }}>
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ══ POPUP TRANSFERENCIA ══ */}
-      {popup && paquete && (
+      {popupMetodo && paquete && metodo === "transferencia" && (
         <div style={{ position:"fixed", inset:0, zIndex:200, background:"rgba(0,0,0,0.7)", display:"flex", alignItems:"flex-end", padding:"16px" }}>
           <div style={{ width:"100%", background:"#fff", borderRadius:"20px 20px 16px 16px", padding:"24px 20px 20px", boxShadow:"0 -8px 40px rgba(0,0,0,0.3)", maxHeight:"90vh", overflowY:"auto" }}>
 
@@ -202,7 +271,7 @@ export default function ComprarPage() {
                 <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"22px", color:"#1a2a3a", letterSpacing:"1px" }}>💳 Datos de transferencia</div>
                 <div style={{ fontSize:"12px", color:"#9a9a9a", fontWeight:600 }}>{paquete.bits.toLocaleString()} BIT · ${paquete.precio.toLocaleString()} ARS</div>
               </div>
-              <button onClick={()=>setPopup(false)} style={{ background:"#f0f0f0", border:"none", borderRadius:"50%", width:"32px", height:"32px", fontSize:"16px", cursor:"pointer" }}>✕</button>
+              <button onClick={()=>{ setMetodo(null); setPopupMetodo(false); }} style={{ background:"#f0f0f0", border:"none", borderRadius:"50%", width:"32px", height:"32px", fontSize:"16px", cursor:"pointer" }}>✕</button>
             </div>
 
             {/* Monto destacado */}

@@ -250,7 +250,7 @@ function BuscarInner() {
   };
 
   return (
-    <main style={{paddingTop:"95px",paddingBottom: "130px",background:"#f4f4f2",minHeight:"100vh",fontFamily:"'Nunito',sans-serif"}}>
+    <main style={{paddingTop:"95px",paddingBottom: modoConexion ? "230px" : "130px",background:"#f4f4f2",minHeight:"100vh",fontFamily:"'Nunito',sans-serif"}}>
       <Header />
 
       {/* BARRA */}
@@ -358,15 +358,10 @@ function BuscarInner() {
               <span style={{fontSize:"13px",fontWeight:900,color:"#1a2a3a"}}>Conectándome a:</span>
             </div>
             <div style={{display:"flex",gap:"8px",alignItems:"center"}}>
-              <button onClick={todosSeleccionados?deseleccionarTodos:seleccionarTodos} style={{background:"#1a2a3a",border:"none",borderRadius:"20px",padding:"4px 12px",fontSize:"12px",fontWeight:900,color:todosSeleccionados?"#f0c040":"#d4a017",cursor:"pointer",fontFamily:"'Nunito',sans-serif",whiteSpace:"nowrap"}}>
+              <button onClick={todosSeleccionados?deseleccionarTodos:seleccionarTodos} style={{background:"#1a2a3a",border:"none",borderRadius:"20px",padding:"4px 14px",fontSize:"12px",fontWeight:900,color:"#d4a017",cursor:"pointer",fontFamily:"'Nunito',sans-serif",whiteSpace:"nowrap"}}>
                 {todosSeleccionados?"✕ TODOS":"✅ TODOS"}
               </button>
-              {seleccionados.size > 0 && (
-                <button onClick={ejecutarConexion} disabled={conectando||seleccionados.size>bits} style={{background:seleccionados.size>bits?"rgba(26,42,58,0.3)":"#1a2a3a",border:"none",borderRadius:"20px",padding:"4px 12px",fontSize:"12px",fontWeight:900,color:seleccionados.size>bits?"rgba(255,255,255,0.4)":"#d4a017",cursor:seleccionados.size>bits?"not-allowed":"pointer",fontFamily:"'Nunito',sans-serif",whiteSpace:"nowrap"}}>
-                  {conectando?"...":`${seleccionados.size} BIT · Conectar`}
-                </button>
-              )}
-              <button onClick={cancelarConexion} style={{background:"rgba(26,42,58,0.2)",border:"none",borderRadius:"8px",padding:"4px 10px",fontSize:"12px",fontWeight:800,color:"#1a2a3a",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>✕</button>
+              <button onClick={cancelarConexion} style={{background:"rgba(26,42,58,0.2)",border:"none",borderRadius:"8px",padding:"4px 10px",fontSize:"14px",fontWeight:900,color:"#1a2a3a",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>✕</button>
             </div>
           </div>
         )}
@@ -423,12 +418,32 @@ function BuscarInner() {
           );
         })
       )}
-      {/* Resultado conexión */}
-      {resultadoConex && (
+      {/* ── PANEL FLOTANTE CONEXIÓN ── */}
+      {modoConexion && (
         <div style={{position:"fixed",bottom:"110px",left:0,right:0,zIndex:100,padding:"0 16px 12px"}}>
-          <div style={{background:"linear-gradient(135deg,#f0c040,#d4a017)",borderRadius:"14px",padding:"14px 18px",textAlign:"center",fontSize:"14px",fontWeight:900,color:"#1a2a3a",boxShadow:"0 4px 0 #a07810"}}>
-            {resultadoConex}
-          </div>
+          {resultadoConex ? (
+            <div style={{background:"linear-gradient(135deg,#f0c040,#d4a017)",borderRadius:"14px",padding:"14px 18px",textAlign:"center",fontSize:"14px",fontWeight:900,color:"#1a2a3a",boxShadow:"0 4px 0 #a07810"}}>
+              {resultadoConex}
+            </div>
+          ) : (
+            <div style={{background:"linear-gradient(135deg,#1a2a3a,#243b55)",borderRadius:"14px",padding:"12px 14px",boxShadow:"0 6px 0 #0a1015",border:"2px solid #d4a017"}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"10px"}}>
+                <span style={{fontSize:"13px",fontWeight:900,color:"#fff"}}>
+                  {seleccionados.size>0?`🔗 ${seleccionados.size} anuncio${seleccionados.size!==1?"s":""}  ·  ${seleccionados.size} BIT`:"Tocá los anuncios"}
+                </span>
+                <span style={{background:"rgba(212,160,23,0.2)",borderRadius:"20px",padding:"2px 10px",fontSize:"11px",fontWeight:800,color:"#d4a017",border:"1px solid rgba(212,160,23,0.4)"}}>
+                  Tenés {bits} BIT
+                </span>
+              </div>
+              <button
+                onClick={ejecutarConexion}
+                disabled={seleccionados.size===0||conectando||seleccionados.size>bits}
+                style={{width:"100%",background:seleccionados.size===0||seleccionados.size>bits?"rgba(255,255,255,0.06)":"linear-gradient(135deg,#f0c040,#d4a017)",border:"none",borderRadius:"10px",padding:"12px",fontSize:"14px",fontWeight:900,color:seleccionados.size===0||seleccionados.size>bits?"rgba(255,255,255,0.25)":"#1a2a3a",cursor:seleccionados.size===0||seleccionados.size>bits?"not-allowed":"pointer",fontFamily:"'Nunito',sans-serif",boxShadow:seleccionados.size===0||seleccionados.size>bits?"none":"0 4px 0 #a07810"}}
+              >
+                {conectando?"Conectando...":seleccionados.size>0?`Conectar con ${seleccionados.size} anuncio${seleccionados.size!==1?"s":""} (${seleccionados.size} BIT)`:"Seleccioná anuncios"}
+              </button>
+            </div>
+          )}
         </div>
       )}
 

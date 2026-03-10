@@ -1,5 +1,5 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -47,10 +47,12 @@ export type Anuncio = {
 
 function FitBounds({ anuncios }: { anuncios: Anuncio[] }) {
   const map = useMap();
+  const fitted = useRef(false);
   useEffect(() => {
-    if (anuncios.length > 0) {
+    if (!fitted.current && anuncios.length > 0) {
       const bounds = L.latLngBounds(anuncios.map((a) => [a.lat, a.lng]));
       map.fitBounds(bounds, { padding: [40, 40] });
+      fitted.current = true;
     }
   }, [anuncios, map]);
   return null;

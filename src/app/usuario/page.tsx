@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
-type Seccion = "cuenta" | "datos" | "estadisticas" | "promotor";
+type Seccion = "cuenta" | "chat" | "datos" | "estadisticas" | "promotor";
 
 const DIAS_SEMANA = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
 const FERIADOS_ARG: Record<string, string> = {
@@ -38,6 +38,8 @@ export default function Usuario() {
   const [anunciosActivos, setAnunciosActivos] = useState(0);
   const [gruposCreados, setGruposCreados] = useState(0);
   const [popupEmpresa, setPopupEmpresa] = useState(false);
+  const [chats,         setChats]         = useState<any[]>([]);
+  const [noLeidos,      setNoLeidos]      = useState(0);
 
   const [personal, setPersonal] = useState({
     nombre_usuario: "", nombre: "", apellido: "",
@@ -95,6 +97,38 @@ export default function Usuario() {
       setTotalAnuncios(total || 0);
       setAnunciosActivos(activos || 0);
       setGruposCreados(grupos || 0);
+
+      // Cargar conversaciones (último mensaje por anuncio+interlocutor)
+      const { data: msgs } = await supabase
+        .from("mensajes")
+        .select("id,texto,emisor_id,receptor_id,anuncio_id,leido,created_at")
+        .or(`emisor_id.eq.${session.user.id},receptor_id.eq.${session.user.id}`)
+        .order("created_at", { ascending: false });
+
+      if (msgs) {
+        // Agrupar por anuncio_id + interlocutor
+        const convMap = new Map<string, any>();
+        for (const m of msgs) {
+          const otroId = m.emisor_id === session.user.id ? m.receptor_id : m.emisor_id;
+          const key = `${m.anuncio_id}-${otroId}`;
+          if (!convMap.has(key)) convMap.set(key, { ...m, otro_id: otroId });
+        }
+        const convs = Array.from(convMap.values());
+
+        // Cargar datos de usuarios y anuncios
+        const otroIds = [...new Set(convs.map(c => c.otro_id))];
+        const anuncioIds = [...new Set(convs.map(c => c.anuncio_id))];
+        const { data: usuarios } = await supabase.from("usuarios").select("id,nombre_usuario,codigo,plan").in("id", otroIds);
+        const { data: anuncios } = await supabase.from("anuncios").select("id,titulo").in("id", anuncioIds);
+
+        const convsFinal = convs.map(c => ({
+          ...c,
+          otro: usuarios?.find((u:any) => u.id === c.otro_id),
+          anuncio: anuncios?.find((a:any) => a.id === c.anuncio_id),
+        }));
+        setChats(convsFinal);
+        setNoLeidos(convsFinal.filter(c => !c.leido && c.receptor_id === session.user.id).length);
+      }
     };
     cargar();
   }, []);
@@ -202,9 +236,10 @@ export default function Usuario() {
 
         {/* TABS */}
         <div style={{ display:"flex" }}>
-          {([["cuenta","💳","Cuenta"],["datos","👤","Datos"],["estadisticas","📊","Stats"],["promotor","⭐","Promotor"]] as [Seccion,string,string][]).map(([id,e,l]) => (
-            <button key={id} onClick={()=>setSeccion(id)} style={{ flex:1, background:"none", border:"none", borderBottom:seccion===id?"3px solid #d4a017":"3px solid transparent", padding:"10px 4px", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:"2px" }}>
+          {([["cuenta","💳","Cuenta"],["chat","💬","Chat"],["datos","👤","Datos"],["estadisticas","📊","Stats"],["promotor","⭐","Promotor"]] as [Seccion,string,string][]).map(([id,e,l]) => (
+            <button key={id} onClick={()=>setSeccion(id)} style={{ flex:1, background:"none", border:"none", borderBottom:seccion===id?"3px solid #d4a017":"3px solid transparent", padding:"10px 4px", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:"2px", position:"relative" }}>
               <span style={{ fontSize:"16px" }}>{e}</span>
+              {id==="chat" && noLeidos>0 && <span style={{ position:"absolute", top:"6px", right:"calc(50% - 16px)", background:"#e74c3c", color:"#fff", borderRadius:"20px", fontSize:"9px", fontWeight:900, padding:"1px 5px", minWidth:"16px", textAlign:"center" }}>{noLeidos}</span>}
               <span style={{ fontSize:"9px", fontWeight:800, color:seccion===id?"#d4a017":"#8a9aaa", textTransform:"uppercase", letterSpacing:"0.5px" }}>{l}</span>
             </button>
           ))}
@@ -347,6 +382,49 @@ export default function Usuario() {
               </div>
             )}
 
+          </div>
+        )}
+
+        {/* ═══ CHAT ═══ */}
+        {seccion === "chat" && (
+          <div style={{ display:"flex", flexDirection:"column", gap:"10px" }}>
+            {chats.length === 0 ? (
+              <div style={{ textAlign:"center", padding:"60px 20px", color:"#9a9a9a" }}>
+                <div style={{ fontSize:"48px", marginBottom:"16px" }}>💬</div>
+                <div style={{ fontSize:"16px", fontWeight:800, color:"#1a2a3a", marginBottom:"8px" }}>Aún no tenés conversaciones</div>
+                <div style={{ fontSize:"13px", fontWeight:600, lineHeight:1.6 }}>Cuando te conectes con un anuncio o alguien se conecte con el tuyo, las conversaciones aparecerán acá.</div>
+              </div>
+            ) : (
+              chats.map((c, i) => {
+                const esMio = c.emisor_id === perfil?.id;
+                const noLeido = !c.leido && !esMio;
+                return (
+                  <button key={i} onClick={()=>router.push(`/chat/${c.anuncio_id}/${c.otro_id}`)}
+                    style={{ display:"flex", alignItems:"center", gap:"12px", background:"#fff", borderRadius:"16px", padding:"14px", border:noLeido?"2px solid #d4a017":"2px solid transparent", boxShadow:"0 2px 8px rgba(0,0,0,0.06)", cursor:"pointer", width:"100%", textAlign:"left" }}>
+                    {/* Avatar */}
+                    <div style={{ width:"48px", height:"48px", borderRadius:"50%", background:"linear-gradient(135deg,#d4a017,#f0c040)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"22px", flexShrink:0, position:"relative" }}>
+                      {c.otro?.plan==="nexoempresa"?"🏢":"👤"}
+                      {noLeido && <span style={{ position:"absolute", top:0, right:0, width:"12px", height:"12px", background:"#e74c3c", borderRadius:"50%", border:"2px solid #fff" }} />}
+                    </div>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"3px" }}>
+                        <div style={{ fontWeight:900, fontSize:"14px", color:"#1a2a3a" }}>{c.otro?.nombre_usuario||"Usuario"}</div>
+                        <div style={{ fontSize:"11px", color:"#bbb", fontWeight:600, flexShrink:0 }}>
+                          {new Date(c.created_at).toLocaleDateString("es-AR",{day:"numeric",month:"short"})}
+                        </div>
+                      </div>
+                      <div style={{ fontSize:"11px", color:"#d4a017", fontWeight:700, marginBottom:"4px", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                        📋 {c.anuncio?.titulo||"Anuncio"}
+                      </div>
+                      <div style={{ fontSize:"13px", color:noLeido?"#1a2a3a":"#9a9a9a", fontWeight:noLeido?700:600, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                        {esMio && <span style={{ color:"#bbb" }}>Vos: </span>}{c.texto}
+                      </div>
+                    </div>
+                    <span style={{ fontSize:"18px", color:"#d4a017", flexShrink:0 }}>›</span>
+                  </button>
+                );
+              })
+            )}
           </div>
         )}
 

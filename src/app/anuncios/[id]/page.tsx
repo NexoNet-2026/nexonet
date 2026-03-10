@@ -119,6 +119,13 @@ export default function AnuncioDetalle() {
         tipo: "conexion",
         mensaje: mensajeConexion,
       });
+      // El mensaje de conexión también queda en el chat
+      await supabase.from("mensajes").insert({
+        anuncio_id:  anuncio.id,
+        emisor_id:   session.user.id,
+        receptor_id: anuData.usuario_id,
+        texto:       mensajeConexion,
+      });
       const nuevosBits = bits - 1;
       await supabase.from("usuarios").update({ bits: nuevosBits, bits_gastados: nuevosBits }).eq("id", session.user.id);
       setBits(nuevosBits);

@@ -66,7 +66,7 @@ export default function MisAnuncios() {
 
     const { data: usuario } = await supabase
       .from("usuarios")
-      .select("bits, plan, slots_extra")
+      .select("bits, bits_promo, bits_free, plan, slots_extra")
       .eq("id", session.user.id)
       .single();
 
@@ -415,7 +415,7 @@ export default function MisAnuncios() {
       {popupFlash && (
         <PopupCompra
           tipo="flash"
-          tituloAccion="BIT Flash — Destacar anuncio"
+          tituloAccion="PROMO Flash — Destacar anuncio"
           bitsDisponibles={{ nexo: bits, promo: bitsPromo, free: bitsFree }}
           onClose={() => setPopupFlash(false)}
         />

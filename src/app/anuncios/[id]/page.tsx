@@ -116,14 +116,14 @@ export default function AnuncioDetalle() {
         emisor_id:  session.user.id,
         anuncio_id: anuncio.id,
         tipo: "conexion",
-        mensaje: mensajeConexion,
+        mensaje: "Hola, estoy interesado/a en tu anuncio. ¿Podemos hablar?",
       });
       // El mensaje de conexión también queda en el chat
       await supabase.from("mensajes").insert({
         anuncio_id:  anuncio.id,
         emisor_id:   session.user.id,
         receptor_id: anuData.usuario_id,
-        texto:       mensajeConexion,
+        texto:       "Hola, estoy interesado/a en tu anuncio. ¿Podemos hablar?",
       });
       // Descontar según tipo de BIT elegido
       if (tipoBit === "nexo") {
@@ -141,8 +141,6 @@ export default function AnuncioDetalle() {
       }
     }
     setConectando(false);
-    setPopupExito(true);
-    setMensajeConexion(MENSAJES_PRESET[0]);
   };
 
   const fmt = (precio: number, moneda: string) =>

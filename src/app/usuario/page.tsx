@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
-type Seccion = "datos" | "estadisticas" | "promotor";
+type Seccion = "cuenta" | "datos" | "estadisticas" | "promotor";
 
 const DIAS_SEMANA = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
 const FERIADOS_ARG: Record<string, string> = {
@@ -31,7 +31,7 @@ type Vis = Record<string, boolean>;
 
 export default function Usuario() {
   const router = useRouter();
-  const [seccion, setSeccion] = useState<Seccion>("datos");
+  const [seccion, setSeccion] = useState<Seccion>("cuenta");
   const [perfil, setPerfil]   = useState<any>(null);
   const [guardando, setGuardando] = useState(false);
   const [totalAnuncios, setTotalAnuncios] = useState(0);
@@ -202,7 +202,7 @@ export default function Usuario() {
 
         {/* TABS */}
         <div style={{ display:"flex" }}>
-          {([["datos","👤","Datos"],["estadisticas","📊","Stats"],["promotor","⭐","Promotor"]] as [Seccion,string,string][]).map(([id,e,l]) => (
+          {([["cuenta","💳","Cuenta"],["datos","👤","Datos"],["estadisticas","📊","Stats"],["promotor","⭐","Promotor"]] as [Seccion,string,string][]).map(([id,e,l]) => (
             <button key={id} onClick={()=>setSeccion(id)} style={{ flex:1, background:"none", border:"none", borderBottom:seccion===id?"3px solid #d4a017":"3px solid transparent", padding:"10px 4px", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:"2px" }}>
               <span style={{ fontSize:"16px" }}>{e}</span>
               <span style={{ fontSize:"9px", fontWeight:800, color:seccion===id?"#d4a017":"#8a9aaa", textTransform:"uppercase", letterSpacing:"0.5px" }}>{l}</span>
@@ -216,6 +216,139 @@ export default function Usuario() {
       </div>
 
       <div style={{ padding:"16px", maxWidth:"480px", margin:"0 auto" }}>
+
+        {/* ═══ CUENTA ═══ */}
+        {seccion === "cuenta" && (
+          <div style={{ display:"flex", flexDirection:"column", gap:"14px" }}>
+
+            {/* ── RESUMEN PRINCIPAL ── */}
+            <div style={{ background:"linear-gradient(135deg,#1a2a3a,#243b55)", borderRadius:"18px", padding:"20px", boxShadow:"0 6px 24px rgba(0,0,0,0.18)" }}>
+              <div style={{ fontSize:"11px", fontWeight:800, color:"#8a9aaa", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"16px" }}>💳 Estado de Cuenta</div>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px", marginBottom:"16px" }}>
+                <div style={{ background:"rgba(212,160,23,0.15)", borderRadius:"14px", padding:"16px", border:"1px solid rgba(212,160,23,0.3)" }}>
+                  <div style={{ fontSize:"10px", fontWeight:800, color:"#d4a017", textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:"6px" }}>BIT Disponibles</div>
+                  <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"38px", color:"#f0c040", lineHeight:1 }}>{(bitsNexonet+bitsPromotor+bitsFree).toLocaleString()}</div>
+                  <div style={{ fontSize:"10px", color:"#8a9aaa", fontWeight:600, marginTop:"4px" }}>para usar ahora</div>
+                </div>
+                <div style={{ background:"rgba(255,255,255,0.05)", borderRadius:"14px", padding:"16px", border:"1px solid rgba(255,255,255,0.08)" }}>
+                  <div style={{ fontSize:"10px", fontWeight:800, color:"#8a9aaa", textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:"6px" }}>BIT Consumidos</div>
+                  <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"38px", color:"#fff", lineHeight:1 }}>{totalConsum.toLocaleString()}</div>
+                  <div style={{ fontSize:"10px", color:"#8a9aaa", fontWeight:600, marginTop:"4px" }}>historial total</div>
+                </div>
+              </div>
+              <button onClick={()=>router.push("/comprar")} style={{ width:"100%", background:"linear-gradient(135deg,#f0c040,#d4a017)", border:"none", borderRadius:"12px", padding:"14px", fontSize:"15px", fontWeight:900, color:"#1a2a3a", cursor:"pointer", fontFamily:"'Nunito',sans-serif", boxShadow:"0 4px 0 #a07810", letterSpacing:"0.5px" }}>
+                ⚡ Cargar BIT
+              </button>
+            </div>
+
+            {/* ── DESGLOSE POR TIPO ── */}
+            <div style={{ background:"#fff", borderRadius:"16px", padding:"16px", boxShadow:"0 2px 12px rgba(0,0,0,0.06)" }}>
+              <div style={{ fontSize:"11px", fontWeight:800, color:"#9a9a9a", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"14px" }}>📦 Desglose de BIT</div>
+              {[
+                { label:"BIT NexoNet",      disp:bitsNexonet,  cons:bitsGastados,   color:"#d4a017", desc:"Comprados",       emoji:"💛" },
+                { label:"BIT NexoPromotor", disp:bitsPromotor, cons:promoGastados,  color:"#27ae60", desc:"Por referidos",   emoji:"💚", badge:"Reembolsable" },
+                { label:"BIT NexoFree",     disp:bitsFree,     cons:freeGastados,   color:"#2980b9", desc:"Asignados",      emoji:"💙" },
+              ].map(b => (
+                <div key={b.label} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 0", borderBottom:"1px solid #f0f0f0" }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
+                    <div style={{ width:"36px", height:"36px", borderRadius:"10px", background:`${b.color}18`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"18px" }}>{b.emoji}</div>
+                    <div>
+                      <div style={{ fontSize:"13px", fontWeight:800, color:"#1a2a3a" }}>{b.label}</div>
+                      <div style={{ fontSize:"10px", color:"#9a9a9a", fontWeight:600 }}>{b.desc}{b.badge ? <span style={{ marginLeft:"6px", background:"#e8f8ee", color:"#27ae60", borderRadius:"6px", padding:"1px 6px", fontSize:"9px", fontWeight:800 }}>{b.badge}</span> : null}</div>
+                    </div>
+                  </div>
+                  <div style={{ textAlign:"right" }}>
+                    <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"20px", color:b.color }}>{b.disp.toLocaleString()}</div>
+                    <div style={{ fontSize:"10px", color:"#bbb", fontWeight:600 }}>{b.cons.toLocaleString()} usados</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* ── FORMAS DE PAGO ── */}
+            <div style={{ background:"#fff", borderRadius:"16px", padding:"16px", boxShadow:"0 2px 12px rgba(0,0,0,0.06)" }}>
+              <div style={{ fontSize:"11px", fontWeight:800, color:"#9a9a9a", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"14px" }}>💳 Formas de pago</div>
+              {[
+                { nombre:"MercadoPago",         emoji:"🔵", desc:"Transferencia, QR, Dinero en cuenta", activo:true  },
+                { nombre:"Tarjeta de crédito",  emoji:"💳", desc:"Visa, Mastercard, Naranja",          activo:true  },
+                { nombre:"Tarjeta de débito",   emoji:"🟢", desc:"Visa Débito, Maestro",               activo:true  },
+                { nombre:"Efectivo (Rapipago)", emoji:"💵", desc:"Pagos en puntos de cobro",           activo:false },
+              ].map(fp => (
+                <div key={fp.nombre} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 0", borderBottom:"1px solid #f0f0f0", opacity:fp.activo?1:0.45 }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
+                    <span style={{ fontSize:"24px" }}>{fp.emoji}</span>
+                    <div>
+                      <div style={{ fontSize:"13px", fontWeight:800, color:"#1a2a3a" }}>{fp.nombre}</div>
+                      <div style={{ fontSize:"10px", color:"#9a9a9a", fontWeight:600 }}>{fp.desc}</div>
+                    </div>
+                  </div>
+                  <span style={{ fontSize:"10px", fontWeight:800, padding:"3px 10px", borderRadius:"20px", background:fp.activo?"#e8f8ee":"#f0f0f0", color:fp.activo?"#27ae60":"#9a9a9a" }}>
+                    {fp.activo?"Disponible":"Próximamente"}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            {/* ── HISTORIAL DE MOVIMIENTOS ── */}
+            <div style={{ background:"#fff", borderRadius:"16px", padding:"16px", boxShadow:"0 2px 12px rgba(0,0,0,0.06)" }}>
+              <div style={{ fontSize:"11px", fontWeight:800, color:"#9a9a9a", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"14px" }}>📄 Últimos movimientos</div>
+              {totalConsum === 0 && (bitsNexonet+bitsPromotor+bitsFree) === 0 ? (
+                <div style={{ textAlign:"center", padding:"20px", color:"#bbb", fontSize:"13px", fontWeight:600 }}>Aún no tenés movimientos</div>
+              ) : (
+                <div style={{ display:"flex", flexDirection:"column", gap:"2px" }}>
+                  {bitsNexonet > 0 && (
+                    <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 0", borderBottom:"1px solid #f8f8f8" }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
+                        <div style={{ width:"32px", height:"32px", borderRadius:"50%", background:"#fff8e0", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"16px" }}>⚡</div>
+                        <div>
+                          <div style={{ fontSize:"12px", fontWeight:800, color:"#1a2a3a" }}>Carga de BIT NexoNet</div>
+                          <div style={{ fontSize:"10px", color:"#9a9a9a" }}>Saldo disponible</div>
+                        </div>
+                      </div>
+                      <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"18px", color:"#27ae60" }}>+{bitsNexonet.toLocaleString()}</div>
+                    </div>
+                  )}
+                  {bitsPromotor > 0 && (
+                    <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 0", borderBottom:"1px solid #f8f8f8" }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
+                        <div style={{ width:"32px", height:"32px", borderRadius:"50%", background:"#e8f8ee", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"16px" }}>⭐</div>
+                        <div>
+                          <div style={{ fontSize:"12px", fontWeight:800, color:"#1a2a3a" }}>BIT NexoPromotor acumulados</div>
+                          <div style={{ fontSize:"10px", color:"#9a9a9a" }}>Por referidos</div>
+                        </div>
+                      </div>
+                      <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"18px", color:"#27ae60" }}>+{bitsPromotor.toLocaleString()}</div>
+                    </div>
+                  )}
+                  {totalConsum > 0 && (
+                    <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 0" }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
+                        <div style={{ width:"32px", height:"32px", borderRadius:"50%", background:"#fff0f0", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"16px" }}>🔗</div>
+                        <div>
+                          <div style={{ fontSize:"12px", fontWeight:800, color:"#1a2a3a" }}>Conexiones realizadas</div>
+                          <div style={{ fontSize:"10px", color:"#9a9a9a" }}>Total histórico</div>
+                        </div>
+                      </div>
+                      <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"18px", color:"#e74c3c" }}>-{totalConsum.toLocaleString()}</div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* ── SOLICITAR REEMBOLSO ── */}
+            {bitsPromotor > 0 && (
+              <div style={{ background:"linear-gradient(135deg,#1a3a2a,#1e4a30)", borderRadius:"16px", padding:"16px", border:"1px solid rgba(39,174,96,0.3)" }}>
+                <div style={{ fontSize:"12px", fontWeight:800, color:"#27ae60", marginBottom:"6px" }}>💚 BIT NexoPromotor reembolsables</div>
+                <div style={{ fontSize:"12px", color:"#8abba0", fontWeight:600, marginBottom:"14px" }}>Podés solicitar el reembolso de tus {bitsPromotor.toLocaleString()} BIT Promo contra factura A o C.</div>
+                <button style={{ width:"100%", background:"linear-gradient(135deg,#27ae60,#1e8449)", border:"none", borderRadius:"10px", padding:"12px", fontSize:"13px", fontWeight:900, color:"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif", boxShadow:"0 4px 0 #155a2e" }}>
+                  Solicitar reembolso
+                </button>
+              </div>
+            )}
+
+          </div>
+        )}
 
         {/* ═══ DATOS ═══ */}
         {seccion === "datos" && (

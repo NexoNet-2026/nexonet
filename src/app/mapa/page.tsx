@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { supabase } from "@/lib/supabase";
+import PopupCompra from "@/components/PopupCompra";
 
 const MapaLeaflet = dynamic(() => import("@/components/MapaLeaflet"), { ssr: false });
 
@@ -29,13 +30,14 @@ export default function Mapa() {
   // Sesión y BIT
   const [session,        setSession]        = useState<any>(null);
   const [bits,           setBits]           = useState(0);
+  const [bitsPromo,      setBitsPromo]      = useState(0);
+  const [bitsFree,       setBitsFree]       = useState(0);
   // Modo conexión
   const [modoConexion,   setModoConexion]   = useState(false);
   const [seleccionados,  setSeleccionados]  = useState<Set<number>>(new Set());
   const [conectando,     setConectando]     = useState(false);
   const [resultadoConex, setResultadoConex] = useState<string|null>(null);
   const [popupConexion,  setPopupConexion]  = useState(false);
-  const [popupSinBits,   setPopupSinBits]   = useState(false);
   const MENSAJES_PRESET = [
     "Hola, estoy interesado/a en tu anuncio. ¿Podemos hablar?",
     "Hola, vi tu publicación y me gustaría más información.",
@@ -47,8 +49,8 @@ export default function Mapa() {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session: s } }) => {
       setSession(s);
-      if (s) supabase.from("usuarios").select("bits").eq("id", s.user.id).single()
-        .then(({data}) => { if(data) setBits(data.bits||0); });
+      if (s) supabase.from("usuarios").select("bits,bits_promo,bits_free").eq("id", s.user.id).single()
+        .then(({data}) => { if(data) { setBits(data.bits||0); setBitsPromo(data.bits_promo||0); setBitsFree(data.bits_free||0); } });
     });
   }, []);
 
@@ -258,7 +260,7 @@ export default function Mapa() {
               <button
                 onClick={()=>{
                 if(seleccionados.size===0) return;
-                if(bits===0 || seleccionados.size>bits) { setPopupSinBits(true); return; }
+                if(seleccionados.size===0) return;
                 setPopupConexion(true);
               }}
                 disabled={seleccionados.size===0||conectando}
@@ -273,78 +275,19 @@ export default function Mapa() {
 
 
 
-      {/* ══ POPUP SIN BIT ══ */}
-      {popupSinBits && (
-        <div style={{position:"fixed",inset:0,zIndex:200,background:"rgba(0,0,0,0.65)",display:"flex",alignItems:"flex-end",padding:"16px"}}>
-          <div style={{width:"100%",background:"#fff",borderRadius:"20px 20px 16px 16px",padding:"24px 20px 20px",boxShadow:"0 -8px 40px rgba(0,0,0,0.3)"}}>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"20px"}}>
-              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"22px",color:"#1a2a3a",letterSpacing:"1px"}}>⚡ Necesitás BIT</div>
-              <button onClick={()=>setPopupSinBits(false)} style={{background:"#f0f0f0",border:"none",borderRadius:"50%",width:"32px",height:"32px",fontSize:"16px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
-            </div>
-            <div style={{background:"linear-gradient(135deg,#1a2a3a,#243b55)",borderRadius:"16px",padding:"20px",textAlign:"center",marginBottom:"16px"}}>
-              <div style={{fontSize:"40px",marginBottom:"8px"}}>🔗</div>
-              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"26px",color:"#f0c040",letterSpacing:"1px",marginBottom:"6px"}}>
-                {bits===0 ? "No tenés BIT disponibles" : `Necesitás ${seleccionados.size} BIT, tenés ${bits}`}
-              </div>
-              <div style={{fontSize:"13px",color:"#8a9aaa",fontWeight:600,lineHeight:1.5}}>
-                Cargá BIT para conectarte con los pines que te interesan. Cada conexión usa 1 BIT.
-              </div>
-            </div>
-            <button
-              onClick={()=>{ setPopupSinBits(false); router.push("/comprar"); }}
-              style={{width:"100%",background:"linear-gradient(135deg,#f0c040,#d4a017)",border:"none",borderRadius:"12px",padding:"14px",fontSize:"15px",fontWeight:900,color:"#1a2a3a",cursor:"pointer",fontFamily:"'Nunito',sans-serif",boxShadow:"0 4px 0 #a07810",marginBottom:"10px"}}
-            >
-              ⚡ Cargar BIT ahora
-            </button>
-            <button
-              onClick={()=>setPopupSinBits(false)}
-              style={{width:"100%",background:"none",border:"none",padding:"10px",fontSize:"13px",fontWeight:700,color:"#9a9a9a",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}
-            >
-              Cancelar
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* ══ POPUP CONEXIÓN ══ */}
       {popupConexion && (
-        <div style={{position:"fixed",inset:0,zIndex:200,background:"rgba(0,0,0,0.65)",display:"flex",alignItems:"flex-end",padding:"16px"}}>
-          <div style={{width:"100%",background:"#fff",borderRadius:"20px 20px 16px 16px",padding:"24px 20px 20px",boxShadow:"0 -8px 40px rgba(0,0,0,0.3)"}}>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"18px"}}>
-              <div>
-                <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"22px",color:"#1a2a3a",letterSpacing:"1px"}}>🔗 Mensaje de conexión</div>
-                <div style={{fontSize:"12px",color:"#9a9a9a",fontWeight:600}}>Se enviará a {seleccionados.size} anuncio{seleccionados.size!==1?"s":""} · {seleccionados.size} BIT</div>
-              </div>
-              <button onClick={()=>setPopupConexion(false)} style={{background:"#f0f0f0",border:"none",borderRadius:"50%",width:"32px",height:"32px",fontSize:"16px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
-            </div>
-            <div style={{display:"flex",flexDirection:"column",gap:"8px",marginBottom:"14px"}}>
-              {MENSAJES_PRESET.map((m,i) => (
-                <button key={i} onClick={()=>setMensajeConexion(m)} style={{textAlign:"left",background:mensajeConexion===m?"linear-gradient(135deg,#fff8e0,#fff3c0)":"#f8f8f8",border:mensajeConexion===m?"2px solid #d4a017":"2px solid transparent",borderRadius:"12px",padding:"10px 14px",fontSize:"13px",fontWeight:700,color:"#1a2a3a",cursor:"pointer",fontFamily:"'Nunito',sans-serif",transition:"all 0.15s"}}>
-                  {mensajeConexion===m && <span style={{color:"#d4a017",marginRight:"6px"}}>✓</span>}{m}
-                </button>
-              ))}
-            </div>
-            <div style={{marginBottom:"16px"}}>
-              <div style={{fontSize:"11px",fontWeight:800,color:"#9a9a9a",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"6px"}}>✏️ O escribí tu propio mensaje</div>
-              <textarea
-                value={mensajeConexion}
-                onChange={e=>setMensajeConexion(e.target.value)}
-                maxLength={200}
-                rows={3}
-                style={{width:"100%",borderRadius:"12px",border:"2px solid #e8e8e8",padding:"10px 14px",fontSize:"13px",fontWeight:600,color:"#1a2a3a",fontFamily:"'Nunito',sans-serif",resize:"none",outline:"none",boxSizing:"border-box"}}
-                placeholder="Escribí tu mensaje..."
-              />
-              <div style={{textAlign:"right",fontSize:"10px",color:"#bbb",fontWeight:600}}>{mensajeConexion.length}/200</div>
-            </div>
-            <button
-              onClick={async ()=>{ setPopupConexion(false); await ejecutarConexion(); }}
-              disabled={!mensajeConexion.trim()}
-              style={{width:"100%",background:mensajeConexion.trim()?"linear-gradient(135deg,#f0c040,#d4a017)":"#f0f0f0",border:"none",borderRadius:"12px",padding:"14px",fontSize:"15px",fontWeight:900,color:mensajeConexion.trim()?"#1a2a3a":"#bbb",cursor:mensajeConexion.trim()?"pointer":"not-allowed",fontFamily:"'Nunito',sans-serif",boxShadow:mensajeConexion.trim()?"0 4px 0 #a07810":"none"}}
-            >
-              {conectando?"Enviando...":"⚡ Enviar y conectar"}
-            </button>
-          </div>
-        </div>
+        <PopupCompra
+          tipo="conexion"
+          tituloAccion={`Conectar con ${seleccionados.size} anuncio${seleccionados.size !== 1 ? "s" : ""}`}
+          costoFijo={seleccionados.size}
+          bitsDisponibles={{ nexo: bits, promo: bitsPromo, free: bitsFree }}
+          onClose={() => setPopupConexion(false)}
+          onUsarBits={async (_cantidad, _tipoBit) => {
+            setPopupConexion(false);
+            await ejecutarConexion();
+          }}
+        />
       )}
 
       <BottomNav />

@@ -173,8 +173,9 @@ export default function Mapa() {
           </button>
         )}
         {modoConexion && (
-          <div style={{display:"flex",flexDirection:"column",gap:"8px"}}>
-            <div style={{background:"linear-gradient(135deg,#f0c040,#d4a017)",borderRadius:"12px",padding:"8px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",boxShadow:"0 4px 0 #a07810"}}>
+          <div style={{background:"linear-gradient(135deg,#f0c040,#d4a017)",borderRadius:"12px",padding:"8px 16px",display:"flex",flexDirection:"column",gap:"8px",boxShadow:"0 4px 0 #a07810"}}>
+            {/* Fila 1: Conectándome a + BIT + Salir */}
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
               <div style={{display:"flex",alignItems:"center",gap:"8px"}}>
                 <span style={{fontSize:"15px"}}>🔗</span>
                 <span style={{fontSize:"13px",fontWeight:900,color:"#1a2a3a"}}>Conectándome a:</span>
@@ -184,7 +185,10 @@ export default function Mapa() {
                 <button onClick={cancelarConexion} style={{background:"rgba(26,42,58,0.2)",border:"none",borderRadius:"8px",padding:"4px 10px",fontSize:"12px",fontWeight:800,color:"#1a2a3a",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>✕ Salir</button>
               </div>
             </div>
-            <div style={{background:"linear-gradient(135deg,#f0c040,#d4a017)",borderRadius:"12px",padding:"8px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",boxShadow:"0 4px 0 #a07810"}}>
+            {/* Separador */}
+            <div style={{height:"1px",background:"rgba(26,42,58,0.15)"}} />
+            {/* Fila 2: Seleccionar todos + contador */}
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
               <button onClick={todosSelec?deseleccionarTodos:seleccionarTodos} style={{background:"#1a2a3a",border:"none",borderRadius:"20px",padding:"6px 16px",fontSize:"12px",fontWeight:900,color:"#d4a017",cursor:"pointer",fontFamily:"'Nunito',sans-serif",whiteSpace:"nowrap",boxShadow:"0 3px 0 #000a"}}>
                 {todosSelec ? "✕ Deseleccionar todos" : "✅ Seleccionar todos"}
               </button>

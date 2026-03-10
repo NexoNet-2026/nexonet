@@ -104,33 +104,33 @@ export default function MisAnuncios() {
 
       {/* ENCABEZADO */}
       <div style={{ background: "linear-gradient(135deg, #1a2a3a 0%, #243b55 100%)", padding: "16px 16px 20px" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
-          <div>
-            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "4px" }}>
-              <button onClick={() => router.push("/usuario")} style={{ background: "linear-gradient(135deg,#f0c040,#d4a017)", border: "none", borderRadius: "20px", padding: "5px 14px", fontSize: "12px", fontWeight: 900, color: "#1a2a3a", cursor: "pointer", fontFamily: "'Nunito',sans-serif", boxShadow: "0 3px 0 #a07810", display: "flex", alignItems: "center", gap: "5px" }}>
-                ← 👤 Mi Perfil
-              </button>
-            </div>
+        {/* FILA 1: Mi Perfil + título + BITS */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <button onClick={() => router.push("/usuario")} style={{ background: "linear-gradient(135deg,#f0c040,#d4a017)", border: "none", borderRadius: "20px", padding: "6px 14px", fontSize: "12px", fontWeight: 900, color: "#1a2a3a", cursor: "pointer", fontFamily: "'Nunito',sans-serif", boxShadow: "0 3px 0 #a07810", display: "flex", alignItems: "center", gap: "5px", whiteSpace: "nowrap" }}>
+              ← 👤 Mi Perfil
+            </button>
             <div style={{ fontSize: "18px", fontWeight: 900, color: "#fff" }}>Mis Anuncios</div>
-            <div style={{ display: "flex", gap: "6px", marginTop: "4px", flexWrap: "wrap" }}>
-              <div style={{ background: "#6a8aaa", borderRadius: "20px", padding: "3px 10px" }}>
-                <span style={{ fontSize: "10px", fontWeight: 900, color: "#fff", letterSpacing: "1px" }}>
-                  FREE × {SLOTS_BASE}
-                </span>
-              </div>
-              {slotsExtra > 0 && (
-                <div style={{ background: plan === "nexoempresa" ? "#c0392b" : "#d4a017", borderRadius: "20px", padding: "3px 10px" }}>
-                  <span style={{ fontSize: "10px", fontWeight: 900, color: plan === "nexoempresa" ? "#fff" : "#1a2a3a", letterSpacing: "1px" }}>
-                    {plan === "nexoempresa" ? "EMPRESA" : "NET"} × {slotsExtra}
-                  </span>
-                </div>
-              )}
-            </div>
           </div>
           <div style={{ textAlign: "right" }}>
             <div style={{ fontSize: "11px", color: "#8a9aaa", fontWeight: 700 }}>BITS</div>
             <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "28px", color: "#d4a017" }}>{bits}</div>
           </div>
+        </div>
+        {/* FILA 2: badges de plan */}
+        <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginBottom: "12px" }}>
+          <div style={{ background: "#6a8aaa", borderRadius: "20px", padding: "3px 10px" }}>
+            <span style={{ fontSize: "10px", fontWeight: 900, color: "#fff", letterSpacing: "1px" }}>
+              FREE × {SLOTS_BASE}
+            </span>
+          </div>
+          {slotsExtra > 0 && (
+            <div style={{ background: plan === "nexoempresa" ? "#c0392b" : "#d4a017", borderRadius: "20px", padding: "3px 10px" }}>
+              <span style={{ fontSize: "10px", fontWeight: 900, color: plan === "nexoempresa" ? "#fff" : "#1a2a3a", letterSpacing: "1px" }}>
+                {plan === "nexoempresa" ? "EMPRESA" : "NET"} × {slotsExtra}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* BARRA DE SLOTS */}

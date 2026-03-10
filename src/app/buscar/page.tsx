@@ -6,7 +6,10 @@ import BottomNav from "@/components/BottomNav";
 import { supabase } from "@/lib/supabase";
 
 type Anuncio = {
-  permuto?: boolean; id:number; titulo:string; precio:number; moneda:string; ciudad:string; provincia:string; imagenes:string[]; flash:boolean; fuente:string; subrubro_id:number; usuario_id:string };
+  permuto?: boolean; id:number; titulo:string; precio:number; moneda:string;
+  ciudad:string; provincia:string; imagenes:string[]; flash:boolean; fuente:string;
+  usuario_id:string; subrubro_nombre:string; rubro_nombre:string;
+};
 type Rubro = { id:number; nombre:string; subrubros:{id:number; nombre:string}[] };
 type RubroFlat = { id:number; nombre:string };
 type SubrubroFlat = { id:number; nombre:string; rubro_id:number };
@@ -34,7 +37,6 @@ function BuscarInner() {
   const sp = useSearchParams();
   const router = useRouter();
 
-  // Ubicación
   const [provs,    setProvs]    = useState<Prov[]>([]);
   const [ciudades, setCiudades] = useState<Ciudad[]>([]);
   const [barrios,  setBarrios]  = useState<Barrio[]>([]);
@@ -43,7 +45,6 @@ function BuscarInner() {
   const [barrSel,  setBarrSel]  = useState("");
   const [gpsLoad,  setGpsLoad]  = useState(false);
 
-  // Buscador
   const [query,    setQuery]    = useState("");
   const [rSel,     setRSel]     = useState<RubroFlat|null>(null);
   const [sSel,     setSSel]     = useState<SubrubroFlat|null>(null);
@@ -51,10 +52,8 @@ function BuscarInner() {
   const inputRef = useRef<HTMLInputElement>(null);
   const dropRef  = useRef<HTMLDivElement>(null);
 
-  // Filtros extra
   const [soloPermuto, setSoloPermuto] = useState(false);
 
-  // Datos
   const [rubros,   setRubros]   = useState<Rubro[]>([]);
   const [rFlat,    setRFlat]    = useState<RubroFlat[]>([]);
   const [sFlat,    setSFlat]    = useState<SubrubroFlat[]>([]);
@@ -62,11 +61,9 @@ function BuscarInner() {
   const [subAct,   setSubAct]   = useState<Record<number,number|null>>({});
   const [loading,  setLoading]  = useState(true);
 
-  // Sesión
   const [session,  setSession]  = useState<any>(null);
   const [bits,     setBits]     = useState(0);
 
-  // ── MODO CONEXIÓN ──
   const [modoConexion,   setModoConexion]   = useState(false);
   const [seleccionados,  setSeleccionados]  = useState<Set<number>>(new Set());
   const [conectando,     setConectando]     = useState(false);
@@ -93,37 +90,31 @@ function BuscarInner() {
 
   useEffect(() => {
     if (sp.get("q")) setQuery(sp.get("q")!);
-    (window as any).__rP = sp.get("rubro");
-    (window as any).__sP = sp.get("subrubro");
+    const rP = sp.get("rubro");
+    const sP = sp.get("subrubro");
 
     Promise.all([
       supabase.from("provincias").select("id,nombre").order("nombre"),
       supabase.from("rubros").select("id,nombre").order("nombre"),
       supabase.from("subrubros").select("id,nombre,rubro_id").order("nombre"),
+      // ── MISMO JOIN QUE HOME ──
       supabase.from("anuncios")
-        .select("id,titulo,precio,moneda,ciudad,provincia,imagenes,flash,fuente,subrubro_id,usuario_id,permuto")
+        .select("id,titulo,precio,moneda,ciudad,provincia,imagenes,flash,fuente,usuario_id,subrubros!inner(id,nombre,rubros!inner(id,nombre))")
         .eq("estado","activo").order("created_at",{ascending:false}).limit(200),
-    ]).then(([{data:pData,error:pErr},{data:rData,error:rErr},{data:sData,error:sErr},{data:aData,error:aErr}]) => {
-      if (pErr) console.error("provincias error:", pErr);
-      if (rErr) console.error("rubros error:", rErr);
-      if (sErr) console.error("subrubros error:", sErr);
-      if (aErr) console.error("anuncios error:", aErr);
+    ]).then(([{data:pData},{data:rData},{data:sData},{data:aData}]) => {
 
       if (pData) setProvs(pData);
 
       if (rData && sData) {
-        // ── FIX CLAVE: normalizar tipos al armar rubros con subrubros ──
         const rubrosConSubs = rData.map((r:any) => ({
           ...r,
           subrubros: sData.filter((s:any) => Number(s.rubro_id) === Number(r.id)),
         }));
         setRubros(rubrosConSubs as any);
-
         const rf = rData.map((r:any) => ({id:Number(r.id), nombre:r.nombre}));
         setRFlat(rf);
         setSFlat(sData.map((s:any) => ({id:Number(s.id), nombre:s.nombre, rubro_id:Number(s.rubro_id)})));
 
-        const rP = (window as any).__rP, sP = (window as any).__sP;
         if (rP) { const r = rf.find((x:any) => x.id===parseInt(rP)); if(r){setRSel(r);setQuery(r.nombre);} }
         if (sP) {
           const s = sData.find((x:any) => Number(x.id)===parseInt(sP));
@@ -131,7 +122,17 @@ function BuscarInner() {
         }
       }
 
-      if (aData) setAnuncios(aData as any);
+      if (aData) {
+        // ── EXTRAER nombres del JOIN igual que home ──
+        setAnuncios(aData.map((a:any) => ({
+          id: a.id, titulo: a.titulo, precio: a.precio, moneda: a.moneda,
+          ciudad: a.ciudad, provincia: a.provincia, imagenes: a.imagenes || [],
+          flash: a.flash || false, fuente: a.fuente || "nexonet",
+          usuario_id: a.usuario_id, permuto: a.permuto || false,
+          subrubro_nombre: a.subrubros?.nombre || "",
+          rubro_nombre: a.subrubros?.rubros?.nombre || "",
+        })));
+      }
       setLoading(false);
     });
   }, []);
@@ -207,30 +208,35 @@ function BuscarInner() {
   });
 
   const busLibre = query.trim()!==""&&!rSel&&!sSel;
-  const resTxt   = busLibre ? anuFilt.filter(a=>a.titulo.toLowerCase().includes(qLow)) : [];
-  const rubrosM  = rSel ? rubros.filter(r=>r.id===rSel.id) : rubros;
+  const resTxt   = busLibre ? anuFilt.filter(a=>
+    a.titulo.toLowerCase().includes(qLow) ||
+    a.subrubro_nombre.toLowerCase().includes(qLow) ||
+    a.rubro_nombre.toLowerCase().includes(qLow)
+  ) : [];
+  const rubrosM  = rSel ? rubros.filter(r=>r.nombre===rSel.nombre) : rubros;
 
+  // ── FILTRO POR NOMBRE igual que home ──
   const getAnus = (rubro:Rubro) => {
-    const ids = rubro.subrubros.map((s:any) => Number(s.id));
-    const sa  = subAct[rubro.id];
+    const sa = subAct[rubro.id];
     return anuFilt.filter(a => {
-      const sid = Number(a.subrubro_id);
-      return sa ? sid === Number(sa) : ids.includes(sid);
+      if (a.rubro_nombre !== rubro.nombre) return false;
+      if (sa) {
+        const sub = rubro.subrubros.find((s:any) => Number(s.id) === Number(sa));
+        return sub ? a.subrubro_nombre === sub.nombre : false;
+      }
+      if (sSel) return a.subrubro_nombre === sSel.nombre;
+      return true;
     }).slice(0,8);
   };
 
-  // Anuncios que no pertenecen a ningún subrubro conocido
-  const todosSubIds = sFlat.map(s => Number(s.id));
-  const anuSinCategoria = anuFilt.filter(a => !todosSubIds.includes(Number(a.subrubro_id)));
+  const anuSinCategoria = anuFilt.filter(a => !a.rubro_nombre);
 
-  // Lista plana de anuncios visibles según filtros activos
   const _base: Anuncio[] = busLibre ? resTxt : rubrosM.flatMap(r => getAnus(r));
   const anunciosVisibles: Anuncio[] = soloPermuto ? _base.filter(a => a.permuto) : _base;
 
   const fmt = (p:number,m:string) => !p?"Consultar":`${m==="USD"?"U$D":"$"} ${p.toLocaleString("es-AR")}`;
   const phQ  = barrSel?`¿Qué buscás en ${barrSel}?`:ciudSel?`¿Qué buscás en ${ciudSel}?`:provSel?`¿Qué buscás en ${provSel}?`:"¿Qué buscás?";
 
-  // ── CONEXIÓN ──
   const toggleSeleccion = (id:number) => {
     const s = new Set(seleccionados);
     s.has(id) ? s.delete(id) : s.add(id);
@@ -251,27 +257,21 @@ function BuscarInner() {
     if (bits < seleccionados.size) return;
     setConectando(true);
     const ids = Array.from(seleccionados);
-
     const { data: anuData } = await supabase.from("anuncios").select("id,usuario_id,conexiones").in("id", ids);
-
     if (anuData) {
       await Promise.all(anuData.map((a:any) =>
         supabase.from("anuncios").update({ conexiones: (a.conexiones||0)+1 }).eq("id",a.id)
       ));
       await supabase.from("notificaciones").insert(
         anuData.map((a:any) => ({
-          usuario_id: a.usuario_id,
-          emisor_id:  session.user.id,
-          anuncio_id: a.id,
-          tipo: "conexion",
-          mensaje: mensajeConexion,
+          usuario_id: a.usuario_id, emisor_id: session.user.id,
+          anuncio_id: a.id, tipo: "conexion", mensaje: mensajeConexion,
         }))
       );
       const nuevosBits = bits - ids.length;
       await supabase.from("usuarios").update({ bits: nuevosBits, bits_gastados: bits - nuevosBits }).eq("id", session.user.id);
       setBits(nuevosBits);
     }
-
     setResultadoConex(`✅ Mensaje enviado a ${ids.length} anuncio${ids.length!==1?"s":""}. Usaste ${ids.length} BIT.`);
     setConectando(false);
     setSeleccionados(new Set());
@@ -283,9 +283,7 @@ function BuscarInner() {
     <main style={{paddingTop:"95px",paddingBottom: modoConexion ? "230px" : "130px",background:"#f4f4f2",minHeight:"100vh",fontFamily:"'Nunito',sans-serif"}}>
       <Header />
 
-      {/* BARRA */}
       <div style={{background:"linear-gradient(135deg,#1a2a3a,#243b55)",padding:"12px 16px 14px",display:"flex",flexDirection:"column",gap:"10px"}}>
-        {/* FILA UBICACIÓN */}
         <div style={{display:"flex",gap:"8px",alignItems:"center"}}>
           <SelUbi value={provSel} placeholder="🗺️ Provincia" opciones={provs.map(p=>p.nombre)} onChange={cambiarProv} />
           {provSel && <SelUbi value={ciudSel} placeholder="🏙️ Ciudad" opciones={ciudades.map(c=>c.nombre)} onChange={cambiarCiud} />}
@@ -306,7 +304,6 @@ function BuscarInner() {
           </div>
         )}
 
-        {/* CHIPS FILTROS EXTRA */}
         <div style={{display:"flex",gap:"8px",flexWrap:"wrap"}}>
           <button
             onClick={() => setSoloPermuto(v => !v)}
@@ -315,7 +312,6 @@ function BuscarInner() {
           </button>
         </div>
 
-        {/* BUSCADOR */}
         <div style={{position:"relative"}}>
           <div style={{display:"flex",background:"#fff",borderRadius:"14px",boxShadow:"0 2px 8px rgba(0,0,0,0.2)",zIndex:10,position:"relative"}}>
             <div style={{flex:1,position:"relative"}}>
@@ -375,14 +371,8 @@ function BuscarInner() {
           )}
         </div>
 
-        {/* BOTÓN MODO CONEXIÓN */}
         {session && !modoConexion && (
-          <button onClick={activarModoConexion} style={{
-            background:"linear-gradient(135deg,#f0c040,#d4a017)",
-            border:"none",borderRadius:"12px",padding:"8px 16px",
-            display:"flex",flexDirection:"row",alignItems:"center",justifyContent:"space-between",gap:"10px",
-            cursor:"pointer",fontFamily:"'Nunito',sans-serif",boxShadow:"0 4px 0 #a07810",width:"100%",
-          }}>
+          <button onClick={activarModoConexion} style={{background:"linear-gradient(135deg,#f0c040,#d4a017)",border:"none",borderRadius:"12px",padding:"8px 16px",display:"flex",flexDirection:"row",alignItems:"center",justifyContent:"space-between",gap:"10px",cursor:"pointer",fontFamily:"'Nunito',sans-serif",boxShadow:"0 4px 0 #a07810",width:"100%"}}>
             <div style={{display:"flex",alignItems:"center",gap:"8px"}}>
               <span style={{fontSize:"15px"}}>🔗</span>
               <span style={{fontSize:"13px",fontWeight:900,color:"#1a2a3a"}}>Conectarme con:</span>
@@ -406,7 +396,6 @@ function BuscarInner() {
         )}
       </div>
 
-      {/* RESULTADOS */}
       {loading ? (
         <div style={{textAlign:"center",padding:"40px",color:"#9a9a9a",fontWeight:700}}>Cargando...</div>
       ) : busLibre ? (
@@ -456,10 +445,9 @@ function BuscarInner() {
         })
       )}
 
-      {/* ── ANUNCIOS SIN CATEGORÍA ── */}
       {!busLibre && !loading && anuSinCategoria.length > 0 && (
         <div style={{marginBottom:"8px",background:"#fff",paddingBottom:"12px",borderBottom:"6px solid #f4f4f2"}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 16px 8px"}}>
+          <div style={{padding:"14px 16px 8px"}}>
             <span style={{fontSize:"16px",fontWeight:900,color:"#1a2a3a"}}>📦 Otros</span>
           </div>
           <div style={{display:"flex",gap:"12px",padding:"0 16px",overflowX:"auto",scrollbarWidth:"none"}}>
@@ -468,7 +456,6 @@ function BuscarInner() {
         </div>
       )}
 
-      {/* ── PANEL FLOTANTE CONEXIÓN ── */}
       {modoConexion && (
         <div style={{position:"fixed",bottom:"110px",left:0,right:0,zIndex:100,padding:"0 16px 12px"}}>
           {resultadoConex ? (
@@ -501,7 +488,6 @@ function BuscarInner() {
         </div>
       )}
 
-      {/* ══ POPUP SIN BIT ══ */}
       {popupSinBits && (
         <div style={{position:"fixed",inset:0,zIndex:200,background:"rgba(0,0,0,0.65)",display:"flex",alignItems:"flex-end",padding:"16px"}}>
           <div style={{width:"100%",background:"#fff",borderRadius:"20px 20px 16px 16px",padding:"24px 20px 20px",boxShadow:"0 -8px 40px rgba(0,0,0,0.3)"}}>
@@ -515,26 +501,19 @@ function BuscarInner() {
                 {bits===0 ? "No tenés BIT disponibles" : `Necesitás ${seleccionados.size} BIT, tenés ${bits}`}
               </div>
               <div style={{fontSize:"13px",color:"#8a9aaa",fontWeight:600,lineHeight:1.5}}>
-                Cargá BIT para conectarte con los anuncios que te interesan. Cada conexión usa 1 BIT.
+                Cargá BIT para conectarte con los anuncios que te interesan.
               </div>
             </div>
-            <button
-              onClick={()=>{ setPopupSinBits(false); router.push("/comprar"); }}
-              style={{width:"100%",background:"linear-gradient(135deg,#f0c040,#d4a017)",border:"none",borderRadius:"12px",padding:"14px",fontSize:"15px",fontWeight:900,color:"#1a2a3a",cursor:"pointer",fontFamily:"'Nunito',sans-serif",boxShadow:"0 4px 0 #a07810",marginBottom:"10px"}}
-            >
+            <button onClick={()=>{ setPopupSinBits(false); router.push("/comprar"); }} style={{width:"100%",background:"linear-gradient(135deg,#f0c040,#d4a017)",border:"none",borderRadius:"12px",padding:"14px",fontSize:"15px",fontWeight:900,color:"#1a2a3a",cursor:"pointer",fontFamily:"'Nunito',sans-serif",boxShadow:"0 4px 0 #a07810",marginBottom:"10px"}}>
               ⚡ Cargar BIT ahora
             </button>
-            <button
-              onClick={()=>setPopupSinBits(false)}
-              style={{width:"100%",background:"none",border:"none",padding:"10px",fontSize:"13px",fontWeight:700,color:"#9a9a9a",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}
-            >
+            <button onClick={()=>setPopupSinBits(false)} style={{width:"100%",background:"none",border:"none",padding:"10px",fontSize:"13px",fontWeight:700,color:"#9a9a9a",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>
               Cancelar
             </button>
           </div>
         </div>
       )}
 
-      {/* ══ POPUP CONEXIÓN ══ */}
       {popupConexion && (
         <div style={{position:"fixed",inset:0,zIndex:200,background:"rgba(0,0,0,0.65)",display:"flex",alignItems:"flex-end",padding:"16px"}}>
           <div style={{width:"100%",background:"#fff",borderRadius:"20px 20px 16px 16px",padding:"24px 20px 20px",boxShadow:"0 -8px 40px rgba(0,0,0,0.3)"}}>
@@ -547,28 +526,20 @@ function BuscarInner() {
             </div>
             <div style={{display:"flex",flexDirection:"column",gap:"8px",marginBottom:"14px"}}>
               {MENSAJES_PRESET.map((m,i) => (
-                <button key={i} onClick={()=>setMensajeConexion(m)} style={{textAlign:"left",background:mensajeConexion===m?"linear-gradient(135deg,#fff8e0,#fff3c0)":"#f8f8f8",border:mensajeConexion===m?"2px solid #d4a017":"2px solid transparent",borderRadius:"12px",padding:"10px 14px",fontSize:"13px",fontWeight:700,color:"#1a2a3a",cursor:"pointer",fontFamily:"'Nunito',sans-serif",transition:"all 0.15s"}}>
+                <button key={i} onClick={()=>setMensajeConexion(m)} style={{textAlign:"left",background:mensajeConexion===m?"linear-gradient(135deg,#fff8e0,#fff3c0)":"#f8f8f8",border:mensajeConexion===m?"2px solid #d4a017":"2px solid transparent",borderRadius:"12px",padding:"10px 14px",fontSize:"13px",fontWeight:700,color:"#1a2a3a",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>
                   {mensajeConexion===m && <span style={{color:"#d4a017",marginRight:"6px"}}>✓</span>}{m}
                 </button>
               ))}
             </div>
             <div style={{marginBottom:"16px"}}>
               <div style={{fontSize:"11px",fontWeight:800,color:"#9a9a9a",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"6px"}}>✏️ O escribí tu propio mensaje</div>
-              <textarea
-                value={mensajeConexion}
-                onChange={e=>setMensajeConexion(e.target.value)}
-                maxLength={200}
-                rows={3}
+              <textarea value={mensajeConexion} onChange={e=>setMensajeConexion(e.target.value)} maxLength={200} rows={3}
                 style={{width:"100%",borderRadius:"12px",border:"2px solid #e8e8e8",padding:"10px 14px",fontSize:"13px",fontWeight:600,color:"#1a2a3a",fontFamily:"'Nunito',sans-serif",resize:"none",outline:"none",boxSizing:"border-box"}}
-                placeholder="Escribí tu mensaje..."
-              />
+                placeholder="Escribí tu mensaje..." />
               <div style={{textAlign:"right",fontSize:"10px",color:"#bbb",fontWeight:600}}>{mensajeConexion.length}/200</div>
             </div>
-            <button
-              onClick={async ()=>{ setPopupConexion(false); await ejecutarConexion(); }}
-              disabled={!mensajeConexion.trim()}
-              style={{width:"100%",background:mensajeConexion.trim()?"linear-gradient(135deg,#f0c040,#d4a017)":"#f0f0f0",border:"none",borderRadius:"12px",padding:"14px",fontSize:"15px",fontWeight:900,color:mensajeConexion.trim()?"#1a2a3a":"#bbb",cursor:mensajeConexion.trim()?"pointer":"not-allowed",fontFamily:"'Nunito',sans-serif",boxShadow:mensajeConexion.trim()?"0 4px 0 #a07810":"none"}}
-            >
+            <button onClick={async ()=>{ setPopupConexion(false); await ejecutarConexion(); }} disabled={!mensajeConexion.trim()}
+              style={{width:"100%",background:mensajeConexion.trim()?"linear-gradient(135deg,#f0c040,#d4a017)":"#f0f0f0",border:"none",borderRadius:"12px",padding:"14px",fontSize:"15px",fontWeight:900,color:mensajeConexion.trim()?"#1a2a3a":"#bbb",cursor:mensajeConexion.trim()?"pointer":"not-allowed",fontFamily:"'Nunito',sans-serif",boxShadow:mensajeConexion.trim()?"0 4px 0 #a07810":"none"}}>
               {conectando?"Enviando...":"⚡ Enviar y conectar"}
             </button>
           </div>
@@ -586,13 +557,8 @@ function Tarjeta({ a, fmt, qLow, query, horizontal, modoConexion, seleccionado, 
 }) {
   const f = F[a.fuente]||F.nexonet;
   return (
-    <div
-      onClick={modoConexion ? onToggle : undefined}
-      style={{flexShrink:horizontal?0:undefined,width:horizontal?"160px":undefined,position:"relative",cursor:modoConexion?"pointer":undefined}}
-    >
-      {modoConexion && (
-        <div style={{position:"absolute",inset:0,zIndex:10,borderRadius:"14px",border:`3px solid ${seleccionado?"#d4a017":"rgba(212,160,23,0.4)"}`,background:seleccionado?"rgba(212,160,23,0.15)":"transparent",transition:"all .15s",pointerEvents:"none"}} />
-      )}
+    <div onClick={modoConexion ? onToggle : undefined} style={{flexShrink:horizontal?0:undefined,width:horizontal?"160px":undefined,position:"relative",cursor:modoConexion?"pointer":undefined}}>
+      {modoConexion && <div style={{position:"absolute",inset:0,zIndex:10,borderRadius:"14px",border:`3px solid ${seleccionado?"#d4a017":"rgba(212,160,23,0.4)"}`,background:seleccionado?"rgba(212,160,23,0.15)":"transparent",transition:"all .15s",pointerEvents:"none"}} />}
       {modoConexion && (
         <div style={{position:"absolute",top:"8px",right:"8px",zIndex:11,width:"24px",height:"24px",borderRadius:"50%",background:seleccionado?"#d4a017":"rgba(255,255,255,0.9)",border:`2px solid ${seleccionado?"#d4a017":"#ccc"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"14px",boxShadow:"0 2px 6px rgba(0,0,0,0.2)"}}>
           {seleccionado && <span style={{color:"#fff",fontWeight:900}}>✓</span>}
@@ -608,6 +574,7 @@ function Tarjeta({ a, fmt, qLow, query, horizontal, modoConexion, seleccionado, 
             {a.imagenes?.[0]?<img src={a.imagenes[0]} alt={a.titulo} style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<span style={{fontSize:"36px"}}>📦</span>}
           </div>
           <div style={{padding:"8px 10px 10px"}}>
+            <div style={{fontSize:"11px",color:"#9a9a9a",fontWeight:700,marginBottom:"2px",textTransform:"uppercase",letterSpacing:"0.5px"}}>{a.subrubro_nombre}</div>
             <div style={{fontSize:"12px",fontWeight:800,color:"#2c2c2e",marginBottom:"3px",overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>
               {qLow&&query ? a.titulo.split(new RegExp(`(${query})`, "gi")).map((p:string,i:number)=>
                 p.toLowerCase()===qLow?<mark key={i} style={{background:"#fff3cd",color:"#1a2a3a",borderRadius:"3px",padding:"0 2px"}}>{p}</mark>:p) : a.titulo}

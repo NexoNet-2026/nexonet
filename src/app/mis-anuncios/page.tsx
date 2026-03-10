@@ -50,6 +50,7 @@ export default function MisAnuncios() {
   const [bitsPromo, setBitsPromo] = useState(0);
   const [bitsFree, setBitsFree] = useState(0);
   const [popupFlash, setPopupFlash] = useState(false);
+  const [anuncioFlash, setAnuncioFlash] = useState<Anuncio | null>(null);
   const [slotsExtra, setSlotsExtra] = useState(0);
   const [loading, setLoading] = useState(true);
 
@@ -219,13 +220,18 @@ export default function MisAnuncios() {
                         </div>
                       </div>
                     </div>
-                    {/* DÍAS */}
-                    <div style={{ padding: "10px", display: "flex", flexDirection: "column", alignItems: "flex-end", justifyContent: "space-between", flexShrink: 0 }}>
+                    {/* DÍAS + FLASH */}
+                    <div style={{ padding: "10px 8px", display: "flex", flexDirection: "column", alignItems: "flex-end", justifyContent: "space-between", flexShrink: 0, gap: "6px" }}>
                       <div style={{ textAlign: "right" }}>
                         <div style={{ fontSize: "9px", color: "#9a9a9a", fontWeight: 700 }}>VENCE</div>
                         <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "18px", color: dias <= 5 ? "#e74c3c" : "#d4a017" }}>{dias}d</div>
                       </div>
-                      <div style={{ fontSize: "10px", fontWeight: 800, color: "#8a9aaa" }}>Ver →</div>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setAnuncioFlash(anuncio); setPopupFlash(true); }}
+                        style={{ background: anuncio.flash ? "linear-gradient(135deg,#e67e22,#d35400)" : "linear-gradient(135deg,#1a2a3a,#243b55)", border: "none", borderRadius: "8px", padding: "5px 8px", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: "1px", boxShadow: "0 2px 0 rgba(0,0,0,0.2)" }}>
+                        <span style={{ fontSize: "14px" }}>⚡</span>
+                        <span style={{ fontSize: "7px", fontWeight: 900, color: "#f0c040", letterSpacing: "0.5px" }}>FLASH</span>
+                      </button>
                     </div>
                   </div>
                 );
@@ -415,9 +421,9 @@ export default function MisAnuncios() {
       {popupFlash && (
         <PopupCompra
           tipo="flash"
-          tituloAccion="PROMO Flash — Destacar anuncio"
+          tituloAccion={`PROMO Flash${anuncioFlash ? ` — ${anuncioFlash.titulo.slice(0,30)}${anuncioFlash.titulo.length>30?"...":""}` : ""}`}
           bitsDisponibles={{ nexo: bits, promo: bitsPromo, free: bitsFree }}
-          onClose={() => setPopupFlash(false)}
+          onClose={() => { setPopupFlash(false); setAnuncioFlash(null); }}
         />
       )}
 

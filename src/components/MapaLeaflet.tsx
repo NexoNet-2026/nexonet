@@ -58,12 +58,27 @@ function FitBounds({ anuncios }: { anuncios: Anuncio[] }) {
   return null;
 }
 
+// Centra el mapa en coordenadas específicas (cuando viene desde /anuncios/[id])
+function CentrarEn({ coords }: { coords: [number, number] }) {
+  const map = useMap();
+  const centrado = useRef(false);
+  useEffect(() => {
+    if (!centrado.current) {
+      map.setView(coords, 15);
+      centrado.current = true;
+    }
+  }, [coords, map]);
+  return null;
+}
+
 export default function MapaLeaflet({
   anuncios,
   onSeleccionar,
+  centrarEn,
 }: {
   anuncios: Anuncio[];
   onSeleccionar: (a: Anuncio) => void;
+  centrarEn?: [number, number] | null;
 }) {
   const formatPrecio = (precio: number, moneda: string) => {
     if (!precio) return "Consultar";
@@ -82,7 +97,11 @@ export default function MapaLeaflet({
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
 
-      <FitBounds anuncios={anuncios} />
+      {/* Si hay centrarEn usamos CentrarEn, si no FitBounds normal */}
+      {centrarEn
+        ? <CentrarEn coords={centrarEn} />
+        : <FitBounds anuncios={anuncios} />
+      }
 
       {anuncios.map((a) => (
         <Marker

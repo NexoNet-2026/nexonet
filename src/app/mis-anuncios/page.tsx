@@ -56,7 +56,7 @@ export default function MisAnuncios() {
   const [slotsExtra, setSlotsExtra] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  const [popupCompra, setPopupCompra] = useState<null | "anuncios3" | "anuncios10" | "empresa">(null);
+  const [popupAnuncio, setPopupAnuncio] = useState(false);
   const [confirmEliminar, setConfirmEliminar] = useState<null | number>(null);
 
   useEffect(() => { cargar(); }, []);
@@ -276,7 +276,7 @@ export default function MisAnuncios() {
                 { id: "anuncios10" as const, c1: "#1a2a3a", c2: "#243b55", icon: "➕", planLabel: "NEXO NET",     titulo: "BIT Anuncios × 10", sub: "10 anuncios + 100 BIT Conexión c/u",                       precio: "$3.000", bg: "#d4a017", fg: "#1a2a3a" },
                 { id: "empresa"    as const, c1: "#2c1a1a", c2: "#4a2020", icon: "🏢", planLabel: "NEXO EMPRESA", titulo: "BIT Empresa × 50",  sub: "50 anuncios + 1000 BIT Conexión c/u + horómetro", precio: "$10.000", bg: "#c0392b", fg: "#fff"    },
               ].map(op => (
-                <div key={op.id} onClick={() => setPopupCompra(op.id)} style={{ background: `linear-gradient(135deg, ${op.c1}, ${op.c2})`, borderRadius: "16px", padding: "16px 20px", display: "flex", alignItems: "center", gap: "14px", cursor: "pointer" }}>
+                <div key={op.id} onClick={() => setPopupAnuncio(true)} style={{ background: `linear-gradient(135deg, ${op.c1}, ${op.c2})`, borderRadius: "16px", padding: "16px 20px", display: "flex", alignItems: "center", gap: "14px", cursor: "pointer" }}>
                   <div style={{ width: "44px", height: "44px", borderRadius: "50%", background: `${op.bg}30`, border: `2px solid ${op.bg}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "22px", flexShrink: 0 }}>{op.icon}</div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: "10px", fontWeight: 700, color: op.id === "empresa" ? "#e88a8a" : "#8a9aaa", letterSpacing: "1px" }}>{op.planLabel}</div>
@@ -312,48 +312,14 @@ export default function MisAnuncios() {
 
 
 
-      {/* ══ POPUP COMPRA PLAN ══ */}
-      {popupCompra && (
-        <div style={overlayStyle} onClick={() => setPopupCompra(null)}>
-          <div style={modalStyle} onClick={e => e.stopPropagation()}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-              <div style={{ fontSize: "15px", fontWeight: 900, color: "#1a2a3a" }}>
-                {popupCompra === "empresa" ? "🏢 BIT Empresa" : "📋 BIT Anuncios"}
-              </div>
-              <button onClick={() => setPopupCompra(null)} style={btnCerrarStyle}>✕</button>
-            </div>
-            <div style={{ background: "#f4f4f2", borderRadius: "12px", padding: "16px", marginBottom: "16px" }}>
-              <div style={{ fontSize: "13px", fontWeight: 700, color: "#444", lineHeight: 1.9 }}>
-                Estás comprando:<br />
-                {popupCompra === "anuncios3"  && <><span style={{ fontWeight: 900, color: "#1a2a3a" }}>✅ 3 anuncios adicionales</span><br /></>}
-                {popupCompra === "anuncios10" && <><span style={{ fontWeight: 900, color: "#1a2a3a" }}>✅ 10 anuncios adicionales</span><br /></>}
-                {popupCompra === "empresa"    && <><span style={{ fontWeight: 900, color: "#1a2a3a" }}>✅ 50 anuncios adicionales</span><br /></>}
-                <span style={{ fontWeight: 900, color: "#1a2a3a" }}>🔗 {popupCompra === "empresa" ? "1.000" : "100"} BIT Conexión por anuncio</span><br />
-                {popupCompra === "empresa" && <><span style={{ fontWeight: 900, color: "#1a2a3a" }}>🕐 Horómetro de disponibilidad</span><br /></>}
-                <span style={{ fontWeight: 900, color: "#1a2a3a" }}>📅 Se suman a tus 3 anuncios FREE</span><br />
-                <span style={{ fontWeight: 900, color: "#1a2a3a" }}>🔄 Vigencia: 30 días renovables</span>
-              </div>
-              {popupCompra === "empresa" && (
-                <div style={{ marginTop: "12px", background: "#fff", borderRadius: "10px", padding: "12px" }}>
-                  <div style={{ fontSize: "11px", fontWeight: 800, color: "#666", marginBottom: "8px", textTransform: "uppercase" }}>🕐 Horario de disponibilidad</div>
-                  {[["Lun — Vie", "09:00 — 18:00", false], ["Sábado", "09:00 — 13:00", false], ["Domingo", "Cerrado", true]].map(([d, h, cerrado]) => (
-                    <div key={d as string} style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", fontWeight: 700, color: "#1a2a3a", marginBottom: "4px" }}>
-                      <span>{d}</span>
-                      <span style={{ color: cerrado ? "#e74c3c" : "#27ae60" }}>{h}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-              <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "32px", color: popupCompra === "empresa" ? "#c0392b" : "#d4a017", marginTop: "12px" }}>
-                {popupCompra === "anuncios3" ? "$1.000" : popupCompra === "anuncios10" ? "$3.000" : "$10.000"}
-              </div>
-            </div>
-            <button onClick={() => router.push("/comprar")} style={{ width: "100%", background: popupCompra === "empresa" ? "linear-gradient(135deg, #c0392b, #e74c3c)" : "linear-gradient(135deg, #d4a017, #f0c040)", border: "none", borderRadius: "12px", padding: "16px", fontSize: "15px", fontWeight: 800, color: popupCompra === "empresa" ? "#fff" : "#1a2a3a", cursor: "pointer", fontFamily: "'Nunito', sans-serif", letterSpacing: "1px" }}>
-              Comprar ahora →
-            </button>
-            <button onClick={() => setPopupCompra(null)} style={{ width: "100%", background: "none", border: "none", padding: "10px", fontSize: "13px", fontWeight: 800, color: "#9a9a9a", cursor: "pointer", fontFamily: "'Nunito', sans-serif", marginTop: "4px" }}>Cancelar</button>
-          </div>
-        </div>
+      {/* ══ POPUP ANUNCIO ══ */}
+      {popupAnuncio && (
+        <PopupCompra
+          tipo="anuncio"
+          tituloAccion="BIT Anuncios — Ampliar plan"
+          bitsDisponibles={{ nexo: bits, promo: bitsPromo, free: bitsFree }}
+          onClose={() => setPopupAnuncio(false)}
+        />
       )}
 
       {/* ══ POPUP CONEXION ══ */}

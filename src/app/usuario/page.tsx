@@ -4,6 +4,7 @@ import BottomNav from "@/components/BottomNav";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+// v2
 import PopupCompra from "@/components/PopupCompra";
 
 type Seccion = "cuenta" | "chat" | "datos" | "estadisticas" | "promotor";

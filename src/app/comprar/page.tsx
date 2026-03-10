@@ -246,13 +246,13 @@ export default function ComprarPage() {
 
             {/* Contacto para comprobante */}
             <div style={{ display:"flex", gap:"10px", marginBottom:"16px" }}>
-              <a href="https://wa.me/5493492000000?text=Hola! Hice una transferencia de $"+paquete.precio+" por "+paquete.bits+" BIT. Te adjunto el comprobante."
+              <a href={`https://wa.me/5493492000000?text=Hola! Hice una transferencia de $${paquete.precio} por ${paquete.bits} BIT. Te adjunto el comprobante.`}
                 target="_blank" rel="noopener noreferrer"
                 style={{ flex:1, background:"#25D366", border:"none", borderRadius:"12px", padding:"12px", fontSize:"13px", fontWeight:900, color:"#fff", cursor:"pointer", textAlign:"center", textDecoration:"none", display:"flex", alignItems:"center", justifyContent:"center", gap:"6px" }}>
                 💬 Enviar comprobante por WhatsApp
               </a>
             </div>
-            <a href="mailto:pagos@nexonet.ar?subject=Comprobante transferencia "+paquete.bits+" BIT"
+            <a href={`mailto:pagos@nexonet.ar?subject=Comprobante transferencia ${paquete.bits} BIT`}
               style={{ display:"block", width:"100%", background:"#f0f0f0", border:"none", borderRadius:"12px", padding:"12px", fontSize:"13px", fontWeight:800, color:"#666", cursor:"pointer", textAlign:"center", textDecoration:"none", boxSizing:"border-box" }}>
               📧 Enviar por email — pagos@nexonet.ar
             </a>

@@ -5,7 +5,7 @@ import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
 import { supabase } from "@/lib/supabase";
 
-type Anuncio = { id:number; titulo:string; precio:number; moneda:string; ciudad:string; provincia:string; barrio:string; imagenes:string[]; flash:boolean; fuente:string; subrubro_id:number; usuario_id:string };
+type Anuncio = { id:number; titulo:string; precio:number; moneda:string; ciudad:string; provincia:string; imagenes:string[]; flash:boolean; fuente:string; subrubro_id:number; usuario_id:string };
 type Rubro = { id:number; nombre:string; subrubros:{id:number; nombre:string}[] };
 type RubroFlat = { id:number; nombre:string };
 type SubrubroFlat = { id:number; nombre:string; rubro_id:number };
@@ -87,7 +87,7 @@ function BuscarInner() {
       supabase.from("provincias").select("id,nombre").order("nombre"),
       supabase.from("rubros").select("id,nombre,subrubros(id,nombre)").order("nombre"),
       supabase.from("anuncios")
-        .select("id,titulo,precio,moneda,ciudad,provincia,barrio,imagenes,flash,fuente,subrubro_id,usuario_id")
+        .select("id,titulo,precio,moneda,ciudad,provincia,imagenes,flash,fuente,subrubro_id,usuario_id")
         .eq("estado","activo").order("created_at",{ascending:false}).limit(100),
     ]).then(([{data:pData},{data:rData},{data:aData}]) => {
       if (pData) setProvs(pData);
@@ -174,7 +174,7 @@ function BuscarInner() {
 
   const anuFilt = anuncios.filter(a => {
     if (session && a.usuario_id === session.user.id) return false; // no mostrar propios
-    if (barrSel) return (a.barrio||"").toLowerCase().includes(barrSel.toLowerCase());
+    if (barrSel) return (a.ciudad||"").toLowerCase().includes(barrSel.toLowerCase());
     if (ciudSel) return (a.ciudad||"").toLowerCase().includes(ciudSel.toLowerCase());
     if (provSel) return (a.provincia||"").toLowerCase().includes(provSel.toLowerCase());
     return true;
@@ -368,11 +368,11 @@ function BuscarInner() {
       {/* BARRA SELECCIÓN cuando modo activo */}
       {modoConexion && (
         <div style={{background:"linear-gradient(135deg,#f0c040,#d4a017)",padding:"10px 16px",display:"flex",alignItems:"center",gap:"10px",justifyContent:"space-between",position:"sticky",top:"95px",zIndex:50,boxShadow:"0 4px 0 #a07810"}}>
-          <button onClick={todosSeleccionados ? deseleccionarTodos : seleccionarTodos} style={{background:"rgba(26,42,58,0.15)",border:"2px solid rgba(26,42,58,0.25)",borderRadius:"20px",padding:"6px 14px",fontSize:"12px",fontWeight:800,color:"#1a2a3a",cursor:"pointer",fontFamily:"'Nunito',sans-serif",whiteSpace:"nowrap"}}>
+          <button onClick={todosSeleccionados ? deseleccionarTodos : seleccionarTodos} style={{background:"#1a2a3a",border:"none",borderRadius:"20px",padding:"6px 16px",fontSize:"12px",fontWeight:900,color:"#d4a017",cursor:"pointer",fontFamily:"'Nunito',sans-serif",whiteSpace:"nowrap",boxShadow:"0 3px 0 #000a"}}>
             {todosSeleccionados ? "✕ Deseleccionar todos" : "✅ Seleccionar todos"}
           </button>
-          <div style={{fontSize:"12px",fontWeight:700,color:"rgba(26,42,58,0.75)",whiteSpace:"nowrap"}}>
-            {seleccionados.size > 0 ? `${seleccionados.size} selec. · ${seleccionados.size} BIT` : "Tocá los anuncios"}
+          <div style={{fontSize:"13px",fontWeight:900,color:"#1a2a3a",whiteSpace:"nowrap"}}>
+            {seleccionados.size > 0 ? `🔗 ${seleccionados.size} anuncio${seleccionados.size!==1?"s":""} · ${seleccionados.size} BIT` : "Tocá los anuncios"}
           </div>
         </div>
       )}

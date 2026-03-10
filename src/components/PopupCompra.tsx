@@ -1,7 +1,12 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { PRODUCTOS } from "@/app/comprar/page";
+
+const TIPO_A_CAT: Record<string, string> = {
+  conexion:"conexion", anuncio:"anuncio", flash:"flash",
+  link:"extras", adjunto:"extras", grupo:"extras",
+};
+import { PRODUCTOS } from "@/lib/productos";
 
 // ══════════════════════════════════════════
 // PopupCompra — componente reutilizable

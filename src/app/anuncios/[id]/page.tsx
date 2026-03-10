@@ -77,7 +77,7 @@ export default function AnuncioDetalle() {
       if (sub) setAnuncio((prev: any) => ({ ...prev, subrubro_nombre: sub.nombre, rubro_nombre: (sub.rubros as any)?.nombre || "" }));
     }
     if (data.usuario_id) {
-      const { data: u } = await supabase.from("usuarios").select("nombre_usuario, whatsapp, codigo, plan").eq("id", data.usuario_id).single();
+      const { data: u } = await supabase.from("usuarios").select("nombre_usuario, codigo, plan").eq("id", data.usuario_id).single();
       if (u) setUsuario(u);
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user.id === data.usuario_id) setEsPropio(true);
@@ -340,13 +340,6 @@ export default function AnuncioDetalle() {
 
         {/* BOTONES ACCIÓN */}
         <div style={{ display:"flex", gap:"10px" }}>
-          {usuario?.whatsapp && (
-            <a href={`https://wa.me/54${usuario.whatsapp}?text=Hola! Vi tu anuncio "${anuncio.titulo}" en NexoNet`}
-              target="_blank" rel="noopener noreferrer"
-              style={{ flex:1, background:"#25D366", color:"#fff", borderRadius:"12px", padding:"16px", fontSize:"14px", fontWeight:800, textAlign:"center", textDecoration:"none", display:"flex", alignItems:"center", justifyContent:"center", gap:"6px" }}>
-              💬 WhatsApp
-            </a>
-          )}
           {!esPropio && session && (
             <button
               onClick={()=>{ bits > 0 ? setPopupMensaje(true) : setPopupSinBits(true); }}

@@ -199,7 +199,7 @@ export default function Publicar() {
       links: linksLimpios.length ? linksLimpios : null,
     }).select().single();
 
-    if (error || !anuncio) { alert("Error al publicar."); setLoading(false); return; }
+    if (error || !anuncio) { alert("Error al publicar: " + (error?.message || "sin datos")); setLoading(false); return; }
 
     if (fotos.length > 0) {
       setSubiendo(true);

@@ -186,7 +186,6 @@ function BuscarInner() {
   const togSub = (rId:number,sId:number) => setSubAct(p => ({...p,[rId]:p[rId]===sId?null:sId}));
 
   const anuFilt = anuncios.filter(a => {
-    if (session && a.usuario_id === session.user.id) return false; // no mostrar propios
     if (barrSel) return (a.ciudad||"").toLowerCase().includes(barrSel.toLowerCase());
     if (ciudSel) return (a.ciudad||"").toLowerCase().includes(ciudSel.toLowerCase());
     if (provSel) return (a.provincia||"").toLowerCase().includes(provSel.toLowerCase());

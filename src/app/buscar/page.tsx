@@ -441,8 +441,12 @@ function BuscarInner() {
                 </span>
               </div>
               <button
-                onClick={()=>{ if(seleccionados.size>0 && !conectando && seleccionados.size<=bits) setPopupConexion(true); }}
-                disabled={seleccionados.size===0||conectando||seleccionados.size>bits}
+                onClick={()=>{
+                  if(seleccionados.size===0) return;
+                  if(bits===0 || seleccionados.size>bits) { setPopupSinBits(true); return; }
+                  setPopupConexion(true);
+                }}
+                disabled={seleccionados.size===0||conectando}
                 style={{width:"100%",background:seleccionados.size===0?"rgba(255,255,255,0.06)":"linear-gradient(135deg,#f0c040,#d4a017)",border:"none",borderRadius:"10px",padding:"12px",fontSize:"14px",fontWeight:900,color:seleccionados.size===0?"rgba(255,255,255,0.25)":"#1a2a3a",cursor:seleccionados.size===0?"not-allowed":"pointer",fontFamily:"'Nunito',sans-serif",boxShadow:seleccionados.size===0?"none":"0 4px 0 #a07810"}}
               >
                 {conectando?"Conectando...":seleccionados.size>0?`Conectar con ${seleccionados.size} anuncio${seleccionados.size!==1?"s":""} (${seleccionados.size} BIT)`:"Seleccioná anuncios"}

@@ -1,7 +1,7 @@
 "use client";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
-import { useState, Suspense } from "react";
+import { useState, Suspense, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { PRODUCTOS } from "@/lib/productos";

@@ -168,7 +168,7 @@ export default function ChatPage() {
       </div>
 
       {/* ── MENSAJES ── */}
-      <div style={{ flex:1, overflowY:"auto", padding:"170px 16px 100px", display:"flex", flexDirection:"column", gap:"8px" }}>
+      <div style={{ flex:1, overflowY:"auto", padding:"170px 16px 210px", display:"flex", flexDirection:"column", gap:"8px" }}>
         {mensajes.length === 0 && (
           <div style={{ textAlign:"center", padding:"40px 20px", color:"#9a9a9a" }}>
             <div style={{ fontSize:"40px", marginBottom:"12px" }}>💬</div>
@@ -216,7 +216,7 @@ export default function ChatPage() {
       </div>
 
       {/* ── INPUT ── */}
-      <div style={{ position:"fixed", bottom:"65px", left:0, right:0, background:"#fff", borderTop:"1px solid #e8e8e6", padding:"10px 16px", display:"flex", gap:"10px", alignItems:"flex-end", boxShadow:"0 -4px 16px rgba(0,0,0,0.08)" }}>
+      <div style={{ position:"fixed", bottom:"130px", left:0, right:0, background:"#fff", borderTop:"1px solid #e8e8e6", padding:"10px 16px", display:"flex", gap:"10px", alignItems:"flex-end", boxShadow:"0 -4px 16px rgba(0,0,0,0.08)" }}>
         <textarea
           ref={inputRef}
           value={texto}

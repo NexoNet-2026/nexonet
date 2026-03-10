@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
+import PopupCompra from "@/components/PopupCompra";
 
 type Anuncio = {
   id: number;
@@ -46,6 +47,9 @@ export default function MisAnuncios() {
   const [anuncios, setAnuncios] = useState<Anuncio[]>([]);
   const [plan, setPlan] = useState<Plan>("nexofree");
   const [bits, setBits] = useState(0);
+  const [bitsPromo, setBitsPromo] = useState(0);
+  const [bitsFree, setBitsFree] = useState(0);
+  const [popupFlash, setPopupFlash] = useState(false);
   const [slotsExtra, setSlotsExtra] = useState(0);
   const [loading, setLoading] = useState(true);
 
@@ -68,6 +72,8 @@ export default function MisAnuncios() {
 
     if (usuario) {
       setBits(usuario.bits || 0);
+      setBitsPromo(usuario.bits_promo || 0);
+      setBitsFree(usuario.bits_free || 0);
       setPlan((usuario.plan as Plan) || "nexofree");
       setSlotsExtra(usuario.slots_extra || 0);
     }
@@ -403,6 +409,16 @@ export default function MisAnuncios() {
             <button onClick={() => setPopupCompra(null)} style={{ width: "100%", background: "none", border: "none", padding: "10px", fontSize: "13px", fontWeight: 800, color: "#9a9a9a", cursor: "pointer", fontFamily: "'Nunito', sans-serif", marginTop: "4px" }}>Cancelar</button>
           </div>
         </div>
+      )}
+
+      {/* ══ POPUP FLASH ══ */}
+      {popupFlash && (
+        <PopupCompra
+          tipo="flash"
+          tituloAccion="BIT Flash — Destacar anuncio"
+          bitsDisponibles={{ nexo: bits, promo: bitsPromo, free: bitsFree }}
+          onClose={() => setPopupFlash(false)}
+        />
       )}
 
       <BottomNav />

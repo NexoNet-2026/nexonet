@@ -4,6 +4,7 @@ import BottomNav from "@/components/BottomNav";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import PopupCompra from "@/components/PopupCompra";
 
 type Rubro = { id: number; nombre: string };
 type Subrubro = { id: number; nombre: string; rubro_id: number };
@@ -53,6 +54,12 @@ export default function Publicar() {
   const [links, setLinks] = useState<string[]>([""]);
   const [linkExpandido, setLinkExpandido] = useState<number|null>(null);
   const [popupLink, setPopupLink] = useState(false);
+  const [popupLinkCompra, setPopupLinkCompra] = useState(false);
+  const [popupAdjuntoCompra, setPopupAdjuntoCompra] = useState(false);
+  const [popupAnuncioCompra, setPopupAnuncioCompra] = useState(false);
+  const [bitsNexo, setBitsNexo] = useState(0);
+  const [bitsPromo, setBitsPromo] = useState(0);
+  const [bitsFree, setBitsFree] = useState(0);
 
   // ── Archivos ──
   const [archivosHabilitados, setArchivosHabilitados] = useState(false);
@@ -459,7 +466,7 @@ export default function Publicar() {
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"14px" }}>
                 <h3 style={{...subtituloStyle, marginBottom:0}}>🔗 Links multimedia</h3>
                 {!linksHabilitados && (
-                  <button onClick={() => setPopupLink(true)} style={{ background:"linear-gradient(135deg,#d4a017,#f0c040)", border:"none", borderRadius:"20px", padding:"6px 14px", fontSize:"11px", fontWeight:900, color:"#1a2a3a", cursor:"pointer", fontFamily:"'Nunito',sans-serif", whiteSpace:"nowrap" }}>
+                  <button onClick={() => setPopupLinkCompra(true)} style={{ background:"linear-gradient(135deg,#d4a017,#f0c040)", border:"none", borderRadius:"20px", padding:"6px 14px", fontSize:"11px", fontWeight:900, color:"#1a2a3a", cursor:"pointer", fontFamily:"'Nunito',sans-serif", whiteSpace:"nowrap" }}>
                     💰 Comprar $500
                   </button>
                 )}
@@ -530,7 +537,7 @@ export default function Publicar() {
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"14px" }}>
                 <h3 style={{...subtituloStyle, marginBottom:0}}>📎 Archivos adjuntos</h3>
                 {!archivosHabilitados && (
-                  <button onClick={() => setPopupArchivo(true)} style={{ background:"linear-gradient(135deg,#d4a017,#f0c040)", border:"none", borderRadius:"20px", padding:"6px 14px", fontSize:"11px", fontWeight:900, color:"#1a2a3a", cursor:"pointer", fontFamily:"'Nunito',sans-serif", whiteSpace:"nowrap" }}>
+                  <button onClick={() => setPopupAdjuntoCompra(true)} style={{ background:"linear-gradient(135deg,#d4a017,#f0c040)", border:"none", borderRadius:"20px", padding:"6px 14px", fontSize:"11px", fontWeight:900, color:"#1a2a3a", cursor:"pointer", fontFamily:"'Nunito',sans-serif", whiteSpace:"nowrap" }}>
                     💰 Comprar $500
                   </button>
                 )}
@@ -544,7 +551,7 @@ export default function Publicar() {
                   <div style={{ display:"flex", justifyContent:"center", gap:"10px", fontSize:"22px" }}>
                     {["📄","🖼️","📊","🎵","📦"].map(i => <span key={i}>{i}</span>)}
                   </div>
-                  <button onClick={() => setPopupArchivo(true)} style={{ width:"100%", marginTop:"12px", background:"linear-gradient(135deg,#d4a017,#f0c040)", border:"none", borderRadius:"10px", padding:"10px", fontSize:"12px", fontWeight:800, color:"#1a2a3a", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
+                  <button onClick={() => setPopupAdjuntoCompra(true)} style={{ width:"100%", marginTop:"12px", background:"linear-gradient(135deg,#d4a017,#f0c040)", border:"none", borderRadius:"10px", padding:"10px", fontSize:"12px", fontWeight:800, color:"#1a2a3a", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
                     💰 Comprar para habilitar — $500
                   </button>
                 </div>
@@ -635,6 +642,38 @@ export default function Publicar() {
           </div>
         )}
       </div>
+      {/* ══ POPUP COMPRA LINK ══ */}
+      {popupLinkCompra && (
+        <PopupCompra
+          tipo="link"
+          tituloAccion="Agregar link al anuncio"
+          bitsDisponibles={{ nexo: bitsNexo, promo: bitsPromo, free: bitsFree }}
+          onClose={() => setPopupLinkCompra(false)}
+          onUsarBits={() => { setPopupLinkCompra(false); setPopupLink(true); }}
+        />
+      )}
+
+      {/* ══ POPUP COMPRA ADJUNTO ══ */}
+      {popupAdjuntoCompra && (
+        <PopupCompra
+          tipo="adjunto"
+          tituloAccion="Agregar adjunto al anuncio"
+          bitsDisponibles={{ nexo: bitsNexo, promo: bitsPromo, free: bitsFree }}
+          onClose={() => setPopupAdjuntoCompra(false)}
+          onUsarBits={() => { setPopupAdjuntoCompra(false); setPopupArchivo(true); }}
+        />
+      )}
+
+      {/* ══ POPUP COMPRA ANUNCIO ══ */}
+      {popupAnuncioCompra && (
+        <PopupCompra
+          tipo="anuncio"
+          tituloAccion="Publicar anuncio"
+          bitsDisponibles={{ nexo: bitsNexo, promo: bitsPromo, free: bitsFree }}
+          onClose={() => setPopupAnuncioCompra(false)}
+        />
+      )}
+
       <BottomNav />
     </main>
   );

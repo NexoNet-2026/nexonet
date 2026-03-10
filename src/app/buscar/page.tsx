@@ -103,7 +103,12 @@ function BuscarInner() {
       supabase.from("anuncios")
         .select("id,titulo,precio,moneda,ciudad,provincia,imagenes,flash,fuente,subrubro_id,usuario_id,permuto")
         .eq("estado","activo").order("created_at",{ascending:false}).limit(100),
-    ]).then(([{data:pData},{data:rData},{data:sData},{data:aData}]) => {
+    ]).then(([{data:pData,error:pErr},{data:rData,error:rErr},{data:sData,error:sErr},{data:aData,error:aErr}]) => {
+      if (pErr) console.error("provincias error:", pErr);
+      if (rErr) console.error("rubros error:", rErr);
+      if (sErr) console.error("subrubros error:", sErr);
+      if (aErr) console.error("anuncios error:", aErr);
+      console.log("rubros:", rData?.length, "subrubros:", sData?.length, "anuncios:", aData?.length);
       if (pData) setProvs(pData);
       if (rData && sData) {
         // Armar rubros con sus subrubros

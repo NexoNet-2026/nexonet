@@ -114,10 +114,10 @@ function BuscarInner() {
         // Armar rubros con sus subrubros
         const rubrosConSubs = rData.map((r:any) => ({
           ...r,
-          subrubros: sData.filter((s:any) => s.rubro_id === r.id),
+          subrubros: sData.filter((s:any) => Number(s.rubro_id) === Number(r.id)),
         }));
         setRubros(rubrosConSubs as any);
-        const rf = rData.map((r:any) => ({id:r.id,nombre:r.nombre}));
+        const rf = rData.map((r:any) => ({id:Number(r.id),nombre:r.nombre}));
         setRFlat(rf);
         setSFlat(sData.map((s:any) => ({id:s.id,nombre:s.nombre,rubro_id:s.rubro_id})));
         const rP = (window as any).__rP, sP = (window as any).__sP;

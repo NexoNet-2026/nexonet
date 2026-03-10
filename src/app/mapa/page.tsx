@@ -35,6 +35,7 @@ export default function Mapa() {
   const [conectando,     setConectando]     = useState(false);
   const [resultadoConex, setResultadoConex] = useState<string|null>(null);
   const [popupConexion,  setPopupConexion]  = useState(false);
+  const [popupSinBits,   setPopupSinBits]   = useState(false);
   const MENSAJES_PRESET = [
     "Hola, estoy interesado/a en tu anuncio. ¿Podemos hablar?",
     "Hola, vi tu publicación y me gustaría más información.",
@@ -255,9 +256,13 @@ export default function Mapa() {
                 </span>
               </div>
               <button
-                onClick={()=>{ if(seleccionados.size>0 && !conectando && seleccionados.size<=bits) setPopupConexion(true); }}
-                disabled={seleccionados.size===0||conectando||seleccionados.size>bits}
-                style={{width:"100%",background:seleccionados.size===0||seleccionados.size>bits?"rgba(255,255,255,0.06)":"linear-gradient(135deg,#f0c040,#d4a017)",border:"none",borderRadius:"10px",padding:"12px",fontSize:"14px",fontWeight:900,color:seleccionados.size===0||seleccionados.size>bits?"rgba(255,255,255,0.25)":"#1a2a3a",cursor:seleccionados.size===0||seleccionados.size>bits?"not-allowed":"pointer",fontFamily:"'Nunito',sans-serif",boxShadow:seleccionados.size===0||seleccionados.size>bits?"none":"0 4px 0 #a07810"}}
+                onClick={()=>{
+                if(seleccionados.size===0) return;
+                if(bits===0 || seleccionados.size>bits) { setPopupSinBits(true); return; }
+                setPopupConexion(true);
+              }}
+                disabled={seleccionados.size===0||conectando}
+                style={{width:"100%",background:seleccionados.size===0?"rgba(255,255,255,0.06)":"linear-gradient(135deg,#f0c040,#d4a017)",border:"none",borderRadius:"10px",padding:"12px",fontSize:"14px",fontWeight:900,color:seleccionados.size===0?"rgba(255,255,255,0.25)":"#1a2a3a",cursor:seleccionados.size===0?"not-allowed":"pointer",fontFamily:"'Nunito',sans-serif",boxShadow:seleccionados.size===0?"none":"0 4px 0 #a07810"}}
               >
                 {conectando?"Conectando...":seleccionados.size>0?`Conectar con ${seleccionados.size} anuncio${seleccionados.size!==1?"s":""} (${seleccionados.size} BIT)`:"Seleccioná pines"}
               </button>
@@ -266,6 +271,40 @@ export default function Mapa() {
         </div>
       )}
 
+
+
+      {/* ══ POPUP SIN BIT ══ */}
+      {popupSinBits && (
+        <div style={{position:"fixed",inset:0,zIndex:200,background:"rgba(0,0,0,0.65)",display:"flex",alignItems:"flex-end",padding:"16px"}}>
+          <div style={{width:"100%",background:"#fff",borderRadius:"20px 20px 16px 16px",padding:"24px 20px 20px",boxShadow:"0 -8px 40px rgba(0,0,0,0.3)"}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"20px"}}>
+              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"22px",color:"#1a2a3a",letterSpacing:"1px"}}>⚡ Necesitás BIT</div>
+              <button onClick={()=>setPopupSinBits(false)} style={{background:"#f0f0f0",border:"none",borderRadius:"50%",width:"32px",height:"32px",fontSize:"16px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
+            </div>
+            <div style={{background:"linear-gradient(135deg,#1a2a3a,#243b55)",borderRadius:"16px",padding:"20px",textAlign:"center",marginBottom:"16px"}}>
+              <div style={{fontSize:"40px",marginBottom:"8px"}}>🔗</div>
+              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"26px",color:"#f0c040",letterSpacing:"1px",marginBottom:"6px"}}>
+                {bits===0 ? "No tenés BIT disponibles" : `Necesitás ${seleccionados.size} BIT, tenés ${bits}`}
+              </div>
+              <div style={{fontSize:"13px",color:"#8a9aaa",fontWeight:600,lineHeight:1.5}}>
+                Cargá BIT para conectarte con los pines que te interesan. Cada conexión usa 1 BIT.
+              </div>
+            </div>
+            <button
+              onClick={()=>{ setPopupSinBits(false); router.push("/comprar"); }}
+              style={{width:"100%",background:"linear-gradient(135deg,#f0c040,#d4a017)",border:"none",borderRadius:"12px",padding:"14px",fontSize:"15px",fontWeight:900,color:"#1a2a3a",cursor:"pointer",fontFamily:"'Nunito',sans-serif",boxShadow:"0 4px 0 #a07810",marginBottom:"10px"}}
+            >
+              ⚡ Cargar BIT ahora
+            </button>
+            <button
+              onClick={()=>setPopupSinBits(false)}
+              style={{width:"100%",background:"none",border:"none",padding:"10px",fontSize:"13px",fontWeight:700,color:"#9a9a9a",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ══ POPUP CONEXIÓN ══ */}
       {popupConexion && (

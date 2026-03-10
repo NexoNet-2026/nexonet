@@ -67,6 +67,14 @@ function BuscarInner() {
   const [seleccionados,  setSeleccionados]  = useState<Set<number>>(new Set());
   const [conectando,     setConectando]     = useState(false);
   const [resultadoConex, setResultadoConex] = useState<string|null>(null);
+  const [popupConexion,  setPopupConexion]  = useState(false);
+  const MENSAJES_PRESET = [
+    "Hola, estoy interesado/a en tu anuncio. ¿Podemos hablar?",
+    "Hola, vi tu publicación y me gustaría más información.",
+    "Buen día, ¿el anuncio sigue disponible?",
+    "Hola, ¿cuál es el precio final? Estoy listo/a para cerrar.",
+  ];
+  const [mensajeConexion, setMensajeConexion] = useState(MENSAJES_PRESET[0]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session: s } }) => {
@@ -214,38 +222,34 @@ function BuscarInner() {
 
   const ejecutarConexion = async () => {
     if (seleccionados.size === 0) return;
-    if (bits < seleccionados.size) {
-      alert(`No tenés suficientes BIT. Necesitás ${seleccionados.size} BIT, tenés ${bits}.`); return;
-    }
+    if (bits < seleccionados.size) return;
     setConectando(true);
     const ids = Array.from(seleccionados);
 
-    // Obtener usuario_id de cada anuncio seleccionado
     const { data: anuData } = await supabase.from("anuncios").select("id,usuario_id,conexiones").in("id", ids);
 
     if (anuData) {
-      // Incrementar conexiones en cada anuncio
       await Promise.all(anuData.map((a:any) =>
         supabase.from("anuncios").update({ conexiones: (a.conexiones||0)+1 }).eq("id",a.id)
       ));
-      // Insertar notificaciones
       await supabase.from("notificaciones").insert(
         anuData.map((a:any) => ({
           usuario_id: a.usuario_id,
           emisor_id:  session.user.id,
           anuncio_id: a.id,
           tipo: "conexion",
+          mensaje: mensajeConexion,
         }))
       );
-      // Descontar BIT al usuario
       const nuevosBits = bits - ids.length;
       await supabase.from("usuarios").update({ bits: nuevosBits, bits_gastados: bits - nuevosBits }).eq("id", session.user.id);
       setBits(nuevosBits);
     }
 
-    setResultadoConex(`✅ Te conectaste con ${ids.length} anuncio${ids.length!==1?"s":""}. Usaste ${ids.length} BIT.`);
+    setResultadoConex(`✅ Mensaje enviado a ${ids.length} anuncio${ids.length!==1?"s":""}. Usaste ${ids.length} BIT.`);
     setConectando(false);
     setSeleccionados(new Set());
+    setMensajeConexion(MENSAJES_PRESET[0]);
     setTimeout(() => { cancelarConexion(); }, 3000);
   };
 
@@ -436,7 +440,7 @@ function BuscarInner() {
                 </span>
               </div>
               <button
-                onClick={ejecutarConexion}
+                onClick={()=>{ if(seleccionados.size>0 && !conectando && seleccionados.size<=bits) setPopupConexion(true); }}
                 disabled={seleccionados.size===0||conectando||seleccionados.size>bits}
                 style={{width:"100%",background:seleccionados.size===0||seleccionados.size>bits?"rgba(255,255,255,0.06)":"linear-gradient(135deg,#f0c040,#d4a017)",border:"none",borderRadius:"10px",padding:"12px",fontSize:"14px",fontWeight:900,color:seleccionados.size===0||seleccionados.size>bits?"rgba(255,255,255,0.25)":"#1a2a3a",cursor:seleccionados.size===0||seleccionados.size>bits?"not-allowed":"pointer",fontFamily:"'Nunito',sans-serif",boxShadow:seleccionados.size===0||seleccionados.size>bits?"none":"0 4px 0 #a07810"}}
               >
@@ -444,6 +448,55 @@ function BuscarInner() {
               </button>
             </div>
           )}
+        </div>
+      )}
+
+
+      {/* ══ POPUP CONEXIÓN ══ */}
+      {popupConexion && (
+        <div style={{position:"fixed",inset:0,zIndex:200,background:"rgba(0,0,0,0.65)",display:"flex",alignItems:"flex-end",padding:"16px"}}>
+          <div style={{width:"100%",background:"#fff",borderRadius:"20px 20px 16px 16px",padding:"24px 20px 20px",boxShadow:"0 -8px 40px rgba(0,0,0,0.3)"}}>
+            {/* Header */}
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"18px"}}>
+              <div>
+                <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"22px",color:"#1a2a3a",letterSpacing:"1px"}}>🔗 Mensaje de conexión</div>
+                <div style={{fontSize:"12px",color:"#9a9a9a",fontWeight:600}}>Se enviará a {seleccionados.size} anuncio{seleccionados.size!==1?"s":""} · {seleccionados.size} BIT</div>
+              </div>
+              <button onClick={()=>setPopupConexion(false)} style={{background:"#f0f0f0",border:"none",borderRadius:"50%",width:"32px",height:"32px",fontSize:"16px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
+            </div>
+
+            {/* Mensajes preset */}
+            <div style={{display:"flex",flexDirection:"column",gap:"8px",marginBottom:"14px"}}>
+              {MENSAJES_PRESET.map((m,i) => (
+                <button key={i} onClick={()=>setMensajeConexion(m)} style={{textAlign:"left",background:mensajeConexion===m?"linear-gradient(135deg,#fff8e0,#fff3c0)":"#f8f8f8",border:mensajeConexion===m?"2px solid #d4a017":"2px solid transparent",borderRadius:"12px",padding:"10px 14px",fontSize:"13px",fontWeight:700,color:"#1a2a3a",cursor:"pointer",fontFamily:"'Nunito',sans-serif",transition:"all 0.15s"}}>
+                  {mensajeConexion===m && <span style={{color:"#d4a017",marginRight:"6px"}}>✓</span>}{m}
+                </button>
+              ))}
+            </div>
+
+            {/* Mensaje personalizado */}
+            <div style={{marginBottom:"16px"}}>
+              <div style={{fontSize:"11px",fontWeight:800,color:"#9a9a9a",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"6px"}}>✏️ O escribí tu propio mensaje</div>
+              <textarea
+                value={mensajeConexion}
+                onChange={e=>setMensajeConexion(e.target.value)}
+                maxLength={200}
+                rows={3}
+                style={{width:"100%",borderRadius:"12px",border:"2px solid #e8e8e8",padding:"10px 14px",fontSize:"13px",fontWeight:600,color:"#1a2a3a",fontFamily:"'Nunito',sans-serif",resize:"none",outline:"none",boxSizing:"border-box"}}
+                placeholder="Escribí tu mensaje..."
+              />
+              <div style={{textAlign:"right",fontSize:"10px",color:"#bbb",fontWeight:600}}>{mensajeConexion.length}/200</div>
+            </div>
+
+            {/* Botón enviar */}
+            <button
+              onClick={async ()=>{ setPopupConexion(false); await ejecutarConexion(); }}
+              disabled={!mensajeConexion.trim()}
+              style={{width:"100%",background:mensajeConexion.trim()?"linear-gradient(135deg,#f0c040,#d4a017)":"#f0f0f0",border:"none",borderRadius:"12px",padding:"14px",fontSize:"15px",fontWeight:900,color:mensajeConexion.trim()?"#1a2a3a":"#bbb",cursor:mensajeConexion.trim()?"pointer":"not-allowed",fontFamily:"'Nunito',sans-serif",boxShadow:mensajeConexion.trim()?"0 4px 0 #a07810":"none"}}
+            >
+              {conectando?"Enviando...":"⚡ Enviar y conectar"}
+            </button>
+          </div>
         </div>
       )}
 

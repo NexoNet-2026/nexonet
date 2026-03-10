@@ -72,13 +72,23 @@ export default function ChatPage() {
   };
 
   const cargarMensajes = async (myId: string) => {
-    const { data } = await supabase
+    const { data: enviados } = await supabase
       .from("mensajes")
       .select("*")
       .eq("anuncio_id", anuncioId)
-      .or(`and(emisor_id.eq.${myId},receptor_id.eq.${otroUserId}),and(emisor_id.eq.${otroUserId},receptor_id.eq.${myId})`)
-      .order("created_at", { ascending: true });
-    if (data) setMensajes(data);
+      .eq("emisor_id", myId)
+      .eq("receptor_id", otroUserId);
+
+    const { data: recibidos } = await supabase
+      .from("mensajes")
+      .select("*")
+      .eq("anuncio_id", anuncioId)
+      .eq("emisor_id", otroUserId)
+      .eq("receptor_id", myId);
+
+    const todos = [...(enviados||[]), ...(recibidos||[])]
+      .sort((a,b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+    setMensajes(todos);
   };
 
   // Realtime subscription
@@ -168,12 +178,12 @@ export default function ChatPage() {
       </div>
 
       {/* ── MENSAJES ── */}
-      <div style={{ flex:1, overflowY:"auto", padding:"170px 16px 210px", display:"flex", flexDirection:"column", gap:"8px" }}>
+      <div style={{ flex:1, overflowY:"auto", padding:"170px 16px 210px", display:"flex", flexDirection:"column", gap:"4px", background:"#eae6df" }}>
         {mensajes.length === 0 && (
           <div style={{ textAlign:"center", padding:"40px 20px", color:"#9a9a9a" }}>
             <div style={{ fontSize:"40px", marginBottom:"12px" }}>💬</div>
-            <div style={{ fontSize:"14px", fontWeight:700 }}>Iniciá la conversación</div>
-            <div style={{ fontSize:"12px", marginTop:"6px" }}>Este chat es gratuito y privado entre vos y el anunciante.</div>
+            <div style={{ fontSize:"14px", fontWeight:700, color:"#555" }}>Iniciá la conversación</div>
+            <div style={{ fontSize:"12px", marginTop:"6px", color:"#888" }}>Este chat es gratuito y privado entre vos y el anunciante.</div>
           </div>
         )}
 
@@ -185,30 +195,29 @@ export default function ChatPage() {
           const showTime = !mismoEmisor || diff > 10;
 
           return (
-            <div key={m.id} style={{ display:"flex", flexDirection:"column", alignItems: esMio ? "flex-end" : "flex-start", marginTop: showTime ? "8px" : "2px" }}>
+            <div key={m.id} style={{ display:"flex", flexDirection:"column", alignItems: esMio ? "flex-end" : "flex-start", marginTop: showTime ? "12px" : "2px" }}>
               {showTime && (
-                <div style={{ fontSize:"10px", color:"#bbb", fontWeight:600, marginBottom:"4px", padding:"0 4px" }}>
+                <div style={{ fontSize:"11px", color:"#888", fontWeight:600, marginBottom:"4px", padding:"2px 10px", background:"rgba(255,255,255,0.6)", borderRadius:"10px", alignSelf:"center" }}>
                   {formatHora(m.created_at)}
                 </div>
               )}
               <div style={{
                 maxWidth:"78%",
-                background: esMio ? "linear-gradient(135deg,#d4a017,#f0c040)" : "#fff",
-                color: esMio ? "#1a2a3a" : "#1a2a3a",
-                borderRadius: esMio ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
+                background: esMio ? "linear-gradient(135deg,#d4a017,#f0c040)" : "#ffffff",
+                color: "#1a2a3a",
+                borderRadius: esMio ? "18px 4px 18px 18px" : "4px 18px 18px 18px",
                 padding:"10px 14px",
                 fontSize:"14px",
                 fontWeight:600,
                 lineHeight:1.5,
-                boxShadow: esMio ? "0 3px 8px rgba(212,160,23,0.3)" : "0 2px 8px rgba(0,0,0,0.08)",
+                boxShadow: esMio ? "0 2px 6px rgba(212,160,23,0.4)" : "0 1px 4px rgba(0,0,0,0.12)",
+                wordBreak:"break-word",
               }}>
                 {m.texto}
+                <span style={{ fontSize:"10px", color: esMio ? "rgba(26,42,58,0.5)" : "#aaa", float:"right", marginLeft:"8px", marginTop:"4px", display:"block", textAlign:"right" }}>
+                  {formatHora(m.created_at)}{esMio && (m.leido ? " ✓✓" : " ✓")}
+                </span>
               </div>
-              {esMio && idx === mensajes.length - 1 && (
-                <div style={{ fontSize:"10px", color:"#9a9a9a", marginTop:"3px", paddingRight:"4px" }}>
-                  {m.leido ? "✓✓ Visto" : "✓ Enviado"}
-                </div>
-              )}
             </div>
           );
         })}

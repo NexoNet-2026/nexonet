@@ -93,7 +93,6 @@ export default function MisAnuncios() {
     await supabase.from("anuncios").delete().eq("id", id);
     setAnuncios(anuncios.filter(a => a.id !== id));
     setConfirmEliminar(null);
-    setPopupAnuncio(null);
   };
 
   const totalSlots = SLOTS_BASE + slotsExtra;

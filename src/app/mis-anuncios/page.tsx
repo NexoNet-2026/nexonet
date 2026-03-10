@@ -51,12 +51,12 @@ export default function MisAnuncios() {
   const [bitsFree, setBitsFree] = useState(0);
   const [popupFlash, setPopupFlash] = useState(false);
   const [anuncioFlash, setAnuncioFlash] = useState<Anuncio | null>(null);
+  const [popupConexion, setPopupConexion] = useState(false);
+  const [anuncioConexion, setAnuncioConexion] = useState<Anuncio | null>(null);
   const [slotsExtra, setSlotsExtra] = useState(0);
   const [loading, setLoading] = useState(true);
 
   const [popupCompra, setPopupCompra] = useState<null | "anuncios3" | "anuncios10" | "empresa">(null);
-  const [popupAnuncio, setPopupAnuncio] = useState<null | Anuncio>(null);
-  const [popupBit, setPopupBit] = useState<null | "flash" | "posicion" | "conexion">(null);
   const [confirmEliminar, setConfirmEliminar] = useState<null | number>(null);
 
   useEffect(() => { cargar(); }, []);
@@ -179,7 +179,7 @@ export default function MisAnuncios() {
                 const conexTotal = bitsConexion + (anuncio.bits_conexion || 0);
 
                 return (
-                  <div key={anuncio.id} onClick={() => setPopupAnuncio(anuncio)} style={{
+                  <div key={anuncio.id} onClick={() => router.push(`/anuncios/${anuncio.id}`)} style={{
                     background: "#fff", borderRadius: "16px", marginBottom: "12px",
                     overflow: "hidden", boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
                     display: "flex", alignItems: "stretch", cursor: "pointer",
@@ -231,6 +231,12 @@ export default function MisAnuncios() {
                         style={{ background: anuncio.flash ? "linear-gradient(135deg,#e67e22,#d35400)" : "linear-gradient(135deg,#1a2a3a,#243b55)", border: "none", borderRadius: "8px", padding: "5px 8px", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: "1px", boxShadow: "0 2px 0 rgba(0,0,0,0.2)" }}>
                         <span style={{ fontSize: "14px" }}>⚡</span>
                         <span style={{ fontSize: "7px", fontWeight: 900, color: "#f0c040", letterSpacing: "0.5px" }}>FLASH</span>
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setAnuncioConexion(anuncio); setPopupConexion(true); }}
+                        style={{ background: "linear-gradient(135deg,#1a4a7a,#1a6abf)", border: "none", borderRadius: "8px", padding: "5px 8px", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: "1px", boxShadow: "0 2px 0 rgba(0,0,0,0.2)" }}>
+                        <span style={{ fontSize: "14px" }}>🔗</span>
+                        <span style={{ fontSize: "7px", fontWeight: 900, color: "#7dd3fc", letterSpacing: "0.5px" }}>CONEX</span>
                       </button>
                     </div>
                   </div>
@@ -286,42 +292,7 @@ export default function MisAnuncios() {
         )}
       </div>
 
-      {/* ══ POPUP DETALLE ANUNCIO ══ */}
-      {popupAnuncio && !popupBit && !confirmEliminar && (
-        <div style={overlayStyle} onClick={() => setPopupAnuncio(null)}>
-          <div style={modalStyle} onClick={e => e.stopPropagation()}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-              <div style={{ fontSize: "15px", fontWeight: 900, color: "#1a2a3a" }}>{popupAnuncio.titulo}</div>
-              <button onClick={() => setPopupAnuncio(null)} style={btnCerrarStyle}>✕</button>
-            </div>
-            {popupAnuncio.imagenes?.[0] && (
-              <img src={popupAnuncio.imagenes[0]} alt="" style={{ width: "100%", height: "160px", objectFit: "cover", borderRadius: "12px", marginBottom: "16px" }} />
-            )}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px", marginBottom: "16px" }}>
-              {[
-                { v: popupAnuncio.vistas || 0, l: "👁 Vistas" },
-                { v: `${popupAnuncio.conexiones || 0}/${bitsConexion + (popupAnuncio.bits_conexion || 0)}`, l: "🔗 Conexión" },
-                { v: `${diasRestantes(popupAnuncio.created_at)}d`, l: "⏳ Vence" },
-              ].map((s, i) => (
-                <div key={i} style={{ background: "#f4f4f2", borderRadius: "10px", padding: "10px", textAlign: "center" }}>
-                  <div style={{ fontSize: "16px", fontWeight: 900, color: "#1a2a3a" }}>{s.v}</div>
-                  <div style={{ fontSize: "10px", fontWeight: 700, color: "#9a9a9a" }}>{s.l}</div>
-                </div>
-              ))}
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "14px" }}>
-              <div style={{ fontSize: "10px", fontWeight: 800, color: "#9a9a9a", textTransform: "uppercase", letterSpacing: "1px" }}>Potenciar este anuncio</div>
-              {([["flash","#e67e22","⚡ Comprar BIT Promo Flash"],["posicion","#27ae60","📌 Comprar BIT Posición"],["conexion","#2980b9","🔗 Comprar BIT Conexión"]] as [any,string,string][]).map(([id,color,label]) => (
-                <button key={id} onClick={() => setPopupBit(id)} style={{ width: "100%", background: `${color}18`, border: `1px solid ${color}40`, borderRadius: "12px", padding: "12px 16px", fontSize: "13px", fontWeight: 800, color, cursor: "pointer", fontFamily: "'Nunito', sans-serif", textAlign: "left" }}>{label}</button>
-              ))}
-            </div>
-            <div style={{ display: "flex", gap: "10px" }}>
-              <button onClick={() => router.push("/comprar")} style={{ flex: 1, background: "linear-gradient(135deg, #d4a017, #f0c040)", border: "none", borderRadius: "12px", padding: "12px", fontSize: "13px", fontWeight: 800, color: "#1a2a3a", cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>🔄 Renovar</button>
-              <button onClick={() => setConfirmEliminar(popupAnuncio.id)} style={{ background: "rgba(231,76,60,0.1)", border: "1px solid rgba(231,76,60,0.3)", borderRadius: "12px", padding: "12px 16px", fontSize: "13px", fontWeight: 800, color: "#e74c3c", cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>🗑 Eliminar</button>
-            </div>
-          </div>
-        </div>
-      )}
+
 
       {/* ══ POPUP CONFIRMAR ELIMINAR ══ */}
       {confirmEliminar && (
@@ -340,38 +311,7 @@ export default function MisAnuncios() {
         </div>
       )}
 
-      {/* ══ POPUP BIT ══ */}
-      {popupBit && popupAnuncio && (
-        <div style={overlayStyle} onClick={() => setPopupBit(null)}>
-          <div style={modalStyle} onClick={e => e.stopPropagation()}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-              <div style={{ fontSize: "15px", fontWeight: 900, color: "#1a2a3a" }}>
-                {popupBit === "flash" ? "⚡ BIT Promo Flash" : popupBit === "posicion" ? "📌 BIT Posición" : "🔗 BIT Conexión"}
-              </div>
-              <button onClick={() => setPopupBit(null)} style={btnCerrarStyle}>✕</button>
-            </div>
-            <div style={{ background: "#f4f4f2", borderRadius: "12px", padding: "14px", marginBottom: "14px", fontSize: "13px", color: "#444", lineHeight: 1.6 }}>
-              {popupBit === "flash" && "Tu anuncio aparece destacado con fondo dorado en la parte superior de los listados."}
-              {popupBit === "posicion" && "Tu anuncio aparece primero según el alcance que elijas: barrio, ciudad, provincia o todo el país."}
-              {popupBit === "conexion" && "Sumá más conexiones disponibles para este anuncio. Con Ilimitadas nunca te quedás sin."}
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "14px" }}>
-              {(popupBit === "flash"
-                ? [["⚡ Flash 7 días","$500"],["⚡ Flash 15 días","$900"],["⚡ Flash 30 días","$1.500"]]
-                : popupBit === "posicion"
-                ? [["📌 1° en barrio","$500"],["📌 1° en ciudad","$1.000"],["📌 1° en provincia","$3.000"],["📌 1° en el país","$10.000"]]
-                : [["🔗 1.000 conexiones","$1.000"],["🔗 5.000 conexiones","$4.000"],["🔗 Ilimitadas × 30 días","$9.000"]]
-              ).map(([label, precio]) => (
-                <div key={label} onClick={() => router.push("/comprar")} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "linear-gradient(135deg, #1a2a3a, #243b55)", borderRadius: "12px", padding: "14px 16px", cursor: "pointer" }}>
-                  <span style={{ fontSize: "13px", fontWeight: 800, color: "#fff" }}>{label}</span>
-                  <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "20px", color: "#d4a017" }}>{precio}</span>
-                </div>
-              ))}
-            </div>
-            <button onClick={() => setPopupBit(null)} style={{ width: "100%", background: "#f4f4f2", border: "none", borderRadius: "12px", padding: "12px", fontSize: "13px", fontWeight: 800, color: "#666", cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>Cancelar</button>
-          </div>
-        </div>
-      )}
+
 
       {/* ══ POPUP COMPRA PLAN ══ */}
       {popupCompra && (
@@ -415,6 +355,16 @@ export default function MisAnuncios() {
             <button onClick={() => setPopupCompra(null)} style={{ width: "100%", background: "none", border: "none", padding: "10px", fontSize: "13px", fontWeight: 800, color: "#9a9a9a", cursor: "pointer", fontFamily: "'Nunito', sans-serif", marginTop: "4px" }}>Cancelar</button>
           </div>
         </div>
+      )}
+
+      {/* ══ POPUP CONEXION ══ */}
+      {popupConexion && (
+        <PopupCompra
+          tipo="conexion"
+          tituloAccion={`BIT Conexión${anuncioConexion ? ` — ${anuncioConexion.titulo.slice(0,30)}` : ""}`}
+          bitsDisponibles={{ nexo: bits, promo: bitsPromo, free: bitsFree }}
+          onClose={() => { setPopupConexion(false); setAnuncioConexion(null); }}
+        />
       )}
 
       {/* ══ POPUP FLASH ══ */}

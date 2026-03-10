@@ -271,7 +271,7 @@ export default function Usuario() {
                   <div style={{ fontSize:"10px", color:"#8a9aaa", fontWeight:600, marginTop:"4px" }}>historial total</div>
                 </div>
               </div>
-              <button onClick={()=>router.push("/comprar")} style={{ width:"100%", background:"linear-gradient(135deg,#f0c040,#d4a017)", border:"none", borderRadius:"12px", padding:"14px", fontSize:"15px", fontWeight:900, color:"#1a2a3a", cursor:"pointer", fontFamily:"'Nunito',sans-serif", boxShadow:"0 4px 0 #a07810", letterSpacing:"0.5px" }}>
+              <button onClick={()=>router.push("/comprar?cat=conexion")} style={{ width:"100%", background:"linear-gradient(135deg,#f0c040,#d4a017)", border:"none", borderRadius:"12px", padding:"14px", fontSize:"15px", fontWeight:900, color:"#1a2a3a", cursor:"pointer", fontFamily:"'Nunito',sans-serif", boxShadow:"0 4px 0 #a07810", letterSpacing:"0.5px" }}>
                 ⚡ Cargar BIT
               </button>
             </div>
@@ -685,7 +685,7 @@ export default function Usuario() {
             </div>
 
             {/* BOTÓN COMPRAR */}
-            <button onClick={()=>{ setPopupEmpresa(false); router.push("/comprar"); }} style={{ width:"100%", background:"linear-gradient(135deg, #c0392b, #e74c3c)", border:"none", borderRadius:"14px", padding:"18px", fontSize:"16px", fontWeight:900, color:"#fff", cursor:"pointer", fontFamily:"'Nunito', sans-serif", letterSpacing:"1px", textTransform:"uppercase", marginBottom:"8px" }}>
+            <button onClick={()=>{ setPopupEmpresa(false); router.push("/comprar?cat=anuncio"); }} style={{ width:"100%", background:"linear-gradient(135deg, #c0392b, #e74c3c)", border:"none", borderRadius:"14px", padding:"18px", fontSize:"16px", fontWeight:900, color:"#fff", cursor:"pointer", fontFamily:"'Nunito', sans-serif", letterSpacing:"1px", textTransform:"uppercase", marginBottom:"8px" }}>
               Comprar ahora →
             </button>
             <button onClick={()=>setPopupEmpresa(false)} style={{ width:"100%", background:"none", border:"none", padding:"10px", fontSize:"13px", fontWeight:800, color:"#9a9a9a", cursor:"pointer", fontFamily:"'Nunito', sans-serif" }}>

@@ -206,14 +206,17 @@ function BuscarInner() {
   const resTxt   = busLibre ? anuFilt.filter(a=>a.titulo.toLowerCase().includes(qLow)) : [];
   const rubrosM  = rSel ? rubros.filter(r=>r.id===rSel.id) : rubros;
   const getAnus  = (rubro:Rubro) => {
-    const ids = rubro.subrubros.map(s=>s.id);
+    const ids = rubro.subrubros.map((s:any) => Number(s.id));
     const sa  = subAct[rubro.id];
-    return anuFilt.filter(a => sa ? a.subrubro_id===sa : (ids.includes(a.subrubro_id) || !a.subrubro_id)).slice(0,8);
+    return anuFilt.filter(a => {
+      const sid = Number(a.subrubro_id);
+      return sa ? sid === Number(sa) : ids.includes(sid);
+    }).slice(0,8);
   };
 
   // Anuncios que no pertenecen a ningún subrubro conocido
-  const todosSubIds = sFlat.map(s => s.id);
-  const anuSinCategoria = anuFilt.filter(a => a.subrubro_id && !todosSubIds.includes(a.subrubro_id));
+  const todosSubIds = sFlat.map(s => Number(s.id));
+  const anuSinCategoria = anuFilt.filter(a => !todosSubIds.includes(Number(a.subrubro_id)));
 
   // Lista plana de anuncios visibles según filtros activos
   const _base: Anuncio[] = busLibre ? resTxt : rubrosM.flatMap(r => getAnus(r));

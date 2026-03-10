@@ -198,8 +198,12 @@ function BuscarInner() {
   const getAnus  = (rubro:Rubro) => {
     const ids = rubro.subrubros.map(s=>s.id);
     const sa  = subAct[rubro.id];
-    return anuFilt.filter(a => sa ? a.subrubro_id===sa : ids.includes(a.subrubro_id)).slice(0,8);
+    return anuFilt.filter(a => sa ? a.subrubro_id===sa : (ids.includes(a.subrubro_id) || !a.subrubro_id)).slice(0,8);
   };
+
+  // Anuncios que no pertenecen a ningún subrubro conocido
+  const todosSubIds = sFlat.map(s => s.id);
+  const anuSinCategoria = anuFilt.filter(a => a.subrubro_id && !todosSubIds.includes(a.subrubro_id));
 
   // Lista plana de anuncios visibles según filtros activos
   const _base: Anuncio[] = busLibre ? resTxt : rubrosM.flatMap(r => getAnus(r));
@@ -410,7 +414,7 @@ function BuscarInner() {
       ) : (
         rubrosM.map(rubro => {
           const items = getAnus(rubro);
-          if (ubiActiva && !rSel && items.length===0) return null;
+          if (!rSel && items.length===0) return null;
           return (
             <div key={rubro.id} style={{marginBottom:"8px",background:"#fff",paddingBottom:"12px",borderBottom:"6px solid #f4f4f2"}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 16px 8px"}}>
@@ -434,6 +438,18 @@ function BuscarInner() {
             </div>
           );
         })
+      )}
+
+      {/* ── ANUNCIOS SIN CATEGORÍA ── */}
+      {!busLibre && !loading && anuSinCategoria.length > 0 && (
+        <div style={{marginBottom:"8px",background:"#fff",paddingBottom:"12px",borderBottom:"6px solid #f4f4f2"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 16px 8px"}}>
+            <span style={{fontSize:"16px",fontWeight:900,color:"#1a2a3a"}}>📦 Otros</span>
+          </div>
+          <div style={{display:"flex",gap:"12px",padding:"0 16px",overflowX:"auto",scrollbarWidth:"none"}}>
+            {anuSinCategoria.slice(0,8).map(a=><Tarjeta key={a.id} a={a} fmt={fmt} horizontal modoConexion={modoConexion} seleccionado={seleccionados.has(a.id)} onToggle={()=>toggleSeleccion(a.id)} />)}
+          </div>
+        </div>
       )}
       {/* ── PANEL FLOTANTE CONEXIÓN ── */}
       {modoConexion && (

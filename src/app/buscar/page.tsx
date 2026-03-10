@@ -98,23 +98,28 @@ function BuscarInner() {
 
     Promise.all([
       supabase.from("provincias").select("id,nombre").order("nombre"),
-      supabase.from("rubros").select("id,nombre,subrubros(id,nombre)").order("nombre"),
+      supabase.from("rubros").select("id,nombre").order("nombre"),
+      supabase.from("subrubros").select("id,nombre,rubro_id").order("nombre"),
       supabase.from("anuncios")
         .select("id,titulo,precio,moneda,ciudad,provincia,imagenes,flash,fuente,subrubro_id,usuario_id,permuto")
         .eq("estado","activo").order("created_at",{ascending:false}).limit(100),
-    ]).then(([{data:pData},{data:rData},{data:aData}]) => {
+    ]).then(([{data:pData},{data:rData},{data:sData},{data:aData}]) => {
       if (pData) setProvs(pData);
-      if (rData) {
-        setRubros(rData as any);
+      if (rData && sData) {
+        // Armar rubros con sus subrubros
+        const rubrosConSubs = rData.map((r:any) => ({
+          ...r,
+          subrubros: sData.filter((s:any) => s.rubro_id === r.id),
+        }));
+        setRubros(rubrosConSubs as any);
         const rf = rData.map((r:any) => ({id:r.id,nombre:r.nombre}));
         setRFlat(rf);
-        setSFlat(rData.flatMap((r:any) => (r.subrubros||[]).map((s:any) => ({id:s.id,nombre:s.nombre,rubro_id:r.id}))));
+        setSFlat(sData.map((s:any) => ({id:s.id,nombre:s.nombre,rubro_id:s.rubro_id})));
         const rP = (window as any).__rP, sP = (window as any).__sP;
         if (rP) { const r = rf.find((x:any) => x.id===parseInt(rP)); if(r){setRSel(r);setQuery(r.nombre);} }
         if (sP) {
-          const all = rData.flatMap((r:any) => (r.subrubros||[]).map((s:any) => ({id:s.id,nombre:s.nombre,rubro_id:r.id})));
-          const s = all.find((x:any) => x.id===parseInt(sP));
-          if(s){setSSel(s);setQuery(s.nombre);}
+          const s = sData.find((x:any) => x.id===parseInt(sP));
+          if(s){setSSel({id:s.id,nombre:s.nombre,rubro_id:s.rubro_id});setQuery(s.nombre);}
         }
       }
       if (aData) setAnuncios(aData as any);

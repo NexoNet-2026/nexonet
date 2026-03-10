@@ -102,31 +102,35 @@ function BuscarInner() {
       supabase.from("subrubros").select("id,nombre,rubro_id").order("nombre"),
       supabase.from("anuncios")
         .select("id,titulo,precio,moneda,ciudad,provincia,imagenes,flash,fuente,subrubro_id,usuario_id,permuto")
-        .eq("estado","activo").order("created_at",{ascending:false}).limit(100),
+        .eq("estado","activo").order("created_at",{ascending:false}).limit(200),
     ]).then(([{data:pData,error:pErr},{data:rData,error:rErr},{data:sData,error:sErr},{data:aData,error:aErr}]) => {
       if (pErr) console.error("provincias error:", pErr);
       if (rErr) console.error("rubros error:", rErr);
       if (sErr) console.error("subrubros error:", sErr);
       if (aErr) console.error("anuncios error:", aErr);
-      console.log("rubros:", rData?.length, "subrubros:", sData?.length, "anuncios:", aData?.length);
+
       if (pData) setProvs(pData);
+
       if (rData && sData) {
-        // Armar rubros con sus subrubros
+        // ── FIX CLAVE: normalizar tipos al armar rubros con subrubros ──
         const rubrosConSubs = rData.map((r:any) => ({
           ...r,
           subrubros: sData.filter((s:any) => Number(s.rubro_id) === Number(r.id)),
         }));
         setRubros(rubrosConSubs as any);
-        const rf = rData.map((r:any) => ({id:Number(r.id),nombre:r.nombre}));
+
+        const rf = rData.map((r:any) => ({id:Number(r.id), nombre:r.nombre}));
         setRFlat(rf);
-        setSFlat(sData.map((s:any) => ({id:s.id,nombre:s.nombre,rubro_id:s.rubro_id})));
+        setSFlat(sData.map((s:any) => ({id:Number(s.id), nombre:s.nombre, rubro_id:Number(s.rubro_id)})));
+
         const rP = (window as any).__rP, sP = (window as any).__sP;
         if (rP) { const r = rf.find((x:any) => x.id===parseInt(rP)); if(r){setRSel(r);setQuery(r.nombre);} }
         if (sP) {
-          const s = sData.find((x:any) => x.id===parseInt(sP));
-          if(s){setSSel({id:s.id,nombre:s.nombre,rubro_id:s.rubro_id});setQuery(s.nombre);}
+          const s = sData.find((x:any) => Number(x.id)===parseInt(sP));
+          if(s){setSSel({id:Number(s.id),nombre:s.nombre,rubro_id:Number(s.rubro_id)});setQuery(s.nombre);}
         }
       }
+
       if (aData) setAnuncios(aData as any);
       setLoading(false);
     });
@@ -205,7 +209,8 @@ function BuscarInner() {
   const busLibre = query.trim()!==""&&!rSel&&!sSel;
   const resTxt   = busLibre ? anuFilt.filter(a=>a.titulo.toLowerCase().includes(qLow)) : [];
   const rubrosM  = rSel ? rubros.filter(r=>r.id===rSel.id) : rubros;
-  const getAnus  = (rubro:Rubro) => {
+
+  const getAnus = (rubro:Rubro) => {
     const ids = rubro.subrubros.map((s:any) => Number(s.id));
     const sa  = subAct[rubro.id];
     return anuFilt.filter(a => {
@@ -320,7 +325,7 @@ function BuscarInner() {
                 style={{width:"100%",border:"none",padding:"12px 16px",fontFamily:"'Nunito',sans-serif",fontSize:"14px",color:"#2c2c2e",outline:"none",background:"transparent",boxSizing:"border-box",borderRadius:"14px 0 0 14px"}}
               />
               {(rSel||sSel) && (
-                <div onClick={limpQ} style={{position:"absolute",right:"8px",top:"50%",transform:"translateY(-50%)",background:sSel?"#d4a017":"#d4a017",borderRadius:"20px",padding:"3px 10px",fontSize:"11px",fontWeight:800,color:sSel?"#fff":"#1a2a3a",cursor:"pointer"}}>
+                <div onClick={limpQ} style={{position:"absolute",right:"8px",top:"50%",transform:"translateY(-50%)",background:"#d4a017",borderRadius:"20px",padding:"3px 10px",fontSize:"11px",fontWeight:800,color:"#1a2a3a",cursor:"pointer"}}>
                   {sSel?sSel.nombre:rSel!.nombre} ✕
                 </div>
               )}
@@ -401,8 +406,6 @@ function BuscarInner() {
         )}
       </div>
 
-
-
       {/* RESULTADOS */}
       {loading ? (
         <div style={{textAlign:"center",padding:"40px",color:"#9a9a9a",fontWeight:700}}>Cargando...</div>
@@ -435,7 +438,7 @@ function BuscarInner() {
                 <span style={{fontSize:"12px",fontWeight:700,color:"#d4a017",cursor:"pointer"}}>Ver todos →</span>
               </div>
               <div style={{display:"flex",gap:"8px",padding:"0 16px 12px",overflowX:"auto",scrollbarWidth:"none"}}>
-                {rubro.subrubros.map(sub=>(
+                {rubro.subrubros.map((sub:any)=>(
                   <button key={sub.id} onClick={()=>togSub(rubro.id,sub.id)} style={{background:subAct[rubro.id]===sub.id?"#1a2a3a":"#f4f4f2",border:`2px solid ${subAct[rubro.id]===sub.id?"#1a2a3a":"#e8e8e6"}`,borderRadius:"20px",padding:"5px 14px",fontSize:"12px",fontWeight:700,color:subAct[rubro.id]===sub.id?"#d4a017":"#2c2c2e",whiteSpace:"nowrap",cursor:"pointer",flexShrink:0,fontFamily:"'Nunito',sans-serif"}}>
                     {sub.nombre}
                   </button>
@@ -464,6 +467,7 @@ function BuscarInner() {
           </div>
         </div>
       )}
+
       {/* ── PANEL FLOTANTE CONEXIÓN ── */}
       {modoConexion && (
         <div style={{position:"fixed",bottom:"110px",left:0,right:0,zIndex:100,padding:"0 16px 12px"}}>
@@ -496,8 +500,6 @@ function BuscarInner() {
           )}
         </div>
       )}
-
-
 
       {/* ══ POPUP SIN BIT ══ */}
       {popupSinBits && (
@@ -536,7 +538,6 @@ function BuscarInner() {
       {popupConexion && (
         <div style={{position:"fixed",inset:0,zIndex:200,background:"rgba(0,0,0,0.65)",display:"flex",alignItems:"flex-end",padding:"16px"}}>
           <div style={{width:"100%",background:"#fff",borderRadius:"20px 20px 16px 16px",padding:"24px 20px 20px",boxShadow:"0 -8px 40px rgba(0,0,0,0.3)"}}>
-            {/* Header */}
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"18px"}}>
               <div>
                 <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"22px",color:"#1a2a3a",letterSpacing:"1px"}}>🔗 Mensaje de conexión</div>
@@ -544,8 +545,6 @@ function BuscarInner() {
               </div>
               <button onClick={()=>setPopupConexion(false)} style={{background:"#f0f0f0",border:"none",borderRadius:"50%",width:"32px",height:"32px",fontSize:"16px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
             </div>
-
-            {/* Mensajes preset */}
             <div style={{display:"flex",flexDirection:"column",gap:"8px",marginBottom:"14px"}}>
               {MENSAJES_PRESET.map((m,i) => (
                 <button key={i} onClick={()=>setMensajeConexion(m)} style={{textAlign:"left",background:mensajeConexion===m?"linear-gradient(135deg,#fff8e0,#fff3c0)":"#f8f8f8",border:mensajeConexion===m?"2px solid #d4a017":"2px solid transparent",borderRadius:"12px",padding:"10px 14px",fontSize:"13px",fontWeight:700,color:"#1a2a3a",cursor:"pointer",fontFamily:"'Nunito',sans-serif",transition:"all 0.15s"}}>
@@ -553,8 +552,6 @@ function BuscarInner() {
                 </button>
               ))}
             </div>
-
-            {/* Mensaje personalizado */}
             <div style={{marginBottom:"16px"}}>
               <div style={{fontSize:"11px",fontWeight:800,color:"#9a9a9a",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"6px"}}>✏️ O escribí tu propio mensaje</div>
               <textarea
@@ -567,8 +564,6 @@ function BuscarInner() {
               />
               <div style={{textAlign:"right",fontSize:"10px",color:"#bbb",fontWeight:600}}>{mensajeConexion.length}/200</div>
             </div>
-
-            {/* Botón enviar */}
             <button
               onClick={async ()=>{ setPopupConexion(false); await ejecutarConexion(); }}
               disabled={!mensajeConexion.trim()}
@@ -595,7 +590,6 @@ function Tarjeta({ a, fmt, qLow, query, horizontal, modoConexion, seleccionado, 
       onClick={modoConexion ? onToggle : undefined}
       style={{flexShrink:horizontal?0:undefined,width:horizontal?"160px":undefined,position:"relative",cursor:modoConexion?"pointer":undefined}}
     >
-      {/* OVERLAY SELECCIÓN */}
       {modoConexion && (
         <div style={{position:"absolute",inset:0,zIndex:10,borderRadius:"14px",border:`3px solid ${seleccionado?"#d4a017":"rgba(212,160,23,0.4)"}`,background:seleccionado?"rgba(212,160,23,0.15)":"transparent",transition:"all .15s",pointerEvents:"none"}} />
       )}

@@ -40,6 +40,8 @@ export default function Usuario() {
   const [anunciosActivos, setAnunciosActivos] = useState(0);
   const [gruposCreados, setGruposCreados] = useState(0);
   const [popupEmpresa, setPopupEmpresa] = useState(false);
+  // ── NUEVO: popup cargar BIT ──
+  const [popupBits, setPopupBits] = useState(false);
   const [chats,         setChats]         = useState<any[]>([]);
   const [noLeidos,      setNoLeidos]      = useState(0);
 
@@ -100,7 +102,6 @@ export default function Usuario() {
       setAnunciosActivos(activos || 0);
       setGruposCreados(grupos || 0);
 
-      // Cargar conversaciones (último mensaje por anuncio+interlocutor)
       const { data: msgs } = await supabase
         .from("mensajes")
         .select("id,texto,emisor_id,receptor_id,anuncio_id,leido,created_at")
@@ -108,7 +109,6 @@ export default function Usuario() {
         .order("created_at", { ascending: false });
 
       if (msgs) {
-        // Agrupar por anuncio_id + interlocutor
         const convMap = new Map<string, any>();
         for (const m of msgs) {
           const otroId = m.emisor_id === session.user.id ? m.receptor_id : m.emisor_id;
@@ -116,13 +116,10 @@ export default function Usuario() {
           if (!convMap.has(key)) convMap.set(key, { ...m, otro_id: otroId });
         }
         const convs = Array.from(convMap.values());
-
-        // Cargar datos de usuarios y anuncios
         const otroIds = [...new Set(convs.map(c => c.otro_id))];
         const anuncioIds = [...new Set(convs.map(c => c.anuncio_id))];
         const { data: usuarios } = await supabase.from("usuarios").select("id,nombre_usuario,codigo,plan").in("id", otroIds);
         const { data: anuncios } = await supabase.from("anuncios").select("id,titulo").in("id", anuncioIds);
-
         const convsFinal = convs.map(c => ({
           ...c,
           otro: usuarios?.find((u:any) => u.id === c.otro_id),
@@ -184,7 +181,6 @@ export default function Usuario() {
   const toggleP = (k:string) => setVisP(v=>({...v,[k]:!v[k]}));
   const toggleE = (k:string) => setVisE(v=>({...v,[k]:!v[k]}));
 
-  // ── STATS ──
   const bitsNexonet   = perfil?.bits                 || 0;
   const bitsPromotor  = perfil?.bits_promo           || 0;
   const bitsFree      = perfil?.bits_free            || 0;
@@ -192,7 +188,6 @@ export default function Usuario() {
   const promoGastados = perfil?.bits_promo_gastados  || 0;
   const freeGastados  = perfil?.bits_free_gastados   || 0;
   const totalConsum   = bitsGastados + promoGastados + freeGastados;
-  // Estrellas = BIT Nexonet consumidos + BIT NexoPromotor ganados (histórico)
   const estrellas     = bitsGastados + (perfil?.bits_promo_total || 0);
   const totalVistas   = perfil?.total_vistas         || 0;
   const totalConex    = perfil?.total_conexiones     || 0;
@@ -209,22 +204,18 @@ export default function Usuario() {
     <main style={{ paddingTop:"95px", paddingBottom:"130px", background:"#f4f4f2", minHeight:"100vh", fontFamily:"'Nunito', sans-serif" }}>
       <Header />
 
-      {/* ── HERO ── */}
       <div style={{ background:"linear-gradient(135deg, #1a2a3a 0%, #243b55 100%)", padding:"16px 16px 0" }}>
         <div style={{ display:"flex", alignItems:"center", gap:"14px", marginBottom:"10px" }}>
           <div style={{ width:"56px", height:"56px", borderRadius:"50%", background:"linear-gradient(135deg, #d4a017, #f0c040)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"26px", boxShadow:"0 4px 16px rgba(212,160,23,0.4)", flexShrink:0 }}>
             {esEmpresa ? "🏢" : "👤"}
           </div>
           <div style={{ flex:1, minWidth:0 }}>
-            {/* NOMBRE */}
             <div style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:"22px", color:"#fff", letterSpacing:"1px", lineHeight:1.1 }}>
               {perfil?.nombre_usuario||"---"}
             </div>
-            {/* CÓDIGO */}
             <div style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:"14px", color:"#d4a017", letterSpacing:"2px", lineHeight:1.2 }}>
               {perfil?.codigo||"---"}
             </div>
-            {/* INSIGNIA en línea propia, abajo */}
             <div style={{ marginTop:"4px" }}>
               <span style={{ background:insigniaActual.color, borderRadius:"20px", padding:"3px 10px", fontSize:"10px", fontWeight:900, color:"#fff", letterSpacing:"0.5px" }}>
                 {insigniaActual.emoji} {insigniaActual.nombre.toUpperCase()}
@@ -236,7 +227,6 @@ export default function Usuario() {
           </button>
         </div>
 
-        {/* TABS */}
         <div style={{ display:"flex" }}>
           {([["cuenta","💳","Cuenta"],["chat","💬","Chat"],["datos","👤","Datos"],["estadisticas","📊","Stats"],["promotor","⭐","Promotor"]] as [Seccion,string,string][]).map(([id,e,l]) => (
             <button key={id} onClick={()=>setSeccion(id)} style={{ flex:1, background:"none", border:"none", borderBottom:seccion===id?"3px solid #d4a017":"3px solid transparent", padding:"10px 4px", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:"2px", position:"relative" }}>
@@ -258,7 +248,6 @@ export default function Usuario() {
         {seccion === "cuenta" && (
           <div style={{ display:"flex", flexDirection:"column", gap:"14px" }}>
 
-            {/* ── RESUMEN PRINCIPAL ── */}
             <div style={{ background:"linear-gradient(135deg,#1a2a3a,#243b55)", borderRadius:"18px", padding:"20px", boxShadow:"0 6px 24px rgba(0,0,0,0.18)" }}>
               <div style={{ fontSize:"11px", fontWeight:800, color:"#8a9aaa", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"16px" }}>💳 Estado de Cuenta</div>
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px", marginBottom:"16px" }}>
@@ -273,18 +262,18 @@ export default function Usuario() {
                   <div style={{ fontSize:"10px", color:"#8a9aaa", fontWeight:600, marginTop:"4px" }}>historial total</div>
                 </div>
               </div>
-              <button onClick={()=>router.push("/comprar?cat=conexion")} style={{ width:"100%", background:"linear-gradient(135deg,#f0c040,#d4a017)", border:"none", borderRadius:"12px", padding:"14px", fontSize:"15px", fontWeight:900, color:"#1a2a3a", cursor:"pointer", fontFamily:"'Nunito',sans-serif", boxShadow:"0 4px 0 #a07810", letterSpacing:"0.5px" }}>
+              {/* ── BOTÓN CARGAR BIT → abre popup ── */}
+              <button onClick={()=>setPopupBits(true)} style={{ width:"100%", background:"linear-gradient(135deg,#f0c040,#d4a017)", border:"none", borderRadius:"12px", padding:"14px", fontSize:"15px", fontWeight:900, color:"#1a2a3a", cursor:"pointer", fontFamily:"'Nunito',sans-serif", boxShadow:"0 4px 0 #a07810", letterSpacing:"0.5px" }}>
                 ⚡ Cargar BIT
               </button>
             </div>
 
-            {/* ── DESGLOSE POR TIPO ── */}
             <div style={{ background:"#fff", borderRadius:"16px", padding:"16px", boxShadow:"0 2px 12px rgba(0,0,0,0.06)" }}>
               <div style={{ fontSize:"11px", fontWeight:800, color:"#9a9a9a", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"14px" }}>📦 Desglose de BIT</div>
               {[
-                { label:"BIT NexoNet",      disp:bitsNexonet,  cons:bitsGastados,   color:"#d4a017", desc:"Comprados",       emoji:"💛" },
-                { label:"BIT NexoPromotor", disp:bitsPromotor, cons:promoGastados,  color:"#27ae60", desc:"Por referidos",   emoji:"💚", badge:"Reembolsable" },
-                { label:"BIT NexoFree",     disp:bitsFree,     cons:freeGastados,   color:"#2980b9", desc:"Asignados",      emoji:"💙" },
+                { label:"BIT NexoNet",      disp:bitsNexonet,  cons:bitsGastados,   color:"#d4a017", desc:"Comprados",     emoji:"💛" },
+                { label:"BIT NexoPromotor", disp:bitsPromotor, cons:promoGastados,  color:"#27ae60", desc:"Por referidos", emoji:"💚", badge:"Reembolsable" },
+                { label:"BIT NexoFree",     disp:bitsFree,     cons:freeGastados,   color:"#2980b9", desc:"Asignados",     emoji:"💙" },
               ].map(b => (
                 <div key={b.label} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 0", borderBottom:"1px solid #f0f0f0" }}>
                   <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
@@ -302,7 +291,6 @@ export default function Usuario() {
               ))}
             </div>
 
-            {/* ── FORMAS DE PAGO ── */}
             <div style={{ background:"#fff", borderRadius:"16px", padding:"16px", boxShadow:"0 2px 12px rgba(0,0,0,0.06)" }}>
               <div style={{ fontSize:"11px", fontWeight:800, color:"#9a9a9a", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"14px" }}>💳 Formas de pago</div>
               {[
@@ -326,7 +314,6 @@ export default function Usuario() {
               ))}
             </div>
 
-            {/* ── HISTORIAL DE MOVIMIENTOS ── */}
             <div style={{ background:"#fff", borderRadius:"16px", padding:"16px", boxShadow:"0 2px 12px rgba(0,0,0,0.06)" }}>
               <div style={{ fontSize:"11px", fontWeight:800, color:"#9a9a9a", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"14px" }}>📄 Últimos movimientos</div>
               {totalConsum === 0 && (bitsNexonet+bitsPromotor+bitsFree) === 0 ? (
@@ -373,7 +360,6 @@ export default function Usuario() {
               )}
             </div>
 
-            {/* ── SOLICITAR REEMBOLSO ── */}
             {bitsPromotor > 0 && (
               <div style={{ background:"linear-gradient(135deg,#1a3a2a,#1e4a30)", borderRadius:"16px", padding:"16px", border:"1px solid rgba(39,174,96,0.3)" }}>
                 <div style={{ fontSize:"12px", fontWeight:800, color:"#27ae60", marginBottom:"6px" }}>💚 BIT NexoPromotor reembolsables</div>
@@ -403,7 +389,6 @@ export default function Usuario() {
                 return (
                   <button key={i} onClick={()=>router.push(`/chat/${c.anuncio_id}/${c.otro_id}`)}
                     style={{ display:"flex", alignItems:"center", gap:"12px", background:"#fff", borderRadius:"16px", padding:"14px", border:noLeido?"2px solid #d4a017":"2px solid transparent", boxShadow:"0 2px 8px rgba(0,0,0,0.06)", cursor:"pointer", width:"100%", textAlign:"left" }}>
-                    {/* Avatar */}
                     <div style={{ width:"48px", height:"48px", borderRadius:"50%", background:"linear-gradient(135deg,#d4a017,#f0c040)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"22px", flexShrink:0, position:"relative" }}>
                       {c.otro?.plan==="nexoempresa"?"🏢":"👤"}
                       {noLeido && <span style={{ position:"absolute", top:0, right:0, width:"12px", height:"12px", background:"#e74c3c", borderRadius:"50%", border:"2px solid #fff" }} />}
@@ -506,37 +491,10 @@ export default function Usuario() {
         {/* ═══ ESTADÍSTICAS ═══ */}
         {seccion === "estadisticas" && (
           <div style={{ display:"flex", flexDirection:"column", gap:"14px" }}>
+            <BitCard titulo="BIT NexoNet" color="#d4a017" disponibles={bitsNexonet} consumidos={bitsGastados} descripcion="BIT de conexión para anuncios y funciones de la plataforma" />
+            <BitCard titulo="BIT NexoPromotor" color="#27ae60" disponibles={bitsPromotor} consumidos={promoGastados} descripcion="BIT obtenidos como promotor — reembolsables ante solicitud" reembolsable />
+            <BitCard titulo="BIT NexoFree" color="#2980b9" disponibles={bitsFree} consumidos={freeGastados} descripcion="BIT de respaldo garantizado — aval legal ante eventualidades" free />
 
-            {/* ── BIT NEXONET ── */}
-            <BitCard
-              titulo="BIT NexoNet"
-              color="#d4a017"
-              disponibles={bitsNexonet}
-              consumidos={bitsGastados}
-              descripcion="BIT de conexión para anuncios y funciones de la plataforma"
-            />
-
-            {/* ── BIT NEXOPROMOTOR ── */}
-            <BitCard
-              titulo="BIT NexoPromotor"
-              color="#27ae60"
-              disponibles={bitsPromotor}
-              consumidos={promoGastados}
-              descripcion="BIT obtenidos como promotor — reembolsables ante solicitud"
-              reembolsable
-            />
-
-            {/* ── BIT NEXOFREE ── */}
-            <BitCard
-              titulo="BIT NexoFree"
-              color="#2980b9"
-              disponibles={bitsFree}
-              consumidos={freeGastados}
-              descripcion="BIT de respaldo garantizado — aval legal ante eventualidades"
-              free
-            />
-
-            {/* ── MÉTRICAS ── */}
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:"10px" }}>
               {[
                 { n:totalVistas.toLocaleString(),    l:"Visitas",          e:"👁️" },
@@ -554,7 +512,6 @@ export default function Usuario() {
               ))}
             </div>
 
-            {/* ── INSIGNIA ── */}
             <div style={{ ...C, background:`linear-gradient(135deg, ${insigniaActual.color}15, ${insigniaActual.color}05)`, border:`2px solid ${insigniaActual.color}30` }}>
               <div style={{ fontSize:"11px", fontWeight:800, color:"#9a9a9a", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"14px" }}>🏅 Insignia de reputación</div>
               <div style={{ display:"flex", alignItems:"center", gap:"16px", marginBottom:"14px" }}>
@@ -573,9 +530,7 @@ export default function Usuario() {
                     <div style={{ height:"100%", width:`${progreso}%`, background:`linear-gradient(90deg, ${insigniaActual.color}, ${insigniaSig.color})`, borderRadius:"4px", transition:"width .4s" }} />
                   </div>
                   <div style={{ display:"flex", justifyContent:"space-between", fontSize:"10px", fontWeight:700, color:"#9a9a9a", marginBottom:"14px" }}>
-                    <span>{insigniaActual.nombre}</span>
-                    <span>{Math.round(progreso)}%</span>
-                    <span>{insigniaSig.nombre}</span>
+                    <span>{insigniaActual.nombre}</span><span>{Math.round(progreso)}%</span><span>{insigniaSig.nombre}</span>
                   </div>
                 </>
               )}
@@ -592,13 +547,10 @@ export default function Usuario() {
               </div>
             </div>
 
-            {/* ── ESTRELLAS ── */}
             <div style={C}>
               <div style={{ fontSize:"11px", fontWeight:800, color:"#9a9a9a", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"14px" }}>⭐ Estrellas ganadas</div>
               <div style={{ display:"flex", alignItems:"center", gap:"16px", marginBottom:"12px" }}>
-                <div style={{ width:"64px", height:"64px", borderRadius:"50%", background:"rgba(212,160,23,0.15)", border:"3px solid #d4a017", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"32px", flexShrink:0 }}>
-                  ⭐
-                </div>
+                <div style={{ width:"64px", height:"64px", borderRadius:"50%", background:"rgba(212,160,23,0.15)", border:"3px solid #d4a017", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"32px", flexShrink:0 }}>⭐</div>
                 <div>
                   <div style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:"42px", color:"#d4a017", lineHeight:1 }}>{estrellas.toLocaleString()}</div>
                   <div style={{ fontSize:"11px", fontWeight:700, color:"#9a9a9a" }}>estrellas totales</div>
@@ -608,7 +560,6 @@ export default function Usuario() {
                 Las estrellas se acumulan por cada BIT NexoNet consumido y por los BIT NexoPromotor ganados · Reflejan tu actividad y reputación en la plataforma
               </div>
             </div>
-
           </div>
         )}
 
@@ -639,7 +590,8 @@ export default function Usuario() {
           </div>
         )}
       </div>
-      {/* ══ POPUP COMPRAR BIT ANUNCIO ══ */}
+
+      {/* ══ POPUP COMPRAR BIT EMPRESA ══ */}
       {popupEmpresa && (
         <PopupCompra
           tipo="anuncio"
@@ -649,12 +601,21 @@ export default function Usuario() {
         />
       )}
 
+      {/* ══ POPUP CARGAR BIT CONEXIÓN ══ */}
+      {popupBits && (
+        <PopupCompra
+          tipo="conexion"
+          tituloAccion="Cargar BIT Conexión"
+          bitsDisponibles={{ nexo: bitsNexonet, promo: bitsPromotor, free: bitsFree }}
+          onClose={() => setPopupBits(false)}
+        />
+      )}
+
       <BottomNav />
     </main>
   );
 }
 
-// ── TARJETA BIT ──
 function BitCard({ titulo, color, disponibles, consumidos, descripcion, reembolsable, free }:{
   titulo:string; color:string; disponibles:number; consumidos:number;
   descripcion:string; reembolsable?:boolean; free?:boolean;
@@ -667,12 +628,8 @@ function BitCard({ titulo, color, disponibles, consumidos, descripcion, reembols
         <div>
           <div style={{ display:"flex", alignItems:"center", gap:"8px", marginBottom:"4px" }}>
             <div style={{ fontSize:"11px", fontWeight:800, color, textTransform:"uppercase", letterSpacing:"1px" }}>{titulo}</div>
-            {reembolsable && (
-              <div style={{ background:`rgba(39,174,96,0.15)`, border:`1px solid rgba(39,174,96,0.4)`, borderRadius:"20px", padding:"2px 8px", fontSize:"9px", fontWeight:900, color:"#27ae60" }}>♻️ REEMBOLSABLE</div>
-            )}
-            {free && (
-              <div style={{ background:`rgba(41,128,185,0.15)`, border:`1px solid rgba(41,128,185,0.4)`, borderRadius:"20px", padding:"2px 8px", fontSize:"9px", fontWeight:900, color:"#2980b9" }}>🛡️ RESPALDO</div>
-            )}
+            {reembolsable && <div style={{ background:`rgba(39,174,96,0.15)`, border:`1px solid rgba(39,174,96,0.4)`, borderRadius:"20px", padding:"2px 8px", fontSize:"9px", fontWeight:900, color:"#27ae60" }}>♻️ REEMBOLSABLE</div>}
+            {free && <div style={{ background:`rgba(41,128,185,0.15)`, border:`1px solid rgba(41,128,185,0.4)`, borderRadius:"20px", padding:"2px 8px", fontSize:"9px", fontWeight:900, color:"#2980b9" }}>🛡️ RESPALDO</div>}
           </div>
           <div style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:"48px", color, lineHeight:1 }}>{disponibles.toLocaleString()}</div>
           <div style={{ fontSize:"11px", fontWeight:700, color:"#9a9a9a" }}>disponibles</div>

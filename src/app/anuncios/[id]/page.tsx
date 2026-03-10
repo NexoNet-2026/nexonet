@@ -48,6 +48,19 @@ export default function AnuncioDetalle() {
   const [editando,      setEditando]      = useState(false);
   const [editForm,      setEditForm]      = useState({ titulo: "", descripcion: "", precio: "", moneda: "ARS" });
   const [guardando,     setGuardando]     = useState(false);
+  const [bits,          setBits]          = useState(0);
+  const [session,       setSession]       = useState<any>(null);
+  const [conectando,    setConectando]    = useState(false);
+  const [popupMensaje,  setPopupMensaje]  = useState(false);
+  const [popupSinBits,  setPopupSinBits]  = useState(false);
+  const [popupExito,    setPopupExito]    = useState(false);
+  const MENSAJES_PRESET = [
+    "Hola, estoy interesado/a en tu anuncio. ¿Podemos hablar?",
+    "Hola, vi tu publicación y me gustaría más información.",
+    "Buen día, ¿el anuncio sigue disponible?",
+    "Hola, ¿cuál es el precio final? Estoy listo/a para cerrar.",
+  ];
+  const [mensajeConexion, setMensajeConexion] = useState(MENSAJES_PRESET[0]);
 
   useEffect(() => {
     cargar();
@@ -70,6 +83,13 @@ export default function AnuncioDetalle() {
       if (session?.user.id === data.usuario_id) setEsPropio(true);
     }
     await supabase.from("anuncios").update({ vistas: (data.vistas || 0) + 1 }).eq("id", params.id);
+
+    const { data: { session } } = await supabase.auth.getSession();
+    setSession(session);
+    if (session) {
+      const { data: u } = await supabase.from("usuarios").select("bits,bits_promo,bits_free").eq("id", session.user.id).single();
+      if (u) setBits((u.bits||0)+(u.bits_promo||0)+(u.bits_free||0));
+    }
     setLoading(false);
   };
 
@@ -84,6 +104,28 @@ export default function AnuncioDetalle() {
     setAnuncio((prev: any) => ({ ...prev, ...editForm, precio: parseFloat(editForm.precio) }));
     setEditando(false);
     setGuardando(false);
+  };
+
+  const ejecutarConexion = async () => {
+    if (!session || !anuncio) return;
+    setConectando(true);
+    const { data: anuData } = await supabase.from("anuncios").select("id,usuario_id,conexiones").eq("id", anuncio.id).single();
+    if (anuData) {
+      await supabase.from("anuncios").update({ conexiones: (anuData.conexiones||0)+1 }).eq("id", anuncio.id);
+      await supabase.from("notificaciones").insert({
+        usuario_id: anuData.usuario_id,
+        emisor_id:  session.user.id,
+        anuncio_id: anuncio.id,
+        tipo: "conexion",
+        mensaje: mensajeConexion,
+      });
+      const nuevosBits = bits - 1;
+      await supabase.from("usuarios").update({ bits: nuevosBits, bits_gastados: nuevosBits }).eq("id", session.user.id);
+      setBits(nuevosBits);
+    }
+    setConectando(false);
+    setPopupExito(true);
+    setMensajeConexion(MENSAJES_PRESET[0]);
   };
 
   const fmt = (precio: number, moneda: string) =>
@@ -305,9 +347,21 @@ export default function AnuncioDetalle() {
               💬 WhatsApp
             </a>
           )}
-          <button style={{ flex:1, background:"linear-gradient(135deg,#d4a017,#f0c040)", color:"#1a2a3a", border:"none", borderRadius:"12px", padding:"16px", fontSize:"14px", fontWeight:800, cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
-            🔗 Conectar
-          </button>
+          {!esPropio && session && (
+            <button
+              onClick={()=>{ bits > 0 ? setPopupMensaje(true) : setPopupSinBits(true); }}
+              disabled={conectando}
+              style={{ flex:1, background:"linear-gradient(135deg,#d4a017,#f0c040)", color:"#1a2a3a", border:"none", borderRadius:"12px", padding:"16px", fontSize:"14px", fontWeight:800, cursor:"pointer", fontFamily:"'Nunito',sans-serif", boxShadow:"0 4px 0 #a07810" }}>
+              {conectando ? "Conectando..." : "🔗 Conectar"}
+            </button>
+          )}
+          {!session && (
+            <button
+              onClick={()=>router.push("/login")}
+              style={{ flex:1, background:"linear-gradient(135deg,#d4a017,#f0c040)", color:"#1a2a3a", border:"none", borderRadius:"12px", padding:"16px", fontSize:"14px", fontWeight:800, cursor:"pointer", fontFamily:"'Nunito',sans-serif", boxShadow:"0 4px 0 #a07810" }}>
+              🔗 Conectar
+            </button>
+          )}
         </div>
         {esPropio && (
           <div style={{ display:"flex", gap:"10px" }}>
@@ -320,6 +374,75 @@ export default function AnuncioDetalle() {
           </div>
         )}
       </div>
+
+      {/* ══ POPUP SIN BIT ══ */}
+      {popupSinBits && (
+        <div style={{position:"fixed",inset:0,zIndex:200,background:"rgba(0,0,0,0.65)",display:"flex",alignItems:"flex-end",padding:"16px"}}>
+          <div style={{width:"100%",background:"#fff",borderRadius:"20px 20px 16px 16px",padding:"24px 20px 20px",boxShadow:"0 -8px 40px rgba(0,0,0,0.3)"}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"20px"}}>
+              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"22px",color:"#1a2a3a",letterSpacing:"1px"}}>⚡ Necesitás BIT</div>
+              <button onClick={()=>setPopupSinBits(false)} style={{background:"#f0f0f0",border:"none",borderRadius:"50%",width:"32px",height:"32px",fontSize:"16px",cursor:"pointer"}}>✕</button>
+            </div>
+            <div style={{background:"linear-gradient(135deg,#1a2a3a,#243b55)",borderRadius:"16px",padding:"20px",textAlign:"center",marginBottom:"16px"}}>
+              <div style={{fontSize:"40px",marginBottom:"8px"}}>🔗</div>
+              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"26px",color:"#f0c040",letterSpacing:"1px",marginBottom:"6px"}}>No tenés BIT disponibles</div>
+              <div style={{fontSize:"13px",color:"#8a9aaa",fontWeight:600,lineHeight:1.5}}>Cargá BIT para conectarte con este anuncio. Cada conexión usa 1 BIT.</div>
+            </div>
+            <button onClick={()=>{ setPopupSinBits(false); router.push("/comprar"); }} style={{width:"100%",background:"linear-gradient(135deg,#f0c040,#d4a017)",border:"none",borderRadius:"12px",padding:"14px",fontSize:"15px",fontWeight:900,color:"#1a2a3a",cursor:"pointer",fontFamily:"'Nunito',sans-serif",boxShadow:"0 4px 0 #a07810",marginBottom:"10px"}}>
+              ⚡ Cargar BIT ahora
+            </button>
+            <button onClick={()=>setPopupSinBits(false)} style={{width:"100%",background:"none",border:"none",padding:"10px",fontSize:"13px",fontWeight:700,color:"#9a9a9a",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>Cancelar</button>
+          </div>
+        </div>
+      )}
+
+      {/* ══ POPUP MENSAJE ══ */}
+      {popupMensaje && (
+        <div style={{position:"fixed",inset:0,zIndex:200,background:"rgba(0,0,0,0.65)",display:"flex",alignItems:"flex-end",padding:"16px"}}>
+          <div style={{width:"100%",background:"#fff",borderRadius:"20px 20px 16px 16px",padding:"24px 20px 20px",boxShadow:"0 -8px 40px rgba(0,0,0,0.3)"}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"18px"}}>
+              <div>
+                <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"22px",color:"#1a2a3a",letterSpacing:"1px"}}>🔗 Mensaje de conexión</div>
+                <div style={{fontSize:"12px",color:"#9a9a9a",fontWeight:600}}>1 BIT · Tenés {bits} BIT disponibles</div>
+              </div>
+              <button onClick={()=>setPopupMensaje(false)} style={{background:"#f0f0f0",border:"none",borderRadius:"50%",width:"32px",height:"32px",fontSize:"16px",cursor:"pointer"}}>✕</button>
+            </div>
+            <div style={{display:"flex",flexDirection:"column",gap:"8px",marginBottom:"14px"}}>
+              {MENSAJES_PRESET.map((m,i) => (
+                <button key={i} onClick={()=>setMensajeConexion(m)} style={{textAlign:"left",background:mensajeConexion===m?"linear-gradient(135deg,#fff8e0,#fff3c0)":"#f8f8f8",border:mensajeConexion===m?"2px solid #d4a017":"2px solid transparent",borderRadius:"12px",padding:"10px 14px",fontSize:"13px",fontWeight:700,color:"#1a2a3a",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>
+                  {mensajeConexion===m && <span style={{color:"#d4a017",marginRight:"6px"}}>✓</span>}{m}
+                </button>
+              ))}
+            </div>
+            <div style={{marginBottom:"16px"}}>
+              <div style={{fontSize:"11px",fontWeight:800,color:"#9a9a9a",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"6px"}}>✏️ O escribí tu propio mensaje</div>
+              <textarea value={mensajeConexion} onChange={e=>setMensajeConexion(e.target.value)} maxLength={200} rows={3}
+                style={{width:"100%",borderRadius:"12px",border:"2px solid #e8e8e8",padding:"10px 14px",fontSize:"13px",fontWeight:600,color:"#1a2a3a",fontFamily:"'Nunito',sans-serif",resize:"none",outline:"none",boxSizing:"border-box"}}
+                placeholder="Escribí tu mensaje..." />
+              <div style={{textAlign:"right",fontSize:"10px",color:"#bbb",fontWeight:600}}>{mensajeConexion.length}/200</div>
+            </div>
+            <button onClick={async()=>{ setPopupMensaje(false); await ejecutarConexion(); }} disabled={!mensajeConexion.trim()}
+              style={{width:"100%",background:mensajeConexion.trim()?"linear-gradient(135deg,#f0c040,#d4a017)":"#f0f0f0",border:"none",borderRadius:"12px",padding:"14px",fontSize:"15px",fontWeight:900,color:mensajeConexion.trim()?"#1a2a3a":"#bbb",cursor:mensajeConexion.trim()?"pointer":"not-allowed",fontFamily:"'Nunito',sans-serif",boxShadow:mensajeConexion.trim()?"0 4px 0 #a07810":"none"}}>
+              {conectando ? "Enviando..." : "⚡ Enviar y conectar"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ══ POPUP ÉXITO ══ */}
+      {popupExito && (
+        <div style={{position:"fixed",inset:0,zIndex:200,background:"rgba(0,0,0,0.65)",display:"flex",alignItems:"center",justifyContent:"center",padding:"16px"}}>
+          <div style={{background:"#fff",borderRadius:"20px",padding:"32px 24px",textAlign:"center",maxWidth:"320px",width:"100%",boxShadow:"0 8px 40px rgba(0,0,0,0.3)"}}>
+            <div style={{fontSize:"56px",marginBottom:"12px"}}>✅</div>
+            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"26px",color:"#1a2a3a",letterSpacing:"1px",marginBottom:"8px"}}>¡Conexión enviada!</div>
+            <div style={{fontSize:"13px",color:"#9a9a9a",fontWeight:600,marginBottom:"24px",lineHeight:1.5}}>Tu mensaje llegó al anunciante. Te quedan <strong style={{color:"#d4a017"}}>{bits} BIT</strong>.</div>
+            <button onClick={()=>setPopupExito(false)} style={{width:"100%",background:"linear-gradient(135deg,#f0c040,#d4a017)",border:"none",borderRadius:"12px",padding:"14px",fontSize:"15px",fontWeight:900,color:"#1a2a3a",cursor:"pointer",fontFamily:"'Nunito',sans-serif",boxShadow:"0 4px 0 #a07810"}}>
+              Cerrar
+            </button>
+          </div>
+        </div>
+      )}
+
       <BottomNav />
     </main>
   );

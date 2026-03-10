@@ -335,12 +335,32 @@ export default function AnuncioDetalle() {
           <div style={{ background:"#fff", borderRadius:"16px", padding:"20px", boxShadow:"0 2px 10px rgba(0,0,0,0.06)" }}>
             <h3 style={{ fontSize:"14px", fontWeight:900, color:"#1a2a3a", marginBottom:"14px", textTransform:"uppercase", letterSpacing:"1px" }}>Vendedor</h3>
             <div style={{ display:"flex", alignItems:"center", gap:"12px" }}>
-              <div style={{ width:"48px", height:"48px", borderRadius:"50%", background:"linear-gradient(135deg,#d4a017,#f0c040)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"22px", flexShrink:0 }}>👤</div>
-              <div>
+              <div style={{ width:"48px", height:"48px", borderRadius:"50%", background:"linear-gradient(135deg,#d4a017,#f0c040)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"22px", flexShrink:0 }}>
+                {usuario.plan === "nexoempresa" ? "🏢" : "👤"}
+              </div>
+              <div style={{ flex:1 }}>
                 <div style={{ fontSize:"15px", fontWeight:800, color:"#1a2a3a" }}>{usuario.nombre_usuario}</div>
                 <div style={{ fontSize:"12px", color:"#d4a017", fontWeight:700 }}>{usuario.codigo}</div>
                 {usuario.plan === "nexoempresa" && <div style={{ fontSize:"11px", color:"#c0392b", fontWeight:800, marginTop:"2px" }}>🏢 Empresa verificada</div>}
               </div>
+              {!esPropio && session && (
+                <button
+                  onClick={()=>router.push(`/chat/${anuncio.id}/${anuncio.usuario_id}`)}
+                  style={{ background:"linear-gradient(135deg,#1a2a3a,#243b55)", border:"none", borderRadius:"12px", padding:"10px 16px", display:"flex", alignItems:"center", gap:"6px", cursor:"pointer", flexShrink:0, boxShadow:"0 3px 0 #0a1015" }}
+                >
+                  <span style={{ fontSize:"18px" }}>💬</span>
+                  <span style={{ fontSize:"12px", fontWeight:900, color:"#d4a017", fontFamily:"'Nunito',sans-serif" }}>Chat</span>
+                </button>
+              )}
+              {!session && (
+                <button
+                  onClick={()=>router.push("/login")}
+                  style={{ background:"linear-gradient(135deg,#1a2a3a,#243b55)", border:"none", borderRadius:"12px", padding:"10px 16px", display:"flex", alignItems:"center", gap:"6px", cursor:"pointer", flexShrink:0, boxShadow:"0 3px 0 #0a1015" }}
+                >
+                  <span style={{ fontSize:"18px" }}>💬</span>
+                  <span style={{ fontSize:"12px", fontWeight:900, color:"#d4a017", fontFamily:"'Nunito',sans-serif" }}>Chat</span>
+                </button>
+              )}
             </div>
           </div>
         )}

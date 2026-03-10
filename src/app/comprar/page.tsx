@@ -22,6 +22,11 @@ function ComprarInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [cat, setCat]         = useState<string>(searchParams.get("cat") || "conexion");
+
+  useEffect(() => {
+    const c = searchParams.get("cat");
+    if (c) setCat(c);
+  }, [searchParams]);
   const [sel, setSel]         = useState<string | null>(null);
   const [popupMetodo, setPopupMetodo] = useState(false);
   const [metodo, setMetodo]   = useState<string | null>(null);

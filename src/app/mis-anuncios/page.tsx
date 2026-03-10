@@ -106,6 +106,11 @@ export default function MisAnuncios() {
       <div style={{ background: "linear-gradient(135deg, #1a2a3a 0%, #243b55 100%)", padding: "16px 16px 20px" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
           <div>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "4px" }}>
+              <button onClick={() => router.push("/usuario")} style={{ background: "linear-gradient(135deg,#f0c040,#d4a017)", border: "none", borderRadius: "20px", padding: "5px 14px", fontSize: "12px", fontWeight: 900, color: "#1a2a3a", cursor: "pointer", fontFamily: "'Nunito',sans-serif", boxShadow: "0 3px 0 #a07810", display: "flex", alignItems: "center", gap: "5px" }}>
+                ← 👤 Mi Perfil
+              </button>
+            </div>
             <div style={{ fontSize: "18px", fontWeight: 900, color: "#fff" }}>Mis Anuncios</div>
             <div style={{ display: "flex", gap: "6px", marginTop: "4px", flexWrap: "wrap" }}>
               <div style={{ background: "#6a8aaa", borderRadius: "20px", padding: "3px 10px" }}>

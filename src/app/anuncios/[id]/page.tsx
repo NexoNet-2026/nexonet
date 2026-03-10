@@ -307,9 +307,14 @@ export default function AnuncioDetalle() {
           </button>
         </div>
         {esPropio && (
-          <button onClick={() => router.push("/mis-anuncios")} style={{ width:"100%", background:"linear-gradient(135deg,#1a2a3a,#243b55)", color:"#d4a017", border:"none", borderRadius:"12px", padding:"14px", fontSize:"14px", fontWeight:800, cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
-            📋 Ver mis anuncios
-          </button>
+          <div style={{ display:"flex", gap:"10px" }}>
+            <button onClick={() => router.push("/usuario")} style={{ flex:1, background:"linear-gradient(135deg,#f0c040,#d4a017)", color:"#1a2a3a", border:"none", borderRadius:"12px", padding:"14px", fontSize:"14px", fontWeight:900, cursor:"pointer", fontFamily:"'Nunito',sans-serif", boxShadow:"0 4px 0 #a07810" }}>
+              👤 Mi Perfil
+            </button>
+            <button onClick={() => router.push("/mis-anuncios")} style={{ flex:1, background:"linear-gradient(135deg,#1a2a3a,#243b55)", color:"#d4a017", border:"none", borderRadius:"12px", padding:"14px", fontSize:"14px", fontWeight:800, cursor:"pointer", fontFamily:"'Nunito',sans-serif", boxShadow:"0 4px 0 #0a1015" }}>
+              📋 Mis anuncios
+            </button>
+          </div>
         )}
       </div>
       <BottomNav />

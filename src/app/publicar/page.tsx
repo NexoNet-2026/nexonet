@@ -46,6 +46,8 @@ export default function Publicar() {
   const [geoLoading, setGeoLoading] = useState(false);
   const [coordenadas, setCoordenadas] = useState<{lat:number;lng:number}|null>(null);
   const [form, setForm] = useState({ titulo:"", descripcion:"", precio:"", moneda:"ARS", ciudad:"", provincia:"", direccion:"" });
+  const [permuto, setPermuto]           = useState(false);
+  const [popupFlashCompra, setPopupFlashCompra] = useState(false);
   const [fotos, setFotos] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
 
@@ -197,6 +199,7 @@ export default function Publicar() {
       lat: coordenadas?.lat || null,
       lng: coordenadas?.lng || null,
       links: linksLimpios.length ? linksLimpios : null,
+      permuto: permuto,
     }).select().single();
 
     if (error || !anuncio) { alert("Error al publicar: " + (error?.message || "sin datos")); setLoading(false); return; }
@@ -402,6 +405,19 @@ export default function Publicar() {
                     <option value="ARS">ARS $</option>
                     <option value="USD">USD U$D</option>
                   </select>
+                </div>
+              </div>
+
+              {/* PERMUTO */}
+              <div
+                onClick={() => setPermuto(v => !v)}
+                style={{ display:"flex", alignItems:"center", gap:"12px", padding:"12px 14px", background: permuto ? "rgba(212,160,23,0.1)" : "#f9f9f9", borderRadius:"12px", border: permuto ? "2px solid #d4a017" : "2px solid #e8e8e6", cursor:"pointer", marginTop:"4px" }}>
+                <div style={{ width:"24px", height:"24px", borderRadius:"6px", background: permuto ? "#d4a017" : "#e8e8e6", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"14px", flexShrink:0, transition:"background .2s" }}>
+                  {permuto ? "✓" : ""}
+                </div>
+                <div>
+                  <div style={{ fontSize:"13px", fontWeight:800, color: permuto ? "#d4a017" : "#1a2a3a" }}>🔄 Acepto permuta</div>
+                  <div style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:600 }}>Tu anuncio aparece en el filtro "Permuto"</div>
                 </div>
               </div>
             </div>
@@ -636,6 +652,11 @@ export default function Publicar() {
               )}
             </div>
 
+            {/* ── PROMO FLASH ── */}
+            <button onClick={() => setPopupFlashCompra(true)} style={{ width:"100%", background:"linear-gradient(135deg,#1a2a3a,#243b55)", color:"#f0c040", border:"2px solid #d4a017", borderRadius:"12px", padding:"14px", fontSize:"14px", fontWeight:800, fontFamily:"'Nunito',sans-serif", cursor:"pointer", letterSpacing:"1px", display:"flex", alignItems:"center", justifyContent:"center", gap:"8px" }}>
+              ⚡ PROMO Flash — Destacar este anuncio
+            </button>
+
             <button onClick={publicar} disabled={loading||subiendo} style={{ width:"100%", background:(loading||subiendo)?"#ccc":"linear-gradient(135deg,#d4a017,#f0c040)", color:"#1a2a3a", border:"none", borderRadius:"12px", padding:"16px", fontSize:"15px", fontWeight:800, fontFamily:"'Nunito',sans-serif", cursor:(loading||subiendo)?"not-allowed":"pointer", letterSpacing:"1px", textTransform:"uppercase" }}>
               {subiendo?"Subiendo fotos...":loading?"Publicando...":"🚀 Publicar anuncio"}
             </button>
@@ -671,6 +692,16 @@ export default function Publicar() {
           tituloAccion="Publicar anuncio"
           bitsDisponibles={{ nexo: bitsNexo, promo: bitsPromo, free: bitsFree }}
           onClose={() => setPopupAnuncioCompra(false)}
+        />
+      )}
+
+      {/* ══ POPUP FLASH ══ */}
+      {popupFlashCompra && (
+        <PopupCompra
+          tipo="flash"
+          tituloAccion="PROMO Flash — Destacar anuncio"
+          bitsDisponibles={{ nexo: bitsNexo, promo: bitsPromo, free: bitsFree }}
+          onClose={() => setPopupFlashCompra(false)}
         />
       )}
 

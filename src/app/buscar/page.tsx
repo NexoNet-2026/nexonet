@@ -5,7 +5,8 @@ import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
 import { supabase } from "@/lib/supabase";
 
-type Anuncio = { id:number; titulo:string; precio:number; moneda:string; ciudad:string; provincia:string; imagenes:string[]; flash:boolean; fuente:string; subrubro_id:number; usuario_id:string };
+type Anuncio = {
+  permuto?: boolean; id:number; titulo:string; precio:number; moneda:string; ciudad:string; provincia:string; imagenes:string[]; flash:boolean; fuente:string; subrubro_id:number; usuario_id:string };
 type Rubro = { id:number; nombre:string; subrubros:{id:number; nombre:string}[] };
 type RubroFlat = { id:number; nombre:string };
 type SubrubroFlat = { id:number; nombre:string; rubro_id:number };
@@ -49,6 +50,9 @@ function BuscarInner() {
   const [dropOpen, setDropOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropRef  = useRef<HTMLDivElement>(null);
+
+  // Filtros extra
+  const [soloPermuto, setSoloPermuto] = useState(false);
 
   // Datos
   const [rubros,   setRubros]   = useState<Rubro[]>([]);
@@ -96,7 +100,7 @@ function BuscarInner() {
       supabase.from("provincias").select("id,nombre").order("nombre"),
       supabase.from("rubros").select("id,nombre,subrubros(id,nombre)").order("nombre"),
       supabase.from("anuncios")
-        .select("id,titulo,precio,moneda,ciudad,provincia,imagenes,flash,fuente,subrubro_id,usuario_id")
+        .select("id,titulo,precio,moneda,ciudad,provincia,imagenes,flash,fuente,subrubro_id,usuario_id,permuto")
         .eq("estado","activo").order("created_at",{ascending:false}).limit(100),
     ]).then(([{data:pData},{data:rData},{data:aData}]) => {
       if (pData) setProvs(pData);
@@ -199,8 +203,8 @@ function BuscarInner() {
   };
 
   // Lista plana de anuncios visibles según filtros activos
-  const anunciosVisibles: Anuncio[] = busLibre ? resTxt :
-    rubrosM.flatMap(r => getAnus(r));
+  const _base: Anuncio[] = busLibre ? resTxt : rubrosM.flatMap(r => getAnus(r));
+  const anunciosVisibles: Anuncio[] = soloPermuto ? _base.filter(a => a.permuto) : _base;
 
   const fmt = (p:number,m:string) => !p?"Consultar":`${m==="USD"?"U$D":"$"} ${p.toLocaleString("es-AR")}`;
   const phQ  = barrSel?`¿Qué buscás en ${barrSel}?`:ciudSel?`¿Qué buscás en ${ciudSel}?`:provSel?`¿Qué buscás en ${provSel}?`:"¿Qué buscás?";
@@ -280,6 +284,15 @@ function BuscarInner() {
             ))}
           </div>
         )}
+
+        {/* CHIPS FILTROS EXTRA */}
+        <div style={{display:"flex",gap:"8px",flexWrap:"wrap"}}>
+          <button
+            onClick={() => setSoloPermuto(v => !v)}
+            style={{background: soloPermuto ? "#d4a017" : "rgba(255,255,255,0.12)", border: `2px solid ${soloPermuto ? "#d4a017" : "rgba(255,255,255,0.3)"}`, borderRadius:"20px", padding:"6px 14px", fontSize:"12px", fontWeight:800, color: soloPermuto ? "#1a2a3a" : "#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif", display:"flex", alignItems:"center", gap:"6px"}}>
+            🔄 Permuto {soloPermuto && "✓"}
+          </button>
+        </div>
 
         {/* BUSCADOR */}
         <div style={{position:"relative"}}>

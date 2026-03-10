@@ -185,11 +185,11 @@ export default function Mapa() {
               </div>
             </div>
             <div style={{background:"linear-gradient(135deg,#f0c040,#d4a017)",padding:"10px 16px",display:"flex",alignItems:"center",gap:"10px",justifyContent:"space-between",boxShadow:"0 4px 0 #a07810"}}>
-              <button onClick={todosSelec?deseleccionarTodos:seleccionarTodos} style={{background:"#1a2a3a",border:"none",borderRadius:"20px",padding:"6px 16px",fontSize:"12px",fontWeight:900,color:"#d4a017",cursor:"pointer",fontFamily:"'Nunito',sans-serif",whiteSpace:"nowrap",boxShadow:"0 3px 0 #000a"}}>
+              <button onClick={todosSelec?deseleccionarTodos:seleccionarTodos} style={{background:"rgba(26,42,58,0.15)",border:"2px solid rgba(26,42,58,0.25)",borderRadius:"20px",padding:"6px 14px",fontSize:"12px",fontWeight:800,color:"#1a2a3a",cursor:"pointer",fontFamily:"'Nunito',sans-serif",whiteSpace:"nowrap"}}>
                 {todosSelec ? "✕ Deseleccionar todos" : "✅ Seleccionar todos"}
               </button>
-              <div style={{fontSize:"13px",fontWeight:900,color:"#1a2a3a",whiteSpace:"nowrap"}}>
-                {seleccionados.size > 0 ? `🔗 ${seleccionados.size} anuncio${seleccionados.size!==1?"s":""} · ${seleccionados.size} BIT` : "Tocá los pines"}
+              <div style={{fontSize:"12px",fontWeight:700,color:"rgba(26,42,58,0.75)",whiteSpace:"nowrap"}}>
+                {seleccionados.size > 0 ? `${seleccionados.size} selec. · ${seleccionados.size} BIT` : "Tocá los pines"}
               </div>
             </div>
           </>

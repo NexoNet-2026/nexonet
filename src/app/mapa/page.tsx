@@ -1,8 +1,8 @@
 "use client";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
-import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useRef, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { supabase } from "@/lib/supabase";
 import PopupCompra from "@/components/PopupCompra";
@@ -13,8 +13,14 @@ type Anuncio = { id:number; titulo:string; precio:number; moneda:string; rubro:s
 type RubroFlat = { id:number; nombre:string };
 type SubrubroFlat = { id:number; nombre:string; rubro_id:number };
 
-export default function Mapa() {
+function MapaInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  // Params de URL: ?lat=X&lng=Y&id=Z (vienen desde /anuncios/[id])
+  const paramLat = searchParams.get("lat");
+  const paramLng = searchParams.get("lng");
+  const paramId  = searchParams.get("id");
+
   const [anuncios,      setAnuncios]      = useState<Anuncio[]>([]);
   const [rFlat,         setRFlat]         = useState<RubroFlat[]>([]);
   const [sFlat,         setSFlat]         = useState<SubrubroFlat[]>([]);
@@ -24,15 +30,17 @@ export default function Mapa() {
   const [dropOpen,      setDropOpen]      = useState(false);
   const [anuncioSel,    setAnuncioSel]    = useState<Anuncio|null>(null);
   const [loading,       setLoading]       = useState(true);
+  // Centro del mapa: si hay params lo usamos, si no default Rosario
+  const [centroMapa,    setCentroMapa]    = useState<[number,number]|null>(
+    paramLat && paramLng ? [parseFloat(paramLat), parseFloat(paramLng)] : null
+  );
   const inputRef = useRef<HTMLInputElement>(null);
   const dropRef  = useRef<HTMLDivElement>(null);
 
-  // Sesión y BIT
   const [session,        setSession]        = useState<any>(null);
   const [bits,           setBits]           = useState(0);
   const [bitsPromo,      setBitsPromo]      = useState(0);
   const [bitsFree,       setBitsFree]       = useState(0);
-  // Modo conexión
   const [modoConexion,   setModoConexion]   = useState(false);
   const [seleccionados,  setSeleccionados]  = useState<Set<number>>(new Set());
   const [conectando,     setConectando]     = useState(false);
@@ -65,7 +73,15 @@ export default function Mapa() {
         setRFlat(rData.map((r:any) => ({id:r.id,nombre:r.nombre})));
         setSFlat(rData.flatMap((r:any) => (r.subrubros||[]).map((s:any) => ({id:s.id,nombre:s.nombre,rubro_id:r.id}))));
       }
-      if (aData) setAnuncios((aData as any[]).map(a=>({...a,rubro:"Otros",moneda:a.moneda||"ARS",imagenes:a.imagenes||[],flash:a.flash||false})));
+      if (aData) {
+        const lista = (aData as any[]).map(a=>({...a,rubro:"Otros",moneda:a.moneda||"ARS",imagenes:a.imagenes||[],flash:a.flash||false}));
+        setAnuncios(lista);
+        // Si llegamos desde un anuncio con ?id=, auto-seleccionarlo en el popup
+        if (paramId) {
+          const target = lista.find((a:any) => String(a.id) === paramId);
+          if (target) setAnuncioSel(target);
+        }
+      }
       setLoading(false);
     });
   }, []);
@@ -78,13 +94,13 @@ export default function Mapa() {
     document.addEventListener("mousedown",h); return () => document.removeEventListener("mousedown",h);
   }, []);
 
-  const qLow    = query.toLowerCase();
-  const rFilt   = rFlat.filter(r => r.nombre.toLowerCase().includes(qLow));
-  const sFilt   = sFlat.filter(s => s.nombre.toLowerCase().includes(qLow));
+  const qLow  = query.toLowerCase();
+  const rFilt = rFlat.filter(r => r.nombre.toLowerCase().includes(qLow));
+  const sFilt = sFlat.filter(s => s.nombre.toLowerCase().includes(qLow));
   const sDRubro = rSel ? sFlat.filter(s => s.rubro_id===rSel.id) : [];
-  const limpQ   = () => { setQuery(""); setRSel(null); setSSel(null); setDropOpen(false); };
-  const selR    = (r:RubroFlat)    => { setRSel(r); setSSel(null); setQuery(r.nombre); setDropOpen(false); };
-  const selS    = (s:SubrubroFlat) => { setRSel(rFlat.find(r=>r.id===s.rubro_id)||null); setSSel(s); setQuery(s.nombre); setDropOpen(false); };
+  const limpQ = () => { setQuery(""); setRSel(null); setSSel(null); setDropOpen(false); };
+  const selR  = (r:RubroFlat)    => { setRSel(r); setSSel(null); setQuery(r.nombre); setDropOpen(false); };
+  const selS  = (s:SubrubroFlat) => { setRSel(rFlat.find(r=>r.id===s.rubro_id)||null); setSSel(s); setQuery(s.nombre); setDropOpen(false); };
 
   const anunciosFiltrados = anuncios.filter(a => {
     if (session && a.usuario_id === session?.user.id) return false;
@@ -95,13 +111,12 @@ export default function Mapa() {
 
   const fmt = (p:number,m:string) => !p?"Consultar":`${m==="USD"?"U$D":"$"} ${p.toLocaleString("es-AR")}`;
 
-  // ── CONEXIÓN ──
   const toggleSeleccion = (id:number) => {
     const s = new Set(seleccionados);
     s.has(id) ? s.delete(id) : s.add(id);
     setSeleccionados(s);
   };
-  const seleccionarTodos = () => setSeleccionados(new Set(anunciosFiltrados.map(a=>a.id)));
+  const seleccionarTodos   = () => setSeleccionados(new Set(anunciosFiltrados.map(a=>a.id)));
   const deseleccionarTodos = () => setSeleccionados(new Set());
   const todosSelec = anunciosFiltrados.length>0 && seleccionados.size===anunciosFiltrados.length;
 
@@ -113,7 +128,6 @@ export default function Mapa() {
 
   const ejecutarConexion = async () => {
     if (seleccionados.size===0) return;
-    if (bits < seleccionados.size) return;
     setConectando(true);
     const ids = Array.from(seleccionados);
     const { data: anuData } = await supabase.from("anuncios").select("id,usuario_id,conexiones").in("id",ids);
@@ -136,7 +150,6 @@ export default function Mapa() {
 
       {/* BARRA BUSCADOR */}
       <div style={{position:"fixed",top:"100px",left:0,right:0,background:"linear-gradient(135deg,#1a2a3a,#243b55)",padding:"10px 16px",zIndex:99,display:"flex",flexDirection:"column",gap:"8px"}}>
-        {/* BUSCADOR */}
         <div style={{position:"relative"}}>
           <div style={{display:"flex",background:"#fff",borderRadius:"14px",boxShadow:"0 2px 8px rgba(0,0,0,0.2)",position:"relative",zIndex:10}}>
             <div style={{flex:1,position:"relative"}}>
@@ -146,7 +159,7 @@ export default function Mapa() {
                 style={{width:"100%",border:"none",padding:"11px 16px",fontFamily:"'Nunito',sans-serif",fontSize:"14px",color:"#2c2c2e",outline:"none",background:"transparent",boxSizing:"border-box",borderRadius:"14px 0 0 14px"}}
               />
               {(rSel||sSel) && (
-                <div onClick={limpQ} style={{position:"absolute",right:"8px",top:"50%",transform:"translateY(-50%)",background:sSel?"#d4a017":"#d4a017",borderRadius:"20px",padding:"3px 10px",fontSize:"11px",fontWeight:800,color:sSel?"#fff":"#1a2a3a",cursor:"pointer"}}>
+                <div onClick={limpQ} style={{position:"absolute",right:"8px",top:"50%",transform:"translateY(-50%)",background:"#d4a017",borderRadius:"20px",padding:"3px 10px",fontSize:"11px",fontWeight:800,color:sSel?"#fff":"#1a2a3a",cursor:"pointer"}}>
                   {sSel?sSel.nombre:rSel!.nombre} ✕
                 </div>
               )}
@@ -174,7 +187,6 @@ export default function Mapa() {
           )}
         </div>
 
-        {/* BOTÓN MODO CONEXIÓN */}
         {session && !modoConexion && (
           <button onClick={activarModoConexion} style={{background:"linear-gradient(135deg,#f0c040,#d4a017)",border:"none",borderRadius:"12px",padding:"8px 16px",display:"flex",flexDirection:"row",alignItems:"center",justifyContent:"space-between",gap:"10px",cursor:"pointer",fontFamily:"'Nunito',sans-serif",boxShadow:"0 4px 0 #a07810",width:"100%"}}>
             <div style={{display:"flex",alignItems:"center",gap:"8px"}}>
@@ -205,10 +217,14 @@ export default function Mapa() {
         {loading ? (
           <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100%",background:"#f4f4f2",fontSize:"14px",fontWeight:700,color:"#9a9a9a"}}>Cargando anuncios...</div>
         ) : (
-          <MapaLeaflet anuncios={anunciosFiltrados as any} onSeleccionar={(a:any)=>{ if(modoConexion){toggleSeleccion(a.id);}else{setAnuncioSel(a);} }} />
+          <MapaLeaflet
+            anuncios={anunciosFiltrados as any}
+            onSeleccionar={(a:any)=>{ if(modoConexion){toggleSeleccion(a.id);}else{setAnuncioSel(a);} }}
+            centrarEn={centroMapa}
+          />
         )}
 
-        {/* POPUP anuncio seleccionado (solo fuera de modo conexión) */}
+        {/* POPUP anuncio seleccionado */}
         {anuncioSel && !modoConexion && (
           <div style={{position:"absolute",bottom:"56px",left:"50%",transform:"translateX(-50%)",background:"#fff",borderRadius:"16px",padding:"14px 18px",boxShadow:"0 8px 30px rgba(0,0,0,0.2)",zIndex:1000,minWidth:"260px",maxWidth:"90vw",display:"flex",alignItems:"center",gap:"12px"}}>
             <div style={{width:"52px",height:"52px",borderRadius:"10px",overflow:"hidden",flexShrink:0,background:"#f4f4f2",display:"flex",alignItems:"center",justifyContent:"center"}}>
@@ -230,7 +246,6 @@ export default function Mapa() {
           </div>
         )}
 
-        {/* CONTADOR */}
         <div style={{position:"absolute",bottom:0,left:0,right:0,background:"#fff",padding:"8px 16px",display:"flex",justifyContent:"space-between",alignItems:"center",borderTop:"1px solid #e8e8e6",zIndex:999}}>
           <span style={{fontSize:"13px",fontWeight:700,color:"#666"}}>
             📍 {anunciosFiltrados.length} anuncio{anunciosFiltrados.length!==1?"s":""} en el mapa
@@ -240,7 +255,7 @@ export default function Mapa() {
         </div>
       </div>
 
-      {/* ── PANEL FLOTANTE CONEXIÓN ── */}
+      {/* PANEL FLOTANTE CONEXIÓN */}
       {modoConexion && (
         <div style={{position:"fixed",bottom:"110px",left:0,right:0,zIndex:100,padding:"0 16px 12px"}}>
           {resultadoConex ? (
@@ -258,11 +273,7 @@ export default function Mapa() {
                 </span>
               </div>
               <button
-                onClick={()=>{
-                if(seleccionados.size===0) return;
-                if(seleccionados.size===0) return;
-                setPopupConexion(true);
-              }}
+                onClick={()=>{ if(seleccionados.size===0) return; setPopupConexion(true); }}
                 disabled={seleccionados.size===0||conectando}
                 style={{width:"100%",background:seleccionados.size===0?"rgba(255,255,255,0.06)":"linear-gradient(135deg,#f0c040,#d4a017)",border:"none",borderRadius:"10px",padding:"12px",fontSize:"14px",fontWeight:900,color:seleccionados.size===0?"rgba(255,255,255,0.25)":"#1a2a3a",cursor:seleccionados.size===0?"not-allowed":"pointer",fontFamily:"'Nunito',sans-serif",boxShadow:seleccionados.size===0?"none":"0 4px 0 #a07810"}}
               >
@@ -273,9 +284,7 @@ export default function Mapa() {
         </div>
       )}
 
-
-
-      {/* ══ POPUP CONEXIÓN ══ */}
+      {/* POPUP CONEXIÓN */}
       {popupConexion && (
         <PopupCompra
           tipo="conexion"
@@ -292,6 +301,14 @@ export default function Mapa() {
 
       <BottomNav />
     </div>
+  );
+}
+
+export default function Mapa() {
+  return (
+    <Suspense fallback={<div style={{paddingTop:"95px",textAlign:"center",fontFamily:"'Nunito',sans-serif",color:"#9a9a9a",fontWeight:700}}>Cargando mapa...</div>}>
+      <MapaInner />
+    </Suspense>
   );
 }
 

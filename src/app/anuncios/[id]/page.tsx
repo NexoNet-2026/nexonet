@@ -56,10 +56,7 @@ export default function AnuncioDetalle() {
   const [session,       setSession]       = useState<any>(null);
   const [conectando,    setConectando]    = useState(false);
 
-
-  useEffect(() => {
-    cargar();
-  }, [params.id]);
+  useEffect(() => { cargar(); }, [params.id]);
 
   const cargar = async () => {
     const { data, error } = await supabase.from("anuncios").select("*").eq("id", params.id).single();
@@ -83,11 +80,7 @@ export default function AnuncioDetalle() {
     setSession(session);
     if (session) {
       const { data: u } = await supabase.from("usuarios").select("bits,bits_promo,bits_free").eq("id", session.user.id).single();
-      if (u) {
-        setBits(u.bits||0);
-        setBitsPromo(u.bits_promo||0);
-        setBitsFree(u.bits_free||0);
-      }
+      if (u) { setBits(u.bits||0); setBitsPromo(u.bits_promo||0); setBitsFree(u.bits_free||0); }
     }
     setLoading(false);
   };
@@ -118,14 +111,12 @@ export default function AnuncioDetalle() {
         tipo: "conexion",
         mensaje: "Hola, estoy interesado/a en tu anuncio. ¿Podemos hablar?",
       });
-      // El mensaje de conexión también queda en el chat
       await supabase.from("mensajes").insert({
         anuncio_id:  anuncio.id,
         emisor_id:   session.user.id,
         receptor_id: anuData.usuario_id,
         texto:       "Hola, estoy interesado/a en tu anuncio. ¿Podemos hablar?",
       });
-      // Descontar según tipo de BIT elegido
       if (tipoBit === "nexo") {
         const nuevo = bits - 1;
         await supabase.from("usuarios").update({ bits: nuevo, bits_gastados: (nuevo) }).eq("id", session.user.id);
@@ -170,6 +161,8 @@ export default function AnuncioDetalle() {
   const fuente   = FUENTES[anuncio.fuente] || FUENTES.nexonet;
   const imagenes: string[] = anuncio.imagenes || [];
   const links:    string[] = (anuncio.links || []).filter((l: string) => l?.trim());
+  const tieneUbicacion = anuncio.lat && anuncio.lng;
+
   const badges = [
     anuncio.envio_gratis          && { label:"Envío gratis",     color:"#00a884", texto:"#fff" },
     anuncio.mas_vendido           && { label:"⭐ Más vendido",    color:"#e63946", texto:"#fff" },
@@ -352,19 +345,15 @@ export default function AnuncioDetalle() {
                 {usuario.plan === "nexoempresa" && <div style={{ fontSize:"11px", color:"#c0392b", fontWeight:800, marginTop:"2px" }}>🏢 Empresa verificada</div>}
               </div>
               {!esPropio && session && (
-                <button
-                  onClick={()=>router.push(`/chat/${anuncio.id}/${anuncio.usuario_id}`)}
-                  style={{ background:"linear-gradient(135deg,#1a2a3a,#243b55)", border:"none", borderRadius:"12px", padding:"10px 16px", display:"flex", alignItems:"center", gap:"6px", cursor:"pointer", flexShrink:0, boxShadow:"0 3px 0 #0a1015" }}
-                >
+                <button onClick={()=>router.push(`/chat/${anuncio.id}/${anuncio.usuario_id}`)}
+                  style={{ background:"linear-gradient(135deg,#1a2a3a,#243b55)", border:"none", borderRadius:"12px", padding:"10px 16px", display:"flex", alignItems:"center", gap:"6px", cursor:"pointer", flexShrink:0, boxShadow:"0 3px 0 #0a1015" }}>
                   <span style={{ fontSize:"18px" }}>💬</span>
                   <span style={{ fontSize:"12px", fontWeight:900, color:"#d4a017", fontFamily:"'Nunito',sans-serif" }}>Chat</span>
                 </button>
               )}
               {!session && (
-                <button
-                  onClick={()=>router.push("/login")}
-                  style={{ background:"linear-gradient(135deg,#1a2a3a,#243b55)", border:"none", borderRadius:"12px", padding:"10px 16px", display:"flex", alignItems:"center", gap:"6px", cursor:"pointer", flexShrink:0, boxShadow:"0 3px 0 #0a1015" }}
-                >
+                <button onClick={()=>router.push("/login")}
+                  style={{ background:"linear-gradient(135deg,#1a2a3a,#243b55)", border:"none", borderRadius:"12px", padding:"10px 16px", display:"flex", alignItems:"center", gap:"6px", cursor:"pointer", flexShrink:0, boxShadow:"0 3px 0 #0a1015" }}>
                   <span style={{ fontSize:"18px" }}>💬</span>
                   <span style={{ fontSize:"12px", fontWeight:900, color:"#d4a017", fontFamily:"'Nunito',sans-serif" }}>Chat</span>
                 </button>
@@ -376,21 +365,27 @@ export default function AnuncioDetalle() {
         {/* BOTONES ACCIÓN */}
         <div style={{ display:"flex", gap:"10px" }}>
           {!esPropio && session && (
-            <button
-              onClick={()=>setPopupCompra(true)}
-              disabled={conectando}
+            <button onClick={()=>setPopupCompra(true)} disabled={conectando}
               style={{ flex:1, background:"linear-gradient(135deg,#d4a017,#f0c040)", color:"#1a2a3a", border:"none", borderRadius:"12px", padding:"16px", fontSize:"14px", fontWeight:800, cursor:"pointer", fontFamily:"'Nunito',sans-serif", boxShadow:"0 4px 0 #a07810" }}>
               {conectando ? "Conectando..." : "🔗 Conectar"}
             </button>
           )}
           {!session && (
-            <button
-              onClick={()=>router.push("/login")}
+            <button onClick={()=>router.push("/login")}
               style={{ flex:1, background:"linear-gradient(135deg,#d4a017,#f0c040)", color:"#1a2a3a", border:"none", borderRadius:"12px", padding:"16px", fontSize:"14px", fontWeight:800, cursor:"pointer", fontFamily:"'Nunito',sans-serif", boxShadow:"0 4px 0 #a07810" }}>
               🔗 Conectar
             </button>
           )}
+          {/* ── BOTÓN VER EN MAPA ── solo si el anuncio tiene coordenadas */}
+          {tieneUbicacion && (
+            <button
+              onClick={() => router.push(`/mapa?lat=${anuncio.lat}&lng=${anuncio.lng}&id=${anuncio.id}`)}
+              style={{ background:"linear-gradient(135deg,#1a2a3a,#243b55)", color:"#d4a017", border:"none", borderRadius:"12px", padding:"16px", fontSize:"14px", fontWeight:800, cursor:"pointer", fontFamily:"'Nunito',sans-serif", boxShadow:"0 4px 0 #0a1015", whiteSpace:"nowrap" }}>
+              🗺️ Ver en mapa
+            </button>
+          )}
         </div>
+
         {esPropio && (
           <div style={{ display:"flex", gap:"10px" }}>
             <button onClick={() => router.push("/usuario")} style={{ flex:1, background:"linear-gradient(135deg,#f0c040,#d4a017)", color:"#1a2a3a", border:"none", borderRadius:"12px", padding:"14px", fontSize:"14px", fontWeight:900, cursor:"pointer", fontFamily:"'Nunito',sans-serif", boxShadow:"0 4px 0 #a07810" }}>
@@ -416,11 +411,6 @@ export default function AnuncioDetalle() {
             await ejecutarConexion(tipoBit);
           }}
         />
-      )}
-
-      {/* ══ POPUP ÉXITO ══ */}
-      {conectando === false && anuncio && (
-        <></>
       )}
 
       <BottomNav />

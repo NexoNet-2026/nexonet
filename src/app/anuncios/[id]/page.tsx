@@ -53,6 +53,9 @@ export default function AnuncioDetalle() {
   const [session,       setSession]       = useState<any>(null);
   const [conectando,    setConectando]    = useState(false);
   const [sinBits,       setSinBits]       = useState(false); // anuncio sin saldo
+  const [popupVerDatos, setPopupVerDatos] = useState(false);
+  const [datosVisibles, setDatosVisibles] = useState(false);
+  const [misIBits,      setMisBits]       = useState<any>(null); // bits del usuario buscador
 
   useEffect(() => { cargar(); }, [params.id]);
 
@@ -67,7 +70,7 @@ export default function AnuncioDetalle() {
       if (sub) setAnuncio((prev: any) => ({ ...prev, subrubro_nombre: sub.nombre, rubro_nombre: (sub.rubros as any)?.nombre || "" }));
     }
     if (data.usuario_id) {
-      const { data: u } = await supabase.from("usuarios").select("nombre_usuario, codigo, plan").eq("id", data.usuario_id).single();
+      const { data: u } = await supabase.from("usuarios").select("nombre_usuario, codigo, plan, whatsapp, telefono, whatsapp_empresa, telefono_empresa, direccion, ciudad, provincia, barrio, direccion_empresa, ciudad_empresa, provincia_empresa, barrio_empresa, vis_personal, vis_empresa").eq("id", data.usuario_id).single();
       if (u) setUsuario(u);
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user.id === data.usuario_id) setEsPropio(true);
@@ -76,6 +79,14 @@ export default function AnuncioDetalle() {
 
     const { data: { session } } = await supabase.auth.getSession();
     setSession(session);
+    if (session?.user?.id) {
+      const { data: ub } = await supabase
+        .from("usuarios")
+        .select("bits, bits_promo, bits_free, bits_gastados, bits_gastados_conexion")
+        .eq("id", session.user.id)
+        .single();
+      if (ub) setMisBits(ub);
+    }
     setLoading(false);
   };
 
@@ -157,6 +168,82 @@ export default function AnuncioDetalle() {
     router.push(`/chat/${anuncio.id}/${anuData.usuario_id}`);
   };
 
+  // ── Ver datos: consume 1 BIT del buscador + 1 BIT del anuncio ──────────────
+  const ejecutarVerDatos = async () => {
+    if (!session || !anuncio) return;
+
+    // Leer bits del buscador (prioridad FREE → Promo → Nexo)
+    const { data: ub } = await supabase
+      .from("usuarios")
+      .select("bits, bits_promo, bits_free, bits_gastados_conexion")
+      .eq("id", session.user.id)
+      .single();
+
+    if (!ub) return;
+
+    // Verificar que el buscador tiene saldo
+    const totalBits = (ub.bits_free || 0) + (ub.bits_promo || 0) + (ub.bits || 0);
+    if (totalBits <= 0) {
+      alert("No tenés BIT disponibles para ver los datos. Cargá BIT en tu cuenta.");
+      return;
+    }
+
+    // Verificar que el anuncio tiene saldo
+    const { data: anuData } = await supabase
+      .from("anuncios")
+      .select("bits_conexion, conexiones")
+      .eq("id", anuncio.id)
+      .single();
+
+    if (!anuData || (anuData.bits_conexion ?? 0) <= 0) {
+      // Igual mostramos los datos pero sin descontar del anuncio
+    }
+
+    // Descontar 1 BIT del buscador (FREE → Promo → Nexo)
+    if ((ub.bits_free || 0) > 0) {
+      await supabase.from("usuarios").update({
+        bits_free: (ub.bits_free || 0) - 1,
+        bits_gastados_conexion: (ub.bits_gastados_conexion || 0) + 1,
+      }).eq("id", session.user.id);
+    } else if ((ub.bits_promo || 0) > 0) {
+      await supabase.from("usuarios").update({
+        bits_promo: (ub.bits_promo || 0) - 1,
+        bits_gastados_conexion: (ub.bits_gastados_conexion || 0) + 1,
+      }).eq("id", session.user.id);
+    } else {
+      await supabase.from("usuarios").update({
+        bits: (ub.bits || 0) - 1,
+        bits_gastados_conexion: (ub.bits_gastados_conexion || 0) + 1,
+      }).eq("id", session.user.id);
+    }
+
+    // Descontar 1 BIT del anuncio (si tiene saldo)
+    if (anuData && (anuData.bits_conexion ?? 0) > 0) {
+      const nuevoSaldo = (anuData.bits_conexion || 0) - 1;
+      const nuevasConex = (anuData.conexiones || 0) + 1;
+      await supabase.from("anuncios").update({
+        bits_conexion: nuevoSaldo,
+        conexiones: nuevasConex,
+      }).eq("id", anuncio.id);
+
+      // Notificar al dueño si llega a 0
+      if (nuevoSaldo === 0) {
+        await supabase.from("notificaciones").insert({
+          usuario_id: anuncio.usuario_id,
+          emisor_id:  anuncio.usuario_id,
+          anuncio_id: anuncio.id,
+          tipo:       "bits_agotados",
+          mensaje:    `⚠️ Tu anuncio "${anuncio.titulo}" agotó sus BIT Conexión. Cargá más para seguir recibiendo contactos.`,
+        });
+      }
+      setAnuncio((prev: any) => ({ ...prev, bits_conexion: nuevoSaldo, conexiones: nuevasConex }));
+    }
+
+    setMisBits(ub);
+    setDatosVisibles(true);
+    setPopupVerDatos(false);
+  };
+
   const fmt = (precio: number, moneda: string) =>
     !precio ? "Consultar" : `${moneda === "USD" ? "U$D" : "$"} ${precio.toLocaleString("es-AR")}`;
 
@@ -222,6 +309,51 @@ export default function AnuncioDetalle() {
                 </div>
               );
             })()}
+          </div>
+        </div>
+      )}
+
+      {/* POPUP VER DATOS */}
+      {popupVerDatos && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.65)", zIndex:400,
+                       display:"flex", alignItems:"flex-end" }}
+             onClick={() => setPopupVerDatos(false)}>
+          <div style={{ background:"#fff", borderRadius:"24px 24px 0 0", padding:"28px 20px 40px",
+                         width:"100%", fontFamily:"'Nunito',sans-serif" }}
+               onClick={e => e.stopPropagation()}>
+            <div style={{ textAlign:"center", marginBottom:"24px" }}>
+              <div style={{ fontSize:"48px", marginBottom:"10px" }}>🔍</div>
+              <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"24px", color:"#1a2a3a", letterSpacing:"1px" }}>
+                Ver datos de contacto
+              </div>
+              <div style={{ fontSize:"13px", color:"#9a9a9a", fontWeight:600, marginTop:"6px", lineHeight:1.5 }}>
+                Accedés a WhatsApp, teléfono y dirección del vendedor.<br/>
+                Esto consume <strong style={{ color:"#d4a017" }}>1 BIT</strong> de tu cuenta.
+              </div>
+            </div>
+
+            {/* Resumen BIT disponible */}
+            <div style={{ background:"rgba(212,160,23,0.08)", borderRadius:"14px", padding:"14px 16px",
+                           marginBottom:"16px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+              <div style={{ fontSize:"12px", fontWeight:700, color:"#666" }}>Tu saldo disponible</div>
+              <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"22px", color:"#d4a017" }}>
+                {((misIBits?.bits_free || 0) + (misIBits?.bits_promo || 0) + (misIBits?.bits || 0)).toLocaleString()} BIT
+              </div>
+            </div>
+
+            <button onClick={ejecutarVerDatos}
+              style={{ width:"100%", background:"linear-gradient(135deg,#d4a017,#f0c040)", border:"none",
+                       borderRadius:"14px", padding:"16px", fontSize:"15px", fontWeight:900,
+                       color:"#1a2a3a", cursor:"pointer", fontFamily:"'Nunito',sans-serif",
+                       boxShadow:"0 4px 0 #a07810", marginBottom:"10px" }}>
+              ✅ Confirmar — gastar 1 BIT
+            </button>
+            <button onClick={() => setPopupVerDatos(false)}
+              style={{ width:"100%", background:"none", border:"2px solid #e8e8e6", borderRadius:"14px",
+                       padding:"14px", fontSize:"14px", fontWeight:700, color:"#9a9a9a",
+                       cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
+              Cancelar
+            </button>
           </div>
         </div>
       )}
@@ -454,6 +586,115 @@ export default function AnuncioDetalle() {
                        cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
               ⚡ Cargar BIT Conexión
             </button>
+          </div>
+        )}
+
+        {/* VER DATOS DE CONTACTO */}
+        {!esPropio && (
+          <div style={{ background:"#fff", borderRadius:"16px", padding:"16px",
+                         boxShadow:"0 2px 10px rgba(0,0,0,0.06)" }}>
+            <div style={{ fontSize:"11px", fontWeight:800, color:"#9a9a9a",
+                           textTransform:"uppercase", letterSpacing:"1px", marginBottom:"12px" }}>
+              📋 Datos de contacto
+            </div>
+
+            {!session ? (
+              <button onClick={() => router.push("/login")}
+                style={{ width:"100%", background:"linear-gradient(135deg,#1a2a3a,#243b55)",
+                         border:"none", borderRadius:"12px", padding:"14px",
+                         fontSize:"14px", fontWeight:800, color:"#d4a017",
+                         cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
+                🔐 Iniciá sesión para ver datos
+              </button>
+            ) : datosVisibles ? (
+              <div style={{ display:"flex", flexDirection:"column", gap:"8px" }}>
+                {/* Datos personales visibles */}
+                {usuario?.vis_personal?.whatsapp !== false && usuario?.whatsapp && (
+                  <a href={`https://wa.me/54${usuario.whatsapp}`} target="_blank" rel="noopener noreferrer"
+                    style={{ display:"flex", alignItems:"center", gap:"12px", background:"rgba(39,174,96,0.08)",
+                             border:"2px solid rgba(39,174,96,0.25)", borderRadius:"12px", padding:"12px 14px",
+                             textDecoration:"none" }}>
+                    <span style={{ fontSize:"24px" }}>💬</span>
+                    <div>
+                      <div style={{ fontSize:"11px", fontWeight:700, color:"#27ae60", textTransform:"uppercase" }}>WhatsApp</div>
+                      <div style={{ fontSize:"14px", fontWeight:900, color:"#1a2a3a" }}>{usuario.whatsapp}</div>
+                    </div>
+                    <span style={{ marginLeft:"auto", fontSize:"18px", color:"#27ae60" }}>→</span>
+                  </a>
+                )}
+                {usuario?.vis_empresa?.telefono !== false && usuario?.telefono && (
+                  <a href={`tel:${usuario.telefono}`}
+                    style={{ display:"flex", alignItems:"center", gap:"12px", background:"rgba(58,123,213,0.08)",
+                             border:"2px solid rgba(58,123,213,0.25)", borderRadius:"12px", padding:"12px 14px",
+                             textDecoration:"none" }}>
+                    <span style={{ fontSize:"24px" }}>📞</span>
+                    <div>
+                      <div style={{ fontSize:"11px", fontWeight:700, color:"#3a7bd5", textTransform:"uppercase" }}>Teléfono</div>
+                      <div style={{ fontSize:"14px", fontWeight:900, color:"#1a2a3a" }}>{usuario.telefono}</div>
+                    </div>
+                    <span style={{ marginLeft:"auto", fontSize:"18px", color:"#3a7bd5" }}>→</span>
+                  </a>
+                )}
+                {usuario?.vis_empresa?.whatsapp_empresa !== false && usuario?.whatsapp_empresa && (
+                  <a href={`https://wa.me/54${usuario.whatsapp_empresa}`} target="_blank" rel="noopener noreferrer"
+                    style={{ display:"flex", alignItems:"center", gap:"12px", background:"rgba(39,174,96,0.08)",
+                             border:"2px solid rgba(39,174,96,0.25)", borderRadius:"12px", padding:"12px 14px",
+                             textDecoration:"none" }}>
+                    <span style={{ fontSize:"24px" }}>🏢</span>
+                    <div>
+                      <div style={{ fontSize:"11px", fontWeight:700, color:"#27ae60", textTransform:"uppercase" }}>WhatsApp Empresa</div>
+                      <div style={{ fontSize:"14px", fontWeight:900, color:"#1a2a3a" }}>{usuario.whatsapp_empresa}</div>
+                    </div>
+                    <span style={{ marginLeft:"auto", fontSize:"18px", color:"#27ae60" }}>→</span>
+                  </a>
+                )}
+                {usuario?.vis_personal?.direccion !== false && usuario?.direccion && (
+                  <div style={{ display:"flex", alignItems:"center", gap:"12px", background:"rgba(212,160,23,0.08)",
+                               border:"2px solid rgba(212,160,23,0.25)", borderRadius:"12px", padding:"12px 14px" }}>
+                    <span style={{ fontSize:"24px" }}>📍</span>
+                    <div>
+                      <div style={{ fontSize:"11px", fontWeight:700, color:"#d4a017", textTransform:"uppercase" }}>Dirección</div>
+                      <div style={{ fontSize:"13px", fontWeight:700, color:"#1a2a3a" }}>
+                        {[usuario.direccion, usuario.barrio, usuario.ciudad, usuario.provincia].filter(Boolean).join(", ")}
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {!usuario?.whatsapp && !usuario?.telefono && !usuario?.whatsapp_empresa && !usuario?.direccion && (
+                  <div style={{ textAlign:"center", padding:"16px", color:"#9a9a9a", fontSize:"13px", fontWeight:600 }}>
+                    El vendedor no cargó datos de contacto visibles aún.
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div>
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between",
+                               background:"rgba(212,160,23,0.06)", borderRadius:"12px", padding:"12px 14px",
+                               marginBottom:"10px", border:"1px solid rgba(212,160,23,0.2)" }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
+                    <span style={{ fontSize:"28px" }}>🔒</span>
+                    <div>
+                      <div style={{ fontSize:"13px", fontWeight:900, color:"#1a2a3a" }}>Datos ocultos</div>
+                      <div style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:600 }}>
+                        WhatsApp, teléfono, dirección
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ textAlign:"right" }}>
+                    <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"22px", color:"#d4a017" }}>1 BIT</div>
+                    <div style={{ fontSize:"9px", color:"#9a9a9a", fontWeight:700 }}>= $1</div>
+                  </div>
+                </div>
+                <button onClick={() => setPopupVerDatos(true)}
+                  style={{ width:"100%", background:"linear-gradient(135deg,#d4a017,#f0c040)",
+                           border:"none", borderRadius:"12px", padding:"14px",
+                           fontSize:"14px", fontWeight:900, color:"#1a2a3a",
+                           cursor:"pointer", fontFamily:"'Nunito',sans-serif",
+                           boxShadow:"0 4px 0 #a07810" }}>
+                  👁️ Ver datos de contacto — 1 BIT
+                </button>
+              </div>
+            )}
           </div>
         )}
 

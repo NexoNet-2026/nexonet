@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
@@ -24,8 +24,8 @@ export default function PopupAccesoGrupo({ grupo, userId, onClose, onExito }: Pr
   const esAbierto    = grupo.tipo === "abierto";
 
   // ¿Tiene invitación FREE pendiente?
-  const [tieneInvFree, setTieneInvFree] = useState<boolean|null>(null);
-  useState(()=>{
+  const [tieneInvFree, setTieneInvFree] = useState<boolean>(false);
+  useEffect(()=>{
     supabase.from("grupo_invitaciones")
       .select("id,canon_gratis")
       .eq("grupo_id", grupo.id)
@@ -35,7 +35,7 @@ export default function PopupAccesoGrupo({ grupo, userId, onClose, onExito }: Pr
       .then(({data})=>{
         setTieneInvFree(data?.canon_gratis === true);
       });
-  });
+  },[grupo.id, userId]);
 
   const costo = tieneInvFree ? "GRATIS" : "$500";
   const quienPaga = tieneInvFree

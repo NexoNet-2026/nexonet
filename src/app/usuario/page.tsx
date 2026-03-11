@@ -671,11 +671,11 @@ export default function Usuario() {
         />
       )}
 
-      {/* ══ POPUP CARGAR BIT CONEXIÓN ══ */}
+      {/* ══ POPUP CARGAR BIT ══ */}
       {popupBits && (
         <PopupCompra
-          tipo="conexion"
-          tituloAccion="Cargar BIT Conexión"
+          tipo="general"
+          tituloAccion="⚡ Cargar BIT"
           bitsDisponibles={{ nexo: bitsNexonet, promo: bitsPromotor, free: bitsFree }}
           onClose={() => setPopupBits(false)}
         />

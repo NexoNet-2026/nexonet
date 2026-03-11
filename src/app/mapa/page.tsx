@@ -288,11 +288,10 @@ function MapaInner() {
       {popupConexion && (
         <PopupCompra
           tipo="conexion"
-          tituloAccion={`Conectar con ${seleccionados.size} anuncio${seleccionados.size !== 1 ? "s" : ""}`}
-          costoFijo={seleccionados.size}
-          bitsDisponibles={{ nexo: bits, promo: bitsPromo, free: bitsFree }}
-          onClose={() => setPopupConexion(false)}
-          onUsarBits={async (_cantidad, _tipoBit) => {
+  tituloAccion={`Conectar con ${seleccionados.size} anuncio${seleccionados.size !== 1 ? "s" : ""}`}
+  bitsDisponibles={{ nexo: bits, promo: bitsPromo, free: bitsFree }}
+  onClose={() => setPopupConexion(false)}
+  onUsarBits={async (_cantidad, _tipoBit) => {
             setPopupConexion(false);
             await ejecutarConexion();
           }}

@@ -1,761 +1,515 @@
 "use client";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
-import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import PopupCompra from "@/components/PopupCompra";
-import PopupPago, { LINK_PLATAFORMAS } from "@/components/PopupPago";
 
-// ─── Todos los campos opcionales aceptan null (lo que devuelve Supabase) ──────
-type Anuncio = {
-  id: string;
-  titulo: string;
-  descripcion: string | null;
-  precio: number | null;
-  moneda: string | null;
-  imagenes: string[] | null;
-  links: string[] | null;
-  adjuntos: string[] | null;
-  link_habilitado: boolean | null;
-  adjunto_habilitado: boolean | null;
-  estado: string;
-  vistas: number | null;
-  conexiones: number | null;
-  created_at: string;
-  flash: boolean | null;
+const FUENTES: Record<string, { label: string; color: string; texto: string }> = {
+  nexonet:       { label: "NexoNet",        color: "#d4a017", texto: "#1a2a3a" },
+  mercadolibre:  { label: "Mercado Libre",  color: "#ffe600", texto: "#333" },
+  rosariogarage: { label: "Rosario Garage", color: "#ff6b00", texto: "#fff" },
+  olx:           { label: "OLX",            color: "#00a884", texto: "#fff" },
+  otro:          { label: "Externo",        color: "#888",    texto: "#fff" },
 };
 
-export default function MisAnuncios() {
-  const router = useRouter();
-  const [anuncios,  setAnuncios]  = useState<Anuncio[]>([]);
-  const [loading,   setLoading]   = useState(true);
-  const [perfil,    setPerfil]    = useState<any>(null);
-  const [session,   setSession]   = useState<any>(null);
+function getLinkEmbed(url: string): { tipo: string; embedUrl: string | null } {
+  const u = url.toLowerCase();
+  if (u.includes("youtube.com/watch")) {
+    const id = url.split("v=")[1]?.split("&")[0];
+    return { tipo: "youtube", embedUrl: id ? `https://www.youtube.com/embed/${id}` : null };
+  }
+  if (u.includes("youtu.be/")) {
+    const id = url.split("youtu.be/")[1]?.split("?")[0];
+    return { tipo: "youtube", embedUrl: id ? `https://www.youtube.com/embed/${id}` : null };
+  }
+  if (u.includes("instagram.com")) return { tipo: "instagram", embedUrl: null };
+  if (u.includes("facebook.com"))  return { tipo: "facebook",  embedUrl: null };
+  if (u.includes("mercadolibre"))  return { tipo: "mercadolibre", embedUrl: null };
+  if (u.includes("drive.google"))  return { tipo: "drive",     embedUrl: null };
+  if (u.includes("dropbox"))       return { tipo: "dropbox",   embedUrl: null };
+  return { tipo: "otro", embedUrl: null };
+}
 
-  const [popupPlan,  setPopupPlan]  = useState(false);
-  const [popupBits,  setPopupBits]  = useState(false);
-  const [popupLink,  setPopupLink]  = useState<string | null>(null);
-  const [popupAdj,   setPopupAdj]   = useState<string | null>(null);
-  const [popupFlash, setPopupFlash] = useState<string | null>(null);
+const LINK_ICONOS: Record<string, string> = {
+  youtube: "▶️", instagram: "📸", facebook: "👤",
+  mercadolibre: "🛍️", drive: "📂", dropbox: "📦", otro: "🔗",
+};
 
-  const [editando,    setEditando]    = useState<Anuncio | null>(null);
-  const [editForm,    setEditForm]    = useState({ titulo: "", descripcion: "", precio: "", moneda: "ARS" });
-  const [editImgs,    setEditImgs]    = useState<string[]>([]);
-  const [subiendoImg, setSubiendoImg] = useState(false);
-  const [guardando,   setGuardando]   = useState(false);
-  const imgInputRef = useRef<HTMLInputElement>(null);
+export default function AnuncioDetalle() {
+  const params  = useParams();
+  const router  = useRouter();
+  const [anuncio,       setAnuncio]       = useState<any>(null);
+  const [usuario,       setUsuario]       = useState<any>(null);
+  const [esPropio,      setEsPropio]      = useState(false);
+  const [loading,       setLoading]       = useState(true);
+  const [imgActiva,     setImgActiva]     = useState(0);
+  const [linkExpandido, setLinkExpandido] = useState<number | null>(null);
+  const [editando,      setEditando]      = useState(false);
+  const [editForm,      setEditForm]      = useState({ titulo: "", descripcion: "", precio: "", moneda: "ARS" });
+  const [guardando,     setGuardando]     = useState(false);
+  const [popupCompra,   setPopupCompra]   = useState(false);
+  const [session,       setSession]       = useState<any>(null);
+  const [conectando,    setConectando]    = useState(false);
+  const [sinBits,       setSinBits]       = useState(false); // anuncio sin saldo
 
-  const [editLinks,     setEditLinks]     = useState<Record<string, string[]>>({});
-  const [nuevoLink,     setNuevoLink]     = useState<Record<string, string>>({});
-  const [guardandoLink, setGuardandoLink] = useState<string | null>(null);
-
-  const [subiendoAdj, setSubiendoAdj] = useState<string | null>(null);
-  const adjInputRefs  = useRef<Record<string, HTMLInputElement | null>>({});
-
-  const bitsNexo  = perfil?.bits       ?? 0;
-  const bitsPromo = perfil?.bits_promo ?? 0;
-  const bitsFree  = perfil?.bits_free  ?? 0;
-
-  useEffect(() => { cargar(); }, []);
+  useEffect(() => { cargar(); }, [params.id]);
 
   const cargar = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) { router.push("/login"); return; }
-    setSession(session);
-    const { data: p } = await supabase.from("usuarios").select("*").eq("id", session.user.id).single();
-    if (p) setPerfil(p);
-    const { data: lista } = await supabase
-      .from("anuncios").select("*").eq("usuario_id", session.user.id)
-      .order("created_at", { ascending: false });
-    if (lista) {
-      setAnuncios(lista as Anuncio[]);
-      const m: Record<string, string[]> = {};
-      (lista as Anuncio[]).forEach(a => { m[a.id] = a.links ?? []; });
-      setEditLinks(m);
+    const { data, error } = await supabase.from("anuncios").select("*").eq("id", params.id).single();
+    if (error || !data) { setLoading(false); return; }
+    setAnuncio(data);
+    setEditForm({ titulo: data.titulo || "", descripcion: data.descripcion || "", precio: data.precio?.toString() || "", moneda: data.moneda || "ARS" });
+
+    if (data.subrubro_id) {
+      const { data: sub } = await supabase.from("subrubros").select("nombre, rubros(nombre)").eq("id", data.subrubro_id).single();
+      if (sub) setAnuncio((prev: any) => ({ ...prev, subrubro_nombre: sub.nombre, rubro_nombre: (sub.rubros as any)?.nombre || "" }));
     }
+    if (data.usuario_id) {
+      const { data: u } = await supabase.from("usuarios").select("nombre_usuario, codigo, plan").eq("id", data.usuario_id).single();
+      if (u) setUsuario(u);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user.id === data.usuario_id) setEsPropio(true);
+    }
+    await supabase.from("anuncios").update({ vistas: (data.vistas || 0) + 1 }).eq("id", params.id);
+
+    const { data: { session } } = await supabase.auth.getSession();
+    setSession(session);
     setLoading(false);
   };
 
-  const eliminarAnuncio = async (id: string) => {
-    if (!confirm("¿Eliminar este anuncio?")) return;
-    await supabase.from("anuncios").delete().eq("id", id);
-    setAnuncios(prev => prev.filter(a => a.id !== id));
-  };
-
-  const toggleEstado = async (a: Anuncio) => {
-    const nuevo = a.estado === "activo" ? "pausado" : "activo";
-    await supabase.from("anuncios").update({ estado: nuevo }).eq("id", a.id);
-    setAnuncios(prev => prev.map(x => x.id === a.id ? { ...x, estado: nuevo } : x));
-  };
-
-  const abrirEdicion = (a: Anuncio) => {
-    setEditando(a);
-    setEditForm({
-      titulo:      a.titulo,
-      descripcion: a.descripcion ?? "",
-      precio:      a.precio != null ? String(a.precio) : "",
-      moneda:      a.moneda ?? "ARS",
-    });
-    setEditImgs(a.imagenes ?? []);
-  };
-
-  const subirImagen = async (file: File) => {
-    if (!editando) return;
-    if (editImgs.length >= 8) return;
-    setSubiendoImg(true);
-    const ext  = file.name.split(".").pop() ?? "jpg";
-    const path = `anuncios/${editando.id}/${Date.now()}.${ext}`;
-    const { error } = await supabase.storage.from("anuncios").upload(path, file, { upsert: true });
-    if (!error) {
-      const { data: u } = supabase.storage.from("anuncios").getPublicUrl(path);
-      setEditImgs(prev => [...prev, u.publicUrl]);
-    } else {
-      alert("Error al subir: " + error.message);
-    }
-    setSubiendoImg(false);
-  };
-
-  const eliminarImagen = (idx: number) =>
-    setEditImgs(prev => prev.filter((_, i) => i !== idx));
-
   const guardarEdicion = async () => {
-    if (!editando) return;
     setGuardando(true);
-    const patch = {
-      titulo:      editForm.titulo,
-      descripcion: editForm.descripcion || null,
-      precio:      editForm.precio !== "" ? parseFloat(editForm.precio) : null,
-      moneda:      editForm.moneda,
-      imagenes:    editImgs,
-    };
-    await supabase.from("anuncios").update(patch).eq("id", editando.id);
-    setAnuncios(prev => prev.map(a =>
-      a.id === editando.id ? ({ ...a, ...patch } as Anuncio) : a
-    ));
+    await supabase.from("anuncios").update({
+      titulo: editForm.titulo,
+      descripcion: editForm.descripcion,
+      precio: editForm.precio ? parseFloat(editForm.precio) : null,
+      moneda: editForm.moneda,
+    }).eq("id", anuncio.id);
+    setAnuncio((prev: any) => ({ ...prev, ...editForm, precio: parseFloat(editForm.precio) }));
+    setEditando(false);
     setGuardando(false);
-    setEditando(null);
   };
 
-  const agregarLink = (id: string) => {
-    let url = nuevoLink[id]?.trim() ?? "";
-    if (!url) return;
-    if (!url.startsWith("http")) url = "https://" + url;
-    try { new URL(url); } catch { alert("URL inválida"); return; }
-    setEditLinks(prev => ({ ...prev, [id]: [...(prev[id] ?? []), url] }));
-    setNuevoLink(prev => ({ ...prev, [id]: "" }));
-  };
+  // ── Conexión: consume bits_conexion del ANUNCIO ──────────────────────────────
+  const ejecutarConexion = async () => {
+    if (!session || !anuncio) return;
+    setConectando(true);
 
-  const quitarLink = (id: string, idx: number) =>
-    setEditLinks(prev => ({ ...prev, [id]: (prev[id] ?? []).filter((_, i) => i !== idx) }));
+    // Leer saldo actual del anuncio
+    const { data: anuData } = await supabase
+      .from("anuncios")
+      .select("id, usuario_id, conexiones, bits_conexion")
+      .eq("id", anuncio.id)
+      .single();
 
-  const guardarLinks = async (id: string) => {
-    setGuardandoLink(id);
-    const links = editLinks[id] ?? [];
-    await supabase.from("anuncios").update({ links }).eq("id", id);
-    setAnuncios(prev => prev.map(a => a.id === id ? ({ ...a, links } as Anuncio) : a));
-    setGuardandoLink(null);
-  };
+    if (!anuData) { setConectando(false); return; }
 
-  const subirAdjunto = async (id: string, file: File) => {
-    setSubiendoAdj(id);
-    const path = `adjuntos/${id}/${Date.now()}_${file.name}`;
-    const { error } = await supabase.storage.from("anuncios").upload(path, file, { upsert: false });
-    if (!error) {
-      const { data: u } = supabase.storage.from("anuncios").getPublicUrl(path);
-      const anuncio  = anuncios.find(a => a.id === id);
-      const adjuntos = [...(anuncio?.adjuntos ?? []), u.publicUrl];
-      await supabase.from("anuncios").update({ adjuntos }).eq("id", id);
-      setAnuncios(prev => prev.map(a => a.id === id ? ({ ...a, adjuntos } as Anuncio) : a));
-    } else {
-      alert("Error al subir: " + error.message);
+    const saldoActual = anuData.bits_conexion ?? 0;
+
+    // Sin saldo → mostrar aviso
+    if (saldoActual <= 0) {
+      setSinBits(true);
+      setConectando(false);
+      return;
     }
-    setSubiendoAdj(null);
+
+    const nuevoSaldo     = saldoActual - 1;
+    const nuevasConexiones = (anuData.conexiones || 0) + 1;
+
+    // Descontar BIT del anuncio
+    await supabase.from("anuncios").update({
+      bits_conexion: nuevoSaldo,
+      conexiones:    nuevasConexiones,
+    }).eq("id", anuncio.id);
+
+    // Enviar mensaje y notificación
+    await supabase.from("notificaciones").insert({
+      usuario_id: anuData.usuario_id,
+      emisor_id:  session.user.id,
+      anuncio_id: anuncio.id,
+      tipo:       "conexion",
+      mensaje:    "Hola, estoy interesado/a en tu anuncio. ¿Podemos hablar?",
+    });
+    await supabase.from("mensajes").insert({
+      anuncio_id:  anuncio.id,
+      emisor_id:   session.user.id,
+      receptor_id: anuData.usuario_id,
+      texto:       "Hola, estoy interesado/a en tu anuncio. ¿Podemos hablar?",
+    });
+
+    // Si llegó a 0 → notificar al dueño
+    if (nuevoSaldo === 0) {
+      await supabase.from("notificaciones").insert({
+        usuario_id: anuData.usuario_id,
+        emisor_id:  anuData.usuario_id,
+        anuncio_id: anuncio.id,
+        tipo:       "bits_agotados",
+        mensaje:    `⚠️ Tu anuncio "${anuncio.titulo}" agotó sus BIT Conexión. Recibiste ${nuevasConexiones} conexiones. Cargá más BIT para seguir recibiendo contactos.`,
+      });
+    }
+
+    setAnuncio((prev: any) => ({ ...prev, bits_conexion: nuevoSaldo, conexiones: nuevasConexiones }));
+    setConectando(false);
+
+    // Ir al chat
+    router.push(`/chat/${anuncio.id}/${anuData.usuario_id}`);
   };
 
-  const quitarAdjunto = async (anuncioId: string, idx: number) => {
-    const anuncio  = anuncios.find(a => a.id === anuncioId);
-    if (!anuncio) return;
-    const adjuntos = (anuncio.adjuntos ?? []).filter((_, i) => i !== idx);
-    await supabase.from("anuncios").update({ adjuntos }).eq("id", anuncioId);
-    setAnuncios(prev => prev.map(a => a.id === anuncioId ? ({ ...a, adjuntos } as Anuncio) : a));
-  };
+  const fmt = (precio: number, moneda: string) =>
+    !precio ? "Consultar" : `${moneda === "USD" ? "U$D" : "$"} ${precio.toLocaleString("es-AR")}`;
 
-  const slotsMax    = perfil?.plan === "nexoempresa" ? 50 : 3;
-  const slots       = anuncios.length;
-  const slotsLibres = Math.max(0, slotsMax - slots);
-
-  const fmt = (p: number | null, m: string | null) =>
-    p == null ? "Consultar" : `${m === "USD" ? "U$D" : "$"} ${p.toLocaleString("es-AR")}`;
-
-  const iconoAdj = (url: string) =>
-    url.includes(".pdf") ? "📄" : url.includes(".xls") ? "📊" : "📎";
-
-  const nombreAdj = (url: string) => {
-    try {
-      const part = url.split("/").pop() ?? url;
-      return decodeURIComponent(part.split("_").slice(1).join("_") || part);
-    } catch { return url.split("/").pop() ?? url; }
-  };
+  const formatFecha = (f: string) =>
+    new Date(f).toLocaleDateString("es-AR", { day: "numeric", month: "long", year: "numeric" });
 
   if (loading) return (
     <main style={{ paddingTop:"95px", paddingBottom:"130px", background:"#f4f4f2", minHeight:"100vh", fontFamily:"'Nunito',sans-serif" }}>
+      <Header /><div style={{ textAlign:"center", padding:"60px", color:"#9a9a9a", fontWeight:700 }}>Cargando...</div><BottomNav />
+    </main>
+  );
+
+  if (!anuncio) return (
+    <main style={{ paddingTop:"95px", paddingBottom:"130px", background:"#f4f4f2", minHeight:"100vh", fontFamily:"'Nunito',sans-serif" }}>
       <Header />
-      <div style={{ textAlign:"center", padding:"60px", color:"#9a9a9a", fontWeight:700 }}>Cargando...</div>
+      <div style={{ textAlign:"center", padding:"60px 16px" }}>
+        <div style={{ fontSize:"48px", marginBottom:"16px" }}>😕</div>
+        <div style={{ fontSize:"18px", fontWeight:800, color:"#1a2a3a" }}>Anuncio no encontrado</div>
+        <button onClick={() => router.push("/")} style={{ marginTop:"20px", background:"#d4a017", border:"none", borderRadius:"12px", padding:"12px 24px", fontWeight:800, cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>Volver al inicio</button>
+      </div>
       <BottomNav />
     </main>
   );
+
+  const fuente   = FUENTES[anuncio.fuente] || FUENTES.nexonet;
+  const imagenes: string[] = anuncio.imagenes || [];
+  const links:    string[] = (anuncio.links || []).filter((l: string) => l?.trim());
+  const tieneUbicacion = anuncio.lat && anuncio.lng;
+  const tieneBits = (anuncio.bits_conexion ?? 0) > 0;
+
+  const badges = [
+    anuncio.envio_gratis          && { label:"Envío gratis",     color:"#00a884", texto:"#fff" },
+    anuncio.mas_vendido           && { label:"⭐ Más vendido",    color:"#e63946", texto:"#fff" },
+    anuncio.tienda_oficial        && { label:"Tienda oficial",    color:"#1a2a3a", texto:"#d4a017" },
+    anuncio.conexion_habilitada   && { label:"🔗 Conexión",       color:"#3a7bd5", texto:"#fff" },
+    anuncio.presupuesto_sin_cargo && { label:"Presup. gratis",    color:"#6a0dad", texto:"#fff" },
+    anuncio.descuento_cantidad    && { label:"Desc. x cantidad",  color:"#2d6a4f", texto:"#fff" },
+    anuncio.descuento_porcentaje > 0 && { label:`${anuncio.descuento_porcentaje}% OFF`, color:"#e63946", texto:"#fff" },
+  ].filter(Boolean) as { label:string; color:string; texto:string }[];
 
   return (
     <main style={{ paddingTop:"95px", paddingBottom:"130px", background:"#f4f4f2", minHeight:"100vh", fontFamily:"'Nunito',sans-serif" }}>
       <Header />
 
-      {/* HEADER */}
-      <div style={{ background:"linear-gradient(135deg,#1a2a3a,#243b55)", padding:"16px" }}>
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"10px" }}>
-          <div>
-            <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"22px", color:"#fff", letterSpacing:"1px" }}>
-              📋 Mis Anuncios
+      {/* LINK EXPANDIDO */}
+      {linkExpandido !== null && links[linkExpandido] && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.9)", zIndex:999, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"20px" }}>
+          <div style={{ width:"100%", maxWidth:"560px" }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"12px" }}>
+              <div style={{ fontSize:"13px", fontWeight:700, color:"#fff", wordBreak:"break-all", flex:1, marginRight:"12px" }}>{links[linkExpandido]}</div>
+              <button onClick={() => setLinkExpandido(null)} style={{ background:"rgba(255,255,255,0.15)", border:"none", borderRadius:"50%", width:"36px", height:"36px", color:"#fff", fontSize:"18px", cursor:"pointer", flexShrink:0 }}>✕</button>
             </div>
-            <div style={{ fontSize:"12px", color:"#8a9aaa", fontWeight:600, marginTop:"2px" }}>
-              {slots} publicados · {slotsLibres} slots disponibles
-            </div>
+            {(() => {
+              const { tipo, embedUrl } = getLinkEmbed(links[linkExpandido]);
+              if (embedUrl) return <iframe src={embedUrl} style={{ width:"100%", aspectRatio:"16/9", borderRadius:"14px", border:"none" }} allowFullScreen />;
+              return (
+                <div style={{ background:"#fff", borderRadius:"14px", padding:"30px", textAlign:"center" }}>
+                  <div style={{ fontSize:"48px", marginBottom:"12px" }}>{LINK_ICONOS[tipo]}</div>
+                  <div style={{ fontSize:"15px", fontWeight:800, color:"#1a2a3a", marginBottom:"16px" }}>{links[linkExpandido]}</div>
+                  <a href={links[linkExpandido]} target="_blank" rel="noopener noreferrer" style={{ background:"linear-gradient(135deg,#d4a017,#f0c040)", color:"#1a2a3a", borderRadius:"10px", padding:"12px 28px", fontSize:"14px", fontWeight:800, textDecoration:"none", display:"inline-block" }}>
+                    Abrir enlace →
+                  </a>
+                </div>
+              );
+            })()}
           </div>
-          <button onClick={() => router.push("/publicar")}
-            style={{ background:"linear-gradient(135deg,#f0c040,#d4a017)", border:"none", borderRadius:"12px",
-                     padding:"10px 16px", fontSize:"13px", fontWeight:900, color:"#1a2a3a",
-                     cursor:"pointer", fontFamily:"'Nunito',sans-serif", boxShadow:"0 3px 0 #a07810" }}>
-            ＋ Publicar
-          </button>
         </div>
-        <div style={{ background:"rgba(255,255,255,0.06)", borderRadius:"10px", padding:"10px 14px",
-                       display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-          <div style={{ fontSize:"12px", fontWeight:700, color:"#d4a017" }}>
-            Plan {perfil?.plan === "nexoempresa" ? "Empresa" : "Free"} · {slotsMax} slots
+      )}
+
+      {/* AVISO SIN BITS */}
+      {sinBits && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.65)", zIndex:400,
+                       display:"flex", alignItems:"flex-end" }}
+             onClick={() => setSinBits(false)}>
+          <div style={{ background:"#fff", borderRadius:"24px 24px 0 0", padding:"28px 20px 40px",
+                         width:"100%", fontFamily:"'Nunito',sans-serif" }}
+               onClick={e => e.stopPropagation()}>
+            <div style={{ textAlign:"center", marginBottom:"20px" }}>
+              <div style={{ fontSize:"48px", marginBottom:"10px" }}>😔</div>
+              <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"22px", color:"#1a2a3a", letterSpacing:"1px" }}>
+                Anuncio sin BIT Conexión
+              </div>
+              <div style={{ fontSize:"13px", color:"#9a9a9a", fontWeight:600, marginTop:"6px" }}>
+                El dueño de este anuncio no tiene saldo para recibir conexiones en este momento.
+              </div>
+            </div>
+            {/* Igual puede escribir por chat */}
+            <button onClick={() => { setSinBits(false); router.push(`/chat/${anuncio.id}/${anuncio.usuario_id}`); }}
+              style={{ width:"100%", background:"linear-gradient(135deg,#1a2a3a,#243b55)", border:"none",
+                       borderRadius:"14px", padding:"16px", fontSize:"15px", fontWeight:900,
+                       color:"#d4a017", cursor:"pointer", fontFamily:"'Nunito',sans-serif",
+                       marginBottom:"10px" }}>
+              💬 Escribirle igual por chat
+            </button>
+            <button onClick={() => setSinBits(false)}
+              style={{ width:"100%", background:"none", border:"2px solid #e8e8e6", borderRadius:"14px",
+                       padding:"14px", fontSize:"14px", fontWeight:700, color:"#9a9a9a",
+                       cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
+              Volver
+            </button>
           </div>
-          <div style={{ display:"flex", gap:"4px" }}>
-            {Array.from({ length: Math.min(slotsMax, 10) }).map((_, i) => (
-              <div key={i} style={{ width:"16px", height:"8px", borderRadius:"4px",
-                                     background: i < slots ? "#d4a017" : "rgba(255,255,255,0.2)" }} />
+        </div>
+      )}
+
+      {/* GALERÍA */}
+      <div style={{ position:"relative", background:"#1a2a3a" }}>
+        <div style={{ background:fuente.color, padding:"5px 16px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+          <span style={{ fontSize:"11px", fontWeight:900, color:fuente.texto, textTransform:"uppercase", letterSpacing:"1px" }}>{fuente.label}</span>
+          {anuncio.flash && <span style={{ background:"#1a2a3a", color:"#d4a017", fontSize:"10px", fontWeight:900, padding:"2px 8px", borderRadius:"8px" }}>⚡ Flash</span>}
+        </div>
+        <div style={{ height:"280px", display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden" }}>
+          {imagenes.length > 0
+            ? <img src={imagenes[imgActiva]} alt={anuncio.titulo} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+            : <span style={{ fontSize:"80px" }}>📦</span>
+          }
+        </div>
+        <button onClick={() => router.back()} style={{ position:"absolute", top:"44px", left:"12px", background:"rgba(0,0,0,0.5)", border:"none", borderRadius:"50%", width:"36px", height:"36px", color:"#fff", fontSize:"18px", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>←</button>
+        {esPropio && (
+          <button onClick={() => router.push("/usuario")} style={{ position:"absolute", top:"44px", left:"58px", background:"linear-gradient(135deg,#f0c040,#d4a017)", border:"none", borderRadius:"20px", padding:"6px 14px", fontSize:"12px", fontWeight:900, color:"#1a2a3a", cursor:"pointer", fontFamily:"'Nunito',sans-serif", boxShadow:"0 3px 0 #a07810" }}>👤 Mi Perfil</button>
+        )}
+        {esPropio && (
+          <button onClick={() => setEditando(true)} style={{ position:"absolute", top:"44px", right:"12px", background:"rgba(212,160,23,0.85)", border:"none", borderRadius:"20px", padding:"6px 14px", fontSize:"12px", fontWeight:800, color:"#1a2a3a", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>✏️ Editar</button>
+        )}
+        {imagenes.length > 1 && (
+          <div style={{ display:"flex", gap:"6px", padding:"8px 12px", overflowX:"auto", scrollbarWidth:"none" }}>
+            {imagenes.map((img, i) => (
+              <div key={i} onClick={() => setImgActiva(i)} style={{ width:"52px", height:"52px", flexShrink:0, borderRadius:"8px", overflow:"hidden", border:`2px solid ${imgActiva===i?"#d4a017":"transparent"}`, cursor:"pointer" }}>
+                <img src={img} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+              </div>
             ))}
           </div>
-          <button onClick={() => setPopupPlan(true)}
-            style={{ background:"rgba(212,160,23,0.2)", border:"1px solid rgba(212,160,23,0.4)",
-                     borderRadius:"8px", padding:"4px 10px", fontSize:"11px", fontWeight:800,
-                     color:"#d4a017", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
-            AMPLIAR
-          </button>
-        </div>
-        {/* BIT BALANCE + CARGAR */}
-        <div style={{ marginTop:"8px", background:"rgba(255,255,255,0.05)", borderRadius:"10px",
-                       padding:"10px 14px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-          <div style={{ display:"flex", gap:"16px" }}>
-            <div style={{ textAlign:"center" }}>
-              <div style={{ fontSize:"17px", fontWeight:900, color:"#d4a017" }}>{bitsNexo}</div>
-              <div style={{ fontSize:"9px", color:"#8a9aaa", fontWeight:700, textTransform:"uppercase" }}>Nexo</div>
-            </div>
-            <div style={{ textAlign:"center" }}>
-              <div style={{ fontSize:"17px", fontWeight:900, color:"#27ae60" }}>{bitsPromo}</div>
-              <div style={{ fontSize:"9px", color:"#8a9aaa", fontWeight:700, textTransform:"uppercase" }}>Promo</div>
-            </div>
-            <div style={{ textAlign:"center" }}>
-              <div style={{ fontSize:"17px", fontWeight:900, color:"#3a7bd5" }}>{bitsFree}</div>
-              <div style={{ fontSize:"9px", color:"#8a9aaa", fontWeight:700, textTransform:"uppercase" }}>Free</div>
-            </div>
-          </div>
-          <button onClick={() => setPopupBits(true)}
-            style={{ background:"linear-gradient(135deg,#3a7bd5,#2962b0)", border:"none", borderRadius:"10px",
-                     padding:"8px 16px", fontSize:"12px", fontWeight:900, color:"#fff",
-                     cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
-            ⚡ Cargar BIT
-          </button>
-        </div>
+        )}
       </div>
 
-      <div style={{ padding:"12px 16px", display:"flex", flexDirection:"column", gap:"14px" }}>
+      <div style={{ padding:"16px", display:"flex", flexDirection:"column", gap:"12px" }}>
 
-        {/* Slots libres */}
-        {Array.from({ length: slotsLibres }).map((_, i) => (
-          <button key={`sl${i}`} onClick={() => router.push("/publicar")}
-            style={{ background:"#fff", borderRadius:"16px", padding:"20px", border:"2px dashed #d4a017",
-                     display:"flex", alignItems:"center", gap:"16px", cursor:"pointer", width:"100%" }}>
-            <div style={{ width:"60px", height:"60px", borderRadius:"12px", background:"rgba(212,160,23,0.08)",
-                           display:"flex", alignItems:"center", justifyContent:"center", fontSize:"28px", flexShrink:0 }}>
-              +
-            </div>
-            <div style={{ textAlign:"left" }}>
-              <div style={{ fontWeight:900, fontSize:"14px", color:"#1a2a3a" }}>Publicar anuncio</div>
-              <div style={{ fontSize:"12px", color:"#9a9a9a", fontWeight:600, marginTop:"2px" }}>
-                Slot disponible — tocá para publicar
+        {/* POPUP EDITAR */}
+        {editando && (
+          <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", zIndex:500, display:"flex", alignItems:"flex-end", justifyContent:"center" }}>
+            <div style={{ background:"#fff", borderRadius:"24px 24px 0 0", padding:"24px 20px 40px", width:"100%", maxWidth:"480px", maxHeight:"90vh", overflowY:"auto" }}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"20px" }}>
+                <div style={{ fontSize:"16px", fontWeight:900, color:"#1a2a3a" }}>✏️ Editar anuncio</div>
+                <button onClick={() => setEditando(false)} style={{ background:"#f4f4f2", border:"none", borderRadius:"50%", width:"32px", height:"32px", fontSize:"16px", cursor:"pointer" }}>✕</button>
               </div>
-            </div>
-          </button>
-        ))}
-
-        {/* Lista de anuncios */}
-        {anuncios.map(a => {
-          const imgs   = a.imagenes  ?? [];
-          const adjs   = a.adjuntos  ?? [];
-          const activo = a.estado === "activo";
-          return (
-            <div key={a.id} style={{ background:"#fff", borderRadius:"16px", overflow:"hidden",
-                                      boxShadow:"0 2px 10px rgba(0,0,0,0.06)", border:"2px solid #e8e8e6" }}>
-
-              {/* Cabecera */}
-              <div style={{ display:"flex", alignItems:"center", gap:"12px", padding:"14px" }}>
-                <div style={{ width:"64px", height:"64px", borderRadius:"12px", background:"#f4f4f2",
-                               overflow:"hidden", flexShrink:0, position:"relative" }}>
-                  {imgs[0]
-                    ? <img src={imgs[0]} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
-                    : <div style={{ width:"100%", height:"100%", display:"flex", alignItems:"center",
-                                     justifyContent:"center", fontSize:"28px" }}>📦</div>
-                  }
-                  {imgs.length > 1 && (
-                    <div style={{ position:"absolute", bottom:"2px", right:"2px", background:"rgba(0,0,0,0.65)",
-                                   color:"#fff", fontSize:"9px", fontWeight:800,
-                                   padding:"1px 5px", borderRadius:"6px" }}>
-                      +{imgs.length - 1}
-                    </div>
-                  )}
-                </div>
-                <div style={{ flex:1, minWidth:0 }}>
-                  <div style={{ fontWeight:900, fontSize:"14px", color:"#1a2a3a",
-                                 overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
-                    {a.titulo}
-                  </div>
-                  <div style={{ fontSize:"16px", fontWeight:900, color:"#d4a017", marginTop:"2px" }}>
-                    {fmt(a.precio, a.moneda)}
-                  </div>
-                  <div style={{ display:"flex", gap:"8px", marginTop:"4px" }}>
-                    <span style={{ fontSize:"10px", color:"#9a9a9a" }}>👁️ {a.vistas ?? 0}</span>
-                    <span style={{ fontSize:"10px", color:"#9a9a9a" }}>🔗 {a.conexiones ?? 0}</span>
-                  </div>
-                </div>
-                <span style={{ fontSize:"10px", fontWeight:800, padding:"3px 10px", borderRadius:"20px",
-                                background: activo ? "#e8f8ee" : "#f4f4f2",
-                                color:      activo ? "#27ae60" : "#9a9a9a" }}>
-                  {activo ? "✓ Activo" : "⏸ Pausado"}
-                </span>
-              </div>
-
-              {/* Acciones */}
-              <div style={{ display:"flex", gap:"8px", padding:"0 14px 12px" }}>
-                <button onClick={() => router.push(`/anuncios/${a.id}`)} style={Btn("#f4f4f2","#1a2a3a","none")}>
-                  👁️ Ver
-                </button>
-                <button onClick={() => abrirEdicion(a)} style={Btn("rgba(212,160,23,0.1)","#d4a017","1px solid rgba(212,160,23,0.3)")}>
-                  ✏️ Editar
-                </button>
-                <button onClick={() => toggleEstado(a)}
-                  style={Btn(
-                    activo ? "rgba(231,76,60,0.08)" : "rgba(39,174,96,0.08)",
-                    activo ? "#e74c3c" : "#27ae60",
-                    activo ? "1px solid rgba(231,76,60,0.3)" : "1px solid rgba(39,174,96,0.3)"
-                  )}>
-                  {activo ? "⏸ Pausar" : "▶️ Activar"}
-                </button>
-                <button onClick={() => eliminarAnuncio(a.id)}
-                  style={{ background:"rgba(231,76,60,0.08)", border:"1px solid rgba(231,76,60,0.2)",
-                           borderRadius:"10px", padding:"9px 12px", fontSize:"14px",
-                           color:"#e74c3c", cursor:"pointer" }}>
-                  🗑️
-                </button>
-              </div>
-
-              {/* Extras */}
-              <div style={{ borderTop:"1px solid #f0f0f0", padding:"12px 14px",
-                             display:"flex", flexDirection:"column", gap:"14px" }}>
-
-                {/* Links multimedia */}
+              <div style={{ display:"flex", flexDirection:"column", gap:"14px" }}>
                 <div>
-                  <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"8px" }}>
-                    <div style={{ fontSize:"12px", fontWeight:900, color:"#1a2a3a" }}>🔗 Links multimedia</div>
-                    {!a.link_habilitado
-                      ? <button onClick={() => setPopupLink(a.id)} style={BtnComprar}>💰 Habilitar — $500</button>
-                      : <span style={BadgeVerde}>✓ Habilitado</span>
-                    }
-                  </div>
-                  {!a.link_habilitado && (
-                    <div style={{ background:"#f8f8f8", borderRadius:"10px", padding:"10px 12px" }}>
-                      <div style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:600, marginBottom:"8px" }}>
-                        YouTube · Instagram · Facebook · Mercado Libre · cualquier URL
-                      </div>
-                      <div style={{ display:"flex", gap:"8px" }}>
-                        {LINK_PLATAFORMAS.map(p => (
-                          <span key={p.nombre} title={p.nombre} style={{ fontSize:"20px" }}>{p.emoji}</span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {a.link_habilitado && (
-                    <div>
-                      {(editLinks[a.id] ?? []).map((link, i) => (
-                        <div key={i} style={{ display:"flex", alignItems:"center", gap:"8px", marginBottom:"6px",
-                                              background:"#f8f8f8", borderRadius:"10px", padding:"8px 12px" }}>
-                          <span style={{ fontSize:"16px" }}>
-                            {link.includes("youtube") || link.includes("youtu.be") ? "▶️"
-                             : link.includes("instagram") ? "📸"
-                             : link.includes("facebook")  ? "👤"
-                             : link.includes("mercadolibre") ? "🛍️" : "🔗"}
-                          </span>
-                          <span style={{ flex:1, fontSize:"12px", fontWeight:600, color:"#555",
-                                          overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
-                            {link}
-                          </span>
-                          <button onClick={() => quitarLink(a.id, i)}
-                            style={{ background:"none", border:"none", fontSize:"14px",
-                                     cursor:"pointer", color:"#e74c3c" }}>✕</button>
-                        </div>
-                      ))}
-                      <div style={{ display:"flex", gap:"6px", marginBottom:"8px" }}>
-                        <input type="url" placeholder="https://youtube.com/..."
-                          value={nuevoLink[a.id] ?? ""}
-                          onChange={e => setNuevoLink(p => ({ ...p, [a.id]: e.target.value }))}
-                          onKeyDown={e => e.key === "Enter" && agregarLink(a.id)}
-                          style={{ flex:1, border:"2px solid #e8e8e6", borderRadius:"10px",
-                                    padding:"9px 12px", fontSize:"13px", fontFamily:"'Nunito',sans-serif",
-                                    color:"#2c2c2e", outline:"none" }} />
-                        <button onClick={() => agregarLink(a.id)}
-                          style={{ background:"#1a2a3a", border:"none", borderRadius:"10px",
-                                    padding:"9px 14px", fontSize:"16px", cursor:"pointer", color:"#d4a017" }}>
-                          ＋
-                        </button>
-                      </div>
-                      <button onClick={() => guardarLinks(a.id)} disabled={guardandoLink === a.id}
-                        style={{ width:"100%", background:"linear-gradient(135deg,#1a2a3a,#243b55)",
-                                 border:"none", borderRadius:"10px", padding:"10px",
-                                 fontSize:"13px", fontWeight:800, color:"#d4a017",
-                                 cursor:"pointer", fontFamily:"'Nunito',sans-serif",
-                                 opacity: guardandoLink === a.id ? 0.7 : 1 }}>
-                        {guardandoLink === a.id ? "Guardando..." : "💾 Guardar links"}
-                      </button>
-                    </div>
-                  )}
+                  <label style={labelStyle}>Título *</label>
+                  <input type="text" value={editForm.titulo} onChange={e => setEditForm({...editForm, titulo:e.target.value})} style={inputStyle} />
                 </div>
-
-                {/* Adjuntos */}
                 <div>
-                  <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"8px" }}>
-                    <div style={{ fontSize:"12px", fontWeight:900, color:"#1a2a3a" }}>📎 Archivos adjuntos</div>
-                    {!a.adjunto_habilitado
-                      ? <button onClick={() => setPopupAdj(a.id)}
-                          style={{ ...BtnComprar, background:"#1a2a3a", color:"#d4a017", boxShadow:"none" }}>
-                          💰 Habilitar — $500
-                        </button>
-                      : <span style={BadgeVerde}>✓ Habilitado</span>
-                    }
-                  </div>
-                  {!a.adjunto_habilitado && (
-                    <div style={{ background:"#f8f8f8", borderRadius:"10px", padding:"10px 12px",
-                                   fontSize:"11px", color:"#9a9a9a", fontWeight:600 }}>
-                      PDF, catálogo, ficha técnica, Excel · hasta 5 archivos
-                    </div>
-                  )}
-                  {a.adjunto_habilitado && (
-                    <div>
-                      {adjs.map((adj, i) => (
-                        <div key={i} style={{ display:"flex", alignItems:"center", gap:"8px", marginBottom:"6px",
-                                              background:"#f8f8f8", borderRadius:"10px", padding:"8px 12px" }}>
-                          <span style={{ fontSize:"18px" }}>{iconoAdj(adj)}</span>
-                          <a href={adj} target="_blank" rel="noopener noreferrer"
-                            style={{ flex:1, fontSize:"12px", fontWeight:600, color:"#1a2a3a",
-                                      textDecoration:"none", overflow:"hidden",
-                                      textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
-                            {nombreAdj(adj)}
-                          </a>
-                          <button onClick={() => quitarAdjunto(a.id, i)}
-                            style={{ background:"none", border:"none", fontSize:"14px",
-                                     cursor:"pointer", color:"#e74c3c" }}>✕</button>
-                        </div>
-                      ))}
-                      {adjs.length < 5 ? (
-                        <>
-                          <input type="file"
-                            accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.webp"
-                            style={{ display:"none" }}
-                            ref={el => { adjInputRefs.current[a.id] = el; }}
-                            onChange={async e => {
-                              const file = e.target.files?.[0];
-                              if (file) await subirAdjunto(a.id, file);
-                              e.target.value = "";
-                            }} />
-                          <button
-                            onClick={() => adjInputRefs.current[a.id]?.click()}
-                            disabled={subiendoAdj === a.id}
-                            style={{ width:"100%", background:"rgba(41,128,185,0.06)",
-                                     border:"2px dashed rgba(41,128,185,0.4)", borderRadius:"10px",
-                                     padding:"12px", fontSize:"13px", fontWeight:800, color:"#2980b9",
-                                     cursor:"pointer", fontFamily:"'Nunito',sans-serif",
-                                     opacity: subiendoAdj === a.id ? 0.7 : 1 }}>
-                            {subiendoAdj === a.id ? "⏳ Subiendo..." : "⬆️ Subir archivo · PDF, Excel, imagen"}
-                          </button>
-                          <div style={{ fontSize:"10px", color:"#9a9a9a", textAlign:"center", marginTop:"4px" }}>
-                            {adjs.length}/5 archivos
-                          </div>
-                        </>
-                      ) : (
-                        <div style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:700, textAlign:"center",
-                                       background:"#f8f8f8", borderRadius:"10px", padding:"10px" }}>
-                          Límite de 5 archivos alcanzado
-                        </div>
-                      )}
-                    </div>
-                  )}
+                  <label style={labelStyle}>Descripción</label>
+                  <textarea value={editForm.descripcion} onChange={e => setEditForm({...editForm, descripcion:e.target.value})} rows={4} style={{...inputStyle, resize:"vertical"}} />
                 </div>
-
-                {/* Promo Flash */}
-                <button onClick={() => setPopupFlash(a.id)}
-                  style={{ width:"100%", background:"rgba(26,42,58,0.05)",
-                           border:"2px solid rgba(26,42,58,0.12)", borderRadius:"10px", padding:"10px",
-                           display:"flex", alignItems:"center", justifyContent:"space-between",
-                           cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
-                  <div style={{ display:"flex", alignItems:"center", gap:"8px" }}>
-                    <span style={{ fontSize:"18px" }}>⚡</span>
-                    <div style={{ textAlign:"left" }}>
-                      <div style={{ fontSize:"12px", fontWeight:900, color:"#1a2a3a" }}>Promo Flash</div>
-                      <div style={{ fontSize:"10px", color:"#9a9a9a", fontWeight:600 }}>
-                        Destacá en barrio / ciudad / provincia / país
-                      </div>
-                    </div>
+                <div style={{ display:"flex", gap:"10px" }}>
+                  <div style={{ flex:1 }}>
+                    <label style={labelStyle}>Precio</label>
+                    <input type="number" value={editForm.precio} onChange={e => setEditForm({...editForm, precio:e.target.value})} style={inputStyle} />
                   </div>
-                  <span style={{ fontSize:"11px", fontWeight:800, color:"#d4a017" }}>desde $500 →</span>
+                  <div style={{ width:"90px" }}>
+                    <label style={labelStyle}>Moneda</label>
+                    <select value={editForm.moneda} onChange={e => setEditForm({...editForm, moneda:e.target.value})} style={{...inputStyle, padding:"11px 10px"}}>
+                      <option value="ARS">ARS $</option>
+                      <option value="USD">USD U$D</option>
+                    </select>
+                  </div>
+                </div>
+                <button onClick={guardarEdicion} disabled={guardando} style={{ background:"linear-gradient(135deg,#d4a017,#f0c040)", border:"none", borderRadius:"12px", padding:"15px", fontSize:"15px", fontWeight:800, color:"#1a2a3a", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
+                  {guardando ? "Guardando..." : "💾 Guardar cambios"}
                 </button>
               </div>
             </div>
-          );
-        })}
+          </div>
+        )}
 
-        {/* Estado vacío */}
-        {anuncios.length === 0 && (
-          <div style={{ textAlign:"center", padding:"60px 20px" }}>
-            <div style={{ fontSize:"48px", marginBottom:"16px" }}>📋</div>
-            <div style={{ fontSize:"16px", fontWeight:800, color:"#1a2a3a", marginBottom:"16px" }}>
-              No publicaste anuncios aún
+        {/* INFO PRINCIPAL */}
+        <div style={{ background:"#fff", borderRadius:"16px", padding:"20px", boxShadow:"0 2px 10px rgba(0,0,0,0.06)" }}>
+          {(anuncio.rubro_nombre || anuncio.subrubro_nombre) && (
+            <div style={{ fontSize:"11px", fontWeight:700, color:"#d4a017", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"6px" }}>
+              {anuncio.rubro_nombre}{anuncio.subrubro_nombre ? ` → ${anuncio.subrubro_nombre}` : ""}
             </div>
-            <button onClick={() => router.push("/publicar")}
-              style={{ background:"linear-gradient(135deg,#d4a017,#f0c040)", border:"none",
-                       borderRadius:"12px", padding:"14px 28px", fontSize:"14px", fontWeight:900,
-                       color:"#1a2a3a", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
-              ➕ Publicar mi primer anuncio
+          )}
+          <h1 style={{ fontSize:"20px", fontWeight:900, color:"#1a2a3a", margin:"0 0 12px 0", lineHeight:1.3 }}>{anuncio.titulo}</h1>
+          <div style={{ fontSize:"28px", fontWeight:900, color:"#d4a017", marginBottom:"12px" }}>{fmt(anuncio.precio, anuncio.moneda)}</div>
+          {badges.length > 0 && (
+            <div style={{ display:"flex", flexWrap:"wrap", gap:"6px", marginBottom:"12px" }}>
+              {badges.map((b,i) => <span key={i} style={{ background:b.color, color:b.texto, fontSize:"11px", fontWeight:800, padding:"4px 10px", borderRadius:"8px" }}>{b.label}</span>)}
+            </div>
+          )}
+          <div style={{ display:"flex", gap:"16px", fontSize:"12px", color:"#9a9a9a", fontWeight:600, flexWrap:"wrap" }}>
+            {anuncio.ciudad && <span>📍 {anuncio.ciudad}{anuncio.provincia ? `, ${anuncio.provincia}` : ""}</span>}
+            {anuncio.barrio && <span>🏘️ {anuncio.barrio}</span>}
+            <span>👁️ {anuncio.vistas || 0} vistas</span>
+            <span>🔗 {anuncio.conexiones || 0} conexiones</span>
+            <span>📅 {formatFecha(anuncio.created_at)}</span>
+          </div>
+        </div>
+
+        {/* DESCRIPCIÓN */}
+        {anuncio.descripcion && (
+          <div style={{ background:"#fff", borderRadius:"16px", padding:"20px", boxShadow:"0 2px 10px rgba(0,0,0,0.06)" }}>
+            <h3 style={{ fontSize:"14px", fontWeight:900, color:"#1a2a3a", marginBottom:"10px", textTransform:"uppercase", letterSpacing:"1px" }}>Descripción</h3>
+            <p style={{ fontSize:"14px", color:"#444", lineHeight:1.7, margin:0, whiteSpace:"pre-wrap" }}>{anuncio.descripcion}</p>
+          </div>
+        )}
+
+        {/* LINKS MULTIMEDIA */}
+        {links.length > 0 && (
+          <div style={{ background:"#fff", borderRadius:"16px", padding:"20px", boxShadow:"0 2px 10px rgba(0,0,0,0.06)" }}>
+            <h3 style={{ fontSize:"14px", fontWeight:900, color:"#1a2a3a", marginBottom:"14px", textTransform:"uppercase", letterSpacing:"1px" }}>🔗 Links multimedia</h3>
+            <div style={{ display:"flex", flexDirection:"column", gap:"10px" }}>
+              {links.map((link, i) => {
+                const { tipo, embedUrl } = getLinkEmbed(link);
+                return (
+                  <div key={i}>
+                    {embedUrl ? (
+                      <div style={{ borderRadius:"12px", overflow:"hidden", border:"2px solid #e8e8e6", position:"relative" }}>
+                        <iframe src={embedUrl} style={{ width:"100%", aspectRatio:"16/9", border:"none", display:"block" }} allowFullScreen />
+                        <button onClick={() => setLinkExpandido(i)} style={{ position:"absolute", top:"8px", right:"8px", background:"rgba(0,0,0,0.6)", border:"none", borderRadius:"8px", padding:"4px 10px", fontSize:"11px", fontWeight:700, color:"#fff", cursor:"pointer" }}>⛶ Agrandar</button>
+                      </div>
+                    ) : (
+                      <div style={{ display:"flex", alignItems:"center", gap:"12px", background:"#f4f4f2", borderRadius:"12px", padding:"12px 14px", border:"2px solid #e8e8e6" }}>
+                        <span style={{ fontSize:"24px" }}>{LINK_ICONOS[tipo]}</span>
+                        <div style={{ flex:1, fontSize:"12px", color:"#555", fontWeight:600, wordBreak:"break-all", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{link}</div>
+                        <button onClick={() => setLinkExpandido(i)} style={{ background:"#1a2a3a", border:"none", borderRadius:"8px", padding:"6px 14px", fontSize:"12px", fontWeight:800, color:"#d4a017", cursor:"pointer", fontFamily:"'Nunito',sans-serif", flexShrink:0 }}>Ver →</button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* VENDEDOR */}
+        {usuario && (
+          <div style={{ background:"#fff", borderRadius:"16px", padding:"20px", boxShadow:"0 2px 10px rgba(0,0,0,0.06)" }}>
+            <h3 style={{ fontSize:"14px", fontWeight:900, color:"#1a2a3a", marginBottom:"14px", textTransform:"uppercase", letterSpacing:"1px" }}>Vendedor</h3>
+            <div style={{ display:"flex", alignItems:"center", gap:"12px" }}>
+              <div style={{ width:"48px", height:"48px", borderRadius:"50%", background:"linear-gradient(135deg,#d4a017,#f0c040)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"22px", flexShrink:0 }}>
+                {usuario.plan === "nexoempresa" ? "🏢" : "👤"}
+              </div>
+              <div style={{ flex:1 }}>
+                <div style={{ fontSize:"15px", fontWeight:800, color:"#1a2a3a" }}>{usuario.nombre_usuario}</div>
+                <div style={{ fontSize:"12px", color:"#d4a017", fontWeight:700 }}>{usuario.codigo}</div>
+                {usuario.plan === "nexoempresa" && <div style={{ fontSize:"11px", color:"#c0392b", fontWeight:800, marginTop:"2px" }}>🏢 Empresa verificada</div>}
+              </div>
+              {!esPropio && session && (
+                <button onClick={() => router.push(`/chat/${anuncio.id}/${anuncio.usuario_id}`)}
+                  style={{ background:"linear-gradient(135deg,#1a2a3a,#243b55)", border:"none", borderRadius:"12px", padding:"10px 16px", display:"flex", alignItems:"center", gap:"6px", cursor:"pointer", flexShrink:0, boxShadow:"0 3px 0 #0a1015" }}>
+                  <span style={{ fontSize:"18px" }}>💬</span>
+                  <span style={{ fontSize:"12px", fontWeight:900, color:"#d4a017", fontFamily:"'Nunito',sans-serif" }}>Chat</span>
+                </button>
+              )}
+              {!session && (
+                <button onClick={() => router.push("/login")}
+                  style={{ background:"linear-gradient(135deg,#1a2a3a,#243b55)", border:"none", borderRadius:"12px", padding:"10px 16px", display:"flex", alignItems:"center", gap:"6px", cursor:"pointer", flexShrink:0, boxShadow:"0 3px 0 #0a1015" }}>
+                  <span style={{ fontSize:"18px" }}>💬</span>
+                  <span style={{ fontSize:"12px", fontWeight:900, color:"#d4a017", fontFamily:"'Nunito',sans-serif" }}>Chat</span>
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* PANEL DUEÑO — BIT Conexión de este anuncio */}
+        {esPropio && (
+          <div style={{ background:"rgba(58,123,213,0.06)", border:"2px solid rgba(58,123,213,0.25)",
+                         borderRadius:"16px", padding:"16px" }}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"10px" }}>
+              <div>
+                <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"18px", color:"#1a2a3a", letterSpacing:"1px" }}>
+                  🔗 BIT Conexión de este anuncio
+                </div>
+                <div style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:600, marginTop:"2px" }}>
+                  Cada conexión recibida consume 1 BIT
+                </div>
+              </div>
+              <div style={{ textAlign:"right" }}>
+                <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"32px",
+                               color: tieneBits ? "#3a7bd5" : "#e74c3c", letterSpacing:"1px" }}>
+                  {anuncio.bits_conexion ?? 0}
+                </div>
+                <div style={{ fontSize:"10px", color:"#9a9a9a", fontWeight:700 }}>disponibles</div>
+              </div>
+            </div>
+            {!tieneBits && (
+              <div style={{ background:"rgba(231,76,60,0.08)", borderRadius:"10px", padding:"10px 12px",
+                             fontSize:"12px", fontWeight:700, color:"#e74c3c", marginBottom:"10px" }}>
+                ⚠️ Sin BIT — este anuncio no recibe conexiones automáticas
+              </div>
+            )}
+            <button onClick={() => setPopupCompra(true)}
+              style={{ width:"100%", background:"linear-gradient(135deg,#3a7bd5,#2962b0)", border:"none",
+                       borderRadius:"12px", padding:"13px", fontSize:"14px", fontWeight:900, color:"#fff",
+                       cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
+              ⚡ Cargar BIT Conexión
             </button>
           </div>
         )}
 
-        {/* Ampliar plan */}
-        <div style={{ background:"#fff", borderRadius:"16px", padding:"16px",
-                       boxShadow:"0 2px 10px rgba(0,0,0,0.06)" }}>
-          <div style={{ fontSize:"11px", fontWeight:800, color:"#9a9a9a", textTransform:"uppercase",
-                         letterSpacing:"1px", marginBottom:"12px" }}>
-            AMPLIAR PLAN
-          </div>
-          {([
-            { label:"BIT Anuncios × 3",  precio:"$1.000", badge: null,             color:"#d4a017" },
-            { label:"BIT Anuncios × 10", precio:"$3.000", badge:"AHORRÁS $1.000",  color:"#27ae60" },
-            { label:"Empresa × 50",      precio:"$10.000",badge:"EMPRESA",          color:"#c0392b" },
-          ] as const).map((p, i) => (
-            <button key={i} onClick={() => setPopupPlan(true)}
-              style={{ display:"flex", alignItems:"center", justifyContent:"space-between",
-                       background:`${p.color}08`, border:`2px solid ${p.color}25`,
-                       borderRadius:"12px", padding:"12px 14px", cursor:"pointer",
-                       fontFamily:"'Nunito',sans-serif", width:"100%", textAlign:"left",
-                       marginBottom:"8px", position:"relative" }}>
-              {p.badge && (
-                <span style={{ position:"absolute", top:"-8px", right:"12px", background:p.color,
-                                color:"#fff", fontSize:"9px", fontWeight:900,
-                                padding:"2px 8px", borderRadius:"20px" }}>
-                  {p.badge}
-                </span>
-              )}
-              <div style={{ fontSize:"14px", fontWeight:900, color:"#1a2a3a" }}>{p.label}</div>
-              <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"22px", color:p.color }}>
-                {p.precio}
-              </div>
+        {/* BOTONES ACCIÓN */}
+        <div style={{ display:"flex", gap:"10px" }}>
+          {!esPropio && session && (
+            <button onClick={ejecutarConexion} disabled={conectando}
+              style={{ flex:1, background: tieneBits
+                         ? "linear-gradient(135deg,#d4a017,#f0c040)"
+                         : "linear-gradient(135deg,#aaa,#999)",
+                       color:"#1a2a3a", border:"none", borderRadius:"12px", padding:"16px",
+                       fontSize:"14px", fontWeight:800, cursor:"pointer",
+                       fontFamily:"'Nunito',sans-serif", boxShadow: tieneBits ? "0 4px 0 #a07810" : "none" }}>
+              {conectando ? "Conectando..." : tieneBits ? "🔗 Conectar" : "🔗 Conectar (sin BIT)"}
             </button>
-          ))}
+          )}
+          {!session && (
+            <button onClick={() => router.push("/login")}
+              style={{ flex:1, background:"linear-gradient(135deg,#d4a017,#f0c040)", color:"#1a2a3a", border:"none", borderRadius:"12px", padding:"16px", fontSize:"14px", fontWeight:800, cursor:"pointer", fontFamily:"'Nunito',sans-serif", boxShadow:"0 4px 0 #a07810" }}>
+              🔗 Conectar
+            </button>
+          )}
+          {tieneUbicacion && (
+            <button onClick={() => router.push(`/mapa?lat=${anuncio.lat}&lng=${anuncio.lng}&id=${anuncio.id}`)}
+              style={{ background:"linear-gradient(135deg,#1a2a3a,#243b55)", color:"#d4a017", border:"none", borderRadius:"12px", padding:"16px", fontSize:"14px", fontWeight:800, cursor:"pointer", fontFamily:"'Nunito',sans-serif", boxShadow:"0 4px 0 #0a1015", whiteSpace:"nowrap" }}>
+              🗺️ Ver en mapa
+            </button>
+          )}
         </div>
+
+        {esPropio && (
+          <div style={{ display:"flex", gap:"10px" }}>
+            <button onClick={() => router.push("/usuario")} style={{ flex:1, background:"linear-gradient(135deg,#f0c040,#d4a017)", color:"#1a2a3a", border:"none", borderRadius:"12px", padding:"14px", fontSize:"14px", fontWeight:900, cursor:"pointer", fontFamily:"'Nunito',sans-serif", boxShadow:"0 4px 0 #a07810" }}>
+              👤 Mi Perfil
+            </button>
+            <button onClick={() => router.push("/mis-anuncios")} style={{ flex:1, background:"linear-gradient(135deg,#1a2a3a,#243b55)", color:"#d4a017", border:"none", borderRadius:"12px", padding:"14px", fontSize:"14px", fontWeight:800, cursor:"pointer", fontFamily:"'Nunito',sans-serif", boxShadow:"0 4px 0 #0a1015" }}>
+              📋 Mis anuncios
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* MODAL EDICIÓN */}
-      {editando && (
-        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.7)", zIndex:400,
-                       display:"flex", alignItems:"flex-end" }}
-             onClick={() => setEditando(null)}>
-          <div style={{ background:"#fff", borderRadius:"24px 24px 0 0", padding:"24px 20px 40px",
-                         width:"100%", maxHeight:"92vh", overflowY:"auto",
-                         fontFamily:"'Nunito',sans-serif" }}
-               onClick={e => e.stopPropagation()}>
-
-            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"20px" }}>
-              <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"22px",
-                             color:"#1a2a3a", letterSpacing:"1px" }}>
-                ✏️ Editar anuncio
-              </div>
-              <button onClick={() => setEditando(null)}
-                style={{ background:"#f4f4f2", border:"none", borderRadius:"50%",
-                         width:"34px", height:"34px", fontSize:"16px", cursor:"pointer" }}>
-                ✕
-              </button>
-            </div>
-
-            <div style={{ display:"flex", flexDirection:"column", gap:"14px", marginBottom:"20px" }}>
-              <div>
-                <label style={LS}>Título *</label>
-                <input type="text" value={editForm.titulo} style={IS}
-                  onChange={e => setEditForm({ ...editForm, titulo: e.target.value })} />
-              </div>
-              <div>
-                <label style={LS}>Descripción</label>
-                <textarea value={editForm.descripcion} rows={4} style={{ ...IS, resize:"vertical" }}
-                  onChange={e => setEditForm({ ...editForm, descripcion: e.target.value })} />
-              </div>
-              <div style={{ display:"flex", gap:"10px" }}>
-                <div style={{ flex:1 }}>
-                  <label style={LS}>Precio</label>
-                  <input type="number" value={editForm.precio} style={IS}
-                    onChange={e => setEditForm({ ...editForm, precio: e.target.value })} />
-                </div>
-                <div style={{ width:"90px" }}>
-                  <label style={LS}>Moneda</label>
-                  <select value={editForm.moneda} style={{ ...IS, padding:"11px 10px" }}
-                    onChange={e => setEditForm({ ...editForm, moneda: e.target.value })}>
-                    <option value="ARS">ARS $</option>
-                    <option value="USD">USD U$D</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            {/* Imágenes */}
-            <div style={{ marginBottom:"20px" }}>
-              <label style={{ ...LS, marginBottom:"10px", display:"block" }}>
-                📷 Imágenes ({editImgs.length}/8) · La primera es la portada
-              </label>
-              {editImgs.length > 0 && (
-                <div style={{ display:"flex", gap:"8px", overflowX:"auto",
-                               scrollbarWidth:"none", paddingBottom:"8px", marginBottom:"10px" }}>
-                  {editImgs.map((img, i) => (
-                    <div key={i} style={{ position:"relative", flexShrink:0 }}>
-                      <img src={img} alt="" style={{ width:"80px", height:"80px", objectFit:"cover",
-                                                      borderRadius:"10px",
-                                                      border:`2px solid ${i === 0 ? "#d4a017" : "#e8e8e6"}` }} />
-                      {i === 0 && (
-                        <span style={{ position:"absolute", bottom:"2px", left:"2px", background:"#d4a017",
-                                        color:"#1a2a3a", fontSize:"8px", fontWeight:900,
-                                        padding:"1px 5px", borderRadius:"6px" }}>★</span>
-                      )}
-                      <button onClick={() => eliminarImagen(i)}
-                        style={{ position:"absolute", top:"-6px", right:"-6px", background:"#e74c3c",
-                                  border:"2px solid #fff", borderRadius:"50%", width:"20px", height:"20px",
-                                  fontSize:"10px", color:"#fff", cursor:"pointer", fontWeight:900,
-                                  display:"flex", alignItems:"center", justifyContent:"center" }}>
-                        ✕
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-              <input type="file" accept="image/*" multiple style={{ display:"none" }} ref={imgInputRef}
-                onChange={async e => {
-                  const files = Array.from(e.target.files ?? []);
-                  for (const f of files.slice(0, 8 - editImgs.length)) {
-                    await subirImagen(f);
-                  }
-                  e.target.value = "";
-                }} />
-              {editImgs.length < 8 && (
-                <button onClick={() => imgInputRef.current?.click()} disabled={subiendoImg}
-                  style={{ width:"100%", background:"rgba(212,160,23,0.06)",
-                           border:"2px dashed rgba(212,160,23,0.5)", borderRadius:"12px",
-                           padding:"14px", fontSize:"13px", fontWeight:800, color:"#d4a017",
-                           cursor:"pointer", fontFamily:"'Nunito',sans-serif",
-                           opacity: subiendoImg ? 0.7 : 1 }}>
-                  {subiendoImg ? "⏳ Subiendo imagen..." : "⬆️ Agregar imágenes · JPG, PNG, WebP"}
-                </button>
-              )}
-            </div>
-
-            <button onClick={guardarEdicion} disabled={guardando}
-              style={{ width:"100%", background:"linear-gradient(135deg,#d4a017,#f0c040)",
-                       border:"none", borderRadius:"14px", padding:"16px",
-                       fontSize:"15px", fontWeight:900, color:"#1a2a3a",
-                       cursor:"pointer", fontFamily:"'Nunito',sans-serif",
-                       boxShadow:"0 4px 0 #a07810", opacity: guardando ? 0.7 : 1 }}>
-              {guardando ? "Guardando..." : "💾 Guardar cambios"}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* POPUPS */}
-      {popupBits && (
-        <PopupCompra tipo="general" tituloAccion="⚡ Cargar BIT"
-          bitsDisponibles={{ nexo: bitsNexo, promo: bitsPromo, free: bitsFree }}
-          onClose={() => setPopupBits(false)} />
-      )}
-
-      {popupPlan && (
-        <PopupCompra tipo="anuncio" tituloAccion="BIT Anuncios — Ampliar plan"
-          bitsDisponibles={{ nexo: bitsNexo, promo: bitsPromo, free: bitsFree }}
-          onClose={() => setPopupPlan(false)} />
-      )}
-
-      {popupLink && (
-        <PopupPago titulo="Link Multimedia" emoji="🔗"
-          producto={{ id:"link", emoji:"🔗", titulo:"Link Multimedia",
-                      desc:"Links ilimitados · una vez habilitado", precio:500, bitCost:500 }}
-          bitsDisponibles={{ nexo: bitsNexo, promo: bitsPromo, free: bitsFree }}
-          onClose={() => setPopupLink(null)}
-          onExito={async metodo => {
-            const id = popupLink;
-            if (metodo.startsWith("bit_")) {
-              await supabase.from("anuncios").update({ link_habilitado: true }).eq("id", id);
-              setAnuncios(prev => prev.map(a => a.id === id ? ({ ...a, link_habilitado: true } as Anuncio) : a));
-            } else {
-              alert("✅ Te contactamos en 24hs para habilitar por transferencia.");
-            }
-            setPopupLink(null);
-          }}>
-          <div style={{ display:"flex", flexDirection:"column", gap:"8px", marginBottom:"4px" }}>
-            {LINK_PLATAFORMAS.map(p => (
-              <div key={p.nombre} style={{ display:"flex", alignItems:"center", gap:"10px",
-                                            background:"#f8f8f8", borderRadius:"10px", padding:"10px 12px" }}>
-                <div style={{ width:"34px", height:"34px", borderRadius:"8px",
-                               background:`${p.color}15`, display:"flex", alignItems:"center",
-                               justifyContent:"center", fontSize:"18px", flexShrink:0 }}>
-                  {p.emoji}
-                </div>
-                <div>
-                  <div style={{ fontSize:"13px", fontWeight:900, color:"#1a2a3a" }}>{p.nombre}</div>
-                  <div style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:600 }}>{p.desc}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </PopupPago>
-      )}
-
-      {popupAdj && (
-        <PopupPago titulo="Agregar Adjunto" emoji="📎"
-          producto={{ id:"adjunto", emoji:"📎", titulo:"Adjunto en anuncio",
-                      desc:"PDF, catálogo, ficha técnica · 30 días", precio:500, bitCost:500 }}
-          bitsDisponibles={{ nexo: bitsNexo, promo: bitsPromo, free: bitsFree }}
-          onClose={() => setPopupAdj(null)}
-          onExito={async metodo => {
-            const id = popupAdj;
-            if (metodo.startsWith("bit_")) {
-              await supabase.from("anuncios").update({ adjunto_habilitado: true }).eq("id", id);
-              setAnuncios(prev => prev.map(a => a.id === id ? ({ ...a, adjunto_habilitado: true } as Anuncio) : a));
-            } else {
-              alert("✅ Te contactamos en 24hs para habilitar por transferencia.");
-            }
-            setPopupAdj(null);
-          }} />
-      )}
-
-      {popupFlash && (
-        <PopupCompra tipo="flash" tituloAccion="Promo Flash"
-          bitsDisponibles={{ nexo: bitsNexo, promo: bitsPromo, free: bitsFree }}
-          onClose={() => setPopupFlash(null)} />
+      {/* POPUP: dueño carga BIT Conexión en este anuncio */}
+      {popupCompra && (
+        <PopupCompra
+          tipo="conexion"
+          tituloAccion="Cargar BIT Conexión"
+          bitsDisponibles={{ nexo: 0, promo: 0, free: 0 }}
+          onClose={() => setPopupCompra(false)}
+          onUsarBits={async (_cantidad, _tipoBit) => {
+            // El dueño carga BIT en el anuncio desde esta pantalla
+            // redirigir a mis-anuncios donde está el panel completo
+            setPopupCompra(false);
+            router.push("/mis-anuncios");
+          }}
+        />
       )}
 
       <BottomNav />
@@ -763,26 +517,5 @@ export default function MisAnuncios() {
   );
 }
 
-// ─── Estilos helper ────────────────────────────────────────────────────────────
-const Btn = (bg: string, color: string, border: string): React.CSSProperties => ({
-  flex: 1, background: bg, border, borderRadius:"10px", padding:"9px",
-  fontSize:"12px", fontWeight:800, color, cursor:"pointer", fontFamily:"'Nunito',sans-serif",
-});
-const BtnComprar: React.CSSProperties = {
-  background:"linear-gradient(135deg,#f0c040,#d4a017)", border:"none", borderRadius:"8px",
-  padding:"5px 12px", fontSize:"11px", fontWeight:900, color:"#1a2a3a",
-  cursor:"pointer", fontFamily:"'Nunito',sans-serif", boxShadow:"0 2px 0 #a07810",
-};
-const BadgeVerde: React.CSSProperties = {
-  fontSize:"10px", fontWeight:800, color:"#27ae60", background:"#e8f8ee",
-  padding:"3px 10px", borderRadius:"20px",
-};
-const LS: React.CSSProperties = {
-  display:"block", fontSize:"11px", fontWeight:800, color:"#666",
-  textTransform:"uppercase", letterSpacing:"1px", marginBottom:"6px",
-};
-const IS: React.CSSProperties = {
-  width:"100%", border:"2px solid #e8e8e6", borderRadius:"10px",
-  padding:"11px 14px", fontSize:"14px", fontFamily:"'Nunito',sans-serif",
-  color:"#2c2c2e", outline:"none", boxSizing:"border-box",
-};
+const labelStyle: React.CSSProperties = { display:"block", fontSize:"11px", fontWeight:800, color:"#666", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"6px" };
+const inputStyle: React.CSSProperties = { width:"100%", border:"2px solid #e8e8e6", borderRadius:"10px", padding:"11px 14px", fontSize:"14px", fontFamily:"'Nunito',sans-serif", color:"#2c2c2e", outline:"none", boxSizing:"border-box" };

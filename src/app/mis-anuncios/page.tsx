@@ -10,9 +10,9 @@ import PopupPago, { LINK_PLATAFORMAS } from "@/components/PopupPago";
 type Anuncio = {
   id: string;
   titulo: string;
-  descripcion?: string;
-  precio?: number;
-  moneda?: string;
+  descripcion?: string | null;
+  precio?: number | null;
+  moneda?: string | null;
   imagenes?: string[];
   links?: string[];
   adjuntos?: string[];
@@ -119,7 +119,7 @@ export default function MisAnuncios() {
   const guardarEdicion = async () => {
     if (!editando) return;
     setGuardando(true);
-    const updates = {
+    const updates: Partial<Anuncio> = {
       titulo:      editForm.titulo,
       descripcion: editForm.descripcion,
       precio:      editForm.precio ? parseFloat(editForm.precio) : null,

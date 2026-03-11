@@ -5,368 +5,373 @@ import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
 import { supabase } from "@/lib/supabase";
 
-type Categoria    = { id:number; nombre:string; emoji:string; descripcion:string; orden:number; activo:boolean; subcats_count?:number };
-type Subcategoria = { id:number; nombre:string; emoji:string; orden:number; activo:boolean; categoria_id:number };
+type Categoria    = { id:number; nombre:string; emoji:string };
+type Subcategoria = { id:number; nombre:string; emoji:string; categoria_id:number };
 
-const ADMIN_IDS = ["00000000-0000-0000-0000-000000000001"]; // reemplazar con tus IDs admin reales
+// modelo_acceso:
+// "invitacion_gratis"  → creador invita, creador paga por cada miembro
+// "invitacion_miembro" → creador invita, el invitado paga
+// "solicitud_libre"    → usuarios solicitan, creador decide quién paga caso a caso
 
-export default function AdminGrupos() {
+const MODELOS = [
+  {
+    v:       "invitacion_gratis",
+    icon:    "🎁",
+    titulo:  "Invitación — el grupo paga",
+    desc:    "Vos invitás a cada miembro. Cuando aceptan, te llega el link de pago. El miembro entra sin costo.",
+    badge:   "👑 Vos pagás por cada miembro",
+    color:   "#d4a017",
+  },
+  {
+    v:       "invitacion_miembro",
+    icon:    "📨",
+    titulo:  "Invitación — el miembro paga",
+    desc:    "Vos invitás. El invitado decide si acepta y paga los $500 para acceder al grupo.",
+    badge:   "💰 El invitado paga",
+    color:   "#3a7bd5",
+  },
+  {
+    v:       "solicitud_libre",
+    icon:    "🙋",
+    titulo:  "Solicitudes abiertas",
+    desc:    "Cualquier usuario puede solicitar unirse. Vos aprobás o rechazás, y elegís quién paga en cada caso.",
+    badge:   "⚙️ Vos decidís caso a caso",
+    color:   "#00a884",
+  },
+];
+
+export default function CrearGrupo() {
   const router = useRouter();
-  const [session,       setSession]       = useState<any>(null);
-  const [autorizado,    setAutorizado]    = useState(false);
+
+  const [step,          setStep]          = useState(0);
   const [categorias,    setCategorias]    = useState<Categoria[]>([]);
   const [subcategorias, setSubcategorias] = useState<Subcategoria[]>([]);
-  const [tab,           setTab]           = useState<"cats"|"subcats"|"grupos">("cats");
-  const [catExpand,     setCatExpand]     = useState<number|null>(null);
-  const [loading,       setLoading]       = useState(true);
-  // Popups
-  const [popupCat,      setPopupCat]      = useState(false);
-  const [popupSub,      setPopupSub]      = useState(false);
-  const [editCat,       setEditCat]       = useState<Categoria|null>(null);
-  const [editSub,       setEditSub]       = useState<Subcategoria|null>(null);
-  const [catParaSub,    setCatParaSub]    = useState<number|null>(null);
-  // Formularios
-  const [fCat, setFCat] = useState({ nombre:"", emoji:"👥", descripcion:"", orden:"0" });
-  const [fSub, setFSub] = useState({ nombre:"", emoji:"📌", orden:"0", categoria_id:"" });
-  const [guardando, setGuardando] = useState(false);
-  // Stats grupos
-  const [statsGrupos, setStatsGrupos] = useState<any[]>([]);
+  const [session,       setSession]       = useState<any>(null);
+  const [guardando,     setGuardando]     = useState(false);
+
+  const [modelo,      setModelo]      = useState("invitacion_gratis");
+  const [catSel,      setCatSel]      = useState<Categoria|null>(null);
+  const [subSel,      setSubSel]      = useState<Subcategoria|null>(null);
+  const [nombre,      setNombre]      = useState("");
+  const [descripcion, setDescripcion] = useState("");
+  const [ciudad,      setCiudad]      = useState("");
+  const [provincia,   setProvincia]   = useState("");
+  const [reglas,      setReglas]      = useState("");
+  const [waLink,      setWaLink]      = useState("");
+  const [links,       setLinks]       = useState("");
+  const [imagen,      setImagen]      = useState<File|null>(null);
+  const [imagenPrev,  setImagenPrev]  = useState("");
+  const [verDetalle,  setVerDetalle]  = useState(false);
+  const [miembrosInv, setMiembrosInv] = useState(false);
 
   useEffect(()=>{
     supabase.auth.getSession().then(({data:{session:s}})=>{
       if(!s){ router.push("/login"); return; }
       setSession(s);
-      // Verificar si es admin por email o por código de usuario
-      supabase.from("usuarios").select("codigo,plan").eq("id",s.user.id).single()
-        .then(({data})=>{
-          const esAdmin = data?.codigo==="NXN-00001" || data?.codigo==="NXN-00002" || data?.plan==="nexoempresa";
-          if(!esAdmin){ router.push("/"); return; }
-          setAutorizado(true);
-          cargar();
-        });
+    });
+    Promise.all([
+      supabase.from("grupo_categorias").select("id,nombre,emoji").eq("activo",true).order("orden"),
+      supabase.from("grupo_subcategorias").select("id,nombre,emoji,categoria_id").eq("activo",true).order("orden"),
+    ]).then(([{data:c},{data:s}])=>{ 
+      if(c) setCategorias(c); 
+      if(s) setSubcategorias(s); 
     });
   },[]);
 
-  const cargar = async()=>{
-    setLoading(true);
-    const [c,s,g] = await Promise.all([
-      supabase.from("grupo_categorias").select("id,nombre,emoji,descripcion,orden,activo").order("orden"),
-      supabase.from("grupo_subcategorias").select("id,nombre,emoji,orden,activo,categoria_id").order("orden"),
-      supabase.from("grupos").select("id,nombre,tipo,miembros_count,activo,categoria_id,subcategoria_id,grupo_categorias(nombre),grupo_subcategorias(nombre)").order("created_at",{ascending:false}).limit(100),
-    ]);
-    if(c.data) setCategorias(c.data);
-    if(s.data) setSubcategorias(s.data);
-    if(g.data) setStatsGrupos(g.data.map((x:any)=>({...x,cat_nombre:x.grupo_categorias?.nombre||"—",sub_nombre:x.grupo_subcategorias?.nombre||"—"})));
-    setLoading(false);
+  const subsDeCat = catSel ? subcategorias.filter(s=>s.categoria_id===catSel.id) : [];
+
+  const puedeAvanzar = [
+    true,
+    catSel!==null,
+    nombre.trim().length>=3 && ciudad.trim().length>=2,
+    true,
+  ];
+
+  const handleImagen = (e:React.ChangeEvent<HTMLInputElement>)=>{
+    const f=e.target.files?.[0]; if(!f) return;
+    setImagen(f); setImagenPrev(URL.createObjectURL(f));
   };
 
-  // Abrir popup nueva/editar categoría
-  const abrirPopupCat = (cat?:Categoria)=>{
-    if(cat){ setEditCat(cat); setFCat({nombre:cat.nombre,emoji:cat.emoji,descripcion:cat.descripcion||"",orden:String(cat.orden)}); }
-    else   { setEditCat(null); setFCat({nombre:"",emoji:"👥",descripcion:"",orden:String(categorias.length+1)}); }
-    setPopupCat(true);
-  };
-  const abrirPopupSub = (catId:number, sub?:Subcategoria)=>{
-    setCatParaSub(catId);
-    if(sub){ setEditSub(sub); setFSub({nombre:sub.nombre,emoji:sub.emoji,orden:String(sub.orden),categoria_id:String(sub.categoria_id)}); }
-    else   { setEditSub(null); setFSub({nombre:"",emoji:"📌",orden:String(subcategorias.filter(s=>s.categoria_id===catId).length+1),categoria_id:String(catId)}); }
-    setPopupSub(true);
-  };
-
-  const guardarCat = async()=>{
-    if(!fCat.nombre.trim()) return;
+  const guardar = async()=>{
+    if(!session||!catSel) return;
     setGuardando(true);
-    const data = { nombre:fCat.nombre, emoji:fCat.emoji, descripcion:fCat.descripcion, orden:parseInt(fCat.orden)||0 };
-    if(editCat){
-      await supabase.from("grupo_categorias").update(data).eq("id",editCat.id);
-      setCategorias(p=>p.map(c=>c.id===editCat.id?{...c,...data}:c));
-    } else {
-      const {data:d}=await supabase.from("grupo_categorias").insert({...data,activo:true}).select().single();
-      if(d) setCategorias(p=>[...p,d]);
+
+    let imagen_url = "";
+    if(imagen){
+      const ext = imagen.name.split(".").pop();
+      const path = `grupos/${session.user.id}-${Date.now()}.${ext}`;
+      const {error:upErr} = await supabase.storage.from("imagenes").upload(path,imagen,{upsert:true});
+      if(!upErr){
+        const {data:urlData} = supabase.storage.from("imagenes").getPublicUrl(path);
+        imagen_url = urlData.publicUrl;
+      }
     }
-    setGuardando(false); setPopupCat(false);
+
+    // tipo en DB: "cerrado" para invitación, "abierto" para solicitudes libres
+    const tipo = modelo==="solicitud_libre" ? "abierto" : "cerrado";
+
+    const config = {
+      modelo_acceso:              modelo,
+      ver_miembros_detalle:       verDetalle,
+      pestanas_publicas:          ["info","publico"],
+      miembros_pueden_invitar:    miembrosInv,
+      canon_gratis_por_defecto:   modelo==="invitacion_gratis",
+      residentes_campos_publicos: ["nombre","unidad","estado_cuota"],
+    };
+
+    const { data:grupo, error } = await supabase.from("grupos").insert({
+      nombre, descripcion, ciudad, provincia, tipo,
+      categoria_id:    catSel.id,
+      subcategoria_id: subSel?.id||null,
+      creador_id:      session.user.id,
+      reglas,
+      links:         links.split("\n").map(l=>l.trim()).filter(Boolean),
+      whatsapp_link: waLink||null,
+      imagen:        imagen_url||null,
+      config,
+      activo:        true,
+    }).select().single();
+
+    if(error){ alert("Error: "+error.message); setGuardando(false); return; }
+
+    await supabase.from("grupo_miembros").insert({
+      grupo_id:    grupo.id,
+      usuario_id:  session.user.id,
+      rol:         "creador",
+      estado:      "activo",
+      canon_gratis:true,
+      bits_grupo:  true,
+    });
+
+    router.push(`/grupos/${grupo.id}`);
   };
 
-  const guardarSub = async()=>{
-    if(!fSub.nombre.trim()) return;
-    setGuardando(true);
-    const data = { nombre:fSub.nombre, emoji:fSub.emoji, orden:parseInt(fSub.orden)||0, categoria_id:parseInt(fSub.categoria_id)||catParaSub };
-    if(editSub){
-      await supabase.from("grupo_subcategorias").update(data).eq("id",editSub.id);
-      setSubcategorias(p=>p.map(s=>s.id===editSub.id?{...s,...data as any}:s));
-    } else {
-      const {data:d}=await supabase.from("grupo_subcategorias").insert({...data,activo:true}).select().single();
-      if(d) setSubcategorias(p=>[...p,d]);
-    }
-    setGuardando(false); setPopupSub(false);
-  };
-
-  const toggleCat = async(cat:Categoria)=>{
-    await supabase.from("grupo_categorias").update({activo:!cat.activo}).eq("id",cat.id);
-    setCategorias(p=>p.map(c=>c.id===cat.id?{...c,activo:!c.activo}:c));
-  };
-  const toggleSub = async(sub:Subcategoria)=>{
-    await supabase.from("grupo_subcategorias").update({activo:!sub.activo}).eq("id",sub.id);
-    setSubcategorias(p=>p.map(s=>s.id===sub.id?{...s,activo:!s.activo}:s));
-  };
-  const toggleGrupo = async(g:any)=>{
-    await supabase.from("grupos").update({activo:!g.activo}).eq("id",g.id);
-    setStatsGrupos(p=>p.map(x=>x.id===g.id?{...x,activo:!x.activo}:x));
-  };
-
-  if(!autorizado) return(
-    <main style={{paddingTop:"95px",fontFamily:"'Nunito',sans-serif"}}><Header/>
-      <div style={{textAlign:"center",padding:"60px 20px"}}>
-        <div style={{fontSize:"40px",marginBottom:"12px"}}>🔒</div>
-        <div style={{fontSize:"16px",fontWeight:800,color:"#1a2a3a"}}>Acceso restringido</div>
-        <div style={{fontSize:"13px",color:"#9a9a9a",marginTop:"6px"}}>Solo administradores de NexoNet</div>
-      </div>
-    <BottomNav/></main>
-  );
-
-  const subcatsTotal = subcategorias.length;
-  const gruposActivos = statsGrupos.filter(g=>g.activo).length;
+  const progreso = ((step+1)/4)*100;
+  const modeloSel = MODELOS.find(m=>m.v===modelo)!;
 
   return(
     <main style={{paddingTop:"95px",paddingBottom:"130px",background:"#f4f4f2",minHeight:"100vh",fontFamily:"'Nunito',sans-serif"}}>
       <Header/>
 
-      {/* Header */}
-      <div style={{background:"linear-gradient(135deg,#1a2a3a,#243b55)",padding:"16px"}}>
-        <div style={{fontSize:"10px",fontWeight:700,color:"#d4a017",letterSpacing:"2px",textTransform:"uppercase",marginBottom:"4px"}}>Panel Admin</div>
-        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"24px",color:"#fff",letterSpacing:"1px",marginBottom:"14px"}}>🛡️ Gestión de Grupos</div>
-        {/* Stats rápidas */}
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"8px"}}>
-          {[{l:"Categorías",v:categorias.length,c:"#d4a017"},{l:"Subcategorías",v:subcatsTotal,c:"#f0c040"},{l:"Grupos activos",v:gruposActivos,c:"#00a884"}]
-            .map((s,i)=><div key={i} style={{background:"rgba(255,255,255,0.07)",borderRadius:"12px",padding:"10px",textAlign:"center"}}><div style={{fontSize:"20px",fontWeight:900,color:s.c}}>{s.v}</div><div style={{fontSize:"10px",fontWeight:700,color:"#8a9aaa"}}>{s.l}</div></div>)}
+      {/* Cabecera */}
+      <div style={{background:"linear-gradient(135deg,#1a2a3a,#243b55)",padding:"14px 16px 16px"}}>
+        <div style={{display:"flex",alignItems:"center",gap:"10px",marginBottom:"12px"}}>
+          {step>0&&(
+            <button onClick={()=>setStep(s=>s-1)} style={{background:"rgba(255,255,255,0.1)",border:"none",borderRadius:"50%",width:"32px",height:"32px",color:"#fff",fontSize:"16px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>←</button>
+          )}
+          <div style={{flex:1}}>
+            <div style={{fontSize:"10px",fontWeight:700,color:"#d4a017",letterSpacing:"2px",textTransform:"uppercase"}}>Paso {step+1} de 4</div>
+            <div style={{fontSize:"17px",fontWeight:900,color:"#fff",marginTop:"2px"}}>
+              {step===0&&"¿Cómo manejás el acceso?"}
+              {step===1&&"¿De qué categoría?"}
+              {step===2&&"Datos del grupo"}
+              {step===3&&"Configuración final"}
+            </div>
+          </div>
+        </div>
+        <div style={{background:"rgba(255,255,255,0.15)",borderRadius:"20px",height:"5px"}}>
+          <div style={{background:"linear-gradient(90deg,#d4a017,#f0c040)",borderRadius:"20px",height:"5px",width:`${progreso}%`,transition:"width .3s"}}/>
         </div>
       </div>
 
-      {/* Tabs */}
-      <div style={{background:"#fff",borderBottom:"2px solid #f0f0f0",display:"flex"}}>
-        {[{id:"cats",l:"📂 Categorías"},{id:"subcats",l:"📌 Subcategorías"},{id:"grupos",l:"👥 Grupos"}].map(t=>(
-          <button key={t.id} onClick={()=>setTab(t.id as any)} style={{flex:1,padding:"12px",border:"none",background:"none",fontSize:"12px",fontWeight:tab===t.id?900:600,color:tab===t.id?"#d4a017":"#2c2c2e",borderBottom:tab===t.id?"3px solid #d4a017":"3px solid transparent",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>
-            {t.l}
-          </button>
-        ))}
-      </div>
+      <div style={{padding:"20px 16px"}}>
 
-      <div style={{padding:"16px"}}>
-
-        {/* ── CATEGORÍAS ── */}
-        {tab==="cats"&&(
+        {/* ── STEP 0: MODELO DE ACCESO ── */}
+        {step===0&&(
           <div>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"12px"}}>
-              <span style={{fontSize:"15px",fontWeight:900,color:"#1a2a3a"}}>Categorías de grupos</span>
-              <button onClick={()=>abrirPopupCat()} style={btnStyle}>➕ Nueva</button>
+            <div style={{fontSize:"13px",fontWeight:700,color:"#9a9a9a",marginBottom:"16px",lineHeight:1.5}}>
+              Elegí cómo se incorporan los miembros a tu grupo y quién paga el acceso.
             </div>
-            {loading?<Loader/>:categorias.map(cat=>{
-              const subs=subcategorias.filter(s=>s.categoria_id===cat.id);
-              const exp=catExpand===cat.id;
-              return(
-                <div key={cat.id} style={{background:"#fff",borderRadius:"14px",boxShadow:"0 2px 8px rgba(0,0,0,0.06)",marginBottom:"10px",overflow:"hidden",border:`2px solid ${cat.activo?"#e8e8e6":"#f0c040"}`}}>
-                  <div style={{padding:"14px 16px",display:"flex",alignItems:"center",gap:"12px"}}>
-                    <span style={{fontSize:"28px"}}>{cat.emoji}</span>
+            <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
+              {MODELOS.map(o=>(
+                <button key={o.v} onClick={()=>setModelo(o.v)} style={{
+                  background:modelo===o.v?"linear-gradient(135deg,#1a2a3a,#243b55)":"#fff",
+                  border:`2px solid ${modelo===o.v?o.color:"#e8e8e6"}`,
+                  borderRadius:"16px",padding:"18px",textAlign:"left",cursor:"pointer",
+                  boxShadow:modelo===o.v?"0 4px 16px rgba(26,42,58,0.25)":"0 2px 8px rgba(0,0,0,0.05)",
+                  fontFamily:"'Nunito',sans-serif",width:"100%",
+                }}>
+                  <div style={{display:"flex",alignItems:"flex-start",gap:"12px"}}>
+                    <span style={{fontSize:"30px",flexShrink:0}}>{o.icon}</span>
                     <div style={{flex:1}}>
-                      <div style={{fontSize:"15px",fontWeight:900,color:cat.activo?"#1a2a3a":"#9a9a9a"}}>{cat.nombre}</div>
-                      <div style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600}}>{subs.length} subcategorías · orden {cat.orden}</div>
+                      <div style={{fontSize:"15px",fontWeight:900,color:modelo===o.v?"#f0c040":"#1a2a3a",marginBottom:"5px"}}>{o.titulo}</div>
+                      <div style={{fontSize:"12px",fontWeight:600,color:modelo===o.v?"#8a9aaa":"#9a9a9a",lineHeight:1.5,marginBottom:"8px"}}>{o.desc}</div>
+                      <span style={{background:modelo===o.v?`${o.color}30`:"#f4f4f2",border:`1px solid ${modelo===o.v?o.color:"#e8e8e6"}`,borderRadius:"20px",padding:"3px 10px",fontSize:"11px",fontWeight:800,color:modelo===o.v?o.color:"#9a9a9a"}}>
+                        {o.badge}
+                      </span>
                     </div>
-                    <div style={{display:"flex",gap:"6px",alignItems:"center"}}>
-                      <button onClick={()=>toggleCat(cat)} style={{background:cat.activo?"rgba(0,168,132,0.1)":"rgba(230,57,70,0.1)",border:`2px solid ${cat.activo?"#00a884":"#e63946"}`,borderRadius:"8px",padding:"4px 10px",fontSize:"11px",fontWeight:800,color:cat.activo?"#00a884":"#e63946",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>
-                        {cat.activo?"ON":"OFF"}
-                      </button>
-                      <button onClick={()=>abrirPopupCat(cat)} style={{background:"#f4f4f2",border:"2px solid #e8e8e6",borderRadius:"8px",padding:"4px 10px",fontSize:"11px",fontWeight:800,color:"#1a2a3a",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>✏️</button>
-                      <button onClick={()=>setCatExpand(exp?null:cat.id)} style={{background:"#f4f4f2",border:"2px solid #e8e8e6",borderRadius:"8px",padding:"4px 10px",fontSize:"11px",fontWeight:800,color:"#1a2a3a",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>{exp?"▲":"▼"}</button>
-                    </div>
+                    {modelo===o.v&&<span style={{fontSize:"20px",flexShrink:0}}>✅</span>}
                   </div>
-                  {/* Subcategorías inline */}
-                  {exp&&(
-                    <div style={{borderTop:"1px solid #f5f5f5",background:"#fafafa",padding:"10px 16px"}}>
-                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"8px"}}>
-                        <span style={{fontSize:"11px",fontWeight:800,color:"#9a9a9a",textTransform:"uppercase",letterSpacing:"0.5px"}}>Subcategorías</span>
-                        <button onClick={()=>abrirPopupSub(cat.id)} style={{...btnStyle,fontSize:"11px",padding:"4px 12px"}}>➕ Agregar</button>
-                      </div>
-                      {subs.length===0?<div style={{fontSize:"12px",color:"#bbb",padding:"8px 0"}}>Sin subcategorías aún.</div>:
-                        subs.map(s=>(
-                          <div key={s.id} style={{display:"flex",alignItems:"center",gap:"8px",padding:"7px 0",borderBottom:"1px solid #f0f0f0"}}>
-                            <span style={{fontSize:"16px"}}>{s.emoji}</span>
-                            <div style={{flex:1}}>
-                              <span style={{fontSize:"13px",fontWeight:800,color:s.activo?"#1a2a3a":"#9a9a9a"}}>{s.nombre}</span>
-                              <span style={{fontSize:"10px",color:"#bbb",marginLeft:"6px"}}>orden {s.orden}</span>
-                            </div>
-                            <button onClick={()=>toggleSub(s)} style={{background:s.activo?"rgba(0,168,132,0.1)":"rgba(230,57,70,0.1)",border:`1px solid ${s.activo?"#00a884":"#e63946"}`,borderRadius:"6px",padding:"2px 8px",fontSize:"10px",fontWeight:800,color:s.activo?"#00a884":"#e63946",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>
-                              {s.activo?"ON":"OFF"}
-                            </button>
-                            <button onClick={()=>abrirPopupSub(cat.id,s)} style={{background:"#f0f0f0",border:"none",borderRadius:"6px",padding:"2px 8px",fontSize:"10px",fontWeight:800,color:"#1a2a3a",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>✏️</button>
-                          </div>
-                        ))
-                      }
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+                </button>
+              ))}
+            </div>
+            {/* Nota sobre pagos */}
+            <div style={{background:"rgba(212,160,23,0.08)",border:"2px solid rgba(212,160,23,0.25)",borderRadius:"12px",padding:"12px 14px",marginTop:"14px"}}>
+              <div style={{fontSize:"12px",fontWeight:800,color:"#a07810",marginBottom:"4px"}}>💳 ¿Cómo funciona el pago?</div>
+              <div style={{fontSize:"12px",fontWeight:600,color:"#555",lineHeight:1.5}}>
+                Cuando un miembro acepta la invitación (o es aprobado), se genera automáticamente un <strong>link de pago</strong> de $500 para el BIT Grupo. Ese link te llega a vos si elegiste pagar como creador, o al miembro si eligió pagarlo él.
+              </div>
+            </div>
           </div>
         )}
 
-        {/* ── SUBCATEGORÍAS (vista completa) ── */}
-        {tab==="subcats"&&(
+        {/* ── STEP 1: CATEGORÍA ── */}
+        {step===1&&(
           <div>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"12px"}}>
-              <span style={{fontSize:"15px",fontWeight:900,color:"#1a2a3a"}}>Todas las subcategorías</span>
-              <span style={{fontSize:"12px",fontWeight:700,color:"#9a9a9a"}}>{subcategorias.length} total</span>
+            <div style={{fontSize:"13px",fontWeight:700,color:"#9a9a9a",marginBottom:"16px"}}>
+              Elegí la categoría y subcategoría de tu grupo.
             </div>
-            {loading?<Loader/>:categorias.map(cat=>{
-              const subs=subcategorias.filter(s=>s.categoria_id===cat.id);
-              if(subs.length===0) return null;
-              return(
-                <div key={cat.id} style={{marginBottom:"14px"}}>
-                  <div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"8px",padding:"8px 12px",background:"linear-gradient(135deg,#1a2a3a,#243b55)",borderRadius:"10px"}}>
-                    <span style={{fontSize:"18px"}}>{cat.emoji}</span>
-                    <span style={{fontSize:"13px",fontWeight:900,color:"#f0c040"}}>{cat.nombre}</span>
-                    <span style={{fontSize:"11px",color:"#8a9aaa",fontWeight:600,marginLeft:"auto"}}>{subs.length} subcats</span>
-                    <button onClick={()=>abrirPopupSub(cat.id)} style={{background:"rgba(212,160,23,0.2)",border:"1px solid rgba(212,160,23,0.4)",borderRadius:"8px",padding:"3px 10px",fontSize:"11px",fontWeight:800,color:"#d4a017",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>➕</button>
-                  </div>
-                  {subs.map((s,i)=>(
-                    <div key={s.id} style={{background:"#fff",borderRadius:"10px",padding:"12px 14px",marginBottom:"6px",boxShadow:"0 1px 4px rgba(0,0,0,0.05)",display:"flex",alignItems:"center",gap:"10px",border:`1px solid ${s.activo?"#f0f0f0":"rgba(240,192,64,0.3)"}`}}>
-                      <span style={{fontSize:"20px"}}>{s.emoji}</span>
-                      <div style={{flex:1}}>
-                        <div style={{fontSize:"13px",fontWeight:800,color:s.activo?"#1a2a3a":"#9a9a9a"}}>{s.nombre}</div>
-                        <div style={{fontSize:"10px",color:"#bbb",fontWeight:600}}>orden {s.orden}</div>
-                      </div>
-                      <button onClick={()=>toggleSub(s)} style={{background:s.activo?"rgba(0,168,132,0.1)":"rgba(230,57,70,0.1)",border:`2px solid ${s.activo?"#00a884":"#e63946"}`,borderRadius:"8px",padding:"4px 10px",fontSize:"11px",fontWeight:800,color:s.activo?"#00a884":"#e63946",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>
-                        {s.activo?"ON":"OFF"}
-                      </button>
-                      <button onClick={()=>abrirPopupSub(cat.id,s)} style={{background:"#f4f4f2",border:"2px solid #e8e8e6",borderRadius:"8px",padding:"4px 10px",fontSize:"11px",fontWeight:800,color:"#1a2a3a",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>✏️</button>
-                    </div>
+            {categorias.length===0?(
+              <div style={{textAlign:"center",padding:"40px",color:"#9a9a9a"}}>
+                <div style={{fontSize:"28px",marginBottom:"10px"}}>⏳</div>
+                <div style={{fontSize:"13px",fontWeight:700}}>Cargando categorías...</div>
+              </div>
+            ):(
+              <>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px",marginBottom:"16px"}}>
+                  {categorias.map(c=>(
+                    <button key={c.id} onClick={()=>{ setCatSel(c); setSubSel(null); }} style={{
+                      background:catSel?.id===c.id?"linear-gradient(135deg,#1a2a3a,#243b55)":"#fff",
+                      border:`2px solid ${catSel?.id===c.id?"#d4a017":"#e8e8e6"}`,
+                      borderRadius:"14px",padding:"16px 10px",cursor:"pointer",textAlign:"center",
+                      fontFamily:"'Nunito',sans-serif",
+                      boxShadow:catSel?.id===c.id?"0 4px 12px rgba(26,42,58,0.2)":"0 2px 6px rgba(0,0,0,0.05)",
+                    }}>
+                      <div style={{fontSize:"28px",marginBottom:"6px"}}>{c.emoji}</div>
+                      <div style={{fontSize:"12px",fontWeight:900,color:catSel?.id===c.id?"#f0c040":"#1a2a3a"}}>{c.nombre}</div>
+                    </button>
                   ))}
                 </div>
-              );
-            })}
+                {catSel&&subsDeCat.length>0&&(
+                  <div>
+                    <div style={{fontSize:"11px",fontWeight:800,color:"#9a9a9a",textTransform:"uppercase",letterSpacing:"1px",marginBottom:"10px"}}>
+                      Subcategoría de {catSel.nombre} <span style={{color:"#bbb",fontWeight:600}}>(opcional)</span>
+                    </div>
+                    <div style={{display:"flex",flexWrap:"wrap",gap:"8px"}}>
+                      <button onClick={()=>setSubSel(null)} style={{
+                        background:!subSel?"#1a2a3a":"#f4f4f2",border:`2px solid ${!subSel?"#1a2a3a":"#e8e8e6"}`,
+                        borderRadius:"20px",padding:"6px 14px",fontSize:"12px",fontWeight:800,
+                        color:!subSel?"#d4a017":"#2c2c2e",cursor:"pointer",fontFamily:"'Nunito',sans-serif",
+                      }}>General</button>
+                      {subsDeCat.map(s=>(
+                        <button key={s.id} onClick={()=>setSubSel(s)} style={{
+                          background:subSel?.id===s.id?"#1a2a3a":"#f4f4f2",
+                          border:`2px solid ${subSel?.id===s.id?"#1a2a3a":"#e8e8e6"}`,
+                          borderRadius:"20px",padding:"6px 14px",fontSize:"12px",fontWeight:800,
+                          color:subSel?.id===s.id?"#d4a017":"#2c2c2e",cursor:"pointer",fontFamily:"'Nunito',sans-serif",
+                        }}>{s.emoji} {s.nombre}</button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
           </div>
         )}
 
-        {/* ── GRUPOS ── */}
-        {tab==="grupos"&&(
-          <div>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"12px"}}>
-              <span style={{fontSize:"15px",fontWeight:900,color:"#1a2a3a"}}>Grupos en NexoNet</span>
-              <span style={{fontSize:"12px",fontWeight:700,color:"#9a9a9a"}}>{statsGrupos.length} total</span>
-            </div>
-            {/* Resumen por categoría */}
-            <div style={{background:"#fff",borderRadius:"14px",padding:"14px 16px",boxShadow:"0 2px 8px rgba(0,0,0,0.06)",marginBottom:"14px"}}>
-              <div style={{fontSize:"11px",fontWeight:800,color:"#9a9a9a",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"10px"}}>Por categoría</div>
-              {categorias.map(cat=>{
-                const n=statsGrupos.filter(g=>g.categoria_id===cat.id&&g.activo).length;
-                if(!n) return null;
-                return(
-                  <div key={cat.id} style={{display:"flex",alignItems:"center",gap:"10px",padding:"6px 0",borderBottom:"1px solid #f5f5f5"}}>
-                    <span style={{fontSize:"16px"}}>{cat.emoji}</span>
-                    <span style={{flex:1,fontSize:"13px",fontWeight:700,color:"#1a2a3a"}}>{cat.nombre}</span>
-                    <span style={{fontSize:"14px",fontWeight:900,color:"#d4a017"}}>{n}</span>
-                  </div>
-                );
-              })}
-            </div>
-            {loading?<Loader/>:statsGrupos.map(g=>(
-              <div key={g.id} style={{background:"#fff",borderRadius:"14px",padding:"14px 16px",boxShadow:"0 2px 6px rgba(0,0,0,0.06)",marginBottom:"8px",display:"flex",alignItems:"center",gap:"10px",border:`2px solid ${g.activo?"#f0f0f0":"rgba(230,57,70,0.2)"}`}}>
-                <div style={{flex:1}}>
-                  <div style={{fontSize:"14px",fontWeight:900,color:g.activo?"#1a2a3a":"#9a9a9a",marginBottom:"2px"}}>{g.nombre}</div>
-                  <div style={{display:"flex",gap:"6px",flexWrap:"wrap"}}>
-                    <span style={{fontSize:"10px",fontWeight:700,color:"#9a9a9a"}}>{g.cat_nombre}{g.sub_nombre&&g.sub_nombre!=="—"?` › ${g.sub_nombre}`:""}</span>
-                    <span style={{fontSize:"10px",fontWeight:700,color:"#9a9a9a"}}>· {g.tipo==="cerrado"?"🔒":"🔓"} {g.tipo}</span>
-                    <span style={{fontSize:"10px",fontWeight:700,color:"#9a9a9a"}}>· 👥 {g.miembros_count}</span>
-                  </div>
+        {/* ── STEP 2: DATOS ── */}
+        {step===2&&(
+          <div style={{display:"flex",flexDirection:"column",gap:"14px"}}>
+            <div>
+              <div style={labelStyle}>Imagen del grupo</div>
+              <label style={{cursor:"pointer"}}>
+                <input type="file" accept="image/*" onChange={handleImagen} style={{display:"none"}}/>
+                <div style={{width:"100%",height:"140px",background:imagenPrev?"transparent":"linear-gradient(135deg,#1a2a3a,#243b55)",borderRadius:"16px",overflow:"hidden",display:"flex",alignItems:"center",justifyContent:"center",border:"2px dashed #d4a017",position:"relative"}}>
+                  {imagenPrev?<img src={imagenPrev} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+                  :<div style={{textAlign:"center"}}><div style={{fontSize:"32px",marginBottom:"8px"}}>📷</div><div style={{fontSize:"12px",fontWeight:700,color:"#d4a017"}}>Tap para elegir imagen</div></div>}
+                  {imagenPrev&&<div style={{position:"absolute",bottom:"8px",right:"8px",background:"rgba(0,0,0,0.6)",borderRadius:"8px",padding:"4px 10px",fontSize:"11px",fontWeight:700,color:"#fff"}}>✏️ Cambiar</div>}
                 </div>
-                <button onClick={()=>toggleGrupo(g)} style={{background:g.activo?"rgba(0,168,132,0.1)":"rgba(230,57,70,0.1)",border:`2px solid ${g.activo?"#00a884":"#e63946"}`,borderRadius:"8px",padding:"5px 12px",fontSize:"11px",fontWeight:800,color:g.activo?"#00a884":"#e63946",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>
-                  {g.activo?"Activo":"Inactivo"}
-                </button>
-                <a href={`/grupos/${g.id}`} style={{background:"#f4f4f2",border:"2px solid #e8e8e6",borderRadius:"8px",padding:"5px 10px",fontSize:"13px",textDecoration:"none"}}>👁️</a>
-              </div>
-            ))}
+              </label>
+            </div>
+            <Campo label="Nombre del grupo *" placeholder="Ej: Edificio Torres del Sol..." value={nombre} onChange={setNombre} max={80}/>
+            <Campo label="Descripción" placeholder="¿De qué trata el grupo?" value={descripcion} onChange={setDescripcion} rows={3}/>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px"}}>
+              <Campo label="Ciudad *" placeholder="Ej: Rosario" value={ciudad} onChange={setCiudad}/>
+              <Campo label="Provincia" placeholder="Ej: Santa Fe" value={provincia} onChange={setProvincia}/>
+            </div>
+            <Campo label="Reglas (opcional)" placeholder="Normas de convivencia..." value={reglas} onChange={setReglas} rows={3}/>
+            <Campo label="WhatsApp del grupo (opcional)" placeholder="https://chat.whatsapp.com/..." value={waLink} onChange={setWaLink}/>
+            <Campo label="Links útiles (uno por línea)" placeholder={"https://sitio.com\nhttps://otro.com"} value={links} onChange={setLinks} rows={2}/>
           </div>
         )}
+
+        {/* ── STEP 3: CONFIG ── */}
+        {step===3&&(
+          <div>
+            {/* Resumen */}
+            <div style={{background:"linear-gradient(135deg,#1a2a3a,#243b55)",borderRadius:"16px",padding:"16px",marginBottom:"16px"}}>
+              <div style={{display:"flex",alignItems:"center",gap:"10px",marginBottom:"8px"}}>
+                {catSel&&<span style={{fontSize:"26px"}}>{catSel.emoji}</span>}
+                <div>
+                  <div style={{fontSize:"16px",fontWeight:900,color:"#fff"}}>{nombre}</div>
+                  <div style={{fontSize:"11px",fontWeight:700,color:"#d4a017"}}>{subSel?.nombre||catSel?.nombre||"—"} · {ciudad}</div>
+                </div>
+              </div>
+              <span style={{background:`${modeloSel.color}30`,border:`1px solid ${modeloSel.color}`,borderRadius:"20px",padding:"3px 12px",fontSize:"11px",fontWeight:800,color:modeloSel.color}}>
+                {modeloSel.icon} {modeloSel.titulo}
+              </span>
+            </div>
+
+            <div style={{background:"#fff",borderRadius:"14px",padding:"16px",boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
+              <div style={labelStyle}>Permisos del grupo</div>
+              <TogleCfg label="Los miembros ven el detalle de otros" sub="Rol, BIT activo, estado de cuota" val={verDetalle} onChange={setVerDetalle}/>
+              {modelo==="solicitud_libre"&&<TogleCfg label="Cualquier miembro puede invitar" sub="No solo vos como creador" val={miembrosInv} onChange={setMiembrosInv}/>}
+            </div>
+
+            <div style={{background:"rgba(212,160,23,0.08)",border:"2px solid rgba(212,160,23,0.3)",borderRadius:"14px",padding:"14px",marginTop:"12px"}}>
+              <div style={{fontSize:"12px",fontWeight:800,color:"#a07810",marginBottom:"4px"}}>👑 Sos el creador del grupo</div>
+              <div style={{fontSize:"12px",fontWeight:600,color:"#555",lineHeight:1.5}}>
+                Accedés al Panel Admin para gestionar miembros, aprobar solicitudes, invitar personas y configurar todos los permisos del grupo.
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Botón */}
+        <div style={{marginTop:"24px"}}>
+          {step<3?(
+            <button onClick={()=>setStep(s=>s+1)} disabled={!puedeAvanzar[step]} style={{
+              width:"100%",background:puedeAvanzar[step]?"linear-gradient(135deg,#f0c040,#d4a017)":"#f0f0f0",
+              border:"none",borderRadius:"14px",padding:"15px",fontSize:"15px",fontWeight:900,
+              color:puedeAvanzar[step]?"#1a2a3a":"#bbb",cursor:puedeAvanzar[step]?"pointer":"not-allowed",
+              fontFamily:"'Nunito',sans-serif",boxShadow:puedeAvanzar[step]?"0 4px 0 #a07810":"none",
+            }}>Siguiente →</button>
+          ):(
+            <button onClick={guardar} disabled={guardando} style={{
+              width:"100%",background:guardando?"#f0f0f0":"linear-gradient(135deg,#f0c040,#d4a017)",
+              border:"none",borderRadius:"14px",padding:"15px",fontSize:"15px",fontWeight:900,
+              color:guardando?"#bbb":"#1a2a3a",cursor:guardando?"not-allowed":"pointer",
+              fontFamily:"'Nunito',sans-serif",boxShadow:guardando?"none":"0 4px 0 #a07810",
+            }}>{guardando?"Creando grupo...":"✅ Crear grupo"}</button>
+          )}
+        </div>
       </div>
-
-      {/* ── POPUP CATEGORÍA ── */}
-      {popupCat&&(
-        <Popup titulo={editCat?"✏️ Editar categoría":"➕ Nueva categoría"} onClose={()=>setPopupCat(false)}>
-          <div style={{display:"flex",flexDirection:"column",gap:"10px",marginBottom:"16px"}}>
-            <div style={{display:"flex",gap:"8px"}}>
-              <div style={{width:"70px"}}>
-                <div style={labelStyle}>Emoji</div>
-                <input value={fCat.emoji} onChange={e=>setFCat(p=>({...p,emoji:e.target.value}))} maxLength={4} style={{...inputStyle,textAlign:"center",fontSize:"22px"}}/>
-              </div>
-              <div style={{flex:1}}>
-                <div style={labelStyle}>Nombre *</div>
-                <input value={fCat.nombre} onChange={e=>setFCat(p=>({...p,nombre:e.target.value}))} placeholder="Ej: Deportivos" maxLength={40} style={inputStyle}/>
-              </div>
-            </div>
-            <div>
-              <div style={labelStyle}>Descripción</div>
-              <input value={fCat.descripcion} onChange={e=>setFCat(p=>({...p,descripcion:e.target.value}))} placeholder="Breve descripción" maxLength={120} style={inputStyle}/>
-            </div>
-            <div>
-              <div style={labelStyle}>Orden (número)</div>
-              <input value={fCat.orden} onChange={e=>setFCat(p=>({...p,orden:e.target.value}))} type="number" min="0" style={{...inputStyle,width:"100px"}}/>
-            </div>
-          </div>
-          <button onClick={guardarCat} disabled={guardando||!fCat.nombre.trim()} style={{...btnStyle,width:"100%",padding:"13px",fontSize:"14px"}}>
-            {guardando?"Guardando...":editCat?"💾 Guardar cambios":"✅ Crear categoría"}
-          </button>
-        </Popup>
-      )}
-
-      {/* ── POPUP SUBCATEGORÍA ── */}
-      {popupSub&&(
-        <Popup titulo={editSub?"✏️ Editar subcategoría":"➕ Nueva subcategoría"} onClose={()=>setPopupSub(false)}>
-          <div style={{fontSize:"12px",fontWeight:700,color:"#9a9a9a",marginBottom:"12px"}}>
-            Categoría: <strong style={{color:"#1a2a3a"}}>{categorias.find(c=>c.id===catParaSub)?.nombre}</strong>
-          </div>
-          <div style={{display:"flex",flexDirection:"column",gap:"10px",marginBottom:"16px"}}>
-            <div style={{display:"flex",gap:"8px"}}>
-              <div style={{width:"70px"}}>
-                <div style={labelStyle}>Emoji</div>
-                <input value={fSub.emoji} onChange={e=>setFSub(p=>({...p,emoji:e.target.value}))} maxLength={4} style={{...inputStyle,textAlign:"center",fontSize:"22px"}}/>
-              </div>
-              <div style={{flex:1}}>
-                <div style={labelStyle}>Nombre *</div>
-                <input value={fSub.nombre} onChange={e=>setFSub(p=>({...p,nombre:e.target.value}))} placeholder="Ej: Pádel" maxLength={40} style={inputStyle}/>
-              </div>
-            </div>
-            <div>
-              <div style={labelStyle}>Orden</div>
-              <input value={fSub.orden} onChange={e=>setFSub(p=>({...p,orden:e.target.value}))} type="number" min="0" style={{...inputStyle,width:"100px"}}/>
-            </div>
-          </div>
-          <button onClick={guardarSub} disabled={guardando||!fSub.nombre.trim()} style={{...btnStyle,width:"100%",padding:"13px",fontSize:"14px"}}>
-            {guardando?"Guardando...":editSub?"💾 Guardar cambios":"✅ Crear subcategoría"}
-          </button>
-        </Popup>
-      )}
-
       <BottomNav/>
     </main>
   );
 }
 
-// ── Aux ───────────────────────────────────────────────────────────────────────
-function Popup({titulo,onClose,children}:{titulo:string;onClose:()=>void;children:React.ReactNode}) {
+function Campo({label,placeholder,value,onChange,max,rows}:{label:string;placeholder:string;value:string;onChange:(v:string)=>void;max?:number;rows?:number}) {
+  const s:React.CSSProperties={border:"2px solid #e8e8e8",borderRadius:"12px",padding:"12px 14px",fontSize:"14px",fontFamily:"'Nunito',sans-serif",outline:"none",color:"#1a2a3a",width:"100%",boxSizing:"border-box",background:"#fff",resize:"none"};
   return(
-    <div style={{position:"fixed",inset:0,zIndex:200,background:"rgba(0,0,0,0.65)",display:"flex",alignItems:"flex-end",padding:"16px"}}>
-      <div style={{width:"100%",background:"#fff",borderRadius:"20px 20px 16px 16px",padding:"24px 20px 20px",boxShadow:"0 -8px 40px rgba(0,0,0,0.3)",maxHeight:"90vh",overflowY:"auto"}}>
-        <div style={{display:"flex",justifyContent:"space-between",marginBottom:"16px"}}>
-          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"20px",color:"#1a2a3a",letterSpacing:"1px"}}>{titulo}</div>
-          <button onClick={onClose} style={{background:"#f0f0f0",border:"none",borderRadius:"50%",width:"32px",height:"32px",fontSize:"16px",cursor:"pointer"}}>✕</button>
-        </div>
-        {children}
-      </div>
+    <div>
+      <div style={labelStyle}>{label}</div>
+      {rows?<textarea value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder} rows={rows} maxLength={max||1000} style={s}/>
+           :<input type="text" value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder} maxLength={max||200} style={s}/>}
     </div>
   );
 }
-function Loader() {
-  return <div style={{textAlign:"center",padding:"40px",color:"#9a9a9a",fontWeight:700}}>Cargando...</div>;
+function TogleCfg({label,sub,val,onChange}:{label:string;sub:string;val:boolean;onChange:(v:boolean)=>void}) {
+  return(
+    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 0",borderBottom:"1px solid #f5f5f5"}}>
+      <div style={{flex:1,paddingRight:"12px"}}>
+        <div style={{fontSize:"13px",fontWeight:800,color:"#1a2a3a"}}>{label}</div>
+        <div style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600,marginTop:"2px",lineHeight:1.4}}>{sub}</div>
+      </div>
+      <button onClick={()=>onChange(!val)} style={{width:"44px",height:"24px",borderRadius:"12px",border:"none",background:val?"#d4a017":"#e0e0e0",position:"relative",cursor:"pointer",flexShrink:0}}>
+        <div style={{width:"18px",height:"18px",borderRadius:"50%",background:"#fff",position:"absolute",top:"3px",left:val?"23px":"3px",transition:"left .2s",boxShadow:"0 1px 3px rgba(0,0,0,0.2)"}}/>
+      </button>
+    </div>
+  );
 }
-const btnStyle:React.CSSProperties={background:"linear-gradient(135deg,#f0c040,#d4a017)",border:"none",borderRadius:"10px",padding:"7px 16px",fontSize:"12px",fontWeight:900,color:"#1a2a3a",cursor:"pointer",fontFamily:"'Nunito',sans-serif",boxShadow:"0 2px 0 #a07810"};
-const inputStyle:React.CSSProperties={border:"2px solid #e8e8e8",borderRadius:"12px",padding:"11px 14px",fontSize:"14px",fontFamily:"'Nunito',sans-serif",outline:"none",color:"#1a2a3a",width:"100%",boxSizing:"border-box",background:"#fff"};
-const labelStyle:React.CSSProperties={fontSize:"11px",fontWeight:800,color:"#9a9a9a",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"5px"};
+const labelStyle:React.CSSProperties={fontSize:"11px",fontWeight:800,color:"#9a9a9a",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"6px"};

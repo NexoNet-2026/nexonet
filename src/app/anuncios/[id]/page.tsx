@@ -402,7 +402,6 @@ export default function AnuncioDetalle() {
       {popupCompra && (
         <PopupCompra
           tipo="conexion"
-          costoFijo={1}
           tituloAccion="Conectar con este anuncio"
           bitsDisponibles={{ nexo: bits, promo: bitsPromo, free: bitsFree }}
           onClose={() => setPopupCompra(false)}

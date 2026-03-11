@@ -2,306 +2,176 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-const TIPO_A_CAT: Record<string, string> = {
-  conexion:"conexion", anuncio:"anuncio", flash:"flash",
-  link:"extras", adjunto:"extras", grupo:"extras",
-};
-import { PRODUCTOS } from "@/lib/productos";
-
-// ══════════════════════════════════════════
-// PopupCompra — componente reutilizable
-//
-// Uso:
-//   <PopupCompra
-//     tipo="conexion"          // "anuncio" | "conexion" | "flash" | "link" | "adjunto" | "grupo"
-//     bitsDisponibles={{ nexo:500, promo:200, free:50 }}
-//     onClose={() => setPopup(false)}
-//     onUsarBits={(cantidad, tipo) => { /* descontar BIT y ejecutar acción */ }}
-//   />
-// ══════════════════════════════════════════
-
-const ALIAS    = "nexonet.pagos";
-const CBU      = "0000003100012345678900";
-const TITULAR  = "NexoNet Argentina S.A.S.";
-const CUIT_NUM = "30-71234567-8";
-
-type TipoBit = "nexo" | "promo" | "free";
+type Tipo = "anuncio" | "conexion" | "flash" | "extras" | "grupo" | "general" | "link" | "adjunto";
 
 type Props = {
-  tipo: "anuncio" | "conexion" | "flash" | "link" | "adjunto" | "grupo";
+  tipo: Tipo;
+  tituloAccion?: string;
   bitsDisponibles?: { nexo: number; promo: number; free: number };
-  costoFijo?: number;         // si el costo ya está definido (ej: 1 BIT para conectar)
-  tituloAccion?: string;      // ej: "Conectar con este anuncio"
   onClose: () => void;
-  onUsarBits?: (cantidad: number, tipoBit: TipoBit) => void;
+  onUsarBits?: (cantidad: number, tipo: "nexo"|"promo"|"free") => void;
 };
 
-const TIPO_CONFIG: Record<string, { label: string; emoji: string; categoria: keyof typeof PRODUCTOS | null }> = {
-  anuncio:  { label:"Publicar anuncio",     emoji:"📋", categoria:"anuncio"  },
-  conexion: { label:"Cargar BIT conexión",  emoji:"🔗", categoria:"conexion" },
-  flash:    { label:"PROMO Flash",            emoji:"⚡", categoria:"flash"    },
-  link:     { label:"Agregar link",         emoji:"🔗", categoria:"extras"   },
-  adjunto:  { label:"Agregar adjunto",      emoji:"📎", categoria:"extras"   },
-  grupo:    { label:"Unirse a grupo",       emoji:"👥", categoria:"extras"   },
+// ── Catálogo completo de productos ────────────────────────────────────────────
+const PRODUCTOS = {
+  conexion: [
+    { id:"cx500",   label:"500 BIT Conexión",        precio:"$500",   desc:"500 conexiones",            badge:""          },
+    { id:"cx1000",  label:"1.000 BIT Conexión",      precio:"$900",   desc:"Ahorrás $100",              badge:"💰 Oferta"  },
+    { id:"cx5000",  label:"5.000 BIT Conexión",      precio:"$4.000", desc:"Ahorrás $1.000",            badge:"🔥 Popular" },
+    { id:"cxilim",  label:"BIT Ilimitados /30d",     precio:"$10.000",desc:"Sin límite por 30 días",    badge:"⭐ Pro"     },
+  ],
+  anuncio: [
+    { id:"an3",     label:"BIT Anuncio x3",          precio:"$1.000", desc:"3 anuncios por 30 días",    badge:""          },
+    { id:"an10",    label:"BIT Anuncio x10",         precio:"$3.000", desc:"10 anuncios por 30 días",   badge:"💰 Oferta"  },
+    { id:"anEmp",   label:"BIT EMPRESA x50",         precio:"$10.000",desc:"50 anuncios por 30 días",   badge:"🏢 Empresa" },
+  ],
+  flash: [
+    { id:"flBarr",  label:"Promo Flash Barrio",      precio:"$500",   desc:"15 días en tu barrio",      badge:""          },
+    { id:"flCiud",  label:"Promo Flash Ciudad",      precio:"$2.000", desc:"15 días en tu ciudad",      badge:"🔥 Popular" },
+    { id:"flProv",  label:"Promo Flash Provincia",   precio:"$5.000", desc:"30 días en tu provincia",   badge:""          },
+    { id:"flPais",  label:"Promo Flash País",        precio:"$10.000",desc:"30 días en todo el país",   badge:"⭐ Máximo"  },
+  ],
+  extras: [
+    { id:"exLink",  label:"BIT Link",                precio:"$500",   desc:"Link externo por 30 días",  badge:""          },
+    { id:"exAdj",   label:"BIT Adjunto",             precio:"$500",   desc:"Archivo adjunto /30 días",  badge:""          },
+    { id:"exGrupo", label:"BIT Grupo",               precio:"$500",   desc:"Acceso al grupo /30 días",  badge:""          },
+  ],
+  grupo: [
+    { id:"exGrupo", label:"BIT Grupo",               precio:"$500",   desc:"Acceso al grupo /30 días",  badge:""          },
+  ],
+  general: [], // muestra todos
 };
 
-const BIT_COLORS: Record<TipoBit, { bg: string; text: string; label: string; desc: string }> = {
-  nexo:  { bg:"#d4a017", text:"#1a2a3a", label:"BIT NEXO",  desc:"Comprados" },
-  promo: { bg:"#27ae60", text:"#fff",    label:"BIT PROMO", desc:"Por referidos — reembolsable" },
-  free:  { bg:"#6a8aaa", text:"#fff",    label:"BIT FREE",  desc:"Asignados por NexoNet" },
-};
+const SECCIONES_GENERAL = [
+  { key:"anuncio",  titulo:"📋 Anuncios",    color:"#d4a017" },
+  { key:"conexion", titulo:"🔗 Conexiones",  color:"#3a7bd5" },
+  { key:"flash",    titulo:"⚡ Promo Flash", color:"#e63946" },
+  { key:"extras",   titulo:"🔧 Extras",      color:"#00a884" },
+];
 
-export default function PopupCompra({ tipo, bitsDisponibles, costoFijo, tituloAccion, onClose, onUsarBits }: Props) {
+export default function PopupCompra({ tipo, tituloAccion, bitsDisponibles, onClose, onUsarBits }: Props) {
   const router = useRouter();
-  const config = TIPO_CONFIG[tipo];
+  const [seccion, setSeccion] = useState<Tipo>(tipo === "general" ? "anuncio" : tipo);
 
-  // Si tiene costo fijo (ej: 1 BIT para conectar), muestra selector de tipo de BIT
-  // Si no, muestra los paquetes disponibles para ese tipo
-  const [paso, setPaso]         = useState<"bits" | "paquetes" | "metodo" | "transferencia" | "proximamente">(
-    costoFijo && bitsDisponibles ? "bits" : "paquetes"
-  );
-  const [tipoBitSel, setTipoBitSel] = useState<TipoBit | null>(null);
-  const [prodSel, setProdSel]   = useState<string | null>(null);
-  const [metodo, setMetodo]     = useState<string | null>(null);
-  const [copiado, setCopiado]   = useState<string | null>(null);
+  const nexo  = bitsDisponibles?.nexo  || 0;
+  const promo = bitsDisponibles?.promo || 0;
+  const free  = bitsDisponibles?.free  || 0;
+  const totalDisp = nexo + promo + free;
+  const tieneDisponibles = totalDisp > 0;
 
-  const bits = bitsDisponibles || { nexo:0, promo:0, free:0 };
-  const totalBits = bits.nexo + bits.promo + bits.free;
-
-  const categoria = config.categoria;
-  const productosCategoria = categoria ? PRODUCTOS[categoria] : [];
-  // Para extras, filtrar solo el relevante
-  const productosFiltrados = tipo === "link" ? productosCategoria.filter((p:any) => p.id === "link")
-    : tipo === "adjunto" ? productosCategoria.filter((p:any) => p.id === "adjunto")
-    : tipo === "grupo" ? productosCategoria.filter((p:any) => p.id === "grupo")
-    : productosCategoria;
-
-  const producto = [...Object.values(PRODUCTOS).flat()].find((p:any) => p.id === prodSel) as any;
-
-  const copiar = (texto: string, key: string) => {
-    navigator.clipboard.writeText(texto);
-    setCopiado(key);
-    setTimeout(() => setCopiado(null), 2000);
-  };
-
-  const tieneBitsSuficientes = (t: TipoBit) => costoFijo ? bits[t] >= costoFijo : false;
+  const productos = tipo === "general"
+    ? PRODUCTOS[seccion] || []
+    : PRODUCTOS[tipo] || [];
 
   return (
-    <div style={{ position:"fixed", inset:0, zIndex:300, background:"rgba(0,0,0,0.75)", display:"flex", alignItems:"flex-end", padding:"16px" }}>
-      <div style={{ width:"100%", background:"#fff", borderRadius:"20px 20px 16px 16px", padding:"24px 20px 20px", boxShadow:"0 -8px 40px rgba(0,0,0,0.35)", maxHeight:"92vh", overflowY:"auto" }}>
+    <div style={{position:"fixed",inset:0,zIndex:200,background:"rgba(0,0,0,0.65)",display:"flex",alignItems:"flex-end",padding:"16px"}}
+         onClick={onClose}>
+      <div style={{width:"100%",background:"#fff",borderRadius:"20px 20px 16px 16px",padding:"24px 20px 20px",boxShadow:"0 -8px 40px rgba(0,0,0,0.3)",maxHeight:"90vh",overflowY:"auto",fontFamily:"'Nunito',sans-serif"}}
+           onClick={e=>e.stopPropagation()}>
 
         {/* Header */}
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"16px" }}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"16px"}}>
           <div>
-            <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"22px", color:"#1a2a3a", letterSpacing:"1px" }}>
-              {config.emoji} {tituloAccion || config.label}
+            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"22px",color:"#1a2a3a",letterSpacing:"1px"}}>
+              {tituloAccion || "⚡ Cargar BIT"}
             </div>
-            {costoFijo && (
-              <div style={{ fontSize:"12px", color:"#9a9a9a", fontWeight:600, marginTop:"2px" }}>
-                Costo: {costoFijo} BIT = ${costoFijo} ARS · Tus BIT: {totalBits} disponibles
-              </div>
-            )}
+            <div style={{fontSize:"11px",fontWeight:700,color:"#9a9a9a",marginTop:"2px"}}>
+              Seleccioná el plan que necesitás
+            </div>
           </div>
-          <button onClick={onClose} style={{ background:"#f0f0f0", border:"none", borderRadius:"50%", width:"32px", height:"32px", fontSize:"16px", cursor:"pointer", flexShrink:0 }}>✕</button>
+          <button onClick={onClose} style={{background:"#f0f0f0",border:"none",borderRadius:"50%",width:"34px",height:"34px",fontSize:"16px",cursor:"pointer"}}>✕</button>
         </div>
 
-        {/* ── PASO 1: Usar BIT disponibles ── */}
-        {paso === "bits" && costoFijo && (
-          <>
-            {totalBits >= costoFijo ? (
-              <>
-                <div style={{ fontSize:"13px", fontWeight:700, color:"#666", marginBottom:"12px" }}>
-                  Elegí qué tipo de BIT usar:
-                </div>
-                <div style={{ display:"flex", flexDirection:"column", gap:"8px", marginBottom:"16px" }}>
-                  {(["nexo","promo","free"] as TipoBit[]).map(t => {
-                    const c = BIT_COLORS[t];
-                    const suficientes = tieneBitsSuficientes(t);
-                    return (
-                      <button key={t} onClick={()=>setTipoBitSel(t)} disabled={!suficientes}
-                        style={{ display:"flex", alignItems:"center", justifyContent:"space-between", background: tipoBitSel===t ? "#f0f8ff" : "#f8f8f8", border:`2px solid ${tipoBitSel===t?"#d4a017":"#e8e8e8"}`, borderRadius:"14px", padding:"12px 14px", cursor:suficientes?"pointer":"not-allowed", opacity:suficientes?1:0.4, width:"100%", textAlign:"left" }}>
-                        <div style={{ display:"flex", alignItems:"center", gap:"12px" }}>
-                          <div style={{ background:c.bg, borderRadius:"8px", padding:"4px 10px", fontSize:"10px", fontWeight:900, color:c.text }}>
-                            {c.label}
-                          </div>
-                          <div>
-                            <div style={{ fontSize:"13px", fontWeight:800, color:"#1a2a3a" }}>
-                              {bits[t].toLocaleString()} disponibles
-                            </div>
-                            <div style={{ fontSize:"10px", color:"#9a9a9a", fontWeight:600 }}>{c.desc}</div>
-                          </div>
-                        </div>
-                        {tipoBitSel===t && <span style={{ color:"#d4a017", fontSize:"18px" }}>✓</span>}
-                        {!suficientes && <span style={{ fontSize:"10px", color:"#e74c3c", fontWeight:800 }}>Insuficiente</span>}
-                      </button>
-                    );
-                  })}
-                </div>
-                <button
-                  onClick={()=>{ if(tipoBitSel && onUsarBits) { onUsarBits(costoFijo, tipoBitSel); onClose(); } }}
-                  disabled={!tipoBitSel}
-                  style={{ width:"100%", background:tipoBitSel?"linear-gradient(135deg,#f0c040,#d4a017)":"#f0f0f0", border:"none", borderRadius:"12px", padding:"14px", fontSize:"15px", fontWeight:900, color:tipoBitSel?"#1a2a3a":"#bbb", cursor:tipoBitSel?"pointer":"not-allowed", fontFamily:"'Nunito',sans-serif", boxShadow:tipoBitSel?"0 4px 0 #a07810":"none", marginBottom:"10px" }}>
-                  ⚡ Usar {costoFijo} BIT {tipoBitSel ? `(${BIT_COLORS[tipoBitSel].label})` : ""}
-                </button>
-                <button onClick={()=>setPaso("paquetes")}
-                  style={{ width:"100%", background:"none", border:"1px solid #e8e8e8", borderRadius:"12px", padding:"12px", fontSize:"13px", fontWeight:800, color:"#666", cursor:"pointer" }}>
-                  💳 Comprar más BIT
-                </button>
-              </>
-            ) : (
-              <>
-                <div style={{ background:"#fff0f0", borderRadius:"14px", padding:"16px", textAlign:"center", marginBottom:"16px", border:"1px solid #fdd" }}>
-                  <div style={{ fontSize:"32px", marginBottom:"8px" }}>😕</div>
-                  <div style={{ fontSize:"14px", fontWeight:800, color:"#c0392b", marginBottom:"4px" }}>No tenés BIT suficientes</div>
-                  <div style={{ fontSize:"12px", color:"#888", fontWeight:600 }}>Necesitás {costoFijo} BIT · Tenés {totalBits} disponibles</div>
-                </div>
-                <button onClick={()=>setPaso("paquetes")}
-                  style={{ width:"100%", background:"linear-gradient(135deg,#f0c040,#d4a017)", border:"none", borderRadius:"12px", padding:"14px", fontSize:"15px", fontWeight:900, color:"#1a2a3a", cursor:"pointer", fontFamily:"'Nunito',sans-serif", boxShadow:"0 4px 0 #a07810", marginBottom:"8px" }}>
-                  ⚡ Cargar BIT ahora
-                </button>
-                <button onClick={onClose}
-                  style={{ width:"100%", background:"none", border:"1px solid #e8e8e8", borderRadius:"12px", padding:"12px", fontSize:"13px", fontWeight:800, color:"#666", cursor:"pointer" }}>
-                  Cancelar
-                </button>
-              </>
-            )}
-          </>
-        )}
-
-        {/* ── PASO 2: Elegir paquete ── */}
-        {paso === "paquetes" && (
-          <>
-            <div style={{ display:"flex", flexDirection:"column", gap:"8px", marginBottom:"16px" }}>
-              {productosFiltrados.map((p: any) => {
-                const activo = prodSel === p.id;
-                return (
-                  <button key={p.id} onClick={()=>setProdSel(p.id)}
-                    style={{ display:"flex", alignItems:"center", justifyContent:"space-between", background: activo ? "linear-gradient(135deg,#1a2a3a,#243b55)" : "#f8f8f8", border:`2px solid ${activo?"#d4a017":"transparent"}`, borderRadius:"14px", padding:"12px 14px", cursor:"pointer", width:"100%", textAlign:"left", position:"relative" }}>
-                    {p.badge && <div style={{ position:"absolute", top:"-8px", right:"12px", background:"#27ae60", borderRadius:"20px", padding:"2px 8px", fontSize:"9px", fontWeight:900, color:"#fff" }}>{p.badge}</div>}
-                    <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
-                      <span style={{ fontSize:"20px" }}>{p.emoji}</span>
-                      <div>
-                        <div style={{ fontSize:"14px", fontWeight:900, color: activo?"#f0c040":"#1a2a3a" }}>{p.label}</div>
-                        <div style={{ fontSize:"11px", color: activo?"#8a9aaa":"#9a9a9a", fontWeight:600 }}>{p.desc}{p.duracion?` · ${p.duracion}`:""}</div>
-                      </div>
-                    </div>
-                    <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"20px", color: activo?"#f0c040":"#1a2a3a", flexShrink:0 }}>
-                      ${p.precio.toLocaleString()}
-                    </div>
-                  </button>
-                );
-              })}
+        {/* ── USAR BITS DISPONIBLES (si tiene) ── */}
+        {tieneDisponibles && onUsarBits && (
+          <div style={{background:"linear-gradient(135deg,#1a2a3a,#243b55)",borderRadius:"16px",padding:"14px 16px",marginBottom:"16px",border:"2px solid #d4a017"}}>
+            <div style={{fontSize:"12px",fontWeight:800,color:"#d4a017",marginBottom:"10px",textTransform:"uppercase",letterSpacing:"0.5px"}}>
+              ✅ Tenés BIT disponibles para usar
             </div>
-
-            {prodSel && (
-              <button onClick={()=>setPaso("metodo")}
-                style={{ width:"100%", background:"linear-gradient(135deg,#f0c040,#d4a017)", border:"none", borderRadius:"12px", padding:"14px", fontSize:"15px", fontWeight:900, color:"#1a2a3a", cursor:"pointer", fontFamily:"'Nunito',sans-serif", boxShadow:"0 4px 0 #a07810", marginBottom:"8px" }}>
-                ⚡ Continuar — ${producto?.precio.toLocaleString()} ARS
-              </button>
-            )}
-            {costoFijo && (
-              <button onClick={()=>setPaso("bits")}
-                style={{ width:"100%", background:"none", border:"1px solid #e8e8e8", borderRadius:"12px", padding:"10px", fontSize:"13px", fontWeight:800, color:"#666", cursor:"pointer" }}>
-                ‹ Volver
-              </button>
-            )}
-          </>
-        )}
-
-        {/* ── PASO 3: Método de pago ── */}
-        {paso === "metodo" && producto && (
-          <>
-            <div style={{ fontSize:"12px", color:"#9a9a9a", fontWeight:600, marginBottom:"16px" }}>
-              {producto.emoji} {producto.label} · ${producto.precio.toLocaleString()} ARS
+            <div style={{display:"flex",flexDirection:"column",gap:"8px"}}>
+              {nexo > 0 && (
+                <BtnUsarBits
+                  label="BIT NexoNet"
+                  cantidad={nexo}
+                  color="#d4a017"
+                  desc="BIT adquiridos"
+                  onClick={()=>{ onUsarBits(nexo,"nexo"); onClose(); }}
+                />
+              )}
+              {promo > 0 && (
+                <BtnUsarBits
+                  label="BIT NexoPromotor"
+                  cantidad={promo}
+                  color="#27ae60"
+                  desc="BIT por referidos"
+                  onClick={()=>{ onUsarBits(promo,"promo"); onClose(); }}
+                />
+              )}
+              {free > 0 && (
+                <BtnUsarBits
+                  label="BIT FREE"
+                  cantidad={free}
+                  color="#3a7bd5"
+                  desc="BIT gratuitos"
+                  onClick={()=>{ onUsarBits(free,"free"); onClose(); }}
+                />
+              )}
             </div>
-            <div style={{ display:"flex", flexDirection:"column", gap:"8px", marginBottom:"12px" }}>
-              <button onClick={()=>setPaso("transferencia")}
-                style={{ display:"flex", alignItems:"center", gap:"12px", background:"#f8f8f8", border:"2px solid #e8e8e8", borderRadius:"14px", padding:"14px", cursor:"pointer", width:"100%", textAlign:"left" }}>
-                <div style={{ width:"40px", height:"40px", borderRadius:"10px", background:"linear-gradient(135deg,#1a2a3a,#243b55)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"18px", flexShrink:0 }}>🏦</div>
-                <div style={{ flex:1 }}>
-                  <div style={{ fontSize:"14px", fontWeight:900, color:"#1a2a3a" }}>Transferencia bancaria</div>
-                  <div style={{ fontSize:"11px", color:"#27ae60", fontWeight:700 }}>✓ Disponible · 24hs</div>
-                </div>
-                <span style={{ fontSize:"18px", color:"#d4a017" }}>›</span>
-              </button>
-              {[{ id:"mp", label:"MercadoPago", icon:"🔵", bg:"linear-gradient(135deg,#009ee3,#007bbd)" }, { id:"tarjeta", label:"Tarjeta", icon:"💳", bg:"linear-gradient(135deg,#e74c3c,#c0392b)" }].map(m => (
-                <button key={m.id} onClick={()=>setPaso("proximamente")}
-                  style={{ display:"flex", alignItems:"center", gap:"12px", background:"#f8f8f8", border:"2px solid #e8e8e8", borderRadius:"14px", padding:"14px", cursor:"pointer", width:"100%", textAlign:"left", opacity:0.6 }}>
-                  <div style={{ width:"40px", height:"40px", borderRadius:"10px", background:m.bg, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"18px", flexShrink:0 }}>{m.icon}</div>
-                  <div style={{ flex:1 }}>
-                    <div style={{ fontSize:"14px", fontWeight:900, color:"#1a2a3a" }}>{m.label}</div>
-                    <div style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:700 }}>🔒 Próximamente</div>
-                  </div>
-                  <span style={{ fontSize:"18px", color:"#ccc" }}>›</span>
-                </button>
-              ))}
+            <div style={{fontSize:"11px",fontWeight:600,color:"#8a9aaa",marginTop:"10px",textAlign:"center"}}>
+              O comprá más BIT abajo 👇
             </div>
-            <button onClick={()=>setPaso("paquetes")}
-              style={{ width:"100%", background:"none", border:"1px solid #e8e8e8", borderRadius:"12px", padding:"10px", fontSize:"13px", fontWeight:800, color:"#666", cursor:"pointer" }}>
-              ‹ Volver
-            </button>
-          </>
-        )}
-
-        {/* ── PASO: PRÓXIMAMENTE ── */}
-        {paso === "proximamente" && (
-          <div style={{ textAlign:"center", padding:"16px 0" }}>
-            <div style={{ fontSize:"48px", marginBottom:"12px" }}>🔒</div>
-            <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"22px", color:"#1a2a3a", marginBottom:"8px" }}>Próximamente</div>
-            <div style={{ fontSize:"13px", color:"#9a9a9a", fontWeight:600, lineHeight:1.7, marginBottom:"20px" }}>
-              Estamos integrando este método.<br/>Mientras tanto podés pagar por transferencia bancaria.
-            </div>
-            <button onClick={()=>setPaso("transferencia")}
-              style={{ width:"100%", background:"linear-gradient(135deg,#f0c040,#d4a017)", border:"none", borderRadius:"12px", padding:"14px", fontSize:"14px", fontWeight:900, color:"#1a2a3a", cursor:"pointer", fontFamily:"'Nunito',sans-serif", boxShadow:"0 4px 0 #a07810", marginBottom:"8px" }}>
-              🏦 Pagar por transferencia
-            </button>
-            <button onClick={()=>setPaso("metodo")}
-              style={{ width:"100%", background:"none", border:"1px solid #e8e8e8", borderRadius:"12px", padding:"10px", fontSize:"13px", fontWeight:800, color:"#666", cursor:"pointer" }}>
-              ‹ Volver a métodos
-            </button>
           </div>
         )}
 
-        {/* ── PASO: TRANSFERENCIA ── */}
-        {paso === "transferencia" && producto && (
-          <>
-            <div style={{ background:"linear-gradient(135deg,#1a2a3a,#243b55)", borderRadius:"14px", padding:"14px", textAlign:"center", marginBottom:"12px" }}>
-              <div style={{ fontSize:"11px", color:"#8a9aaa", fontWeight:700, marginBottom:"2px" }}>TOTAL A TRANSFERIR</div>
-              <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"38px", color:"#f0c040", lineHeight:1 }}>${producto.precio.toLocaleString("es-AR")}</div>
-              <div style={{ fontSize:"11px", color:"#8a9aaa", marginTop:"4px" }}>ARS · {producto.label}{producto.duracion?` · ${producto.duracion}`:""}</div>
-            </div>
-            <div style={{ display:"flex", flexDirection:"column", gap:"8px", marginBottom:"12px" }}>
-              {[{ label:"Alias", valor:ALIAS },{ label:"CBU", valor:CBU },{ label:"Titular", valor:TITULAR },{ label:"CUIT", valor:CUIT_NUM }].map(d => (
-                <div key={d.label} style={{ background:"#f8f8f8", borderRadius:"10px", padding:"10px 12px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-                  <div>
-                    <div style={{ fontSize:"9px", fontWeight:800, color:"#bbb", textTransform:"uppercase" }}>{d.label}</div>
-                    <div style={{ fontSize:"13px", fontWeight:800, color:"#1a2a3a", fontFamily:d.label==="CBU"?"monospace":"inherit" }}>{d.valor}</div>
-                  </div>
-                  <button onClick={()=>copiar(d.valor, d.label)}
-                    style={{ background:copiado===d.label?"#e8f8ee":"#fff", border:`1px solid ${copiado===d.label?"#27ae60":"#e8e8e8"}`, borderRadius:"6px", padding:"4px 8px", fontSize:"11px", fontWeight:800, color:copiado===d.label?"#27ae60":"#666", cursor:"pointer" }}>
-                    {copiado===d.label?"✓":"Copiar"}
-                  </button>
-                </div>
-              ))}
-            </div>
-            <div style={{ background:"#fff8e0", borderRadius:"10px", padding:"10px 12px", marginBottom:"12px", border:"1px solid #f0e0a0", fontSize:"12px", color:"#666", fontWeight:600, lineHeight:1.8 }}>
-              <strong style={{ color:"#a07810" }}>📋 Instrucciones:</strong><br/>
-              1. Transferí el monto exacto · 2. Guardá el comprobante<br/>
-              3. Envialo por WhatsApp o email · 4. BIT acreditados en &lt;24hs
-            </div>
-            <a href={`https://wa.me/5493492000000?text=Hola! Hice una transferencia de $${producto.precio} por ${producto.label}. Te adjunto el comprobante.`}
-              target="_blank" rel="noopener noreferrer"
-              style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:"8px", background:"#25D366", borderRadius:"12px", padding:"12px", fontSize:"13px", fontWeight:900, color:"#fff", textDecoration:"none", marginBottom:"6px" }}>
-              💬 Enviar comprobante por WhatsApp
-            </a>
-            <a href={`mailto:pagos@nexonet.ar?subject=Comprobante ${producto.label} $${producto.precio}`}
-              style={{ display:"block", background:"#f0f0f0", borderRadius:"12px", padding:"10px", fontSize:"12px", fontWeight:800, color:"#666", textAlign:"center", textDecoration:"none" }}>
-              📧 pagos@nexonet.ar
-            </a>
-          </>
+        {/* ── TABS (solo en modo general) ── */}
+        {tipo === "general" && (
+          <div style={{display:"flex",gap:"6px",marginBottom:"14px",overflowX:"auto",scrollbarWidth:"none"}}>
+            {SECCIONES_GENERAL.map(s=>(
+              <button key={s.key} onClick={()=>setSeccion(s.key as Tipo)}
+                style={{background:seccion===s.key?s.color:"#f4f4f2",border:`2px solid ${seccion===s.key?s.color:"#e8e8e6"}`,borderRadius:"20px",padding:"6px 14px",fontSize:"12px",fontWeight:800,color:seccion===s.key?"#fff":"#1a2a3a",cursor:"pointer",fontFamily:"'Nunito',sans-serif",whiteSpace:"nowrap",flexShrink:0}}>
+                {s.titulo}
+              </button>
+            ))}
+          </div>
         )}
 
+        {/* ── PRODUCTOS ── */}
+        <div style={{display:"flex",flexDirection:"column",gap:"8px",marginBottom:"16px"}}>
+          {productos.map(p=>(
+            <button key={p.id} onClick={()=>router.push(`/comprar?cat=${seccion}`)}
+              style={{background:"#f8f8f8",border:"2px solid #e8e8e6",borderRadius:"14px",padding:"14px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer",fontFamily:"'Nunito',sans-serif",textAlign:"left",width:"100%"}}>
+              <div>
+                <div style={{fontSize:"14px",fontWeight:900,color:"#1a2a3a",marginBottom:"2px"}}>{p.label}</div>
+                <div style={{fontSize:"11px",fontWeight:600,color:"#9a9a9a"}}>{p.desc}</div>
+              </div>
+              <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:"4px"}}>
+                <div style={{fontSize:"16px",fontWeight:900,color:"#d4a017"}}>{p.precio}</div>
+                {p.badge && <span style={{background:"rgba(212,160,23,0.15)",border:"1px solid rgba(212,160,23,0.4)",borderRadius:"20px",padding:"1px 8px",fontSize:"10px",fontWeight:800,color:"#a07810"}}>{p.badge}</span>}
+              </div>
+            </button>
+          ))}
+        </div>
+
+        <button onClick={()=>{ onClose(); router.push("/comprar"); }}
+          style={{width:"100%",background:"linear-gradient(135deg,#f0c040,#d4a017)",border:"none",borderRadius:"12px",padding:"13px",fontSize:"14px",fontWeight:900,color:"#1a2a3a",cursor:"pointer",fontFamily:"'Nunito',sans-serif",boxShadow:"0 3px 0 #a07810"}}>
+          Ver todos los planes →
+        </button>
       </div>
     </div>
+  );
+}
+
+function BtnUsarBits({label,cantidad,color,desc,onClick}:{label:string;cantidad:number;color:string;desc:string;onClick:()=>void}) {
+  return(
+    <button onClick={onClick} style={{background:`${color}18`,border:`2px solid ${color}50`,borderRadius:"12px",padding:"10px 14px",display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer",fontFamily:"'Nunito',sans-serif",width:"100%"}}>
+      <div style={{textAlign:"left"}}>
+        <div style={{fontSize:"13px",fontWeight:900,color}}>{label}</div>
+        <div style={{fontSize:"11px",fontWeight:600,color:"#9a9a9a"}}>{desc}</div>
+      </div>
+      <div style={{textAlign:"right"}}>
+        <div style={{fontSize:"18px",fontWeight:900,color}}>{cantidad.toLocaleString()}</div>
+        <div style={{fontSize:"10px",fontWeight:800,color:"#9a9a9a"}}>disponibles</div>
+      </div>
+    </button>
   );
 }

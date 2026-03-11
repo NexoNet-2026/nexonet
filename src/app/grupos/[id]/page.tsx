@@ -4,6 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
 import { supabase } from "@/lib/supabase";
+import PopupAccesoGrupo from "@/components/PopupAccesoGrupo";
 
 // ── Tipos ─────────────────────────────────────────────────────────────────────
 type Config = {
@@ -286,13 +287,11 @@ export default function GrupoDetalle() {
     await supabase.from("grupo_residentes").update({estado_cuota:estado}).eq("id",res.id);
     setResidentes(p=>p.map(x=>x.id===res.id?{...x,estado_cuota:estado}:x));
   };
-  const unirse=async()=>{
+  const unirse=()=>{
     if(!session){ router.push("/login"); return; }
-    if(!grupo) return;
-    const estado=grupo.tipo==="cerrado"?"pendiente":"activo";
-    const {error}=await supabase.from("grupo_miembros").insert({grupo_id:gId,usuario_id:session.user.id,rol:"miembro",estado,canon_gratis:false});
-    if(!error){ const nuevo:Miembro={id:0,usuario_id:session.user.id,rol:"miembro",estado,canon_gratis:false,bits_grupo:false,bits_grupo_hasta:null,nombre_usuario:"Vos"}; setMiMembro(nuevo); setMiembros(p=>[...p,nuevo]); if(grupo.tipo==="cerrado") alert("Solicitud enviada. El admin debe aprobarte."); }
+    setPopupAcceso(true);
   };
+  const [popupAcceso, setPopupAcceso] = useState(false);
 
   const camposPublicos = config.residentes_campos_publicos||["nombre","unidad","estado_cuota"];
 
@@ -832,6 +831,19 @@ export default function GrupoDetalle() {
         <Btn full onClick={guardarEvento} disabled={!nuevoEvt.titulo.trim()}>💾 Guardar</Btn>
       </Popup>}
 
+      {popupAcceso && session && grupo && (
+        <PopupAccesoGrupo
+          grupo={grupo}
+          userId={session.user.id}
+          onClose={()=>setPopupAcceso(false)}
+          onExito={()=>{
+            setPopupAcceso(false);
+            const nuevo:Miembro={id:0,usuario_id:session.user.id,rol:"miembro",estado:grupo.tipo==="cerrado"?"pendiente":"activo",canon_gratis:false,bits_grupo:false,bits_grupo_hasta:null,nombre_usuario:"Vos"};
+            setMiMembro(nuevo);
+            setMiembros(p=>[...p,nuevo]);
+          }}
+        />
+      )}
       <BottomNav/>
     </main>
   );

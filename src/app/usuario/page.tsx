@@ -7,7 +7,7 @@ import { supabase } from "@/lib/supabase";
 // v2
 import PopupCompra from "@/components/PopupCompra";
 
-type Seccion = "cuenta" | "chat" | "datos" | "estadisticas" | "promotor";
+type Seccion = "cuenta" | "chat" | "datos" | "estadisticas" | "promotor" | "grupos";
 
 const DIAS_SEMANA = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
 const FERIADOS_ARG: Record<string, string> = {
@@ -43,6 +43,7 @@ export default function Usuario() {
   // ── NUEVO: popup cargar BIT ──
   const [popupBits, setPopupBits] = useState(false);
   const [chats,         setChats]         = useState<any[]>([]);
+  const [misGruposData, setMisGruposData] = useState<any[]>([]);
   const [noLeidos,      setNoLeidos]      = useState(0);
 
   const [personal, setPersonal] = useState({
@@ -128,6 +129,21 @@ export default function Usuario() {
         setChats(convsFinal);
         setNoLeidos(convsFinal.filter(c => !c.leido && c.receptor_id === session.user.id).length);
       }
+
+      // Mis grupos
+      const { data: mgData } = await supabase
+        .from("grupo_miembros")
+        .select("rol, estado, grupo_id, grupos(id,nombre,imagen,tipo,miembros_count,categoria_id,grupo_categorias(nombre,emoji),grupo_subcategorias(nombre))")
+        .eq("usuario_id", session.user.id)
+        .in("estado", ["activo","pendiente"]);
+      if (mgData) setMisGruposData(mgData.map((m:any)=>({
+        ...m.grupos,
+        mi_rol:    m.rol,
+        mi_estado: m.estado,
+        categoria_nombre:    m.grupos?.grupo_categorias?.nombre || "",
+        categoria_emoji:     m.grupos?.grupo_categorias?.emoji  || "👥",
+        subcategoria_nombre: m.grupos?.grupo_subcategorias?.nombre || "",
+      })));
     };
     cargar();
   }, []);
@@ -228,7 +244,7 @@ export default function Usuario() {
         </div>
 
         <div style={{ display:"flex" }}>
-          {([["cuenta","💳","Cuenta"],["chat","💬","Chat"],["datos","👤","Datos"],["estadisticas","📊","Stats"],["promotor","⭐","Promotor"]] as [Seccion,string,string][]).map(([id,e,l]) => (
+          {([["cuenta","💳","Cuenta"],["chat","💬","Chat"],["datos","👤","Datos"],["estadisticas","📊","Stats"],["promotor","⭐","Promotor"],["grupos","👥","Grupos"]] as [Seccion,string,string][]).map(([id,e,l]) => (
             <button key={id} onClick={()=>setSeccion(id)} style={{ flex:1, background:"none", border:"none", borderBottom:seccion===id?"3px solid #d4a017":"3px solid transparent", padding:"10px 4px", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:"2px", position:"relative" }}>
               <span style={{ fontSize:"16px" }}>{e}</span>
               {id==="chat" && noLeidos>0 && <span style={{ position:"absolute", top:"6px", right:"calc(50% - 16px)", background:"#e74c3c", color:"#fff", borderRadius:"20px", fontSize:"9px", fontWeight:900, padding:"1px 5px", minWidth:"16px", textAlign:"center" }}>{noLeidos}</span>}
@@ -587,6 +603,60 @@ export default function Usuario() {
                 ))}
               </div>
             </div>
+          </div>
+        )}
+
+        {seccion === "grupos" && (
+          <div style={{ display:"flex", flexDirection:"column", gap:"12px" }}>
+            <div style={{ fontSize:"13px", fontWeight:900, color:"#1a2a3a", textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:"4px" }}>
+              👥 Mis grupos ({misGruposData.length})
+            </div>
+            {misGruposData.length === 0 ? (
+              <div style={{ background:"#fff", borderRadius:"16px", padding:"40px 20px", textAlign:"center", boxShadow:"0 2px 8px rgba(0,0,0,0.06)" }}>
+                <div style={{ fontSize:"40px", marginBottom:"12px" }}>👥</div>
+                <div style={{ fontSize:"15px", fontWeight:800, color:"#1a2a3a", marginBottom:"6px" }}>No estás en ningún grupo</div>
+                <div style={{ fontSize:"13px", color:"#9a9a9a", fontWeight:600, marginBottom:"20px" }}>Unite a grupos o creá el tuyo</div>
+                <button onClick={()=>router.push("/grupos")} style={{ background:"linear-gradient(135deg,#f0c040,#d4a017)", border:"none", borderRadius:"12px", padding:"12px 24px", fontSize:"13px", fontWeight:900, color:"#1a2a3a", cursor:"pointer", fontFamily:"'Nunito',sans-serif", boxShadow:"0 3px 0 #a07810" }}>
+                  🔍 Explorar grupos
+                </button>
+              </div>
+            ) : (
+              misGruposData.map((g:any) => (
+                <div key={g.id} onClick={()=>router.push(`/grupos/${g.id}`)}
+                  style={{ background:"#fff", borderRadius:"16px", overflow:"hidden", boxShadow:"0 2px 8px rgba(0,0,0,0.06)", cursor:"pointer", display:"flex", alignItems:"stretch" }}>
+                  <div style={{ width:"80px", flexShrink:0, background:"linear-gradient(135deg,#1a2a3a,#243b55)", display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden", position:"relative" }}>
+                    {g.imagen
+                      ? <img src={g.imagen} alt={g.nombre} style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
+                      : <span style={{ fontSize:"28px", opacity:0.4 }}>{g.categoria_emoji}</span>}
+                    <div style={{ position:"absolute", bottom:"4px", left:0, right:0, textAlign:"center" }}>
+                      <span style={{ background:g.mi_rol==="creador"?"rgba(212,160,23,0.95)":g.mi_rol==="moderador"?"rgba(100,149,237,0.9)":"rgba(0,168,132,0.85)", borderRadius:"20px", padding:"1px 6px", fontSize:"8px", fontWeight:900, color:g.mi_rol==="creador"?"#1a2a3a":"#fff" }}>
+                        {g.mi_rol==="creador"?"👑 Creador":g.mi_rol==="moderador"?"🛡️ Mod":"✅ Miembro"}
+                      </span>
+                    </div>
+                  </div>
+                  <div style={{ flex:1, padding:"12px 14px", display:"flex", flexDirection:"column", justifyContent:"space-between" }}>
+                    <div>
+                      <div style={{ fontSize:"10px", fontWeight:700, color:"#9a9a9a", textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:"2px" }}>
+                        {g.categoria_emoji} {g.subcategoria_nombre || g.categoria_nombre}
+                      </div>
+                      <div style={{ fontSize:"14px", fontWeight:900, color:"#1a2a3a", marginBottom:"4px", overflow:"hidden", whiteSpace:"nowrap", textOverflow:"ellipsis" }}>{g.nombre}</div>
+                    </div>
+                    <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                      <span style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:600 }}>👥 {g.miembros_count} miembro{g.miembros_count!==1?"s":""}</span>
+                      <div style={{ display:"flex", gap:"6px", alignItems:"center" }}>
+                        {g.mi_estado === "pendiente" && (
+                          <span style={{ background:"rgba(230,57,70,0.1)", border:"1px solid rgba(230,57,70,0.3)", borderRadius:"20px", padding:"2px 8px", fontSize:"9px", fontWeight:800, color:"#e63946" }}>⏳ Pendiente</span>
+                        )}
+                        <span style={{ fontSize:"13px", color:"#d4a017", fontWeight:900 }}>→</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+            <button onClick={()=>router.push("/grupos/crear")} style={{ background:"rgba(212,160,23,0.08)", border:"2px dashed rgba(212,160,23,0.4)", borderRadius:"16px", padding:"16px", fontSize:"13px", fontWeight:800, color:"#d4a017", cursor:"pointer", fontFamily:"'Nunito',sans-serif", display:"flex", alignItems:"center", justifyContent:"center", gap:"8px" }}>
+              ➕ Crear nuevo grupo
+            </button>
           </div>
         )}
       </div>

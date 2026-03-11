@@ -248,30 +248,6 @@ export default function MisAnuncios() {
             AMPLIAR
           </button>
         </div>
-        {/* BIT BALANCE + CARGAR */}
-        <div style={{ marginTop:"8px", background:"rgba(255,255,255,0.05)", borderRadius:"10px",
-                       padding:"10px 14px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-          <div style={{ display:"flex", gap:"16px" }}>
-            <div style={{ textAlign:"center" }}>
-              <div style={{ fontSize:"17px", fontWeight:900, color:"#d4a017" }}>{bitsNexo}</div>
-              <div style={{ fontSize:"9px", color:"#8a9aaa", fontWeight:700, textTransform:"uppercase" }}>Nexo</div>
-            </div>
-            <div style={{ textAlign:"center" }}>
-              <div style={{ fontSize:"17px", fontWeight:900, color:"#27ae60" }}>{bitsPromo}</div>
-              <div style={{ fontSize:"9px", color:"#8a9aaa", fontWeight:700, textTransform:"uppercase" }}>Promo</div>
-            </div>
-            <div style={{ textAlign:"center" }}>
-              <div style={{ fontSize:"17px", fontWeight:900, color:"#3a7bd5" }}>{bitsFree}</div>
-              <div style={{ fontSize:"9px", color:"#8a9aaa", fontWeight:700, textTransform:"uppercase" }}>Free</div>
-            </div>
-          </div>
-          <button onClick={() => setPopupBits(true)}
-            style={{ background:"linear-gradient(135deg,#3a7bd5,#2962b0)", border:"none", borderRadius:"10px",
-                     padding:"8px 16px", fontSize:"12px", fontWeight:900, color:"#fff",
-                     cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
-            ⚡ Cargar BIT
-          </button>
-        </div>
       </div>
 
       <div style={{ padding:"12px 16px", display:"flex", flexDirection:"column", gap:"14px" }}>
@@ -362,6 +338,39 @@ export default function MisAnuncios() {
                            color:"#e74c3c", cursor:"pointer" }}>
                   🗑️
                 </button>
+              </div>
+
+              {/* Mini BIT Conexión — visible antes de abrir el anuncio */}
+              <div style={{ margin:"0 14px 12px", background: (a.bits_conexion ?? 0) > 0 ? "rgba(58,123,213,0.07)" : "rgba(231,76,60,0.07)",
+                             border: `2px solid ${(a.bits_conexion ?? 0) > 0 ? "rgba(58,123,213,0.25)" : "rgba(231,76,60,0.25)"}`,
+                             borderRadius:"12px", padding:"10px 14px",
+                             display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                <div style={{ display:"flex", alignItems:"center", gap:"8px" }}>
+                  <span style={{ fontSize:"18px" }}>🔗</span>
+                  <div>
+                    <div style={{ fontSize:"12px", fontWeight:900, color:"#1a2a3a" }}>BIT Conexión</div>
+                    <div style={{ fontSize:"10px", color:"#9a9a9a", fontWeight:600 }}>
+                      {(a.bits_conexion ?? 0) > 0 ? "Recibiendo conexiones" : "Sin saldo — no recibe conexiones"}
+                    </div>
+                  </div>
+                </div>
+                <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
+                  <div style={{ textAlign:"right" }}>
+                    <div style={{ fontSize:"22px", fontWeight:900, fontFamily:"'Bebas Neue',sans-serif",
+                                   color: (a.bits_conexion ?? 0) > 0 ? "#3a7bd5" : "#e74c3c",
+                                   letterSpacing:"1px" }}>
+                      {a.bits_conexion ?? 0}
+                    </div>
+                    <div style={{ fontSize:"9px", color:"#9a9a9a", fontWeight:700 }}>BIT</div>
+                  </div>
+                  <button onClick={() => setPopupBitsCx(a.id)}
+                    style={{ background:"linear-gradient(135deg,#3a7bd5,#2962b0)", border:"none",
+                             borderRadius:"10px", padding:"8px 12px", fontSize:"12px", fontWeight:900,
+                             color:"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif",
+                             whiteSpace:"nowrap" }}>
+                    ⚡ Cargar
+                  </button>
+                </div>
               </div>
 
               {/* Extras */}

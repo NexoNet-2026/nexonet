@@ -4,6 +4,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
 import { supabase } from "@/lib/supabase";
+import PopupAccesoGrupo from "@/components/PopupAccesoGrupo";
 
 type Grupo = {
   id: number; nombre: string; descripcion: string; imagen: string;
@@ -42,6 +43,7 @@ function GruposInner() {
 
   const [session,   setSession]   = useState<any>(null);
   const [misGrupos, setMisGrupos] = useState<Set<number>>(new Set());
+  const [grupoPopup, setGrupoPopup] = useState<Grupo|null>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session: s } }) => {
@@ -116,17 +118,11 @@ function GruposInner() {
   const misGruposList  = grupos.filter(g=>misGrupos.has(g.id));
   const sinCategoria   = gruposFilt.filter(g=>!g.categoria_id);
 
-  const unirse = async(g:Grupo,e:React.MouseEvent)=>{
+  const unirse = (g:Grupo, e:React.MouseEvent)=>{
     e.preventDefault(); e.stopPropagation();
     if(!session){ router.push("/login"); return; }
     if(misGrupos.has(g.id)){ router.push(`/grupos/${g.id}`); return; }
-    const estado = g.tipo==="cerrado"?"pendiente":"activo";
-    const { error } = await supabase.from("grupo_miembros").insert({ grupo_id:g.id, usuario_id:session.user.id, rol:"miembro", estado, canon_gratis:false });
-    if(!error){
-      setMisGrupos(prev=>new Set([...prev,g.id]));
-      if(g.tipo==="abierto") router.push(`/grupos/${g.id}`);
-      else alert("Solicitud enviada. El moderador debe aprobarte.");
-    }
+    setGrupoPopup(g);
   };
 
   return (
@@ -300,6 +296,17 @@ function GruposInner() {
         </>
       )}
 
+      {grupoPopup && session && (
+        <PopupAccesoGrupo
+          grupo={grupoPopup}
+          userId={session.user.id}
+          onClose={()=>setGrupoPopup(null)}
+          onExito={()=>{
+            setMisGrupos(prev=>new Set([...prev, grupoPopup.id]));
+            setGrupoPopup(null);
+          }}
+        />
+      )}
       <BottomNav />
     </main>
   );

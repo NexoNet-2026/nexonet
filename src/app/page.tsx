@@ -142,6 +142,13 @@ export default function Home() {
     if (query && !rubroSel) params.set("q", query);
     router.push(`/buscar?${params.toString()}`);
   };
+  const irAMapa = () => {
+    const params = new URLSearchParams();
+    if (rubroSel)    params.set("rubro",    String(rubroSel.id));
+    if (subrubroSel) params.set("subrubro", String(subrubroSel.id));
+    if (query && !rubroSel) params.set("q", query);
+    router.push(`/mapa?${params.toString()}`);
+  };
   const formatPrecio = (precio: number, moneda: string) =>
     !precio ? "Consultar" : `${moneda === "USD" ? "U$D" : "$"} ${precio.toLocaleString("es-AR")}`;
 
@@ -181,12 +188,7 @@ export default function Home() {
             {query && (
               <button onClick={limpiar} style={{ background:"none", border:"none", padding:"0 8px", cursor:"pointer", fontSize:"16px", color:"#9a9a9a" }}>✕</button>
             )}
-            {/* Toggle lista / mapa */}
-            <div style={{ display:"flex", alignItems:"center", background:"rgba(26,42,58,0.06)", borderRadius:"10px", margin:"6px", padding:"2px", gap:"2px", flexShrink:0 }}>
-              <button onClick={irABuscar} style={{ background:"#1a2a3a", border:"none", borderRadius:"8px", padding:"5px 10px", fontSize:"11px", fontWeight:900, color:"#d4a017", cursor:"pointer", fontFamily:"'Nunito',sans-serif", whiteSpace:"nowrap" }}>📋 Lista</button>
-              <button onClick={()=>router.push("/mapa")} style={{ background:"none", border:"none", borderRadius:"8px", padding:"5px 10px", fontSize:"11px", fontWeight:700, color:"#9a9a9a", cursor:"pointer", fontFamily:"'Nunito',sans-serif", whiteSpace:"nowrap" }}>🗺️ Mapa</button>
-            </div>
-            <button onClick={irABuscar} style={{ background:"#d4a017", border:"none", padding:"0 16px", cursor:"pointer", fontSize:"18px", borderRadius:"0 14px 14px 0", flexShrink:0 }}>🔍</button>
+            <button onClick={irABuscar} style={{ background:"#d4a017", border:"none", padding:"0 18px", cursor:"pointer", fontSize:"18px", borderRadius:"0 14px 14px 0", flexShrink:0 }}>🔍</button>
           </div>
 
           {dropOpen && (
@@ -254,6 +256,16 @@ export default function Home() {
               )}
             </div>
           )}
+        </div>
+
+        {/* Píldoras lista / mapa */}
+        <div style={{display:"flex",gap:"8px",justifyContent:"center",marginTop:"10px"}}>
+          <button onClick={irABuscar} style={{background:"linear-gradient(135deg,#f0c040,#d4a017)",border:"none",borderRadius:"20px",padding:"8px 20px",fontSize:"13px",fontWeight:900,color:"#1a2a3a",cursor:"pointer",fontFamily:"'Nunito',sans-serif",boxShadow:"0 3px 0 #a07810",display:"flex",alignItems:"center",gap:"6px"}}>
+            📋 Ver en lista
+          </button>
+          <button onClick={irAMapa} style={{background:"rgba(255,255,255,0.12)",border:"2px solid rgba(255,255,255,0.25)",borderRadius:"20px",padding:"8px 20px",fontSize:"13px",fontWeight:800,color:"#fff",cursor:"pointer",fontFamily:"'Nunito',sans-serif",display:"flex",alignItems:"center",gap:"6px"}}>
+            🗺️ Ver en mapa
+          </button>
         </div>
       </div>
 

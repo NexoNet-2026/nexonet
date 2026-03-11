@@ -8,41 +8,14 @@ import { supabase } from "@/lib/supabase";
 type Categoria    = { id:number; nombre:string; emoji:string };
 type Subcategoria = { id:number; nombre:string; emoji:string; categoria_id:number };
 
-// modelo_acceso:
-// "invitacion_gratis"  → creador invita, creador paga por cada miembro
-// "invitacion_miembro" → creador invita, el invitado paga
-// "solicitud_libre"    → usuarios solicitan, creador decide quién paga caso a caso
-
 const MODELOS = [
-  {
-    v:       "invitacion_gratis",
-    icon:    "🎁",
-    titulo:  "Invitación — el grupo paga",
-    desc:    "Vos invitás a cada miembro. Cuando aceptan, te llega el link de pago. El miembro entra sin costo.",
-    badge:   "👑 Vos pagás por cada miembro",
-    color:   "#d4a017",
-  },
-  {
-    v:       "invitacion_miembro",
-    icon:    "📨",
-    titulo:  "Invitación — el miembro paga",
-    desc:    "Vos invitás. El invitado decide si acepta y paga los $500 para acceder al grupo.",
-    badge:   "💰 El invitado paga",
-    color:   "#3a7bd5",
-  },
-  {
-    v:       "solicitud_libre",
-    icon:    "🙋",
-    titulo:  "Solicitudes abiertas",
-    desc:    "Cualquier usuario puede solicitar unirse. Vos aprobás o rechazás, y elegís quién paga en cada caso.",
-    badge:   "⚙️ Vos decidís caso a caso",
-    color:   "#00a884",
-  },
+  { v:"invitacion_gratis",  icon:"🎁", titulo:"Invitación — el grupo paga",    desc:"Vos invitás a cada miembro. Cuando aceptan te llega el link de pago. El miembro entra sin costo.",          badge:"👑 Vos pagás por cada miembro", color:"#d4a017" },
+  { v:"invitacion_miembro", icon:"📨", titulo:"Invitación — el miembro paga",  desc:"Vos invitás. El invitado decide si acepta y paga los $500 para acceder al grupo.",                            badge:"💰 El invitado paga",            color:"#3a7bd5" },
+  { v:"solicitud_libre",    icon:"🙋", titulo:"Solicitudes abiertas",          desc:"Cualquier usuario puede solicitar unirse. Vos aprobás o rechazás, y elegís quién paga en cada caso.",          badge:"⚙️ Vos decidís caso a caso",     color:"#00a884" },
 ];
 
 export default function CrearGrupo() {
   const router = useRouter();
-
   const [step,          setStep]          = useState(0);
   const [categorias,    setCategorias]    = useState<Categoria[]>([]);
   const [subcategorias, setSubcategorias] = useState<Subcategoria[]>([]);
@@ -54,15 +27,18 @@ export default function CrearGrupo() {
   const [subSel,      setSubSel]      = useState<Subcategoria|null>(null);
   const [nombre,      setNombre]      = useState("");
   const [descripcion, setDescripcion] = useState("");
+  const [direccion,   setDireccion]   = useState("");
   const [ciudad,      setCiudad]      = useState("");
   const [provincia,   setProvincia]   = useState("");
+  const [lat,         setLat]         = useState<number|null>(null);
+  const [lng,         setLng]         = useState<number|null>(null);
+  const [geoLoading,  setGeoLoading]  = useState(false);
   const [reglas,      setReglas]      = useState("");
-  const [waLink,      setWaLink]      = useState("");
+  const [waAdmin,     setWaAdmin]     = useState("");
   const [links,       setLinks]       = useState("");
   const [imagen,      setImagen]      = useState<File|null>(null);
   const [imagenPrev,  setImagenPrev]  = useState("");
   const [verDetalle,  setVerDetalle]  = useState(false);
-  const [miembrosInv, setMiembrosInv] = useState(false);
 
   useEffect(()=>{
     supabase.auth.getSession().then(({data:{session:s}})=>{
@@ -87,6 +63,46 @@ export default function CrearGrupo() {
     true,
   ];
 
+  // Geolocalizar dirección
+  const geolocalizarDireccion = async()=>{
+    if(!direccion.trim()&&!ciudad.trim()) return;
+    setGeoLoading(true);
+    const query = [direccion,ciudad,provincia,"Argentina"].filter(Boolean).join(", ");
+    try{
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`);
+      const data = await res.json();
+      if(data.length>0){
+        setLat(parseFloat(data[0].lat));
+        setLng(parseFloat(data[0].lon));
+        // Auto-completar ciudad si estaba vacía
+        if(!ciudad.trim()&&data[0].address?.city) setCiudad(data[0].address.city);
+      } else {
+        alert("No se encontró la dirección. Verificá los datos.");
+      }
+    } catch(e){ alert("Error al geolocalizar."); }
+    setGeoLoading(false);
+  };
+
+  // GPS automático
+  const usarGPS = ()=>{
+    if(!navigator.geolocation){ alert("Tu dispositivo no soporta GPS."); return; }
+    setGeoLoading(true);
+    navigator.geolocation.getCurrentPosition(async(pos)=>{
+      const { latitude:la, longitude:lo } = pos.coords;
+      setLat(la); setLng(lo);
+      try{
+        const res  = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${la}&lon=${lo}`);
+        const data = await res.json();
+        if(data.address){
+          if(!ciudad.trim())    setCiudad(data.address.city||data.address.town||data.address.village||"");
+          if(!provincia.trim()) setProvincia(data.address.state||"");
+          if(!direccion.trim()) setDireccion(`${data.address.road||""} ${data.address.house_number||""}`.trim());
+        }
+      } catch(e){}
+      setGeoLoading(false);
+    },()=>{ alert("No se pudo obtener tu ubicación."); setGeoLoading(false); });
+  };
+
   const handleImagen = (e:React.ChangeEvent<HTMLInputElement>)=>{
     const f=e.target.files?.[0]; if(!f) return;
     setImagen(f); setImagenPrev(URL.createObjectURL(f));
@@ -98,7 +114,7 @@ export default function CrearGrupo() {
 
     let imagen_url = "";
     if(imagen){
-      const ext = imagen.name.split(".").pop();
+      const ext  = imagen.name.split(".").pop()||"jpg";
       const path = `grupos/${session.user.id}-${Date.now()}.${ext}`;
       const {error:upErr} = await supabase.storage.from("imagenes").upload(path,imagen,{upsert:true});
       if(!upErr){
@@ -107,14 +123,13 @@ export default function CrearGrupo() {
       }
     }
 
-    // tipo en DB: "cerrado" para invitación, "abierto" para solicitudes libres
-    const tipo = modelo==="solicitud_libre" ? "abierto" : "cerrado";
-
+    const tipo   = modelo==="solicitud_libre" ? "abierto" : "cerrado";
     const config = {
       modelo_acceso:              modelo,
       ver_miembros_detalle:       verDetalle,
       pestanas_publicas:          ["info","publico"],
-      miembros_pueden_invitar:    miembrosInv,
+      miembros_pueden_invitar:    false,   // miembros pueden invitar pero SOLO el creador autoriza
+      solo_creador_autoriza:      true,
       canon_gratis_por_defecto:   modelo==="invitacion_gratis",
       residentes_campos_publicos: ["nombre","unidad","estado_cuota"],
     };
@@ -125,14 +140,16 @@ export default function CrearGrupo() {
       subcategoria_id: subSel?.id||null,
       creador_id:      session.user.id,
       reglas,
-      links:         links.split("\n").map(l=>l.trim()).filter(Boolean),
-      whatsapp_link: waLink||null,
-      imagen:        imagen_url||null,
+      lat:             lat||null,
+      lng:             lng||null,
+      links:           links.split("\n").map(l=>l.trim()).filter(Boolean),
+      whatsapp_link:   waAdmin ? (waAdmin.startsWith("https")?waAdmin:`https://wa.me/${waAdmin.replace(/\D/g,"")}`) : null,
+      imagen:          imagen_url||null,
       config,
-      activo:        true,
+      activo:          true,
     }).select().single();
 
-    if(error){ alert("Error: "+error.message); setGuardando(false); return; }
+    if(error){ alert("Error al crear el grupo: "+error.message); setGuardando(false); return; }
 
     await supabase.from("grupo_miembros").insert({
       grupo_id:    grupo.id,
@@ -146,8 +163,8 @@ export default function CrearGrupo() {
     router.push(`/grupos/${grupo.id}`);
   };
 
-  const progreso = ((step+1)/4)*100;
-  const modeloSel = MODELOS.find(m=>m.v===modelo)!;
+  const progreso    = ((step+1)/4)*100;
+  const modeloSel   = MODELOS.find(m=>m.v===modelo)!;
 
   return(
     <main style={{paddingTop:"95px",paddingBottom:"130px",background:"#f4f4f2",minHeight:"100vh",fontFamily:"'Nunito',sans-serif"}}>
@@ -156,9 +173,7 @@ export default function CrearGrupo() {
       {/* Cabecera */}
       <div style={{background:"linear-gradient(135deg,#1a2a3a,#243b55)",padding:"14px 16px 16px"}}>
         <div style={{display:"flex",alignItems:"center",gap:"10px",marginBottom:"12px"}}>
-          {step>0&&(
-            <button onClick={()=>setStep(s=>s-1)} style={{background:"rgba(255,255,255,0.1)",border:"none",borderRadius:"50%",width:"32px",height:"32px",color:"#fff",fontSize:"16px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>←</button>
-          )}
+          {step>0&&<button onClick={()=>setStep(s=>s-1)} style={{background:"rgba(255,255,255,0.1)",border:"none",borderRadius:"50%",width:"32px",height:"32px",color:"#fff",fontSize:"16px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>←</button>}
           <div style={{flex:1}}>
             <div style={{fontSize:"10px",fontWeight:700,color:"#d4a017",letterSpacing:"2px",textTransform:"uppercase"}}>Paso {step+1} de 4</div>
             <div style={{fontSize:"17px",fontWeight:900,color:"#fff",marginTop:"2px"}}>
@@ -176,41 +191,30 @@ export default function CrearGrupo() {
 
       <div style={{padding:"20px 16px"}}>
 
-        {/* ── STEP 0: MODELO DE ACCESO ── */}
+        {/* ── STEP 0: MODELO ── */}
         {step===0&&(
           <div>
             <div style={{fontSize:"13px",fontWeight:700,color:"#9a9a9a",marginBottom:"16px",lineHeight:1.5}}>
-              Elegí cómo se incorporan los miembros a tu grupo y quién paga el acceso.
+              Elegí cómo se incorporan los miembros y quién paga el acceso al grupo.
             </div>
             <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
               {MODELOS.map(o=>(
-                <button key={o.v} onClick={()=>setModelo(o.v)} style={{
-                  background:modelo===o.v?"linear-gradient(135deg,#1a2a3a,#243b55)":"#fff",
-                  border:`2px solid ${modelo===o.v?o.color:"#e8e8e6"}`,
-                  borderRadius:"16px",padding:"18px",textAlign:"left",cursor:"pointer",
-                  boxShadow:modelo===o.v?"0 4px 16px rgba(26,42,58,0.25)":"0 2px 8px rgba(0,0,0,0.05)",
-                  fontFamily:"'Nunito',sans-serif",width:"100%",
-                }}>
+                <button key={o.v} onClick={()=>setModelo(o.v)} style={{background:modelo===o.v?"linear-gradient(135deg,#1a2a3a,#243b55)":"#fff",border:`2px solid ${modelo===o.v?o.color:"#e8e8e6"}`,borderRadius:"16px",padding:"18px",textAlign:"left",cursor:"pointer",boxShadow:modelo===o.v?"0 4px 16px rgba(26,42,58,0.25)":"0 2px 8px rgba(0,0,0,0.05)",fontFamily:"'Nunito',sans-serif",width:"100%"}}>
                   <div style={{display:"flex",alignItems:"flex-start",gap:"12px"}}>
                     <span style={{fontSize:"30px",flexShrink:0}}>{o.icon}</span>
                     <div style={{flex:1}}>
                       <div style={{fontSize:"15px",fontWeight:900,color:modelo===o.v?"#f0c040":"#1a2a3a",marginBottom:"5px"}}>{o.titulo}</div>
                       <div style={{fontSize:"12px",fontWeight:600,color:modelo===o.v?"#8a9aaa":"#9a9a9a",lineHeight:1.5,marginBottom:"8px"}}>{o.desc}</div>
-                      <span style={{background:modelo===o.v?`${o.color}30`:"#f4f4f2",border:`1px solid ${modelo===o.v?o.color:"#e8e8e6"}`,borderRadius:"20px",padding:"3px 10px",fontSize:"11px",fontWeight:800,color:modelo===o.v?o.color:"#9a9a9a"}}>
-                        {o.badge}
-                      </span>
+                      <span style={{background:`${o.color}22`,border:`1px solid ${o.color}`,borderRadius:"20px",padding:"3px 10px",fontSize:"11px",fontWeight:800,color:o.color}}>{o.badge}</span>
                     </div>
-                    {modelo===o.v&&<span style={{fontSize:"20px",flexShrink:0}}>✅</span>}
+                    {modelo===o.v&&<span style={{fontSize:"20px"}}>✅</span>}
                   </div>
                 </button>
               ))}
             </div>
-            {/* Nota sobre pagos */}
             <div style={{background:"rgba(212,160,23,0.08)",border:"2px solid rgba(212,160,23,0.25)",borderRadius:"12px",padding:"12px 14px",marginTop:"14px"}}>
-              <div style={{fontSize:"12px",fontWeight:800,color:"#a07810",marginBottom:"4px"}}>💳 ¿Cómo funciona el pago?</div>
-              <div style={{fontSize:"12px",fontWeight:600,color:"#555",lineHeight:1.5}}>
-                Cuando un miembro acepta la invitación (o es aprobado), se genera automáticamente un <strong>link de pago</strong> de $500 para el BIT Grupo. Ese link te llega a vos si elegiste pagar como creador, o al miembro si eligió pagarlo él.
-              </div>
+              <div style={{fontSize:"12px",fontWeight:800,color:"#a07810",marginBottom:"4px"}}>💳 Link de pago automático</div>
+              <div style={{fontSize:"12px",fontWeight:600,color:"#555",lineHeight:1.5}}>Cuando un miembro acepta o es aprobado, se genera el link de pago de $500 automáticamente — hacia vos o hacia el miembro según lo que elegiste.</div>
             </div>
           </div>
         )}
@@ -218,9 +222,7 @@ export default function CrearGrupo() {
         {/* ── STEP 1: CATEGORÍA ── */}
         {step===1&&(
           <div>
-            <div style={{fontSize:"13px",fontWeight:700,color:"#9a9a9a",marginBottom:"16px"}}>
-              Elegí la categoría y subcategoría de tu grupo.
-            </div>
+            <div style={{fontSize:"13px",fontWeight:700,color:"#9a9a9a",marginBottom:"16px"}}>Elegí la categoría y subcategoría de tu grupo.</div>
             {categorias.length===0?(
               <div style={{textAlign:"center",padding:"40px",color:"#9a9a9a"}}>
                 <div style={{fontSize:"28px",marginBottom:"10px"}}>⏳</div>
@@ -230,13 +232,7 @@ export default function CrearGrupo() {
               <>
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px",marginBottom:"16px"}}>
                   {categorias.map(c=>(
-                    <button key={c.id} onClick={()=>{ setCatSel(c); setSubSel(null); }} style={{
-                      background:catSel?.id===c.id?"linear-gradient(135deg,#1a2a3a,#243b55)":"#fff",
-                      border:`2px solid ${catSel?.id===c.id?"#d4a017":"#e8e8e6"}`,
-                      borderRadius:"14px",padding:"16px 10px",cursor:"pointer",textAlign:"center",
-                      fontFamily:"'Nunito',sans-serif",
-                      boxShadow:catSel?.id===c.id?"0 4px 12px rgba(26,42,58,0.2)":"0 2px 6px rgba(0,0,0,0.05)",
-                    }}>
+                    <button key={c.id} onClick={()=>{setCatSel(c);setSubSel(null);}} style={{background:catSel?.id===c.id?"linear-gradient(135deg,#1a2a3a,#243b55)":"#fff",border:`2px solid ${catSel?.id===c.id?"#d4a017":"#e8e8e6"}`,borderRadius:"14px",padding:"16px 10px",cursor:"pointer",textAlign:"center",fontFamily:"'Nunito',sans-serif",boxShadow:catSel?.id===c.id?"0 4px 12px rgba(26,42,58,0.2)":"0 2px 6px rgba(0,0,0,0.05)"}}>
                       <div style={{fontSize:"28px",marginBottom:"6px"}}>{c.emoji}</div>
                       <div style={{fontSize:"12px",fontWeight:900,color:catSel?.id===c.id?"#f0c040":"#1a2a3a"}}>{c.nombre}</div>
                     </button>
@@ -248,18 +244,9 @@ export default function CrearGrupo() {
                       Subcategoría de {catSel.nombre} <span style={{color:"#bbb",fontWeight:600}}>(opcional)</span>
                     </div>
                     <div style={{display:"flex",flexWrap:"wrap",gap:"8px"}}>
-                      <button onClick={()=>setSubSel(null)} style={{
-                        background:!subSel?"#1a2a3a":"#f4f4f2",border:`2px solid ${!subSel?"#1a2a3a":"#e8e8e6"}`,
-                        borderRadius:"20px",padding:"6px 14px",fontSize:"12px",fontWeight:800,
-                        color:!subSel?"#d4a017":"#2c2c2e",cursor:"pointer",fontFamily:"'Nunito',sans-serif",
-                      }}>General</button>
+                      <button onClick={()=>setSubSel(null)} style={{background:!subSel?"#1a2a3a":"#f4f4f2",border:`2px solid ${!subSel?"#1a2a3a":"#e8e8e6"}`,borderRadius:"20px",padding:"6px 14px",fontSize:"12px",fontWeight:800,color:!subSel?"#d4a017":"#2c2c2e",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>General</button>
                       {subsDeCat.map(s=>(
-                        <button key={s.id} onClick={()=>setSubSel(s)} style={{
-                          background:subSel?.id===s.id?"#1a2a3a":"#f4f4f2",
-                          border:`2px solid ${subSel?.id===s.id?"#1a2a3a":"#e8e8e6"}`,
-                          borderRadius:"20px",padding:"6px 14px",fontSize:"12px",fontWeight:800,
-                          color:subSel?.id===s.id?"#d4a017":"#2c2c2e",cursor:"pointer",fontFamily:"'Nunito',sans-serif",
-                        }}>{s.emoji} {s.nombre}</button>
+                        <button key={s.id} onClick={()=>setSubSel(s)} style={{background:subSel?.id===s.id?"#1a2a3a":"#f4f4f2",border:`2px solid ${subSel?.id===s.id?"#1a2a3a":"#e8e8e6"}`,borderRadius:"20px",padding:"6px 14px",fontSize:"12px",fontWeight:800,color:subSel?.id===s.id?"#d4a017":"#2c2c2e",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>{s.emoji} {s.nombre}</button>
                       ))}
                     </div>
                   </div>
@@ -272,26 +259,75 @@ export default function CrearGrupo() {
         {/* ── STEP 2: DATOS ── */}
         {step===2&&(
           <div style={{display:"flex",flexDirection:"column",gap:"14px"}}>
+
+            {/* Foto — cámara + galería separados */}
             <div>
-              <div style={labelStyle}>Imagen del grupo</div>
-              <label style={{cursor:"pointer"}}>
-                <input type="file" accept="image/*" onChange={handleImagen} style={{display:"none"}}/>
-                <div style={{width:"100%",height:"140px",background:imagenPrev?"transparent":"linear-gradient(135deg,#1a2a3a,#243b55)",borderRadius:"16px",overflow:"hidden",display:"flex",alignItems:"center",justifyContent:"center",border:"2px dashed #d4a017",position:"relative"}}>
-                  {imagenPrev?<img src={imagenPrev} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
-                  :<div style={{textAlign:"center"}}><div style={{fontSize:"32px",marginBottom:"8px"}}>📷</div><div style={{fontSize:"12px",fontWeight:700,color:"#d4a017"}}>Tap para elegir imagen</div></div>}
-                  {imagenPrev&&<div style={{position:"absolute",bottom:"8px",right:"8px",background:"rgba(0,0,0,0.6)",borderRadius:"8px",padding:"4px 10px",fontSize:"11px",fontWeight:700,color:"#fff"}}>✏️ Cambiar</div>}
+              <div style={lblStyle}>Imagen del grupo</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px"}}>
+                <label style={{cursor:"pointer"}}>
+                  <input type="file" accept="image/*" capture="environment" onChange={handleImagen} style={{display:"none"}}/>
+                  <div style={{background:"linear-gradient(135deg,#1a2a3a,#243b55)",borderRadius:"14px",padding:"16px",textAlign:"center",border:"2px dashed rgba(212,160,23,0.4)"}}>
+                    <div style={{fontSize:"26px",marginBottom:"6px"}}>📷</div>
+                    <div style={{fontSize:"11px",fontWeight:800,color:"#d4a017"}}>Cámara</div>
+                  </div>
+                </label>
+                <label style={{cursor:"pointer"}}>
+                  <input type="file" accept="image/*" onChange={handleImagen} style={{display:"none"}}/>
+                  <div style={{background:"linear-gradient(135deg,#1a2a3a,#243b55)",borderRadius:"14px",padding:"16px",textAlign:"center",border:"2px dashed rgba(212,160,23,0.4)"}}>
+                    <div style={{fontSize:"26px",marginBottom:"6px"}}>🖼️</div>
+                    <div style={{fontSize:"11px",fontWeight:800,color:"#d4a017"}}>Galería</div>
+                  </div>
+                </label>
+              </div>
+              {imagenPrev&&(
+                <div style={{marginTop:"8px",position:"relative",borderRadius:"14px",overflow:"hidden",height:"120px"}}>
+                  <img src={imagenPrev} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+                  <button onClick={()=>{setImagen(null);setImagenPrev("");}} style={{position:"absolute",top:"6px",right:"6px",background:"rgba(0,0,0,0.6)",border:"none",borderRadius:"50%",width:"28px",height:"28px",color:"#fff",fontSize:"14px",cursor:"pointer"}}>✕</button>
                 </div>
-              </label>
+              )}
             </div>
+
             <Campo label="Nombre del grupo *" placeholder="Ej: Edificio Torres del Sol..." value={nombre} onChange={setNombre} max={80}/>
             <Campo label="Descripción" placeholder="¿De qué trata el grupo?" value={descripcion} onChange={setDescripcion} rows={3}/>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px"}}>
-              <Campo label="Ciudad *" placeholder="Ej: Rosario" value={ciudad} onChange={setCiudad}/>
-              <Campo label="Provincia" placeholder="Ej: Santa Fe" value={provincia} onChange={setProvincia}/>
+
+            {/* Dirección + geolocalización */}
+            <div>
+              <div style={lblStyle}>Ubicación</div>
+              <div style={{display:"flex",flexDirection:"column",gap:"8px"}}>
+                <div style={{display:"flex",gap:"8px"}}>
+                  <input type="text" value={direccion} onChange={e=>setDireccion(e.target.value)} placeholder="Dirección (opcional)" maxLength={120}
+                    style={{...iStyle,flex:1}}/>
+                </div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px"}}>
+                  <input type="text" value={ciudad} onChange={e=>setCiudad(e.target.value)} placeholder="Ciudad *" maxLength={60} style={iStyle}/>
+                  <input type="text" value={provincia} onChange={e=>setProvincia(e.target.value)} placeholder="Provincia" maxLength={60} style={iStyle}/>
+                </div>
+                <div style={{display:"flex",gap:"8px"}}>
+                  <button onClick={geolocalizarDireccion} disabled={geoLoading} style={{flex:1,background:"rgba(26,42,58,0.07)",border:"2px solid #e8e8e6",borderRadius:"12px",padding:"10px",fontSize:"12px",fontWeight:800,color:"#1a2a3a",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>
+                    {geoLoading?"⏳ Buscando...":"🔍 Geolocalizar dirección"}
+                  </button>
+                  <button onClick={usarGPS} disabled={geoLoading} style={{flex:1,background:lat?"rgba(0,168,132,0.1)":"rgba(26,42,58,0.07)",border:`2px solid ${lat?"#00a884":"#e8e8e6"}`,borderRadius:"12px",padding:"10px",fontSize:"12px",fontWeight:800,color:lat?"#00a884":"#1a2a3a",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>
+                    {lat?"📍 GPS ✅":"📍 Usar mi GPS"}
+                  </button>
+                </div>
+                {lat&&lng&&<div style={{fontSize:"11px",fontWeight:700,color:"#00a884",textAlign:"center"}}>✅ Coordenadas: {lat.toFixed(4)}, {lng.toFixed(4)}</div>}
+              </div>
             </div>
-            <Campo label="Reglas (opcional)" placeholder="Normas de convivencia..." value={reglas} onChange={setReglas} rows={3}/>
-            <Campo label="WhatsApp del grupo (opcional)" placeholder="https://chat.whatsapp.com/..." value={waLink} onChange={setWaLink}/>
-            <Campo label="Links útiles (uno por línea)" placeholder={"https://sitio.com\nhttps://otro.com"} value={links} onChange={setLinks} rows={2}/>
+
+            <Campo label="Reglas del grupo (opcional)" placeholder="Normas de convivencia..." value={reglas} onChange={setReglas} rows={3}/>
+
+            {/* WhatsApp del administrador */}
+            <div>
+              <div style={lblStyle}>WhatsApp del administrador</div>
+              <div style={{position:"relative"}}>
+                <span style={{position:"absolute",left:"12px",top:"50%",transform:"translateY(-50%)",fontSize:"16px",pointerEvents:"none"}}>📱</span>
+                <input type="tel" value={waAdmin} onChange={e=>setWaAdmin(e.target.value)} placeholder="Número o link (ej: 3413001234)"
+                  style={{...iStyle,paddingLeft:"36px"}}/>
+              </div>
+              <div style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600,marginTop:"4px"}}>Los miembros del grupo podrán contactarte directamente</div>
+            </div>
+
+            <Campo label="Links útiles (uno por línea, opcional)" placeholder={"https://sitio.com\nhttps://otro.com"} value={links} onChange={setLinks} rows={2}/>
           </div>
         )}
 
@@ -300,7 +336,7 @@ export default function CrearGrupo() {
           <div>
             {/* Resumen */}
             <div style={{background:"linear-gradient(135deg,#1a2a3a,#243b55)",borderRadius:"16px",padding:"16px",marginBottom:"16px"}}>
-              <div style={{display:"flex",alignItems:"center",gap:"10px",marginBottom:"8px"}}>
+              <div style={{display:"flex",alignItems:"center",gap:"10px",marginBottom:"10px"}}>
                 {catSel&&<span style={{fontSize:"26px"}}>{catSel.emoji}</span>}
                 <div>
                   <div style={{fontSize:"16px",fontWeight:900,color:"#fff"}}>{nombre}</div>
@@ -312,37 +348,37 @@ export default function CrearGrupo() {
               </span>
             </div>
 
-            <div style={{background:"#fff",borderRadius:"14px",padding:"16px",boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
-              <div style={labelStyle}>Permisos del grupo</div>
-              <TogleCfg label="Los miembros ven el detalle de otros" sub="Rol, BIT activo, estado de cuota" val={verDetalle} onChange={setVerDetalle}/>
-              {modelo==="solicitud_libre"&&<TogleCfg label="Cualquier miembro puede invitar" sub="No solo vos como creador" val={miembrosInv} onChange={setMiembrosInv}/>}
+            <div style={{background:"#fff",borderRadius:"14px",padding:"16px",boxShadow:"0 2px 8px rgba(0,0,0,0.06)",marginBottom:"12px"}}>
+              <div style={{...lblStyle,marginBottom:"12px"}}>Permisos del grupo</div>
+              <TogleCfg
+                label="Los miembros ven el detalle de otros"
+                sub="Nombre, rol, BIT activo, estado de cuota"
+                val={verDetalle} onChange={setVerDetalle}
+              />
+              {/* Invitaciones siempre con autorización del creador */}
+              <div style={{padding:"10px 0",borderBottom:"1px solid #f5f5f5"}}>
+                <div style={{fontSize:"13px",fontWeight:800,color:"#1a2a3a"}}>📨 Los miembros pueden invitar personas</div>
+                <div style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600,marginTop:"2px",lineHeight:1.4}}>Pueden sugerir invitados, pero <strong>solo vos autorizás</strong> el ingreso final desde el Panel Admin.</div>
+              </div>
             </div>
 
-            <div style={{background:"rgba(212,160,23,0.08)",border:"2px solid rgba(212,160,23,0.3)",borderRadius:"14px",padding:"14px",marginTop:"12px"}}>
+            <div style={{background:"rgba(212,160,23,0.08)",border:"2px solid rgba(212,160,23,0.3)",borderRadius:"14px",padding:"14px"}}>
               <div style={{fontSize:"12px",fontWeight:800,color:"#a07810",marginBottom:"4px"}}>👑 Sos el creador del grupo</div>
-              <div style={{fontSize:"12px",fontWeight:600,color:"#555",lineHeight:1.5}}>
-                Accedés al Panel Admin para gestionar miembros, aprobar solicitudes, invitar personas y configurar todos los permisos del grupo.
-              </div>
+              <div style={{fontSize:"12px",fontWeight:600,color:"#555",lineHeight:1.5}}>Accedés al Panel Admin para gestionar miembros, aprobar solicitudes, invitar personas y configurar todos los permisos.</div>
             </div>
           </div>
         )}
 
-        {/* Botón */}
+        {/* Botón avanzar / crear */}
         <div style={{marginTop:"24px"}}>
           {step<3?(
-            <button onClick={()=>setStep(s=>s+1)} disabled={!puedeAvanzar[step]} style={{
-              width:"100%",background:puedeAvanzar[step]?"linear-gradient(135deg,#f0c040,#d4a017)":"#f0f0f0",
-              border:"none",borderRadius:"14px",padding:"15px",fontSize:"15px",fontWeight:900,
-              color:puedeAvanzar[step]?"#1a2a3a":"#bbb",cursor:puedeAvanzar[step]?"pointer":"not-allowed",
-              fontFamily:"'Nunito',sans-serif",boxShadow:puedeAvanzar[step]?"0 4px 0 #a07810":"none",
-            }}>Siguiente →</button>
+            <button onClick={()=>setStep(s=>s+1)} disabled={!puedeAvanzar[step]} style={{width:"100%",background:puedeAvanzar[step]?"linear-gradient(135deg,#f0c040,#d4a017)":"#f0f0f0",border:"none",borderRadius:"14px",padding:"15px",fontSize:"15px",fontWeight:900,color:puedeAvanzar[step]?"#1a2a3a":"#bbb",cursor:puedeAvanzar[step]?"pointer":"not-allowed",fontFamily:"'Nunito',sans-serif",boxShadow:puedeAvanzar[step]?"0 4px 0 #a07810":"none"}}>
+              Siguiente →
+            </button>
           ):(
-            <button onClick={guardar} disabled={guardando} style={{
-              width:"100%",background:guardando?"#f0f0f0":"linear-gradient(135deg,#f0c040,#d4a017)",
-              border:"none",borderRadius:"14px",padding:"15px",fontSize:"15px",fontWeight:900,
-              color:guardando?"#bbb":"#1a2a3a",cursor:guardando?"not-allowed":"pointer",
-              fontFamily:"'Nunito',sans-serif",boxShadow:guardando?"none":"0 4px 0 #a07810",
-            }}>{guardando?"Creando grupo...":"✅ Crear grupo"}</button>
+            <button onClick={guardar} disabled={guardando} style={{width:"100%",background:guardando?"#f0f0f0":"linear-gradient(135deg,#f0c040,#d4a017)",border:"none",borderRadius:"14px",padding:"15px",fontSize:"15px",fontWeight:900,color:guardando?"#bbb":"#1a2a3a",cursor:guardando?"not-allowed":"pointer",fontFamily:"'Nunito',sans-serif",boxShadow:guardando?"none":"0 4px 0 #a07810"}}>
+              {guardando?"Creando grupo...":"✅ Crear grupo"}
+            </button>
           )}
         </div>
       </div>
@@ -351,13 +387,15 @@ export default function CrearGrupo() {
   );
 }
 
+// ── Mini componentes ──────────────────────────────────────────────────────────
 function Campo({label,placeholder,value,onChange,max,rows}:{label:string;placeholder:string;value:string;onChange:(v:string)=>void;max?:number;rows?:number}) {
-  const s:React.CSSProperties={border:"2px solid #e8e8e8",borderRadius:"12px",padding:"12px 14px",fontSize:"14px",fontFamily:"'Nunito',sans-serif",outline:"none",color:"#1a2a3a",width:"100%",boxSizing:"border-box",background:"#fff",resize:"none"};
   return(
     <div>
-      <div style={labelStyle}>{label}</div>
-      {rows?<textarea value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder} rows={rows} maxLength={max||1000} style={s}/>
-           :<input type="text" value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder} maxLength={max||200} style={s}/>}
+      <div style={lblStyle}>{label}</div>
+      {rows
+        ?<textarea value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder} rows={rows} maxLength={max||1000} style={{...iStyle,resize:"none"}}/>
+        :<input    value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder} maxLength={max||200} style={iStyle}/>
+      }
     </div>
   );
 }
@@ -374,4 +412,5 @@ function TogleCfg({label,sub,val,onChange}:{label:string;sub:string;val:boolean;
     </div>
   );
 }
-const labelStyle:React.CSSProperties={fontSize:"11px",fontWeight:800,color:"#9a9a9a",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"6px"};
+const lblStyle:React.CSSProperties = {fontSize:"11px",fontWeight:800,color:"#9a9a9a",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"6px"};
+const iStyle:React.CSSProperties   = {border:"2px solid #e8e8e8",borderRadius:"12px",padding:"12px 14px",fontSize:"14px",fontFamily:"'Nunito',sans-serif",outline:"none",color:"#1a2a3a",width:"100%",boxSizing:"border-box",background:"#fff"};

@@ -1,4 +1,5 @@
 "use client";
+import React from "react";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
 import { useState, useEffect } from "react";
@@ -200,9 +201,21 @@ export default function Usuario() {
   const bitsNexonet   = perfil?.bits                 || 0;
   const bitsPromotor  = perfil?.bits_promo           || 0;
   const bitsFree      = perfil?.bits_free            || 0;
+  const bitsBusquedas = perfil?.bits_busquedas       || 0;
+  const bitsGrupo     = perfil?.bits_grupo           || 0;
   const bitsGastados  = perfil?.bits_gastados        || 0;
   const promoGastados = perfil?.bits_promo_gastados  || 0;
   const freeGastados  = perfil?.bits_free_gastados   || 0;
+  // Desglose NexoNet
+  const gastAnuncios  = perfil?.bits_gastados_anuncios  || 0;
+  const gastConexion  = perfil?.bits_gastados_conexion  || 0;
+  const gastLink      = perfil?.bits_gastados_link      || 0;
+  const gastFlash     = perfil?.bits_gastados_flash     || 0;
+  const gastBusquedas = perfil?.bits_gastados_busquedas || 0;
+  const gastGrupo     = perfil?.bits_gastados_grupo     || 0;
+  // Desglose Promotor
+  const promoGanados  = perfil?.bits_promo_ganados   || 0;
+  const promoReembolso= perfil?.bits_promo_reembolso || 0;
   const totalConsum   = bitsGastados + promoGastados + freeGastados;
   const estrellas     = bitsGastados + (perfil?.bits_promo_total || 0);
   const totalVistas   = perfil?.total_vistas         || 0;
@@ -280,32 +293,20 @@ export default function Usuario() {
               </div>
               {/* ── BOTÓN CARGAR BIT → abre popup ── */}
               <button onClick={()=>setPopupBits(true)} style={{ width:"100%", background:"linear-gradient(135deg,#f0c040,#d4a017)", border:"none", borderRadius:"12px", padding:"14px", fontSize:"15px", fontWeight:900, color:"#1a2a3a", cursor:"pointer", fontFamily:"'Nunito',sans-serif", boxShadow:"0 4px 0 #a07810", letterSpacing:"0.5px" }}>
-                ⚡ Cargar BIT
+                🔍 BIT Búsquedas Automáticas
               </button>
             </div>
 
-            <div style={{ background:"#fff", borderRadius:"16px", padding:"16px", boxShadow:"0 2px 12px rgba(0,0,0,0.06)" }}>
-              <div style={{ fontSize:"11px", fontWeight:800, color:"#9a9a9a", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"14px" }}>📦 Desglose de BIT</div>
-              {[
-                { label:"BIT NexoNet",      disp:bitsNexonet,  cons:bitsGastados,   color:"#d4a017", desc:"Comprados",     emoji:"💛" },
-                { label:"BIT NexoPromotor", disp:bitsPromotor, cons:promoGastados,  color:"#27ae60", desc:"Por referidos", emoji:"💚", badge:"Reembolsable" },
-                { label:"BIT NexoFree",     disp:bitsFree,     cons:freeGastados,   color:"#2980b9", desc:"Asignados",     emoji:"💙" },
-              ].map(b => (
-                <div key={b.label} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 0", borderBottom:"1px solid #f0f0f0" }}>
-                  <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
-                    <div style={{ width:"36px", height:"36px", borderRadius:"10px", background:`${b.color}18`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"18px" }}>{b.emoji}</div>
-                    <div>
-                      <div style={{ fontSize:"13px", fontWeight:800, color:"#1a2a3a" }}>{b.label}</div>
-                      <div style={{ fontSize:"10px", color:"#9a9a9a", fontWeight:600 }}>{b.desc}{b.badge ? <span style={{ marginLeft:"6px", background:"#e8f8ee", color:"#27ae60", borderRadius:"6px", padding:"1px 6px", fontSize:"9px", fontWeight:800 }}>{b.badge}</span> : null}</div>
-                    </div>
-                  </div>
-                  <div style={{ textAlign:"right" }}>
-                    <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"20px", color:b.color }}>{b.disp.toLocaleString()}</div>
-                    <div style={{ fontSize:"10px", color:"#bbb", fontWeight:600 }}>{b.cons.toLocaleString()} usados</div>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <DesglosePanel
+              bitsNexonet={bitsNexonet} bitsGastados={bitsGastados}
+              gastAnuncios={gastAnuncios} gastConexion={gastConexion}
+              gastLink={gastLink} gastFlash={gastFlash}
+              bitsPromotor={bitsPromotor} promoGastados={promoGastados}
+              promoGanados={promoGanados} promoReembolso={promoReembolso}
+              bitsFree={bitsFree} freeGastados={freeGastados}
+              bitsBusquedas={bitsBusquedas} gastBusquedas={gastBusquedas}
+              bitsGrupo={bitsGrupo} gastGrupo={gastGrupo}
+            />
 
             <div style={{ background:"#fff", borderRadius:"16px", padding:"16px", boxShadow:"0 2px 12px rgba(0,0,0,0.06)" }}>
               <div style={{ fontSize:"11px", fontWeight:800, color:"#9a9a9a", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"14px" }}>💳 Formas de pago</div>
@@ -675,7 +676,7 @@ export default function Usuario() {
       {popupBits && (
         <PopupCompra
           tipo="general"
-          tituloAccion="⚡ Cargar BIT"
+          tituloAccion="🔍 BIT Búsquedas Automáticas"
           bitsDisponibles={{ nexo: bitsNexonet, promo: bitsPromotor, free: bitsFree }}
           onClose={() => setPopupBits(false)}
         />
@@ -683,6 +684,119 @@ export default function Usuario() {
 
       <BottomNav />
     </main>
+  );
+}
+
+function DesglosePanel({
+  bitsNexonet, bitsGastados, gastAnuncios, gastConexion, gastLink, gastFlash,
+  bitsPromotor, promoGastados, promoGanados, promoReembolso,
+  bitsFree, freeGastados, bitsBusquedas, gastBusquedas, bitsGrupo, gastGrupo,
+}:{
+  bitsNexonet:number; bitsGastados:number; gastAnuncios:number; gastConexion:number;
+  gastLink:number; gastFlash:number; bitsPromotor:number; promoGastados:number;
+  promoGanados:number; promoReembolso:number; bitsFree:number; freeGastados:number;
+  bitsBusquedas:number; gastBusquedas:number; bitsGrupo:number; gastGrupo:number;
+}) {
+  const [exp, setExp] = React.useState<string|null>(null);
+  const toggle = (k:string) => setExp(e => e===k ? null : k);
+
+  const filas = [
+    {
+      key:"nexo", emoji:"💛", color:"#d4a017", label:"BIT NexoNet",
+      desc:"Comprados", disp:bitsNexonet, cons:bitsGastados,
+      detalle:[
+        { l:"Anuncios consumidos",        v:gastAnuncios,  c:"#d4a017" },
+        { l:"Conexión consumidos",        v:gastConexion,  c:"#3a7bd5" },
+        { l:"Links consumidos",           v:gastLink,      c:"#8e44ad" },
+        { l:"Promo Flash consumidos",     v:gastFlash,     c:"#e67e22" },
+        { l:"Total disponible",           v:bitsNexonet,   c:"#27ae60" },
+      ]
+    },
+    {
+      key:"promo", emoji:"💚", color:"#27ae60", label:"BIT NexoPromotor",
+      desc:"Por referidos", disp:bitsPromotor, cons:promoGastados, badge:"Reembolsable",
+      detalle:[
+        { l:"BIT ganados (total histórico)", v:promoGanados,   c:"#27ae60" },
+        { l:"BIT consumidos",                v:promoGastados,  c:"#e74c3c" },
+        { l:"BIT disponible para reembolso", v:promoReembolso, c:"#27ae60" },
+        { l:"BIT disponible",                v:bitsPromotor,   c:"#27ae60" },
+      ]
+    },
+    {
+      key:"free", emoji:"💙", color:"#2980b9", label:"BIT NexoFree",
+      desc:"Asignados — Respaldo garantizado", disp:bitsFree, cons:freeGastados,
+      detalle:[
+        { l:"BIT activos disponibles", v:bitsFree,     c:"#2980b9" },
+        { l:"BIT consumidos",          v:freeGastados, c:"#e74c3c" },
+      ]
+    },
+    {
+      key:"busq", emoji:"🔍", color:"#16a085", label:"BIT Búsquedas Automáticas",
+      desc:"Para recibir matches automáticos", disp:bitsBusquedas, cons:gastBusquedas,
+      detalle:[
+        { l:"BIT disponibles",  v:bitsBusquedas, c:"#16a085" },
+        { l:"BIT consumidos",   v:gastBusquedas, c:"#e74c3c" },
+      ]
+    },
+    {
+      key:"grupo", emoji:"👥", color:"#8e44ad", label:"BIT Grupo",
+      desc:"Para ingresar o invitar a grupos · $500 BIT c/u", disp:bitsGrupo, cons:gastGrupo,
+      detalle:[
+        { l:"BIT disponibles",  v:bitsGrupo, c:"#8e44ad" },
+        { l:"BIT consumidos",   v:gastGrupo, c:"#e74c3c" },
+      ]
+    },
+  ];
+
+  return (
+    <div style={{ background:"#fff", borderRadius:"16px", padding:"16px", boxShadow:"0 2px 12px rgba(0,0,0,0.06)" }}>
+      <div style={{ fontSize:"11px", fontWeight:800, color:"#9a9a9a", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"14px" }}>📦 Desglose de BIT</div>
+      {filas.map((b, idx) => (
+        <div key={b.key}>
+          <button onClick={()=>toggle(b.key)}
+            style={{ width:"100%", background:"none", border:"none", padding:"10px 0",
+                     borderBottom: exp===b.key ? "none" : idx < filas.length-1 ? "1px solid #f0f0f0" : "none",
+                     cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"space-between",
+                     fontFamily:"'Nunito',sans-serif" }}>
+            <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
+              <div style={{ width:"36px", height:"36px", borderRadius:"10px", background:`${b.color}18`,
+                             display:"flex", alignItems:"center", justifyContent:"center", fontSize:"18px",
+                             flexShrink:0 }}>{b.emoji}</div>
+              <div style={{ textAlign:"left" }}>
+                <div style={{ display:"flex", alignItems:"center", gap:"6px" }}>
+                  <div style={{ fontSize:"13px", fontWeight:800, color:"#1a2a3a" }}>{b.label}</div>
+                  {b.badge && <span style={{ background:"#e8f8ee", color:"#27ae60", borderRadius:"6px", padding:"1px 6px", fontSize:"9px", fontWeight:800 }}>{b.badge}</span>}
+                </div>
+                <div style={{ fontSize:"10px", color:"#9a9a9a", fontWeight:600 }}>{b.desc}</div>
+              </div>
+            </div>
+            <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
+              <div style={{ textAlign:"right" }}>
+                <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"20px", color:b.color }}>{b.disp.toLocaleString()}</div>
+                <div style={{ fontSize:"10px", color:"#bbb", fontWeight:600 }}>{b.cons.toLocaleString()} usados</div>
+              </div>
+              <span style={{ fontSize:"16px", color:"#d4a017", transition:"transform .2s",
+                             transform: exp===b.key ? "rotate(180deg)" : "rotate(0deg)",
+                             display:"inline-block" }}>▾</span>
+            </div>
+          </button>
+
+          {exp === b.key && (
+            <div style={{ background:`${b.color}08`, borderRadius:"12px", padding:"12px 14px",
+                           marginBottom:"8px", borderLeft:`3px solid ${b.color}40` }}>
+              {b.detalle.map(d => (
+                <div key={d.l} style={{ display:"flex", justifyContent:"space-between", alignItems:"center",
+                                         padding:"6px 0", borderBottom:"1px solid rgba(0,0,0,0.04)" }}>
+                  <span style={{ fontSize:"12px", fontWeight:700, color:"#555" }}>{d.l}</span>
+                  <span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"18px", color:d.c,
+                                  letterSpacing:"1px" }}>{d.v.toLocaleString()}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
   );
 }
 

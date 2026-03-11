@@ -54,7 +54,7 @@ export async function matchBusquedas(anuncio: any) {
       anuncio_id: anuncio.id,
       tipo:       "match_busqueda",
       mensaje:    `🔍 Encontramos un anuncio que coincide con "${b.titulo || "tu búsqueda"}": "${anuncio.titulo}"`,
-    }).catch(() => {});
+    });
     await supabase.from("busquedas_automaticas").update({
       notificaciones_recibidas: (b.notificaciones_recibidas || 0) + 1,
     }).eq("id", b.id);

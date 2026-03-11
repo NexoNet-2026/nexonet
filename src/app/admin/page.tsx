@@ -39,7 +39,7 @@ export default function AdminGrupos() {
       // Verificar si es admin por email o por código de usuario
       supabase.from("usuarios").select("codigo,plan").eq("id",s.user.id).single()
         .then(({data})=>{
-          const esAdmin = data?.codigo==="NXN-00001" || data?.codigo==="NXN-00002" || data?.plan==="nexoempresa";
+          const esAdmin = data?.codigo==="NXN-00001" || data?.codigo==="NXN-00003" || data?.plan==="nexoempresa";
           if(!esAdmin){ router.push("/"); return; }
           setAutorizado(true);
           cargar();

@@ -34,6 +34,7 @@ export default function MisAnuncios() {
   const [session,   setSession]   = useState<any>(null);
 
   const [popupPlan,  setPopupPlan]  = useState(false);
+  const [popupBits,  setPopupBits]  = useState(false);
   const [popupLink,  setPopupLink]  = useState<string | null>(null);
   const [popupAdj,   setPopupAdj]   = useState<string | null>(null);
   const [popupFlash, setPopupFlash] = useState<string | null>(null);
@@ -243,6 +244,30 @@ export default function MisAnuncios() {
                      borderRadius:"8px", padding:"4px 10px", fontSize:"11px", fontWeight:800,
                      color:"#d4a017", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
             AMPLIAR
+          </button>
+        </div>
+        {/* BIT BALANCE + CARGAR */}
+        <div style={{ marginTop:"8px", background:"rgba(255,255,255,0.05)", borderRadius:"10px",
+                       padding:"10px 14px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+          <div style={{ display:"flex", gap:"16px" }}>
+            <div style={{ textAlign:"center" }}>
+              <div style={{ fontSize:"17px", fontWeight:900, color:"#d4a017" }}>{bitsNexo}</div>
+              <div style={{ fontSize:"9px", color:"#8a9aaa", fontWeight:700, textTransform:"uppercase" }}>Nexo</div>
+            </div>
+            <div style={{ textAlign:"center" }}>
+              <div style={{ fontSize:"17px", fontWeight:900, color:"#27ae60" }}>{bitsPromo}</div>
+              <div style={{ fontSize:"9px", color:"#8a9aaa", fontWeight:700, textTransform:"uppercase" }}>Promo</div>
+            </div>
+            <div style={{ textAlign:"center" }}>
+              <div style={{ fontSize:"17px", fontWeight:900, color:"#3a7bd5" }}>{bitsFree}</div>
+              <div style={{ fontSize:"9px", color:"#8a9aaa", fontWeight:700, textTransform:"uppercase" }}>Free</div>
+            </div>
+          </div>
+          <button onClick={() => setPopupBits(true)}
+            style={{ background:"linear-gradient(135deg,#3a7bd5,#2962b0)", border:"none", borderRadius:"10px",
+                     padding:"8px 16px", fontSize:"12px", fontWeight:900, color:"#fff",
+                     cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
+            ⚡ Cargar BIT
           </button>
         </div>
       </div>
@@ -662,6 +687,12 @@ export default function MisAnuncios() {
       )}
 
       {/* POPUPS */}
+      {popupBits && (
+        <PopupCompra tipo="general" tituloAccion="⚡ Cargar BIT"
+          bitsDisponibles={{ nexo: bitsNexo, promo: bitsPromo, free: bitsFree }}
+          onClose={() => setPopupBits(false)} />
+      )}
+
       {popupPlan && (
         <PopupCompra tipo="anuncio" tituloAccion="BIT Anuncios — Ampliar plan"
           bitsDisponibles={{ nexo: bitsNexo, promo: bitsPromo, free: bitsFree }}

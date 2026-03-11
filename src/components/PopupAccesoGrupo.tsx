@@ -1,6 +1,5 @@
 "use client";
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
 type Props = {
@@ -16,7 +15,6 @@ type Props = {
 };
 
 export default function PopupAccesoGrupo({ grupo, userId, onClose, onExito }: Props) {
-  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [exito,   setExito]   = useState(false);
 
@@ -67,9 +65,9 @@ export default function PopupAccesoGrupo({ grupo, userId, onClose, onExito }: Pr
       }, { onConflict: "grupo_id,usuario_id" });
 
       // Incrementar contador
-      await supabase.rpc("incrementar_miembros", { gid: grupo.id }).catch(()=>
-        supabase.from("grupos").update({ miembros_count: (grupo as any).miembros_count + 1 }).eq("id", grupo.id)
-      );
+      await supabase.from("grupos")
+        .update({ miembros_count: (grupo as any).miembros_count + 1 })
+        .eq("id", grupo.id);
     } else {
       // Grupo cerrado: crear solicitud
       const yaExiste = await supabase.from("grupo_miembros")
@@ -97,7 +95,7 @@ export default function PopupAccesoGrupo({ grupo, userId, onClose, onExito }: Pr
           emisor_id:  userId,
           tipo:       "solicitud_grupo",
           mensaje:    `Solicitud de acceso al grupo "${grupo.nombre}"`,
-        }).then(()=>{}).catch(()=>{});
+        });
       }
     }
 

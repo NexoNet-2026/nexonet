@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import PopupCompra from "@/components/PopupCompra";
+import { matchBusquedas } from "@/lib/matchBusquedas";
 
 type Rubro = { id: number; nombre: string };
 type Subrubro = { id: number; nombre: string; rubro_id: number };
@@ -52,7 +53,7 @@ export default function Publicar() {
   const [previews, setPreviews] = useState<string[]>([]);
 
   // ── Links ──
-  const [linksHabilitados, setLinksHabilitados] = useState(false); // true si pagó
+  const [linksHabilitados, setLinksHabilitados] = useState(false);
   const [links, setLinks] = useState<string[]>([""]);
   const [linkExpandido, setLinkExpandido] = useState<number|null>(null);
   const [popupLink, setPopupLink] = useState(false);
@@ -79,6 +80,21 @@ export default function Publicar() {
       ]);
       if (r) setRubros(r);
       if (s) setSubrubros(s);
+
+      // Cargar bits del usuario
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        const { data: u } = await supabase
+          .from("usuarios")
+          .select("bits, bits_promo, bits_free")
+          .eq("id", session.user.id)
+          .single();
+        if (u) {
+          setBitsNexo(u.bits || 0);
+          setBitsPromo(u.bits_promo || 0);
+          setBitsFree(u.bits_free || 0);
+        }
+      }
     };
     cargar();
   }, []);
@@ -143,10 +159,8 @@ export default function Publicar() {
     setPreviews(nf.map(f => URL.createObjectURL(f)));
   };
 
-  // ── Links handlers ──
   const actualizarLink = (i:number, val:string) => {
     const arr = [...links]; arr[i] = val; setLinks(arr);
-    // Si el último tiene texto, agregar uno vacío
     if (i === links.length-1 && val.trim() !== "") setLinks([...arr, ""]);
   };
   const eliminarLink = (i:number) => {
@@ -154,7 +168,6 @@ export default function Publicar() {
     setLinks(arr.length ? arr : [""]);
   };
 
-  // ── Archivos handlers ──
   const agregarArchivo = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (archivos.length + files.length > 5) { alert("Máximo 5 archivos"); return; }
@@ -185,25 +198,28 @@ export default function Publicar() {
 
     const linksLimpios = links.filter(l => l.trim() !== "");
 
-    const { data:anuncio, error } = await supabase.from("anuncios").insert({
-      usuario_id: session.user.id,
+    // ── INSERT con bits_conexion: 100 gratis al crear ──
+    const { data: anuncio, error } = await supabase.from("anuncios").insert({
+      usuario_id:  session.user.id,
       subrubro_id: subrubroSeleccionado?.id,
-      titulo: form.titulo,
+      titulo:      form.titulo,
       descripcion: form.descripcion,
-      precio: form.precio ? parseFloat(form.precio) : null,
-      moneda: form.moneda,
-      ciudad: form.ciudad,
-      provincia: form.provincia,
-      imagenes: [],
-      estado: "activo",
-      lat: coordenadas?.lat || null,
-      lng: coordenadas?.lng || null,
-      links: linksLimpios.length ? linksLimpios : null,
-      permuto: permuto,
+      precio:      form.precio ? parseFloat(form.precio) : null,
+      moneda:      form.moneda,
+      ciudad:      form.ciudad,
+      provincia:   form.provincia,
+      imagenes:    [],
+      estado:      "activo",
+      lat:         coordenadas?.lat || null,
+      lng:         coordenadas?.lng || null,
+      links:       linksLimpios.length ? linksLimpios : null,
+      permuto:     permuto,
+      bits_conexion: 100,   // ← 100 BIT gratis para NexoFree
     }).select().single();
 
     if (error || !anuncio) { alert("Error al publicar: " + (error?.message || "sin datos")); setLoading(false); return; }
 
+    // ── Subir fotos ──
     if (fotos.length > 0) {
       setSubiendo(true);
       try {
@@ -212,6 +228,9 @@ export default function Publicar() {
       } catch(e) { console.error(e); }
       setSubiendo(false);
     }
+
+    // ── Matching automático con búsquedas activas ──
+    await matchBusquedas(anuncio);
 
     setLoading(false);
     router.push(`/anuncios/${anuncio.id}`);
@@ -393,6 +412,19 @@ export default function Publicar() {
         {paso==="datos" && (
           <div style={{ display:"flex", flexDirection:"column", gap:"14px" }}>
 
+            {/* Info BIT gratis */}
+            <div style={{ background:"linear-gradient(135deg,#0d3d30,#16a085)", borderRadius:"14px", padding:"14px 16px", display:"flex", alignItems:"center", gap:"12px" }}>
+              <span style={{ fontSize:"28px" }}>🎁</span>
+              <div>
+                <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"16px", color:"#fff", letterSpacing:"1px" }}>
+                  100 BIT Conexión gratis
+                </div>
+                <div style={{ fontSize:"11px", color:"rgba(255,255,255,0.7)", fontWeight:600 }}>
+                  Cada anuncio nuevo recibe 100 BIT para recibir conexiones
+                </div>
+              </div>
+            </div>
+
             {/* TÍTULO Y DESCRIPCIÓN */}
             <div style={cardStyle}>
               <Campo label="Título *" value={form.titulo} onChange={v => setForm({...form,titulo:v})} placeholder="Ej: iPhone 14 Pro 128GB" />
@@ -409,9 +441,7 @@ export default function Publicar() {
               </div>
 
               {/* PERMUTO */}
-              <div
-                onClick={() => setPermuto(v => !v)}
-                style={{ display:"flex", alignItems:"center", gap:"12px", padding:"12px 14px", background: permuto ? "rgba(212,160,23,0.1)" : "#f9f9f9", borderRadius:"12px", border: permuto ? "2px solid #d4a017" : "2px solid #e8e8e6", cursor:"pointer", marginTop:"4px" }}>
+              <div onClick={() => setPermuto(v => !v)} style={{ display:"flex", alignItems:"center", gap:"12px", padding:"12px 14px", background: permuto ? "rgba(212,160,23,0.1)" : "#f9f9f9", borderRadius:"12px", border: permuto ? "2px solid #d4a017" : "2px solid #e8e8e6", cursor:"pointer", marginTop:"4px" }}>
                 <div style={{ width:"24px", height:"24px", borderRadius:"6px", background: permuto ? "#d4a017" : "#e8e8e6", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"14px", flexShrink:0, transition:"background .2s" }}>
                   {permuto ? "✓" : ""}
                 </div>
@@ -477,7 +507,7 @@ export default function Publicar() {
               )}
             </div>
 
-            {/* ── LINKS ── */}
+            {/* LINKS */}
             <div style={cardStyle}>
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"14px" }}>
                 <h3 style={{...subtituloStyle, marginBottom:0}}>🔗 Links multimedia</h3>
@@ -487,7 +517,6 @@ export default function Publicar() {
                   </button>
                 )}
               </div>
-
               {!linksHabilitados ? (
                 <div style={{ background:"#f9f7f0", borderRadius:"12px", padding:"14px", border:"2px dashed #e8d5a0" }}>
                   <div style={{ fontSize:"12px", color:"#9a9a9a", fontWeight:600, textAlign:"center", marginBottom:"8px" }}>
@@ -496,7 +525,6 @@ export default function Publicar() {
                   <div style={{ display:"flex", justifyContent:"center", gap:"10px", fontSize:"22px" }}>
                     {["▶️","📸","👤","🛍️","🔗"].map(i => <span key={i}>{i}</span>)}
                   </div>
-                  {/* DEMO: botón para habilitar sin pagar (en producción esto lo habilita el backend tras el pago) */}
                   <button onClick={() => setPopupLink(true)} style={{ width:"100%", marginTop:"12px", background:"linear-gradient(135deg,#d4a017,#f0c040)", border:"none", borderRadius:"10px", padding:"10px", fontSize:"12px", fontWeight:800, color:"#1a2a3a", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
                     💰 Comprar para habilitar — $500
                   </button>
@@ -510,21 +538,14 @@ export default function Publicar() {
                       <div key={i}>
                         <div style={{ display:"flex", gap:"8px", alignItems:"center" }}>
                           {tieneLink && <span style={{ fontSize:"18px", flexShrink:0 }}>{LINK_ICONOS[tipo]}</span>}
-                          <input
-                            type="url"
-                            value={link}
-                            onChange={e => actualizarLink(i, e.target.value)}
-                            placeholder="Pegá el link (YouTube, Instagram, etc)"
-                            style={{...inputStyle, flex:1, fontSize:"13px", padding:"10px 12px"}}
-                          />
+                          <input type="url" value={link} onChange={e => actualizarLink(i, e.target.value)} placeholder="Pegá el link (YouTube, Instagram, etc)" style={{...inputStyle, flex:1, fontSize:"13px", padding:"10px 12px"}} />
                           {tieneLink && (
                             <>
-                              <button onClick={() => setLinkExpandido(i)} title="Ver" style={{ background:"#1a2a3a", border:"none", borderRadius:"8px", width:"36px", height:"36px", color:"#d4a017", fontSize:"16px", cursor:"pointer", flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center" }}>⛶</button>
+                              <button onClick={() => setLinkExpandido(i)} style={{ background:"#1a2a3a", border:"none", borderRadius:"8px", width:"36px", height:"36px", color:"#d4a017", fontSize:"16px", cursor:"pointer", flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center" }}>⛶</button>
                               <button onClick={() => eliminarLink(i)} style={{ background:"rgba(231,76,60,0.1)", border:"2px solid rgba(231,76,60,0.2)", borderRadius:"8px", width:"36px", height:"36px", color:"#e74c3c", fontSize:"16px", cursor:"pointer", flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center" }}>✕</button>
                             </>
                           )}
                         </div>
-                        {/* PREVIEW EMBED */}
                         {tieneLink && embedUrl && (
                           <div style={{ marginTop:"8px", borderRadius:"12px", overflow:"hidden", border:"2px solid #e8e8e6", position:"relative" }}>
                             <iframe src={embedUrl} style={{ width:"100%", aspectRatio:"16/9", border:"none", display:"block" }} allowFullScreen />
@@ -548,7 +569,7 @@ export default function Publicar() {
               )}
             </div>
 
-            {/* ── ARCHIVOS ── */}
+            {/* ARCHIVOS */}
             <div style={cardStyle}>
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"14px" }}>
                 <h3 style={{...subtituloStyle, marginBottom:0}}>📎 Archivos adjuntos</h3>
@@ -558,7 +579,6 @@ export default function Publicar() {
                   </button>
                 )}
               </div>
-
               {!archivosHabilitados ? (
                 <div style={{ background:"#f9f7f0", borderRadius:"12px", padding:"14px", border:"2px dashed #e8d5a0" }}>
                   <div style={{ fontSize:"12px", color:"#9a9a9a", fontWeight:600, textAlign:"center", marginBottom:"8px" }}>
@@ -573,7 +593,6 @@ export default function Publicar() {
                 </div>
               ) : (
                 <div style={{ display:"flex", flexDirection:"column", gap:"12px" }}>
-                  {/* MINIATURAS */}
                   {archivos.length>0 && (
                     <div style={{ display:"flex", gap:"10px", flexWrap:"wrap" }}>
                       {archivos.map((f,i) => (
@@ -592,8 +611,6 @@ export default function Publicar() {
                       ))}
                     </div>
                   )}
-
-                  {/* LINKS DE DRIVE/DROPBOX */}
                   {driveLinks.length>0 && (
                     <div style={{ display:"flex", flexDirection:"column", gap:"8px" }}>
                       {driveLinks.map((dl,i) => (
@@ -605,8 +622,6 @@ export default function Publicar() {
                       ))}
                     </div>
                   )}
-
-                  {/* BOTONES DE CARGA */}
                   {archivos.length<5 && (
                     <div style={{ display:"flex", gap:"8px" }}>
                       <label style={{ flex:1, background:"linear-gradient(135deg,#1a2a3a,#243b55)", borderRadius:"12px", padding:"12px", display:"flex", alignItems:"center", justifyContent:"center", gap:"6px", cursor:"pointer", color:"#fff", fontSize:"12px", fontWeight:800 }}>
@@ -619,24 +634,14 @@ export default function Publicar() {
                       </label>
                     </div>
                   )}
-
-                  {/* LINK DRIVE / DROPBOX */}
                   <div>
                     <label style={labelStyle}>Link de Drive / Dropbox</label>
                     <div style={{ display:"flex", gap:"8px" }}>
-                      <input
-                        type="url"
-                        placeholder="https://drive.google.com/... o dropbox.com/..."
-                        id="driveInput"
-                        style={{...inputStyle, flex:1, fontSize:"13px", padding:"10px 12px"}}
-                      />
+                      <input type="url" placeholder="https://drive.google.com/... o dropbox.com/..." id="driveInput" style={{...inputStyle, flex:1, fontSize:"13px", padding:"10px 12px"}} />
                       <button onClick={() => {
                         const inp = (document.getElementById("driveInput") as HTMLInputElement);
                         const val = inp?.value?.trim();
                         if (!val) return;
-                        if (!val.includes("drive.google") && !val.includes("dropbox") && !val.startsWith("http")) {
-                          alert("Pegá un link válido de Drive o Dropbox"); return;
-                        }
                         setDriveLinks([...driveLinks, val]);
                         if (inp) inp.value = "";
                       }} style={{ background:"#d4a017", border:"none", borderRadius:"10px", padding:"0 14px", fontSize:"13px", fontWeight:800, color:"#1a2a3a", cursor:"pointer", fontFamily:"'Nunito',sans-serif", whiteSpace:"nowrap" }}>
@@ -644,15 +649,14 @@ export default function Publicar() {
                       </button>
                     </div>
                   </div>
-
                   <div style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:600, textAlign:"center" }}>
-                    {archivos.length} archivo{archivos.length!==1?"s":""} + {driveLinks.length} link{driveLinks.length!==1?"s":""} de nube · Toca miniatura para agrandar
+                    {archivos.length} archivo{archivos.length!==1?"s":""} + {driveLinks.length} link{driveLinks.length!==1?"s":""} de nube
                   </div>
                 </div>
               )}
             </div>
 
-            {/* ── PROMO FLASH ── */}
+            {/* PROMO FLASH */}
             <button onClick={() => setPopupFlashCompra(true)} style={{ width:"100%", background:"linear-gradient(135deg,#1a2a3a,#243b55)", color:"#f0c040", border:"2px solid #d4a017", borderRadius:"12px", padding:"14px", fontSize:"14px", fontWeight:800, fontFamily:"'Nunito',sans-serif", cursor:"pointer", letterSpacing:"1px", display:"flex", alignItems:"center", justifyContent:"center", gap:"8px" }}>
               ⚡ PROMO Flash — Destacar este anuncio
             </button>
@@ -663,46 +667,18 @@ export default function Publicar() {
           </div>
         )}
       </div>
-      {/* ══ POPUP COMPRA LINK ══ */}
+
       {popupLinkCompra && (
-        <PopupCompra
-          tipo="link"
-          tituloAccion="Agregar link al anuncio"
-          bitsDisponibles={{ nexo: bitsNexo, promo: bitsPromo, free: bitsFree }}
-          onClose={() => setPopupLinkCompra(false)}
-          onUsarBits={() => { setPopupLinkCompra(false); setPopupLink(true); }}
-        />
+        <PopupCompra tipo="link" tituloAccion="Agregar link al anuncio" bitsDisponibles={{ nexo: bitsNexo, promo: bitsPromo, free: bitsFree }} onClose={() => setPopupLinkCompra(false)} onUsarBits={() => { setPopupLinkCompra(false); setLinksHabilitados(true); }} />
       )}
-
-      {/* ══ POPUP COMPRA ADJUNTO ══ */}
       {popupAdjuntoCompra && (
-        <PopupCompra
-          tipo="adjunto"
-          tituloAccion="Agregar adjunto al anuncio"
-          bitsDisponibles={{ nexo: bitsNexo, promo: bitsPromo, free: bitsFree }}
-          onClose={() => setPopupAdjuntoCompra(false)}
-          onUsarBits={() => { setPopupAdjuntoCompra(false); setPopupArchivo(true); }}
-        />
+        <PopupCompra tipo="adjunto" tituloAccion="Agregar adjunto al anuncio" bitsDisponibles={{ nexo: bitsNexo, promo: bitsPromo, free: bitsFree }} onClose={() => setPopupAdjuntoCompra(false)} onUsarBits={() => { setPopupAdjuntoCompra(false); setArchivosHabilitados(true); }} />
       )}
-
-      {/* ══ POPUP COMPRA ANUNCIO ══ */}
       {popupAnuncioCompra && (
-        <PopupCompra
-          tipo="anuncio"
-          tituloAccion="Publicar anuncio"
-          bitsDisponibles={{ nexo: bitsNexo, promo: bitsPromo, free: bitsFree }}
-          onClose={() => setPopupAnuncioCompra(false)}
-        />
+        <PopupCompra tipo="anuncio" tituloAccion="Publicar anuncio" bitsDisponibles={{ nexo: bitsNexo, promo: bitsPromo, free: bitsFree }} onClose={() => setPopupAnuncioCompra(false)} />
       )}
-
-      {/* ══ POPUP FLASH ══ */}
       {popupFlashCompra && (
-        <PopupCompra
-          tipo="flash"
-          tituloAccion="PROMO Flash — Destacar anuncio"
-          bitsDisponibles={{ nexo: bitsNexo, promo: bitsPromo, free: bitsFree }}
-          onClose={() => setPopupFlashCompra(false)}
-        />
+        <PopupCompra tipo="flash" tituloAccion="PROMO Flash — Destacar anuncio" bitsDisponibles={{ nexo: bitsNexo, promo: bitsPromo, free: bitsFree }} onClose={() => setPopupFlashCompra(false)} />
       )}
 
       <BottomNav />

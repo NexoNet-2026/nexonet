@@ -8,7 +8,7 @@ import { supabase } from "@/lib/supabase";
 // v2
 import PopupCompra from "@/components/PopupCompra";
 
-type Seccion = "cuenta" | "chat" | "datos" | "estadisticas" | "promotor" | "grupos";
+type Seccion = "cuenta" | "chat" | "datos" | "estadisticas" | "promotor" | "grupos" | "busquedas";
 
 const DIAS_SEMANA = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
 const FERIADOS_ARG: Record<string, string> = {
@@ -43,6 +43,10 @@ export default function Usuario() {
   const [popupEmpresa, setPopupEmpresa] = useState(false);
   // ── NUEVO: popup cargar BIT ──
   const [popupBits, setPopupBits] = useState(false);
+  const [busquedas, setBusquedas] = useState<any[]>([]);
+  const [formBusq, setFormBusq]   = useState<any>(null); // null = cerrado, {} = nuevo, {id,...} = editar
+  const [subrubros, setSubrubros] = useState<any[]>([]);
+  const [bitsBusq,  setBitsBusq]  = useState(0);
   const [chats,         setChats]         = useState<any[]>([]);
   const [misGruposData, setMisGruposData] = useState<any[]>([]);
   const [noLeidos,      setNoLeidos]      = useState(0);
@@ -130,6 +134,24 @@ export default function Usuario() {
         setChats(convsFinal);
         setNoLeidos(convsFinal.filter(c => !c.leido && c.receptor_id === session.user.id).length);
       }
+
+      // Búsquedas automáticas
+      const { data: bData } = await supabase
+        .from("busquedas_automaticas")
+        .select("*")
+        .eq("usuario_id", session.user.id)
+        .order("created_at", { ascending: false });
+      if (bData) setBusquedas(bData);
+
+      // Subrubros para el form
+      const { data: srData } = await supabase
+        .from("subrubros")
+        .select("id, nombre, rubros(nombre)")
+        .order("nombre");
+      if (srData) setSubrubros(srData);
+
+      // bits_busquedas del usuario
+      if (data) setBitsBusq(data.bits_busquedas || 0);
 
       // Mis grupos
       const { data: mgData } = await supabase
@@ -264,6 +286,10 @@ export default function Usuario() {
               <span style={{ fontSize:"9px", fontWeight:800, color:seccion===id?"#d4a017":"#8a9aaa", textTransform:"uppercase", letterSpacing:"0.5px" }}>{l}</span>
             </button>
           ))}
+          <button onClick={()=>setSeccion("busquedas")} style={{ flex:1, background:"none", border:"none", borderBottom:seccion==="busquedas"?"3px solid #16a085":"3px solid transparent", padding:"10px 4px", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:"2px" }}>
+            <span style={{ fontSize:"16px" }}>🔍</span>
+            <span style={{ fontSize:"9px", fontWeight:800, color:seccion==="busquedas"?"#16a085":"#8a9aaa", textTransform:"uppercase", letterSpacing:"0.5px" }}>Buscar</span>
+          </button>
           <button onClick={()=>router.push("/mis-anuncios")} style={{ flex:1, background:"none", border:"none", borderBottom:"3px solid transparent", padding:"10px 4px", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:"2px" }}>
             <span style={{ fontSize:"16px" }}>📋</span>
             <span style={{ fontSize:"9px", fontWeight:800, color:"#8a9aaa", textTransform:"uppercase", letterSpacing:"0.5px" }}>Anuncios</span>
@@ -607,6 +633,242 @@ export default function Usuario() {
           </div>
         )}
 
+        {/* ═══ BÚSQUEDAS AUTOMÁTICAS ═══ */}
+        {seccion === "busquedas" && (
+          <div style={{ display:"flex", flexDirection:"column", gap:"14px" }}>
+
+            {/* Saldo BIT Búsquedas */}
+            <div style={{ background:"linear-gradient(135deg,#0d3d30,#16a085)", borderRadius:"16px",
+                           padding:"18px 20px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+              <div>
+                <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"20px", color:"#fff", letterSpacing:"1px" }}>
+                  🔍 BIT Búsquedas Automáticas
+                </div>
+                <div style={{ fontSize:"11px", color:"rgba(255,255,255,0.6)", fontWeight:600, marginTop:"2px" }}>
+                  Cada match automático consume 1 BIT tuyo + 1 del anuncio
+                </div>
+              </div>
+              <div style={{ textAlign:"right" }}>
+                <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"36px",
+                               color: bitsBusq > 0 ? "#7effd4" : "#ff8a80", letterSpacing:"1px" }}>
+                  {bitsBusq}
+                </div>
+                <div style={{ fontSize:"9px", color:"rgba(255,255,255,0.5)", fontWeight:700 }}>disponibles</div>
+              </div>
+            </div>
+
+            {/* Lista de búsquedas */}
+            {busquedas.length === 0 ? (
+              <div style={{ background:"#fff", borderRadius:"16px", padding:"40px 20px", textAlign:"center",
+                             boxShadow:"0 2px 8px rgba(0,0,0,0.06)" }}>
+                <div style={{ fontSize:"40px", marginBottom:"12px" }}>🔍</div>
+                <div style={{ fontSize:"15px", fontWeight:800, color:"#1a2a3a", marginBottom:"6px" }}>
+                  No tenés búsquedas configuradas
+                </div>
+                <div style={{ fontSize:"12px", color:"#9a9a9a", fontWeight:600, marginBottom:"20px", lineHeight:1.6 }}>
+                  Configurá qué estás buscando y te notificamos automáticamente cuando aparezca un anuncio que matchee
+                </div>
+              </div>
+            ) : (
+              busquedas.map((b:any) => (
+                <div key={b.id} style={{ background:"#fff", borderRadius:"16px", padding:"16px",
+                                          boxShadow:"0 2px 8px rgba(0,0,0,0.06)",
+                                          borderLeft: b.activo ? "4px solid #16a085" : "4px solid #ccc" }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:"10px" }}>
+                    <div style={{ flex:1 }}>
+                      <div style={{ fontSize:"14px", fontWeight:900, color:"#1a2a3a", marginBottom:"4px" }}>
+                        {b.titulo || "Sin título"}
+                      </div>
+                      <div style={{ display:"flex", flexWrap:"wrap", gap:"6px" }}>
+                        {b.ciudad && <span style={{ background:"#f0f8f4", color:"#16a085", borderRadius:"8px", padding:"2px 8px", fontSize:"10px", fontWeight:700 }}>📍 {b.ciudad}</span>}
+                        {b.precio_min && <span style={{ background:"#fff8e0", color:"#d4a017", borderRadius:"8px", padding:"2px 8px", fontSize:"10px", fontWeight:700 }}>desde ${b.precio_min.toLocaleString()}</span>}
+                        {b.precio_max && <span style={{ background:"#fff8e0", color:"#d4a017", borderRadius:"8px", padding:"2px 8px", fontSize:"10px", fontWeight:700 }}>hasta ${b.precio_max.toLocaleString()}</span>}
+                        {b.keywords && <span style={{ background:"#f0f0ff", color:"#8e44ad", borderRadius:"8px", padding:"2px 8px", fontSize:"10px", fontWeight:700 }}>🔤 {b.keywords}</span>}
+                      </div>
+                    </div>
+                    <div style={{ display:"flex", gap:"6px", flexShrink:0, marginLeft:"10px" }}>
+                      <button onClick={() => setFormBusq(b)}
+                        style={{ background:"rgba(212,160,23,0.1)", border:"1px solid rgba(212,160,23,0.3)",
+                                 borderRadius:"8px", padding:"6px 10px", fontSize:"12px", fontWeight:800,
+                                 color:"#d4a017", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>✏️</button>
+                      <button onClick={async () => {
+                          await supabase.from("busquedas_automaticas").update({ activo: !b.activo }).eq("id", b.id);
+                          setBusquedas(prev => prev.map(x => x.id===b.id ? {...x, activo:!b.activo} : x));
+                        }}
+                        style={{ background: b.activo ? "rgba(231,76,60,0.1)" : "rgba(39,174,96,0.1)",
+                                 border: b.activo ? "1px solid rgba(231,76,60,0.3)" : "1px solid rgba(39,174,96,0.3)",
+                                 borderRadius:"8px", padding:"6px 10px", fontSize:"12px", fontWeight:800,
+                                 color: b.activo ? "#e74c3c" : "#27ae60",
+                                 cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
+                        {b.activo ? "⏸" : "▶️"}
+                      </button>
+                      <button onClick={async () => {
+                          if (!confirm("¿Eliminás esta búsqueda?")) return;
+                          await supabase.from("busquedas_automaticas").delete().eq("id", b.id);
+                          setBusquedas(prev => prev.filter(x => x.id !== b.id));
+                        }}
+                        style={{ background:"rgba(231,76,60,0.08)", border:"1px solid rgba(231,76,60,0.2)",
+                                 borderRadius:"8px", padding:"6px 10px", fontSize:"12px",
+                                 color:"#e74c3c", cursor:"pointer" }}>🗑️</button>
+                    </div>
+                  </div>
+                  <div style={{ display:"flex", gap:"12px", fontSize:"11px", color:"#9a9a9a", fontWeight:600 }}>
+                    <span>{b.activo ? "✅ Activa" : "⏸ Pausada"}</span>
+                    <span>🔔 {b.notificaciones_recibidas || 0} notificaciones</span>
+                  </div>
+                </div>
+              ))
+            )}
+
+            {/* Botón nueva búsqueda */}
+            <button onClick={() => setFormBusq({ titulo:"", subrubro_id:"", precio_min:"", precio_max:"", moneda:"ARS", ciudad:"", provincia:"", keywords:"" })}
+              style={{ background:"rgba(22,160,133,0.08)", border:"2px dashed rgba(22,160,133,0.4)",
+                       borderRadius:"16px", padding:"16px", fontSize:"13px", fontWeight:800,
+                       color:"#16a085", cursor:"pointer", fontFamily:"'Nunito',sans-serif",
+                       display:"flex", alignItems:"center", justifyContent:"center", gap:"8px" }}>
+              ➕ Nueva búsqueda automática
+            </button>
+
+            {/* FORM nueva / editar búsqueda */}
+            {formBusq !== null && (
+              <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.65)", zIndex:400,
+                             display:"flex", alignItems:"flex-end" }}
+                   onClick={() => setFormBusq(null)}>
+                <div style={{ background:"#fff", borderRadius:"24px 24px 0 0", padding:"24px 20px 40px",
+                               width:"100%", maxHeight:"90vh", overflowY:"auto",
+                               fontFamily:"'Nunito',sans-serif" }}
+                     onClick={e => e.stopPropagation()}>
+
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"20px" }}>
+                    <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"20px", color:"#1a2a3a", letterSpacing:"1px" }}>
+                      {formBusq.id ? "✏️ Editar búsqueda" : "🔍 Nueva búsqueda automática"}
+                    </div>
+                    <button onClick={() => setFormBusq(null)}
+                      style={{ background:"#f4f4f2", border:"none", borderRadius:"50%", width:"32px",
+                               height:"32px", fontSize:"16px", cursor:"pointer" }}>✕</button>
+                  </div>
+
+                  <div style={{ display:"flex", flexDirection:"column", gap:"14px" }}>
+
+                    <div>
+                      <label style={LS}>Nombre de la búsqueda</label>
+                      <input type="text" value={formBusq.titulo||""} placeholder="Ej: Auto familiar hasta $20M"
+                        onChange={e => setFormBusq((f:any) => ({...f, titulo:e.target.value}))}
+                        style={IS} />
+                    </div>
+
+                    <div>
+                      <label style={LS}>Categoría / Subrubro</label>
+                      <select value={formBusq.subrubro_id||""}
+                        onChange={e => setFormBusq((f:any) => ({...f, subrubro_id:e.target.value}))}
+                        style={{...IS, padding:"11px 14px"}}>
+                        <option value="">— Cualquier categoría —</option>
+                        {subrubros.map((s:any) => (
+                          <option key={s.id} value={s.id}>
+                            {(s.rubros as any)?.nombre} → {s.nombre}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label style={LS}>Palabras clave</label>
+                      <input type="text" value={formBusq.keywords||""} placeholder="Ej: toyota corolla diesel"
+                        onChange={e => setFormBusq((f:any) => ({...f, keywords:e.target.value}))}
+                        style={IS} />
+                      <div style={{ fontSize:"10px", color:"#9a9a9a", fontWeight:600, marginTop:"4px" }}>
+                        Separadas por espacios. El sistema busca en título y descripción.
+                      </div>
+                    </div>
+
+                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10px" }}>
+                      <div>
+                        <label style={LS}>Precio mínimo</label>
+                        <input type="number" value={formBusq.precio_min||""} placeholder="Sin límite"
+                          onChange={e => setFormBusq((f:any) => ({...f, precio_min:e.target.value}))}
+                          style={IS} />
+                      </div>
+                      <div>
+                        <label style={LS}>Precio máximo</label>
+                        <input type="number" value={formBusq.precio_max||""} placeholder="Sin límite"
+                          onChange={e => setFormBusq((f:any) => ({...f, precio_max:e.target.value}))}
+                          style={IS} />
+                      </div>
+                    </div>
+
+                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10px" }}>
+                      <div>
+                        <label style={LS}>Ciudad</label>
+                        <input type="text" value={formBusq.ciudad||""} placeholder="Ej: Rosario"
+                          onChange={e => setFormBusq((f:any) => ({...f, ciudad:e.target.value}))}
+                          style={IS} />
+                      </div>
+                      <div>
+                        <label style={LS}>Provincia</label>
+                        <input type="text" value={formBusq.provincia||""} placeholder="Ej: Santa Fe"
+                          onChange={e => setFormBusq((f:any) => ({...f, provincia:e.target.value}))}
+                          style={IS} />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label style={LS}>Moneda</label>
+                      <select value={formBusq.moneda||"ARS"}
+                        onChange={e => setFormBusq((f:any) => ({...f, moneda:e.target.value}))}
+                        style={{...IS, padding:"11px 14px"}}>
+                        <option value="ARS">ARS $</option>
+                        <option value="USD">USD U$D</option>
+                        <option value="">Cualquiera</option>
+                      </select>
+                    </div>
+
+                    {/* Info costo */}
+                    <div style={{ background:"rgba(22,160,133,0.06)", border:"1px solid rgba(22,160,133,0.2)",
+                                   borderRadius:"12px", padding:"12px 14px",
+                                   fontSize:"12px", fontWeight:600, color:"#555", lineHeight:1.6 }}>
+                      🔔 Cada vez que el sistema encuentre un anuncio que matchee con esta búsqueda,
+                      recibirás una notificación y se consumirá <strong style={{color:"#16a085"}}>1 BIT</strong> de
+                      tu saldo de Búsquedas Automáticas.
+                    </div>
+
+                    <button onClick={async () => {
+                        const { data:{ session } } = await supabase.auth.getSession();
+                        if (!session) return;
+                        const payload = {
+                          usuario_id:  session.user.id,
+                          titulo:      formBusq.titulo || null,
+                          subrubro_id: formBusq.subrubro_id ? parseInt(formBusq.subrubro_id) : null,
+                          precio_min:  formBusq.precio_min ? parseFloat(formBusq.precio_min) : null,
+                          precio_max:  formBusq.precio_max ? parseFloat(formBusq.precio_max) : null,
+                          moneda:      formBusq.moneda || null,
+                          ciudad:      formBusq.ciudad || null,
+                          provincia:   formBusq.provincia || null,
+                          keywords:    formBusq.keywords || null,
+                          activo:      true,
+                        };
+                        if (formBusq.id) {
+                          await supabase.from("busquedas_automaticas").update(payload).eq("id", formBusq.id);
+                          setBusquedas(prev => prev.map(x => x.id===formBusq.id ? {...x,...payload} : x));
+                        } else {
+                          const { data:nb } = await supabase.from("busquedas_automaticas").insert(payload).select().single();
+                          if (nb) setBusquedas(prev => [nb, ...prev]);
+                        }
+                        setFormBusq(null);
+                      }}
+                      style={{ background:"linear-gradient(135deg,#16a085,#1abc9c)", border:"none",
+                               borderRadius:"14px", padding:"16px", fontSize:"15px", fontWeight:900,
+                               color:"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif",
+                               boxShadow:"0 4px 0 #0e6b59" }}>
+                      {formBusq.id ? "💾 Guardar cambios" : "✅ Crear búsqueda"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+          </div>
+        )}
+
         {seccion === "grupos" && (
           <div style={{ display:"flex", flexDirection:"column", gap:"12px" }}>
             <div style={{ fontSize:"13px", fontWeight:900, color:"#1a2a3a", textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:"4px" }}>
@@ -888,6 +1150,8 @@ function FilaHorario({ label, activo, desde, hasta, onToggle, onDesde, onHasta, 
   );
 }
 
+const LS:React.CSSProperties = { display:"block", fontSize:"11px", fontWeight:800, color:"#666", textTransform:"uppercase" as const, letterSpacing:"1px", marginBottom:"6px" };
+const IS:React.CSSProperties = { width:"100%", border:"2px solid #e8e8e6", borderRadius:"10px", padding:"11px 14px", fontSize:"14px", fontFamily:"'Nunito',sans-serif", color:"#2c2c2e", outline:"none", boxSizing:"border-box" as const };
 const C:React.CSSProperties  = { background:"#fff", borderRadius:"16px", padding:"20px", boxShadow:"0 2px 10px rgba(0,0,0,0.06)" };
 const BTN:React.CSSProperties = { width:"100%", background:"linear-gradient(135deg, #d4a017, #f0c040)", color:"#1a2a3a", border:"none", borderRadius:"12px", padding:"16px", fontSize:"15px", fontWeight:800, fontFamily:"'Nunito', sans-serif", cursor:"pointer", letterSpacing:"1px", textTransform:"uppercase" };
 const THS = (c:string):React.CSSProperties => ({ fontSize:"12px", fontWeight:900, color:c, textTransform:"uppercase", letterSpacing:"1px", marginBottom:"12px" });

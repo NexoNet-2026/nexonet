@@ -9,6 +9,7 @@ type Anuncio = {
   permuto?: boolean; id:number; titulo:string; precio:number; moneda:string;
   ciudad:string; provincia:string; imagenes:string[]; flash:boolean; fuente:string;
   usuario_id:string; subrubro_nombre:string; rubro_nombre:string;
+  owner_whatsapp?: string; // ← NUEVO: WA del dueño si tiene BIT + WA visible
 };
 type Rubro = { id:number; nombre:string; subrubros:{id:number; nombre:string}[] };
 type RubroFlat = { id:number; nombre:string };
@@ -97,11 +98,10 @@ function BuscarInner() {
       supabase.from("provincias").select("id,nombre").order("nombre"),
       supabase.from("rubros").select("id,nombre").order("nombre"),
       supabase.from("subrubros").select("id,nombre,rubro_id").order("nombre"),
-      // ── MISMO JOIN QUE HOME ──
       supabase.from("anuncios")
         .select("id,titulo,precio,moneda,ciudad,provincia,imagenes,flash,fuente,usuario_id,subrubros!inner(id,nombre,rubros!inner(id,nombre))")
         .eq("estado","activo").order("created_at",{ascending:false}).limit(200),
-    ]).then(([{data:pData},{data:rData},{data:sData},{data:aData}]) => {
+    ]).then(async ([{data:pData},{data:rData},{data:sData},{data:aData}]) => {
 
       if (pData) setProvs(pData);
 
@@ -123,15 +123,34 @@ function BuscarInner() {
       }
 
       if (aData) {
-        // ── EXTRAER nombres del JOIN igual que home ──
-        setAnuncios(aData.map((a:any) => ({
+        let mapped: Anuncio[] = aData.map((a:any) => ({
           id: a.id, titulo: a.titulo, precio: a.precio, moneda: a.moneda,
           ciudad: a.ciudad, provincia: a.provincia, imagenes: a.imagenes || [],
           flash: a.flash || false, fuente: a.fuente || "nexonet",
           usuario_id: a.usuario_id, permuto: a.permuto || false,
           subrubro_nombre: a.subrubros?.nombre || "",
           rubro_nombre: a.subrubros?.rubros?.nombre || "",
-        })));
+        }));
+
+        // ── NUEVO: cargar WA de dueños ──
+        const uids = [...new Set(mapped.map(a => a.usuario_id).filter(Boolean))];
+        if (uids.length > 0) {
+          const { data: owners } = await supabase
+            .from("usuarios")
+            .select("id,bits,bits_promo,bits_free,whatsapp,vis_personal")
+            .in("id", uids);
+          if (owners) {
+            const ownerMap: Record<string,any> = Object.fromEntries(owners.map((o:any) => [o.id, o]));
+            mapped = mapped.map(a => {
+              const o = ownerMap[a.usuario_id];
+              const totalBits = (o?.bits||0) + (o?.bits_promo||0) + (o?.bits_free||0);
+              const waVisible = o?.vis_personal?.whatsapp === true;
+              return { ...a, owner_whatsapp: (o?.whatsapp && waVisible && totalBits > 0) ? o.whatsapp : undefined };
+            });
+          }
+        }
+
+        setAnuncios(mapped);
       }
       setLoading(false);
     });
@@ -215,7 +234,6 @@ function BuscarInner() {
   ) : [];
   const rubrosM  = rSel ? rubros.filter(r=>r.nombre===rSel.nombre) : rubros;
 
-  // ── FILTRO POR NOMBRE igual que home ──
   const getAnus = (rubro:Rubro) => {
     const sa = subAct[rubro.id];
     return anuFilt.filter(a => {
@@ -252,6 +270,13 @@ function BuscarInner() {
   };
   const cancelarConexion = () => { setModoConexion(false); setSeleccionados(new Set()); setResultadoConex(null); };
 
+  // ── NUEVO: abrir WA al dueño ──
+  const abrirWA = (ownerWa: string, anuncioId: number, titulo: string) => {
+    const num = ownerWa.replace(/\D/g,"");
+    const msg = encodeURIComponent(`Hola! Me conecté con tu anuncio en NexoNet: "${titulo}" 🔗 nexonet.ar/anuncios/${anuncioId}`);
+    window.open(`https://wa.me/${num}?text=${msg}`, "_blank");
+  };
+
   const ejecutarConexion = async () => {
     if (seleccionados.size === 0) return;
     if (bits < seleccionados.size) return;
@@ -271,6 +296,15 @@ function BuscarInner() {
       const nuevosBits = bits - ids.length;
       await supabase.from("usuarios").update({ bits: nuevosBits, bits_gastados: bits - nuevosBits }).eq("id", session.user.id);
       setBits(nuevosBits);
+
+      // ── NUEVO: abrir WA para el primer anuncio con dueño que tiene WA activo ──
+      for (const a of anuData) {
+        const anuncio = anuncios.find(x => x.id === a.id);
+        if (anuncio?.owner_whatsapp) {
+          abrirWA(anuncio.owner_whatsapp, anuncio.id, anuncio.titulo);
+          break; // solo uno para no saturar popups
+        }
+      }
     }
     setResultadoConex(`✅ Mensaje enviado a ${ids.length} anuncio${ids.length!==1?"s":""}. Usaste ${ids.length} BIT.`);
     setConectando(false);
@@ -524,6 +558,13 @@ function BuscarInner() {
               </div>
               <button onClick={()=>setPopupConexion(false)} style={{background:"#f0f0f0",border:"none",borderRadius:"50%",width:"32px",height:"32px",fontSize:"16px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
             </div>
+            {/* ── NUEVO: aviso WA si algún dueño tiene WA activo ── */}
+            {Array.from(seleccionados).some(id => anuncios.find(a=>a.id===id)?.owner_whatsapp) && (
+              <div style={{background:"rgba(37,211,102,0.1)",border:"1px solid rgba(37,211,102,0.3)",borderRadius:"10px",padding:"8px 12px",marginBottom:"12px",display:"flex",alignItems:"center",gap:"8px"}}>
+                <span style={{fontSize:"16px"}}>📱</span>
+                <span style={{fontSize:"12px",fontWeight:700,color:"#1a7a4a"}}>Algunos dueños tienen WhatsApp activo — se abrirá al conectar</span>
+              </div>
+            )}
             <div style={{display:"flex",flexDirection:"column",gap:"8px",marginBottom:"14px"}}>
               {MENSAJES_PRESET.map((m,i) => (
                 <button key={i} onClick={()=>setMensajeConexion(m)} style={{textAlign:"left",background:mensajeConexion===m?"linear-gradient(135deg,#fff8e0,#fff3c0)":"#f8f8f8",border:mensajeConexion===m?"2px solid #d4a017":"2px solid transparent",borderRadius:"12px",padding:"10px 14px",fontSize:"13px",fontWeight:700,color:"#1a2a3a",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>
@@ -551,11 +592,13 @@ function BuscarInner() {
   );
 }
 
+// ── TARJETA ──
 function Tarjeta({ a, fmt, qLow, query, horizontal, modoConexion, seleccionado, onToggle }: {
   a:Anuncio; fmt:(p:number,m:string)=>string; qLow?:string; query?:string;
   horizontal?:boolean; modoConexion:boolean; seleccionado:boolean; onToggle:()=>void;
 }) {
   const f = F[a.fuente]||F.nexonet;
+  const tieneWA = !!a.owner_whatsapp; // ← NUEVO
   return (
     <div onClick={modoConexion ? onToggle : undefined} style={{flexShrink:horizontal?0:undefined,width:horizontal?"160px":undefined,position:"relative",cursor:modoConexion?"pointer":undefined}}>
       {modoConexion && <div style={{position:"absolute",inset:0,zIndex:10,borderRadius:"14px",border:`3px solid ${seleccionado?"#d4a017":"rgba(212,160,23,0.4)"}`,background:seleccionado?"rgba(212,160,23,0.15)":"transparent",transition:"all .15s",pointerEvents:"none"}} />}
@@ -568,7 +611,13 @@ function Tarjeta({ a, fmt, qLow, query, horizontal, modoConexion, seleccionado, 
         <div style={{background:"#fff",borderRadius:"14px",overflow:"hidden",boxShadow:"0 2px 10px rgba(0,0,0,0.08)",border:"1px solid #f0f0f0"}}>
           <div style={{background:f.color,padding:"3px 8px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
             <span style={{fontSize:"9px",fontWeight:900,color:f.texto,textTransform:"uppercase"}}>{f.label}</span>
-            {a.flash&&<span style={{background:"#1a2a3a",color:"#d4a017",fontSize:"8px",fontWeight:900,padding:"1px 5px",borderRadius:"5px"}}>⚡Flash</span>}
+            <div style={{display:"flex",alignItems:"center",gap:"4px"}}>
+              {a.flash&&<span style={{background:"#1a2a3a",color:"#d4a017",fontSize:"8px",fontWeight:900,padding:"1px 5px",borderRadius:"5px"}}>⚡Flash</span>}
+              {/* ── NUEVO: ícono WA ── */}
+              <div title={tieneWA?"WhatsApp activo":"Sin WhatsApp"} style={{width:"16px",height:"16px",borderRadius:"50%",background:tieneWA?"#25d366":"rgba(0,0,0,0.18)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"9px",opacity:tieneWA?1:0.35,boxShadow:tieneWA?"0 1px 4px rgba(37,211,102,0.5)":"none",flexShrink:0}}>
+                📱
+              </div>
+            </div>
           </div>
           <div style={{width:"100%",height:"110px",background:"#f4f4f2",display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden"}}>
             {a.imagenes?.[0]?<img src={a.imagenes[0]} alt={a.titulo} style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<span style={{fontSize:"36px"}}>📦</span>}
@@ -580,7 +629,11 @@ function Tarjeta({ a, fmt, qLow, query, horizontal, modoConexion, seleccionado, 
                 p.toLowerCase()===qLow?<mark key={i} style={{background:"#fff3cd",color:"#1a2a3a",borderRadius:"3px",padding:"0 2px"}}>{p}</mark>:p) : a.titulo}
             </div>
             <div style={{fontSize:"14px",fontWeight:900,color:"#d4a017"}}>{fmt(a.precio,a.moneda)}</div>
-            <div style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600,marginTop:"2px"}}>📍 {a.ciudad}</div>
+            {/* ── NUEVO: fila ciudad + badge WA ── */}
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:"2px"}}>
+              <div style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600}}>📍 {a.ciudad}</div>
+              {tieneWA && <span style={{background:"rgba(37,211,102,0.15)",border:"1px solid rgba(37,211,102,0.4)",borderRadius:"20px",padding:"1px 7px",fontSize:"9px",fontWeight:900,color:"#1a7a4a"}}>WA</span>}
+            </div>
           </div>
         </div>
       </a>

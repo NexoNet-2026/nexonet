@@ -25,6 +25,7 @@ type Anuncio = {
   conexiones: number | null;
   created_at: string;
   flash: boolean | null;
+  permuto: boolean | null;
 };
 
 export default function MisAnuncios() {
@@ -42,7 +43,7 @@ export default function MisAnuncios() {
   const [popupFlash, setPopupFlash] = useState<string | null>(null);
 
   const [editando,    setEditando]    = useState<Anuncio | null>(null);
-  const [editForm,    setEditForm]    = useState({ titulo: "", descripcion: "", precio: "", moneda: "ARS" });
+  const [editForm,    setEditForm]    = useState({ titulo: "", descripcion: "", precio: "", moneda: "ARS", permuto: false });
   const [editImgs,    setEditImgs]    = useState<string[]>([]);
   const [subiendoImg, setSubiendoImg] = useState(false);
   const [guardando,   setGuardando]   = useState(false);
@@ -98,6 +99,7 @@ export default function MisAnuncios() {
       descripcion: a.descripcion ?? "",
       precio:      a.precio != null ? String(a.precio) : "",
       moneda:      a.moneda ?? "ARS",
+      permuto:     a.permuto ?? false,
     });
     setEditImgs(a.imagenes ?? []);
   };
@@ -130,6 +132,7 @@ export default function MisAnuncios() {
       precio:      editForm.precio !== "" ? parseFloat(editForm.precio) : null,
       moneda:      editForm.moneda,
       imagenes:    editImgs,
+      permuto:     editForm.permuto,
     };
     await supabase.from("anuncios").update(patch).eq("id", editando.id);
     setAnuncios(prev => prev.map(a =>
@@ -671,6 +674,27 @@ export default function MisAnuncios() {
                     <option value="USD">USD U$D</option>
                   </select>
                 </div>
+              </div>
+
+              {/* Permuta */}
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between",
+                             background:"rgba(142,68,173,0.06)", border:"2px solid rgba(142,68,173,0.2)",
+                             borderRadius:"12px", padding:"12px 14px" }}>
+                <div>
+                  <div style={{ fontSize:"13px", fontWeight:900, color:"#1a2a3a" }}>🔄 Acepta permuta</div>
+                  <div style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:600 }}>
+                    El anuncio aparecerá en el filtro de permutas
+                  </div>
+                </div>
+                <button
+                  onClick={() => setEditForm(f => ({ ...f, permuto: !f.permuto }))}
+                  style={{ width:"50px", height:"28px", borderRadius:"14px", border:"none",
+                    background: editForm.permuto ? "#8e44ad" : "#e0e0e0",
+                    position:"relative", cursor:"pointer", flexShrink:0, transition:"background .2s" }}>
+                  <div style={{ width:"22px", height:"22px", borderRadius:"50%", background:"#fff",
+                    position:"absolute", top:"3px", left: editForm.permuto ? "25px" : "3px",
+                    transition:"left .2s", boxShadow:"0 1px 3px rgba(0,0,0,0.25)" }} />
+                </button>
               </div>
             </div>
 

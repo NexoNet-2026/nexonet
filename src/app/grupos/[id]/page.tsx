@@ -132,6 +132,10 @@ export default function GrupoDetalle() {
   const [msgInv,     setMsgInv]     = useState("¡Te invito a unirte!");
   const [configEdit, setConfigEdit] = useState<Config|null>(null);
   const [guardando,  setGuardando]  = useState(false);
+  const [bitsGrupo,         setBitsGrupo]         = useState(0);
+  const [bitsTotal,         setBitsTotal]          = useState(0);
+  const [popupConfirmarBit, setPopupConfirmarBit]  = useState(false);
+  const [popupAcceso, setPopupAcceso] = useState(false);
   // Formularios consorcio
   const [popupRes,   setPopupRes]   = useState(false);
   const [popupSvc,   setPopupSvc]   = useState(false);
@@ -145,7 +149,19 @@ export default function GrupoDetalle() {
 
   // ── Carga inicial ────────────────────────────────────────────────────────────
   useEffect(()=>{
-    supabase.auth.getSession().then(({data:{session:s}})=>setSession(s));
+    supabase.auth.getSession().then(({data:{session:s}})=>{
+      setSession(s);
+      if(s?.user.id){
+        supabase.from("usuarios").select("bits_grupo,bits_free,bits_promo,bits")
+          .eq("id",s.user.id).single()
+          .then(({data:u})=>{
+            if(u){
+              setBitsGrupo(u.bits_grupo||0);
+              setBitsTotal((u.bits_grupo||0)+(u.bits_free||0)+(u.bits_promo||0)+(u.bits||0));
+            }
+          });
+      }
+    });
     Promise.all([
       supabase.from("grupos").select(`id,nombre,descripcion,imagen,ciudad,provincia,tipo,miembros_count,reglas,links,whatsapp_link,creador_id,config,especial_titulo,especial_contenido,especial_imagenes,grupo_categorias(nombre),grupo_subcategorias(nombre)`).eq("id",gId).single(),
       supabase.from("grupo_miembros").select("id,usuario_id,rol,estado,canon_gratis,bits_grupo,bits_grupo_hasta,usuarios(nombre_usuario)").eq("grupo_id",gId),
@@ -154,7 +170,6 @@ export default function GrupoDetalle() {
       if(gData){
         const g:Grupo={...gData,categoria_nombre:(gData as any).grupo_categorias?.nombre||"",subcategoria_nombre:(gData as any).grupo_subcategorias?.nombre||"",config:gData.config||{ver_miembros_detalle:false,pestanas_publicas:["info","publico"],miembros_pueden_invitar:false,canon_gratis_por_defecto:true}};
         setGrupo(g); setConfigEdit({...g.config}); setCanonGratis(g.config.canon_gratis_por_defecto);
-        // Si es consorcio, cargar datos específicos
         if(SUBCATS_CONSORCIO.includes((gData as any).grupo_subcategorias?.nombre||"")) cargarConsorcio(gData.ciudad);
       }
       if(mData) setMiembros(mData.map((m:any)=>({...m,nombre_usuario:m.usuarios?.nombre_usuario||"Usuario"})));
@@ -176,7 +191,6 @@ export default function GrupoDetalle() {
     if(p.data) setProveedores(p.data);
     if(e.data) setEventos(e.data);
     if(pl.data) setPlanos(pl.data);
-    // Promos flash por ciudad
     if(ciudad){
       const {data:prData}=await supabase.from("anuncios").select("id,titulo,descripcion,precio,moneda,imagenes,ciudad").eq("flash",true).eq("ciudad",ciudad).eq("estado","activo").order("created_at",{ascending:false}).limit(20);
       if(prData) setPromos(prData);
@@ -251,17 +265,37 @@ export default function GrupoDetalle() {
     const ids=new Set(miembros.map(m=>m.usuario_id));
     setResInv((data||[]).filter((u:any)=>!ids.has(u.id))); setBuscando(false);
   };
+
+  const pagarBitGrupo = async (userId: string): Promise<boolean> => {
+    const {data:u} = await supabase.from("usuarios")
+      .select("bits_grupo,bits_free,bits_promo,bits,bits_gastados_grupo")
+      .eq("id",userId).single();
+    if(!u) return false;
+    const bg=u.bits_grupo||0, bf=u.bits_free||0, bp=u.bits_promo||0, bn=u.bits||0;
+    if(bg>=500)      await supabase.from("usuarios").update({bits_grupo:bg-500,bits_gastados_grupo:(u.bits_gastados_grupo||0)+500}).eq("id",userId);
+    else if(bf>=500) await supabase.from("usuarios").update({bits_free:bf-500,bits_gastados_grupo:(u.bits_gastados_grupo||0)+500}).eq("id",userId);
+    else if(bp>=500) await supabase.from("usuarios").update({bits_promo:bp-500,bits_gastados_grupo:(u.bits_gastados_grupo||0)+500}).eq("id",userId);
+    else if(bn>=500) await supabase.from("usuarios").update({bits:bn-500,bits_gastados_grupo:(u.bits_gastados_grupo||0)+500}).eq("id",userId);
+    else return false;
+    return true;
+  };
+
   const invitar=async(u:Usuario)=>{
     if(!session) return;
+    if(canonGratis){
+      const ok = await pagarBitGrupo(session.user.id);
+      if(!ok){ alert("⚠️ No tenés 500 BIT para pagar el ingreso."); return; }
+      setBitsTotal(t=>t-500);
+    }
     const {error}=await supabase.from("grupo_invitaciones").insert({grupo_id:gId,invitador_id:session.user.id,invitado_id:u.id,canon_gratis:canonGratis,mensaje:msgInv,estado:"pendiente"});
-    if(!error){ alert(`✅ Invitación enviada a ${u.nombre_usuario}`); setResInv([]); setBusqInv(""); }
+    if(!error){ alert(`✅ Invitación enviada a ${u.nombre_usuario}${canonGratis?" (−500 BIT)":""}`); setResInv([]); setBusqInv(""); }
     else if(error.code==="23505") alert("Ya existe una invitación pendiente.");
   };
+
   const aprobar=(m:Miembro)=>{ supabase.from("grupo_miembros").update({estado:"activo"}).eq("id",m.id).then(()=>setMiembros(p=>p.map(x=>x.id===m.id?{...x,estado:"activo"}:x))); };
   const cambiarRol=(m:Miembro,rol:string)=>{ supabase.from("grupo_miembros").update({rol}).eq("id",m.id).then(()=>setMiembros(p=>p.map(x=>x.id===m.id?{...x,rol}:x))); };
   const guardarConfig=async()=>{ if(!configEdit) return; setGuardando(true); await supabase.from("grupos").update({config:configEdit}).eq("id",gId); setGrupo(g=>g?{...g,config:configEdit}:g); setGuardando(false); alert("Configuración guardada ✅"); };
 
-  // Consorcio: guardar
   const guardarResidente=async()=>{
     const {data}=await supabase.from("grupo_residentes").insert({grupo_id:gId,...nuevoRes,personas:parseInt(nuevoRes.personas)||1}).select().single();
     if(data){ setResidentes(p=>[...p,data]); setNuevoRes({nombre:"",unidad:"",piso:"",telefono:"",email:"",vehiculo:"",personas:"1",estado_cuota:"al_dia",notas:""}); setPopupRes(false); }
@@ -287,11 +321,12 @@ export default function GrupoDetalle() {
     await supabase.from("grupo_residentes").update({estado_cuota:estado}).eq("id",res.id);
     setResidentes(p=>p.map(x=>x.id===res.id?{...x,estado_cuota:estado}:x));
   };
+
   const unirse=()=>{
     if(!session){ router.push("/login"); return; }
-    setPopupAcceso(true);
+    if(bitsTotal<500){ alert("⚠️ Necesitás 500 BIT para unirte al grupo."); return; }
+    setPopupConfirmarBit(true);
   };
-  const [popupAcceso, setPopupAcceso] = useState(false);
 
   const camposPublicos = config.residentes_campos_publicos||["nombre","unidad","estado_cuota"];
 
@@ -345,7 +380,6 @@ export default function GrupoDetalle() {
       {/* ── CONTENIDO ── */}
       <div style={{padding:"16px"}}>
 
-        {/* INFO (genérico y consorcio) */}
         {tab==="info"&&(
           <div>
             {grupo.descripcion&&<Card titulo="📋 Descripción"><div style={{fontSize:"14px",color:"#2c2c2e",fontWeight:600,lineHeight:1.6}}>{grupo.descripcion}</div></Card>}
@@ -355,7 +389,7 @@ export default function GrupoDetalle() {
             </Card>
             {!tieneBit&&esMiembro&&(
               <div style={{background:"linear-gradient(135deg,#1a2a3a,#243b55)",borderRadius:"14px",padding:"16px",textAlign:"center"}}>
-                <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"20px",color:"#f0c040",letterSpacing:"1px",marginBottom:"6px"}}>🏆 BIT Grupo — $500/30d</div>
+                <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"20px",color:"#f0c040",letterSpacing:"1px",marginBottom:"6px"}}>🏆 BIT Grupo — 500 BIT</div>
                 <div style={{fontSize:"12px",color:"#8a9aaa",fontWeight:600,marginBottom:"12px"}}>Chat interno y anuncios exclusivos</div>
                 <Btn onClick={()=>setPopupBit(true)}>⚡ Activar BIT</Btn>
               </div>
@@ -363,16 +397,12 @@ export default function GrupoDetalle() {
           </div>
         )}
 
-        {/* ── TABS CONSORCIO ── */}
-
-        {/* RESIDENTES */}
         {tab==="residentes"&&(
           <div>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"12px"}}>
               <div><span style={{fontSize:"15px",fontWeight:900,color:"#1a2a3a"}}>👥 Residentes</span><span style={{fontSize:"12px",color:"#9a9a9a",fontWeight:700,marginLeft:"8px"}}>{residentes.length} unidades</span></div>
               {esMod&&<Btn small onClick={()=>setPopupRes(true)}>➕ Agregar</Btn>}
             </div>
-            {/* Resumen cuotas */}
             {esMod&&(
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"8px",marginBottom:"12px"}}>
                 {[{l:"Al día",v:residentes.filter(r=>r.estado_cuota==="al_dia").length,c:"#00a884"},{l:"Deben",v:residentes.filter(r=>r.estado_cuota==="debe").length,c:"#e63946"},{l:"Exentos",v:residentes.filter(r=>r.estado_cuota==="exento").length,c:"#9a9a9a"}]
@@ -413,7 +443,6 @@ export default function GrupoDetalle() {
           </div>
         )}
 
-        {/* SERVICIOS */}
         {tab==="servicios"&&(
           <div>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"12px"}}>
@@ -441,7 +470,6 @@ export default function GrupoDetalle() {
           </div>
         )}
 
-        {/* PROVEEDORES */}
         {tab==="proveedores"&&(
           <div>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"12px"}}>
@@ -474,7 +502,6 @@ export default function GrupoDetalle() {
           </div>
         )}
 
-        {/* EVENTOS */}
         {tab==="eventos"&&(
           <div>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"12px"}}>
@@ -497,7 +524,6 @@ export default function GrupoDetalle() {
           </div>
         )}
 
-        {/* PROMOS FLASH */}
         {tab==="promos"&&(
           <div>
             <div style={{marginBottom:"12px"}}>
@@ -525,7 +551,6 @@ export default function GrupoDetalle() {
           </div>
         )}
 
-        {/* MAPA (barrios privados) */}
         {tab==="mapa"&&(
           <div>
             <div style={{fontSize:"15px",fontWeight:900,color:"#1a2a3a",marginBottom:"12px"}}>🗺️ Mapa del barrio</div>
@@ -542,7 +567,6 @@ export default function GrupoDetalle() {
           </div>
         )}
 
-        {/* PLANO (condominios) */}
         {tab==="plano"&&(
           <div>
             <div style={{fontSize:"15px",fontWeight:900,color:"#1a2a3a",marginBottom:"12px"}}>📐 Plano del condominio</div>
@@ -559,7 +583,6 @@ export default function GrupoDetalle() {
           </div>
         )}
 
-        {/* PANEL USUARIO */}
         {tab==="panel_usuario"&&(
           <div>
             <div style={{fontSize:"15px",fontWeight:900,color:"#1a2a3a",marginBottom:"12px"}}>⚙️ Mi panel</div>
@@ -576,11 +599,8 @@ export default function GrupoDetalle() {
           </div>
         )}
 
-        {/* PANEL ADMIN (consorcio) */}
         {tab==="panel_admin"&&esMod&&(
           <div style={{display:"flex",flexDirection:"column",gap:"14px"}}>
-
-            {/* Solicitudes */}
             {pendientes.length>0&&(
               <Card titulo={`🔔 Solicitudes (${pendientes.length})`}>
                 {pendientes.map((m,i,a)=>(
@@ -592,7 +612,6 @@ export default function GrupoDetalle() {
               </Card>
             )}
 
-            {/* Invitar */}
             <Card titulo="📨 Invitar miembros">
               <div style={{marginBottom:"10px"}}>
                 <div style={{fontSize:"11px",fontWeight:800,color:"#9a9a9a",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"6px"}}>¿Quién paga el BIT Grupo?</div>
@@ -617,7 +636,6 @@ export default function GrupoDetalle() {
               ))}
             </Card>
 
-            {/* Configuración campos públicos residentes */}
             {configEdit&&(
               <Card titulo="⚙️ Campos visibles para residentes">
                 <div style={{fontSize:"12px",color:"#9a9a9a",fontWeight:600,marginBottom:"10px"}}>Elegí qué datos de cada residente pueden ver los miembros</div>
@@ -635,7 +653,6 @@ export default function GrupoDetalle() {
               </Card>
             )}
 
-            {/* Roles */}
             <Card titulo="🛡️ Roles">
               {miembros.filter(m=>m.estado==="activo"&&m.usuario_id!==grupo.creador_id).map((m,i,a)=>(
                 <div key={i} style={{display:"flex",alignItems:"center",gap:"10px",padding:"8px 0",borderBottom:i<a.length-1?"1px solid #f5f5f5":"none"}}>
@@ -649,8 +666,6 @@ export default function GrupoDetalle() {
             </Card>
           </div>
         )}
-
-        {/* ── TABS GENÉRICOS ── */}
 
         {tab==="chat"&&(
           <div style={{display:"flex",flexDirection:"column",height:"calc(100vh - 380px)",minHeight:"300px"}}>
@@ -744,16 +759,41 @@ export default function GrupoDetalle() {
 
       {/* ── POPUPS ── */}
 
-      {/* BIT */}
       {popupBit&&<Popup onClose={()=>setPopupBit(false)} titulo="🏆 BIT Grupo">
         <div style={{background:"linear-gradient(135deg,#1a2a3a,#243b55)",borderRadius:"14px",padding:"20px",textAlign:"center",marginBottom:"14px"}}>
-          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"22px",color:"#f0c040",letterSpacing:"1px",marginBottom:"6px"}}>$500 / 30 días</div>
-          <div style={{fontSize:"13px",color:"#8a9aaa",fontWeight:600}}>Chat interno y anuncios exclusivos</div>
+          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"22px",color:"#f0c040",letterSpacing:"1px",marginBottom:"6px"}}>500 BIT / ingreso</div>
+          <div style={{fontSize:"13px",color:"#8a9aaa",fontWeight:600}}>Chat interno y anuncios exclusivos del grupo</div>
+          <div style={{marginTop:"10px",fontSize:"13px",color:"#f0c040",fontWeight:700}}>Tu saldo: {bitsTotal.toLocaleString("es-AR")} BIT</div>
         </div>
-        <Btn full onClick={()=>{setPopupBit(false);router.push("/comprar?cat=extras");}}>⚡ Activar BIT Grupo</Btn>
+        <Btn full onClick={()=>{setPopupBit(false);setPopupConfirmarBit(true);}}>⚡ Unirme al grupo</Btn>
       </Popup>}
 
-      {/* Publicar */}
+      {popupConfirmarBit&&<Popup onClose={()=>setPopupConfirmarBit(false)} titulo="👥 Confirmar ingreso">
+        <div style={{background:"#f9f9f9",borderRadius:"12px",padding:"16px",marginBottom:"14px"}}>
+          <div style={{fontSize:"14px",fontWeight:800,color:"#1a2a3a",marginBottom:"6px"}}>💳 Costo de ingreso</div>
+          <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #eee"}}>
+            <span style={{fontSize:"13px",color:"#9a9a9a",fontWeight:700}}>Tu saldo</span>
+            <span style={{fontSize:"13px",fontWeight:800,color:"#1a2a3a"}}>{bitsTotal.toLocaleString("es-AR")} BIT</span>
+          </div>
+          <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #eee"}}>
+            <span style={{fontSize:"13px",color:"#9a9a9a",fontWeight:700}}>Costo</span>
+            <span style={{fontSize:"13px",fontWeight:800,color:"#e63946"}}>− 500 BIT</span>
+          </div>
+          <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0"}}>
+            <span style={{fontSize:"13px",color:"#9a9a9a",fontWeight:700}}>Saldo restante</span>
+            <span style={{fontSize:"13px",fontWeight:900,color:"#00a884"}}>{(bitsTotal-500).toLocaleString("es-AR")} BIT</span>
+          </div>
+        </div>
+        <Btn full onClick={async()=>{
+          if(!session) return;
+          const ok = await pagarBitGrupo(session.user.id);
+          if(!ok){ alert("⚠️ No tenés suficientes BIT."); return; }
+          setBitsTotal(t=>t-500);
+          setPopupConfirmarBit(false);
+          setPopupAcceso(true);
+        }}>✅ Confirmar — gastar 500 BIT</Btn>
+      </Popup>}
+
       {popupPub&&<Popup onClose={()=>setPopupPub(false)} titulo={nuevaPub.tipo==="publica"?"🌐 Publicación pública":"📢 Publicación interna"}>
         <div style={{display:"flex",flexDirection:"column",gap:"10px",marginBottom:"14px"}}>
           <input value={nuevaPub.titulo} onChange={e=>setNuevaPub(p=>({...p,titulo:e.target.value}))} placeholder="Título *" maxLength={120} style={inputStyle}/>
@@ -766,7 +806,6 @@ export default function GrupoDetalle() {
         <Btn full onClick={publicar} disabled={!nuevaPub.titulo.trim()}>📢 Publicar</Btn>
       </Popup>}
 
-      {/* Nuevo residente */}
       {popupRes&&<Popup onClose={()=>setPopupRes(false)} titulo="👥 Nuevo residente">
         <div style={{display:"flex",flexDirection:"column",gap:"8px",marginBottom:"14px"}}>
           <input value={nuevoRes.nombre}    onChange={e=>setNuevoRes(p=>({...p,nombre:e.target.value}))}    placeholder="Nombre completo *" style={inputStyle}/>
@@ -790,7 +829,6 @@ export default function GrupoDetalle() {
         <Btn full onClick={guardarResidente} disabled={!nuevoRes.nombre.trim()}>💾 Guardar</Btn>
       </Popup>}
 
-      {/* Nuevo servicio */}
       {popupSvc&&<Popup onClose={()=>setPopupSvc(false)} titulo="🔧 Nuevo servicio">
         <div style={{display:"flex",flexDirection:"column",gap:"8px",marginBottom:"14px"}}>
           <input value={nuevoSvc.titulo} onChange={e=>setNuevoSvc(p=>({...p,titulo:e.target.value}))} placeholder="Título *" style={inputStyle}/>
@@ -804,7 +842,6 @@ export default function GrupoDetalle() {
         <Btn full onClick={guardarServicio} disabled={!nuevoSvc.titulo.trim()}>💾 Guardar</Btn>
       </Popup>}
 
-      {/* Nuevo proveedor */}
       {popupProv&&<Popup onClose={()=>setPopupProv(false)} titulo="🏪 Nuevo proveedor">
         <div style={{display:"flex",flexDirection:"column",gap:"8px",marginBottom:"14px"}}>
           <input value={nuevoProv.nombre}   onChange={e=>setNuevoProv(p=>({...p,nombre:e.target.value}))}   placeholder="Nombre *" style={inputStyle}/>
@@ -820,7 +857,6 @@ export default function GrupoDetalle() {
         <Btn full onClick={guardarProveedor} disabled={!nuevoProv.nombre.trim()}>💾 Guardar</Btn>
       </Popup>}
 
-      {/* Nuevo evento */}
       {popupEvt&&<Popup onClose={()=>setPopupEvt(false)} titulo="📅 Nuevo evento">
         <div style={{display:"flex",flexDirection:"column",gap:"8px",marginBottom:"14px"}}>
           <input value={nuevoEvt.titulo}      onChange={e=>setNuevoEvt(p=>({...p,titulo:e.target.value}))}      placeholder="Título *" style={inputStyle}/>

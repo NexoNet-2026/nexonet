@@ -278,21 +278,39 @@ export default function Usuario() {
           </button>
         </div>
 
-        <div style={{ display:"flex" }}>
-          {([["cuenta","💳","Cuenta"],["chat","💬","Chat"],["datos","👤","Datos"],["estadisticas","📊","Stats"],["promotor","⭐","Promotor"],["grupos","👥","Grupos"]] as [Seccion,string,string][]).map(([id,e,l]) => (
-            <button key={id} onClick={()=>setSeccion(id)} style={{ flex:1, background:"none", border:"none", borderBottom:seccion===id?"3px solid #d4a017":"3px solid transparent", padding:"10px 4px", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:"2px", position:"relative" }}>
+        <div style={{ display:"flex", overflowX:"auto", scrollbarWidth:"none", WebkitOverflowScrolling:"touch" }}>
+          {([
+            ["cuenta",    "💳", "Cuenta",    "#d4a017"],
+            ["chat",      "💬", "Chat",       "#d4a017"],
+            ["datos",     "👤", "Datos",      "#d4a017"],
+            ["estadisticas","📊","Stats",     "#d4a017"],
+            ["promotor",  "⭐", "Promotor",   "#d4a017"],
+            ["grupos",    "👥", "Grupos",     "#d4a017"],
+            ["busquedas", "🔍", "Búsquedas","#16a085"],
+          ] as [Seccion,string,string,string][]).map(([id,e,l,color]) => (
+            <button key={id} onClick={()=>setSeccion(id)}
+              style={{ flexShrink:0, minWidth:"60px", background:"none", border:"none",
+                       borderBottom: seccion===id ? `3px solid ${color}` : "3px solid transparent",
+                       padding:"10px 6px", cursor:"pointer", display:"flex", flexDirection:"column",
+                       alignItems:"center", gap:"2px", position:"relative" }}>
               <span style={{ fontSize:"16px" }}>{e}</span>
-              {id==="chat" && noLeidos>0 && <span style={{ position:"absolute", top:"6px", right:"calc(50% - 16px)", background:"#e74c3c", color:"#fff", borderRadius:"20px", fontSize:"9px", fontWeight:900, padding:"1px 5px", minWidth:"16px", textAlign:"center" }}>{noLeidos}</span>}
-              <span style={{ fontSize:"9px", fontWeight:800, color:seccion===id?"#d4a017":"#8a9aaa", textTransform:"uppercase", letterSpacing:"0.5px" }}>{l}</span>
+              {id==="chat" && noLeidos>0 && (
+                <span style={{ position:"absolute", top:"6px", right:"calc(50% - 16px)",
+                               background:"#e74c3c", color:"#fff", borderRadius:"20px",
+                               fontSize:"9px", fontWeight:900, padding:"1px 5px",
+                               minWidth:"16px", textAlign:"center" }}>{noLeidos}</span>
+              )}
+              <span style={{ fontSize:"9px", fontWeight:800, color:seccion===id ? color : "#8a9aaa",
+                             textTransform:"uppercase", letterSpacing:"0.5px", whiteSpace:"nowrap" }}>{l}</span>
             </button>
           ))}
-          <button onClick={()=>setSeccion("busquedas")} style={{ flex:1, background:"none", border:"none", borderBottom:seccion==="busquedas"?"3px solid #16a085":"3px solid transparent", padding:"10px 4px", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:"2px" }}>
-            <span style={{ fontSize:"16px" }}>🔍</span>
-            <span style={{ fontSize:"9px", fontWeight:800, color:seccion==="busquedas"?"#16a085":"#8a9aaa", textTransform:"uppercase", letterSpacing:"0.5px" }}>Buscar</span>
-          </button>
-          <button onClick={()=>router.push("/mis-anuncios")} style={{ flex:1, background:"none", border:"none", borderBottom:"3px solid transparent", padding:"10px 4px", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:"2px" }}>
+          <button onClick={()=>router.push("/mis-anuncios")}
+            style={{ flexShrink:0, minWidth:"60px", background:"none", border:"none",
+                     borderBottom:"3px solid transparent", padding:"10px 6px", cursor:"pointer",
+                     display:"flex", flexDirection:"column", alignItems:"center", gap:"2px" }}>
             <span style={{ fontSize:"16px" }}>📋</span>
-            <span style={{ fontSize:"9px", fontWeight:800, color:"#8a9aaa", textTransform:"uppercase", letterSpacing:"0.5px" }}>Anuncios</span>
+            <span style={{ fontSize:"9px", fontWeight:800, color:"#8a9aaa",
+                           textTransform:"uppercase", letterSpacing:"0.5px" }}>Anuncios</span>
           </button>
         </div>
       </div>

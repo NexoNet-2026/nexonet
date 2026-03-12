@@ -5,7 +5,6 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import PopupCompra, { MetodoPago } from "@/components/PopupCompra";
-import PopupPago, { LINK_PLATAFORMAS } from "@/components/PopupPago";
 
 // ─── Todos los campos opcionales aceptan null (lo que devuelve Supabase) ──────
 type Anuncio = {
@@ -761,68 +760,61 @@ export default function MisAnuncios() {
 
       {/* POPUPS */}
       {popupBits && (
-        <PopupCompra tipo="general" tituloAccion="⚡ Cargar BIT"
-          bitsDisponibles={{ nexo: bitsNexo, promo: bitsPromo, free: bitsFree }}
-          onClose={() => setPopupBits(false)} />
+        <PopupCompra
+          titulo="⚡ Cargar BIT" emoji="⚡" costo="$500 / $1.000 / $3.000"
+          descripcion="BIT generales para usar en la plataforma"
+          bits={{ free: bitsFree, nexo: bitsNexo, promo: bitsPromo }}
+          onClose={() => setPopupBits(false)}
+          onPagar={async (metodo) => { setPopupBits(false); alert("Próximamente — método de pago externo"); }}
+        />
       )}
 
       {popupPlan && (
-        <PopupCompra tipo="anuncio" tituloAccion="BIT Anuncios — Ampliar plan"
-          bitsDisponibles={{ nexo: bitsNexo, promo: bitsPromo, free: bitsFree }}
-          onClose={() => setPopupPlan(false)} />
+        <PopupCompra
+          titulo="Ampliar plan de anuncios" emoji="📋" costo="$1.000 / $3.000 / $10.000"
+          descripcion="Publicá más anuncios ampliando tu plan"
+          bits={{ free: bitsFree, nexo: bitsNexo, promo: bitsPromo }}
+          onClose={() => setPopupPlan(false)}
+          onPagar={async (metodo) => { setPopupPlan(false); alert("Próximamente — contactanos para ampliar tu plan"); }}
+        />
       )}
 
       {popupLink && (
-        <PopupPago titulo="Link Multimedia" emoji="🔗"
-          producto={{ id:"link", emoji:"🔗", titulo:"Link Multimedia",
-                      desc:"Links ilimitados · una vez habilitado", precio:500, bitCost:500 }}
-          bitsDisponibles={{ nexo: bitsNexo, promo: bitsPromo, free: bitsFree }}
+        <PopupCompra
+          titulo="Habilitar Link Multimedia" emoji="🔗" costo="500 BIT / $500"
+          descripcion="YouTube · Instagram · Facebook · cualquier URL"
+          bits={{ free: bitsFree, nexo: bitsNexo, promo: bitsPromo }}
           onClose={() => setPopupLink(null)}
-          onExito={async metodo => {
+          onPagar={async (metodo: MetodoPago) => {
             const id = popupLink;
-            if (metodo.startsWith("bit_")) {
+            if (metodo === "bit_free" || metodo === "bit_nexo") {
               await supabase.from("anuncios").update({ link_habilitado: true }).eq("id", id);
               setAnuncios(prev => prev.map(a => a.id === id ? ({ ...a, link_habilitado: true } as Anuncio) : a));
             } else {
-              alert("✅ Te contactamos en 24hs para habilitar por transferencia.");
+              alert("Próximamente — método de pago externo");
             }
             setPopupLink(null);
-          }}>
-          <div style={{ display:"flex", flexDirection:"column", gap:"8px", marginBottom:"4px" }}>
-            {LINK_PLATAFORMAS.map(p => (
-              <div key={p.nombre} style={{ display:"flex", alignItems:"center", gap:"10px",
-                                            background:"#f8f8f8", borderRadius:"10px", padding:"10px 12px" }}>
-                <div style={{ width:"34px", height:"34px", borderRadius:"8px",
-                               background:`${p.color}15`, display:"flex", alignItems:"center",
-                               justifyContent:"center", fontSize:"18px", flexShrink:0 }}>
-                  {p.emoji}
-                </div>
-                <div>
-                  <div style={{ fontSize:"13px", fontWeight:900, color:"#1a2a3a" }}>{p.nombre}</div>
-                  <div style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:600 }}>{p.desc}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </PopupPago>
+          }}
+        />
       )}
 
       {popupAdj && (
-        <PopupPago titulo="Agregar Adjunto" emoji="📎"
-          producto={{ id:"adjunto", emoji:"📎", titulo:"Adjunto en anuncio",
-                      desc:"PDF, catálogo, ficha técnica · 30 días", precio:500, bitCost:500 }}
-          bitsDisponibles={{ nexo: bitsNexo, promo: bitsPromo, free: bitsFree }}
+        <PopupCompra
+          titulo="Habilitar Adjuntos" emoji="📎" costo="500 BIT / $500"
+          descripcion="PDF, catálogo, ficha técnica · hasta 5 archivos"
+          bits={{ free: bitsFree, nexo: bitsNexo, promo: bitsPromo }}
           onClose={() => setPopupAdj(null)}
-          onExito={async metodo => {
+          onPagar={async (metodo: MetodoPago) => {
             const id = popupAdj;
-            if (metodo.startsWith("bit_")) {
+            if (metodo === "bit_free" || metodo === "bit_nexo") {
               await supabase.from("anuncios").update({ adjunto_habilitado: true }).eq("id", id);
               setAnuncios(prev => prev.map(a => a.id === id ? ({ ...a, adjunto_habilitado: true } as Anuncio) : a));
             } else {
-              alert("✅ Te contactamos en 24hs para habilitar por transferencia.");
+              alert("Próximamente — método de pago externo");
             }
             setPopupAdj(null);
-          }} />
+          }}
+        />
       )}
 
       {popupBitsCx && (
@@ -855,9 +847,13 @@ export default function MisAnuncios() {
       )}
 
       {popupFlash && (
-        <PopupCompra tipo="flash" tituloAccion="Promo Flash"
-          bitsDisponibles={{ nexo: bitsNexo, promo: bitsPromo, free: bitsFree }}
-          onClose={() => setPopupFlash(null)} />
+        <PopupCompra
+          titulo="Promo Flash" emoji="⚡" costo="$500 / $2.000 / $5.000 / $10.000"
+          descripcion="Destacá en barrio · ciudad · provincia · país"
+          bits={{ free: bitsFree, nexo: bitsNexo, promo: bitsPromo }}
+          onClose={() => setPopupFlash(null)}
+          onPagar={async (metodo) => { setPopupFlash(null); alert("Próximamente — Promo Flash"); }}
+        />
       )}
 
       <BottomNav />

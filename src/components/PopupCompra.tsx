@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 export type MetodoPago =
@@ -36,8 +37,13 @@ export default function PopupCompra({
   onClose,
 }: PopupCompraProps) {
   const [cargando, setCargando] = useState<MetodoPago | null>(null);
+  const router = useRouter();
 
   const pagar = async (metodo: MetodoPago) => {
+    if (metodo === "mercadopago" || metodo === "credito" || metodo === "debito") {
+      router.push("/tienda");
+      return;
+    }
     setCargando(metodo);
     await onPagar(metodo);
     setCargando(null);

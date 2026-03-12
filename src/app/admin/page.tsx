@@ -5,22 +5,36 @@ import { supabase } from "@/lib/supabase";
 
 const ADMIN_UUID = "ab56253d-b92e-4b73-a19a-3cd0cd95c458";
 
-type Tab = "dashboard" | "usuarios" | "promotores" | "anuncios" | "grupos" | "soporte" | "config";
+type Tab = "dashboard"|"usuarios"|"anuncios"|"grupos"|"mensajes"|"promotores"|"pagos"|"alarmas"|"config";
 
-// ─── helpers de estilo ───────────────────────────────────────────────────────
 const S = {
   card:  { background:"#fff", borderRadius:"16px", padding:"20px", boxShadow:"0 2px 12px rgba(0,0,0,0.07)", marginBottom:"14px" } as React.CSSProperties,
-  label: { display:"block", fontSize:"11px", fontWeight:800, color:"#666", textTransform:"uppercase" as const, letterSpacing:"1px", marginBottom:"6px" },
-  input: { width:"100%", border:"2px solid #e8e8e6", borderRadius:"10px", padding:"10px 14px", fontSize:"14px", fontFamily:"'Nunito',sans-serif", color:"#2c2c2e", outline:"none", boxSizing:"border-box" as const },
-  btn:   (c="#d4a017") => ({ background:`linear-gradient(135deg,${c},${c}dd)`, border:"none", borderRadius:"10px", padding:"8px 16px", fontSize:"12px", fontWeight:900, color: c==="#e74c3c"||c==="#27ae60"||c==="#3a7bd5" ? "#fff":"#1a2a3a", cursor:"pointer", fontFamily:"'Nunito',sans-serif" } as React.CSSProperties),
-  badge: (c:string, bg:string) => ({ background:bg, color:c, borderRadius:"20px", padding:"3px 10px", fontSize:"10px", fontWeight:900 } as React.CSSProperties),
+  input: { width:"100%", border:"2px solid #e8e8e6", borderRadius:"10px", padding:"10px 14px", fontSize:"13px", fontFamily:"'Nunito',sans-serif", color:"#2c2c2e", outline:"none", boxSizing:"border-box" as const },
+  btn:   (c="#d4a017",light=false) => ({ background:light?`${c}18`:`linear-gradient(135deg,${c},${c}cc)`, border:light?`1px solid ${c}44`:"none", borderRadius:"10px", padding:"7px 14px", fontSize:"12px", fontWeight:900, color:light?c:"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif", whiteSpace:"nowrap" as const } as React.CSSProperties),
+  label: { fontSize:"11px", fontWeight:800, color:"#666", textTransform:"uppercase" as const, letterSpacing:"1px", marginBottom:"5px", display:"block" },
+  badge: (c:string,bg:string) => ({ background:bg, color:c, borderRadius:"20px", padding:"2px 9px", fontSize:"10px", fontWeight:900, whiteSpace:"nowrap" as const } as React.CSSProperties),
+  row:   { display:"flex", alignItems:"center", gap:"8px", padding:"10px 0", borderBottom:"1px solid #f0f0f0" } as React.CSSProperties,
+  sect:  { fontSize:"11px", fontWeight:800, color:"#9a9a9a", textTransform:"uppercase" as const, letterSpacing:"1px", marginBottom:"12px" },
 };
 
-const StatBox = ({ n, l, e, c="#d4a017" }:{n:string;l:string;e:string;c?:string}) => (
-  <div style={{ background:"#fff", borderRadius:"14px", padding:"16px 12px", textAlign:"center", boxShadow:"0 2px 8px rgba(0,0,0,0.06)" }}>
-    <div style={{ fontSize:"22px", marginBottom:"4px" }}>{e}</div>
-    <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"28px", color:c, lineHeight:1 }}>{n}</div>
-    <div style={{ fontSize:"10px", fontWeight:700, color:"#9a9a9a", textTransform:"uppercase", letterSpacing:"0.5px", lineHeight:1.3, marginTop:"2px" }}>{l}</div>
+const StatBox = ({n,l,e,c="#d4a017"}:{n:string;l:string;e:string;c?:string}) => (
+  <div style={{background:"#fff",borderRadius:"14px",padding:"14px 10px",textAlign:"center",boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
+    <div style={{fontSize:"20px",marginBottom:"2px"}}>{e}</div>
+    <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"26px",color:c,lineHeight:1}}>{n}</div>
+    <div style={{fontSize:"9px",fontWeight:700,color:"#9a9a9a",textTransform:"uppercase",letterSpacing:"0.5px",marginTop:"2px"}}>{l}</div>
+  </div>
+);
+
+// ── Modal genérico ──────────────────────────────────────────────────────────
+const Modal = ({titulo,onClose,children}:{titulo:string;onClose:()=>void;children:React.ReactNode}) => (
+  <div style={{position:"fixed",inset:0,zIndex:900,background:"rgba(0,0,0,0.6)",display:"flex",alignItems:"center",justifyContent:"center",padding:"16px"}} onClick={onClose}>
+    <div style={{background:"#fff",borderRadius:"20px",padding:"24px",width:"100%",maxWidth:"420px",maxHeight:"90vh",overflowY:"auto",fontFamily:"'Nunito',sans-serif"}} onClick={e=>e.stopPropagation()}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"18px"}}>
+        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"22px",color:"#1a2a3a",letterSpacing:"1px"}}>{titulo}</div>
+        <button onClick={onClose} style={{background:"#f0f0f0",border:"none",borderRadius:"50%",width:"32px",height:"32px",fontSize:"16px",cursor:"pointer"}}>✕</button>
+      </div>
+      {children}
+    </div>
   </div>
 );
 
@@ -29,38 +43,56 @@ export default function AdminPanel() {
   const [authed,  setAuthed]  = useState(false);
   const [tab,     setTab]     = useState<Tab>("dashboard");
   const [loading, setLoading] = useState(true);
+  const [toast,   setToast]   = useState("");
 
-  // ── datos globales ──
+  // ── datos ──
   const [stats,      setStats]      = useState<any>({});
   const [usuarios,   setUsuarios]   = useState<any[]>([]);
   const [anuncios,   setAnuncios]   = useState<any[]>([]);
   const [grupos,     setGrupos]     = useState<any[]>([]);
+  const [mensajes,   setMensajes]   = useState<any[]>([]);
   const [liqs,       setLiqs]       = useState<any[]>([]);
   const [comisiones, setComisiones] = useState<any[]>([]);
-  const [mensajes,   setMensajes]   = useState<any[]>([]);
   const [rubros,     setRubros]     = useState<any[]>([]);
+  const [pagos,      setPagos]      = useState<any[]>([]);
+  const [alarmas,    setAlarmas]    = useState<any>({});
 
-  // ── filtros usuarios ──
-  const [busqUser, setBusqUser] = useState("");
-  const [filtroTipo, setFiltroTipo] = useState("todos");
+  // ── filtros ──
+  const [busqUser,    setBusqUser]    = useState("");
+  const [busqAnuncio, setBusqAnuncio] = useState("");
+  const [filtroUser,  setFiltroUser]  = useState("todos");
 
-  // ── modal asignar BIT ──
-  const [modalBit, setModalBit] = useState<any>(null);
-  const [bitTipo,  setBitTipo]  = useState("bits_free");
-  const [bitCant,  setBitCant]  = useState("");
-  const [bitNota,  setBitNota]  = useState("");
+  // ── modales ──
+  const [modalUsuario,  setModalUsuario]  = useState<any>(null);
+  const [modalAnuncio,  setModalAnuncio]  = useState<any>(null);
+  const [modalGrupo,    setModalGrupo]    = useState<any>(null);
+  const [modalMensaje,  setModalMensaje]  = useState<any>(null);
+  const [modalBit,      setModalBit]      = useState<any>(null);
+  const [modalNuevoAn,  setModalNuevoAn]  = useState(false);
+  const [modalNuevoGr,  setModalNuevoGr]  = useState(false);
 
-  // ── modal reasignar referido ──
-  const [modalRef, setModalRef] = useState<any>(null);
-  const [nuevoRefCodigo, setNuevoRefCodigo] = useState("");
+  // ── form bits ──
+  const [bitTipo, setBitTipo] = useState("bits");
+  const [bitCant, setBitCant] = useState("");
+  const [bitNota, setBitNota] = useState("");
 
-  // ── auth check ──
+  // ── form mensaje ──
+  const [msgDest,  setMsgDest]  = useState(""); // usuario_id o "todos"
+  const [msgTexto, setMsgTexto] = useState("");
+  const [msgTipo,  setMsgTipo]  = useState("sistema");
+
+  // ── form nuevo anuncio ──
+  const [nuevaAn, setNuevaAn] = useState<any>({ titulo:"", descripcion:"", precio:"", rubro:"", subrubro:"", provincia:"", ciudad:"", tipo:"conexion", flash:false, permuto:false });
+
+  // ── form nuevo grupo ──
+  const [nuevoGr, setNuevoGr] = useState({ nombre:"", descripcion:"", rubro_id:"" });
+
+  showToast = (msg:string) => { setToast(msg); setTimeout(()=>setToast(""),3000); };
+
+  // ── auth ──
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session || session.user.id !== ADMIN_UUID) {
-        router.push("/admin/login");
-        return;
-      }
+      if (!session || session.user.id !== ADMIN_UUID) { router.push("/admin/login"); return; }
       setAuthed(true);
       cargarTodo();
     });
@@ -69,510 +101,698 @@ export default function AdminPanel() {
   const cargarTodo = useCallback(async () => {
     setLoading(true);
     const [
-      { data: usrs },
-      { data: anuns },
-      { data: grps },
-      { data: liquidaciones },
-      { data: coms },
-      { data: msgs },
-      { data: rubs },
-      { count: totalUsers },
-      { count: totalAnuncios },
-      { count: totalGrupos },
-      { count: totalMensajes },
+      {data:usrs},{data:anuns},{data:grps},{data:msgs},{data:lqs},{data:coms},{data:rubs},{data:pgs},
+      {count:cu},{count:ca},{count:cg},{count:cm},
     ] = await Promise.all([
-      supabase.from("usuarios").select("*").order("created_at", { ascending: false }).limit(200),
-      supabase.from("anuncios").select("*,usuarios(nombre_usuario,codigo)").order("created_at", { ascending: false }).limit(200),
-      supabase.from("grupos").select("*,usuarios(nombre_usuario)").order("created_at", { ascending: false }).limit(100),
-      supabase.from("liquidaciones_promotor").select("*,usuarios(nombre_usuario,codigo,email)").order("created_at", { ascending: false }),
-      supabase.from("comisiones_promotor").select("*,promotor:promotor_id(nombre_usuario,codigo),origen:origen_id(nombre_usuario,codigo)").order("created_at", { ascending: false }).limit(100),
-      supabase.from("mensajes").select("*,emisor:emisor_id(nombre_usuario),receptor:receptor_id(nombre_usuario)").order("created_at", { ascending: false }).limit(100),
+      supabase.from("usuarios").select("*").order("created_at",{ascending:false}).limit(300),
+      supabase.from("anuncios").select("*,usuarios(nombre_usuario,codigo,email)").order("created_at",{ascending:false}).limit(300),
+      supabase.from("grupos").select("*,usuarios(nombre_usuario)").order("created_at",{ascending:false}).limit(100),
+      supabase.from("mensajes").select("*,emisor:emisor_id(nombre_usuario),receptor:receptor_id(nombre_usuario)").order("created_at",{ascending:false}).limit(200),
+      supabase.from("liquidaciones_promotor").select("*,usuarios(nombre_usuario,codigo,email)").order("created_at",{ascending:false}),
+      supabase.from("comisiones_promotor").select("*,promotor:promotor_id(nombre_usuario,codigo),origen:origen_id(nombre_usuario,codigo)").order("created_at",{ascending:false}).limit(100),
       supabase.from("rubros").select("*,subrubros(id,nombre)").order("nombre"),
-      supabase.from("usuarios").select("*", { count: "exact", head: true }),
-      supabase.from("anuncios").select("*", { count: "exact", head: true }),
-      supabase.from("grupos").select("*", { count: "exact", head: true }),
-      supabase.from("mensajes").select("*", { count: "exact", head: true }),
+      supabase.from("pagos_mp").select("*,usuarios(nombre_usuario,codigo,email)").order("created_at",{ascending:false}).limit(200),
+      supabase.from("usuarios").select("*",{count:"exact",head:true}),
+      supabase.from("anuncios").select("*",{count:"exact",head:true}),
+      supabase.from("grupos").select("*",{count:"exact",head:true}),
+      supabase.from("mensajes").select("*",{count:"exact",head:true}),
     ]);
 
-    setUsuarios(usrs || []);
-    setAnuncios(anuns || []);
-    setGrupos(grps || []);
-    setLiqs(liquidaciones || []);
-    setComisiones(coms || []);
-    setMensajes(msgs || []);
-    setRubros(rubs || []);
+    setUsuarios(usrs||[]);
+    setAnuncios(anuns||[]);
+    setGrupos(grps||[]);
+    setMensajes(msgs||[]);
+    setLiqs(lqs||[]);
+    setComisiones(coms||[]);
+    setRubros(rubs||[]);
+    setPagos(pgs||[]);
 
-    const promotores  = (usrs || []).filter((u: any) => u.es_promotor).length;
-    const bitsLibres  = (usrs || []).reduce((a: number, u: any) => a + (u.bits_free || 0), 0);
-    const bitsNexo    = (usrs || []).reduce((a: number, u: any) => a + (u.bits || 0), 0);
-    const bitsPromo   = (usrs || []).reduce((a: number, u: any) => a + (u.bits_promotor || 0), 0);
-    const liqPend     = (liquidaciones || []).filter((l: any) => l.estado === "pendiente").length;
+    const totalBits = (usrs||[]).reduce((a:number,u:any)=>(a+(u.bits||0)+(u.bits_free||0)),0);
+    const totalPagos = (pgs||[]).reduce((a:number,p:any)=>a+(p.monto||0),0);
+    setStats({ usuarios:cu||0, anuncios:ca||0, grupos:cg||0, mensajes:cm||0, bits:totalBits, pagos:totalPagos });
 
-    setStats({ totalUsers, totalAnuncios, totalGrupos, totalMensajes, promotores, bitsLibres, bitsNexo, bitsPromo, liqPend });
+    // Cargar alarmas desde config
+    const {data:cfg} = await supabase.from("config").select("*").eq("clave","alarmas").single();
+    if (cfg) setAlarmas(JSON.parse(cfg.valor||"{}"));
+
     setLoading(false);
   }, []);
 
-  const cerrarSesion = async () => { await supabase.auth.signOut(); router.push("/admin/login"); };
+  const showToast = (msg:string) => { setToast(msg); setTimeout(()=>setToast(""),3000); };
 
   // ── acciones usuarios ──
-  const bloquearUsuario = async (u: any) => {
-    const nuevoEstado = u.bloqueado ? false : true;
-    await supabase.from("usuarios").update({ bloqueado: nuevoEstado }).eq("id", u.id);
-    setUsuarios(prev => prev.map(x => x.id === u.id ? { ...x, bloqueado: nuevoEstado } : x));
+  const bloquearUsuario = async (u:any) => {
+    const nuevo = !u.bloqueado;
+    await supabase.from("usuarios").update({bloqueado:nuevo}).eq("id",u.id);
+    setUsuarios(prev=>prev.map(x=>x.id===u.id?{...x,bloqueado:nuevo}:x));
+    showToast(nuevo?"Usuario bloqueado":"Usuario desbloqueado");
+  };
+
+  const eliminarUsuario = async (u:any) => {
+    if (!confirm(`¿Eliminar a ${u.nombre_usuario}? Esta acción no se puede deshacer.`)) return;
+    await supabase.from("usuarios").delete().eq("id",u.id);
+    setUsuarios(prev=>prev.filter(x=>x.id!==u.id));
+    showToast("Usuario eliminado");
   };
 
   const asignarBit = async () => {
-    if (!modalBit || !bitCant) return;
+    if (!modalBit||!bitCant) return;
     const cant = parseInt(bitCant);
-    if (isNaN(cant) || cant <= 0) return;
-    const actual = modalBit[bitTipo] || 0;
-    await supabase.from("usuarios").update({ [bitTipo]: actual + cant }).eq("id", modalBit.id);
-    setUsuarios(prev => prev.map(x => x.id === modalBit.id ? { ...x, [bitTipo]: actual + cant } : x));
+    if (isNaN(cant)) return;
+    const actual = modalBit[bitTipo]||0;
+    await supabase.from("usuarios").update({[bitTipo]:actual+cant}).eq("id",modalBit.id);
+    setUsuarios(prev=>prev.map(x=>x.id===modalBit.id?{...x,[bitTipo]:actual+cant}:x));
+    if (bitNota) {
+      await supabase.from("notificaciones").insert({usuario_id:modalBit.id,tipo:"sistema",mensaje:`💰 Admin acreditó ${cant} ${bitTipo.toUpperCase()}${bitNota?` — ${bitNota}`:""}`,leida:false});
+    }
     setModalBit(null); setBitCant(""); setBitNota("");
+    showToast(`✅ ${cant} ${bitTipo} acreditados a ${modalBit.nombre_usuario}`);
   };
 
-  const reasignarReferido = async () => {
-    if (!modalRef || !nuevoRefCodigo.trim()) return;
-    const { data: nuevo } = await supabase.from("usuarios").select("id").eq("codigo", nuevoRefCodigo.trim().toUpperCase()).single();
-    if (!nuevo) { alert("Código no encontrado"); return; }
-    await supabase.from("usuarios").update({ referido_por: nuevo.id }).eq("id", modalRef.id);
-    setUsuarios(prev => prev.map(x => x.id === modalRef.id ? { ...x, referido_por: nuevo.id } : x));
-    setModalRef(null); setNuevoRefCodigo("");
+  const enviarMensaje = async () => {
+    if (!msgTexto.trim()) return;
+    if (msgDest==="todos") {
+      // Notificación masiva
+      const inserts = usuarios.map(u=>({usuario_id:u.id,tipo:msgTipo,mensaje:msgTexto,leida:false}));
+      await supabase.from("notificaciones").insert(inserts);
+      showToast(`✅ Mensaje enviado a ${usuarios.length} usuarios`);
+    } else if (msgDest) {
+      await supabase.from("notificaciones").insert({usuario_id:msgDest,tipo:msgTipo,mensaje:msgTexto,leida:false});
+      showToast("✅ Mensaje enviado");
+    }
+    setMsgTexto(""); setMsgDest(""); setModalMensaje(null);
   };
 
   // ── acciones anuncios ──
-  const toggleAnuncio = async (a: any) => {
-    const nuevo = a.estado === "activo" ? "bloqueado" : "activo";
-    await supabase.from("anuncios").update({ estado: nuevo }).eq("id", a.id);
-    setAnuncios(prev => prev.map(x => x.id === a.id ? { ...x, estado: nuevo } : x));
+  const bloquearAnuncio = async (a:any) => {
+    const nuevo = a.estado==="bloqueado"?"activo":"bloqueado";
+    await supabase.from("anuncios").update({estado:nuevo}).eq("id",a.id);
+    setAnuncios(prev=>prev.map(x=>x.id===a.id?{...x,estado:nuevo}:x));
+    showToast(nuevo==="bloqueado"?"Anuncio bloqueado":"Anuncio activado");
   };
 
-  // ── liquidaciones ──
-  const aprobarLiq = async (l: any) => {
-    await supabase.from("liquidaciones_promotor").update({ estado: "aprobada" }).eq("id", l.id);
-    setLiqs(prev => prev.map(x => x.id === l.id ? { ...x, estado: "aprobada" } : x));
+  const eliminarAnuncio = async (a:any) => {
+    if (!confirm(`¿Eliminar "${a.titulo}"?`)) return;
+    await supabase.from("anuncios").delete().eq("id",a.id);
+    setAnuncios(prev=>prev.filter(x=>x.id!==a.id));
+    showToast("Anuncio eliminado");
   };
-  const rechazarLiq = async (l: any) => {
-    // Devolver los bits al promotor
-    const { data: u } = await supabase.from("usuarios").select("bits_promotor").eq("id", l.promotor_id).single();
-    if (u) await supabase.from("usuarios").update({ bits_promotor: (u.bits_promotor || 0) + l.monto_bits }).eq("id", l.promotor_id);
-    await supabase.from("liquidaciones_promotor").update({ estado: "rechazada" }).eq("id", l.id);
-    setLiqs(prev => prev.map(x => x.id === l.id ? { ...x, estado: "rechazada" } : x));
+
+  const guardarAnuncio = async (a:any) => {
+    await supabase.from("anuncios").update({titulo:a.titulo,descripcion:a.descripcion,precio:parseFloat(a.precio)||0,link:a.link,estado:a.estado}).eq("id",a.id);
+    setAnuncios(prev=>prev.map(x=>x.id===a.id?{...x,...a}:x));
+    setModalAnuncio(null);
+    showToast("✅ Anuncio guardado");
   };
+
+  const publicarAnuncio = async () => {
+    if (!nuevaAn.titulo) return;
+    const {data,error} = await supabase.from("anuncios").insert({
+      ...nuevaAn, precio:parseFloat(nuevaAn.precio)||0,
+      usuario_id:ADMIN_UUID, estado:"activo", tipo:nuevaAn.tipo||"conexion",
+    }).select().single();
+    if (!error && data) {
+      setAnuncios(prev=>[data,...prev]);
+      setNuevaAn({titulo:"",descripcion:"",precio:"",rubro:"",subrubro:"",provincia:"",ciudad:"",tipo:"conexion",flash:false,permuto:false});
+      setModalNuevoAn(false);
+      showToast("✅ Anuncio publicado");
+    }
+  };
+
+  // ── acciones grupos ──
+  const toggleGrupo = async (g:any) => {
+    const nuevo = !g.activo;
+    await supabase.from("grupos").update({activo:nuevo}).eq("id",g.id);
+    setGrupos(prev=>prev.map(x=>x.id===g.id?{...x,activo:nuevo}:x));
+    showToast(nuevo?"Grupo activado":"Grupo desactivado");
+  };
+
+  const crearGrupo = async () => {
+    if (!nuevoGr.nombre) return;
+    const {data,error} = await supabase.from("grupos").insert({...nuevoGr,creador_id:ADMIN_UUID,activo:true}).select().single();
+    if (!error&&data) { setGrupos(prev=>[data,...prev]); setNuevoGr({nombre:"",descripcion:"",rubro_id:""}); setModalNuevoGr(false); showToast("✅ Grupo creado"); }
+  };
+
+  // ── alarmas ──
+  const guardarAlarmas = async (nuevas:any) => {
+    setAlarmas(nuevas);
+    await supabase.from("config").upsert({clave:"alarmas",valor:JSON.stringify(nuevas)},{onConflict:"clave"});
+    showToast("✅ Alarmas guardadas");
+  };
+
+  // ── filtros ──
+  const usuariosFiltrados = usuarios.filter(u=>{
+    const q = busqUser.toLowerCase();
+    const ok = !q || (u.nombre_usuario||"").toLowerCase().includes(q) || (u.email||"").toLowerCase().includes(q) || (u.codigo||"").toLowerCase().includes(q);
+    if (filtroUser==="bloqueados") return ok && u.bloqueado;
+    if (filtroUser==="promotores") return ok && u.es_promotor;
+    if (filtroUser==="sin_bits")   return ok && !(u.bits||0) && !(u.bits_free||0);
+    return ok;
+  });
+
+  const anunciosFiltrados = anuncios.filter(a=>{
+    const q = busqAnuncio.toLowerCase();
+    return !q || (a.titulo||"").toLowerCase().includes(q) || (a.usuarios?.nombre_usuario||"").toLowerCase().includes(q);
+  });
 
   if (!authed) return null;
 
-  const TABS: { id: Tab; e: string; l: string }[] = [
-    { id:"dashboard",  e:"📊", l:"Dashboard"  },
-    { id:"usuarios",   e:"👥", l:"Usuarios"   },
-    { id:"promotores", e:"⭐", l:"Promotores" },
-    { id:"anuncios",   e:"📋", l:"Anuncios"   },
-    { id:"grupos",     e:"🏘️", l:"Grupos"     },
-    { id:"soporte",    e:"💬", l:"Soporte"    },
-    { id:"config",     e:"⚙️", l:"Config"     },
+  const TABS:{id:Tab;e:string;l:string}[] = [
+    {id:"dashboard",e:"📊",l:"Panel"},
+    {id:"usuarios", e:"👥",l:"Usuarios"},
+    {id:"anuncios", e:"📋",l:"Anuncios"},
+    {id:"grupos",   e:"🏘️",l:"Grupos"},
+    {id:"mensajes", e:"💬",l:"Mensajes"},
+    {id:"promotores",e:"⭐",l:"Promotores"},
+    {id:"pagos",    e:"💰",l:"Pagos"},
+    {id:"alarmas",  e:"🔔",l:"Alarmas"},
+    {id:"config",   e:"⚙️",l:"Config"},
   ];
 
-  const usuariosFiltrados = usuarios.filter(u => {
-    const matchBusq = !busqUser || u.nombre_usuario?.toLowerCase().includes(busqUser.toLowerCase()) || u.codigo?.toLowerCase().includes(busqUser.toLowerCase()) || u.email?.toLowerCase().includes(busqUser.toLowerCase());
-    const matchTipo = filtroTipo === "todos" || (filtroTipo === "promotor" && u.es_promotor) || (filtroTipo === "bloqueado" && u.bloqueado) || (filtroTipo === "empresa" && u.plan === "nexoempresa");
-    return matchBusq && matchTipo;
-  });
-
   return (
-    <main style={{ minHeight:"100vh", background:"#f4f4f2", fontFamily:"'Nunito',sans-serif" }}>
+    <main style={{minHeight:"100vh",background:"#f4f4f2",fontFamily:"'Nunito',sans-serif",paddingBottom:"40px"}}>
 
-      {/* HEADER ADMIN */}
-      <div style={{ background:"linear-gradient(135deg,#0d1a26,#1a2a3a)", padding:"0 16px", position:"sticky", top:0, zIndex:100, boxShadow:"0 2px 12px rgba(0,0,0,0.4)" }}>
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", height:"56px" }}>
-          <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
-            <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"22px" }}>
-              <span style={{ color:"#c8c8c8" }}>Nexo</span><span style={{ color:"#d4a017" }}>Net</span>
-            </div>
-            <span style={{ background:"rgba(231,76,60,0.2)", border:"1px solid rgba(231,76,60,0.5)", borderRadius:"6px", padding:"2px 8px", fontSize:"10px", fontWeight:900, color:"#ff8a80", letterSpacing:"1px" }}>ADMIN</span>
-          </div>
-          <button onClick={cerrarSesion} style={{ background:"rgba(255,80,80,0.15)", border:"1px solid rgba(255,80,80,0.4)", borderRadius:"10px", padding:"6px 14px", color:"#ff6b6b", fontSize:"12px", fontWeight:800, cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
-            🚪 Salir
-          </button>
+      {/* Toast */}
+      {toast && (
+        <div style={{position:"fixed",top:"16px",left:"50%",transform:"translateX(-50%)",background:"#1a2a3a",color:"#fff",borderRadius:"12px",padding:"10px 20px",fontSize:"13px",fontWeight:800,zIndex:9999,boxShadow:"0 4px 20px rgba(0,0,0,0.3)"}}>
+          {toast}
         </div>
+      )}
 
-        {/* TABS */}
-        <div style={{ display:"flex", overflowX:"auto", scrollbarWidth:"none", paddingBottom:"1px" }}>
-          {TABS.map(t => (
-            <button key={t.id} onClick={() => setTab(t.id)}
-              style={{ flexShrink:0, background:"none", border:"none", borderBottom: tab===t.id ? "3px solid #d4a017" : "3px solid transparent", padding:"10px 14px", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:"2px" }}>
-              <span style={{ fontSize:"15px" }}>{t.e}</span>
-              <span style={{ fontSize:"9px", fontWeight:800, color: tab===t.id ? "#d4a017" : "#8a9aaa", textTransform:"uppercase", letterSpacing:"0.5px", whiteSpace:"nowrap" }}>{t.l}</span>
+      {/* Header */}
+      <div style={{background:"linear-gradient(135deg,#1a2a3a,#243b55)",padding:"20px 16px 0",position:"sticky",top:0,zIndex:100}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"14px"}}>
+          <div>
+            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"24px",color:"#d4a017",letterSpacing:"2px"}}>NEXONET ADMIN</div>
+            <div style={{fontSize:"11px",fontWeight:700,color:"#8a9aaa"}}>Panel de administración</div>
+          </div>
+          <div style={{display:"flex",gap:"8px"}}>
+            <button onClick={cargarTodo} style={S.btn("#3a7bd5",true)}>🔄</button>
+            <button onClick={()=>router.push("/")} style={S.btn("#d4a017",true)}>🏠</button>
+          </div>
+        </div>
+        {/* Tabs */}
+        <div style={{display:"flex",gap:"0",overflowX:"auto",borderTop:"1px solid rgba(255,255,255,0.1)"}}>
+          {TABS.map(t=>(
+            <button key={t.id} onClick={()=>setTab(t.id)}
+              style={{flexShrink:0,background:"none",border:"none",borderBottom:tab===t.id?"3px solid #d4a017":"3px solid transparent",padding:"10px 12px",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:"2px"}}>
+              <span style={{fontSize:"18px"}}>{t.e}</span>
+              <span style={{fontSize:"9px",fontWeight:800,color:tab===t.id?"#d4a017":"#8a9aaa",textTransform:"uppercase",letterSpacing:"0.5px",whiteSpace:"nowrap"}}>{t.l}</span>
             </button>
           ))}
         </div>
       </div>
 
-      {loading && (
-        <div style={{ textAlign:"center", padding:"60px 20px", color:"#9a9a9a", fontSize:"14px", fontWeight:600 }}>Cargando datos...</div>
-      )}
+      <div style={{padding:"16px"}}>
+        {loading && <div style={{textAlign:"center",padding:"40px",fontSize:"14px",color:"#9a9a9a",fontWeight:700}}>Cargando...</div>}
 
-      {!loading && (
-        <div style={{ padding:"16px", maxWidth:"600px", margin:"0 auto" }}>
+        {/* ══ DASHBOARD ═══════════════════════════════════════════════════════ */}
+        {!loading && tab==="dashboard" && (
+          <>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"10px",marginBottom:"14px"}}>
+              <StatBox n={String(stats.usuarios||0)} l="Usuarios" e="👥" />
+              <StatBox n={String(stats.anuncios||0)} l="Anuncios" e="📋" c="#3a7bd5" />
+              <StatBox n={String(stats.grupos||0)}   l="Grupos"   e="🏘️" c="#27ae60" />
+              <StatBox n={String(stats.mensajes||0)} l="Mensajes" e="💬" c="#8e44ad" />
+              <StatBox n={`$${((stats.pagos||0)/1000).toFixed(0)}K`} l="Recaudado" e="💰" c="#e67e22" />
+              <StatBox n={String(stats.bits||0)}     l="BIT circulando" e="🪙" c="#d4a017" />
+            </div>
 
-          {/* ══ DASHBOARD ══════════════════════════════════════════════════ */}
-          {tab === "dashboard" && (
-            <>
-              <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"22px", color:"#1a2a3a", letterSpacing:"1px", marginBottom:"14px" }}>📊 Dashboard General</div>
-
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10px", marginBottom:"14px" }}>
-                <StatBox n={String(stats.totalUsers||0)}    l="Usuarios"     e="👥" />
-                <StatBox n={String(stats.totalAnuncios||0)} l="Anuncios"     e="📋" />
-                <StatBox n={String(stats.totalGrupos||0)}   l="Grupos"       e="🏘️" />
-                <StatBox n={String(stats.promotores||0)}    l="Promotores"   e="⭐" c="#27ae60" />
-                <StatBox n={String(stats.totalMensajes||0)} l="Mensajes"     e="💬" c="#3a7bd5" />
-                <StatBox n={String(stats.liqPend||0)}       l="Liqs pendientes" e="💳" c="#e74c3c" />
-              </div>
-
-              <div style={S.card}>
-                <div style={{ fontSize:"11px", fontWeight:800, color:"#9a9a9a", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"14px" }}>💰 BIT en circulación</div>
-                {[
-                  { l:"BIT Free en cuentas",     v:stats.bitsLibres||0, c:"#3a7bd5" },
-                  { l:"BIT Nexo en cuentas",      v:stats.bitsNexo||0,   c:"#d4a017" },
-                  { l:"BIT Promotor en cuentas",  v:stats.bitsPromo||0,  c:"#27ae60" },
-                ].map(r => (
-                  <div key={r.l} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"10px 0", borderBottom:"1px solid #f4f4f2" }}>
-                    <span style={{ fontSize:"13px", fontWeight:700, color:"#555" }}>{r.l}</span>
-                    <span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"22px", color:r.c }}>{r.v.toLocaleString()}</span>
+            <div style={S.card}>
+              <div style={S.sect}>💰 Últimos pagos</div>
+              {pagos.slice(0,5).map(p=>(
+                <div key={p.id} style={S.row}>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:"13px",fontWeight:800,color:"#1a2a3a"}}>{p.usuarios?.nombre_usuario||"—"}</div>
+                    <div style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600}}>{p.paquete}</div>
                   </div>
-                ))}
-              </div>
-
-              <div style={S.card}>
-                <div style={{ fontSize:"11px", fontWeight:800, color:"#9a9a9a", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"14px" }}>📅 Últimos registros</div>
-                {usuarios.slice(0, 8).map((u: any) => (
-                  <div key={u.id} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"8px 0", borderBottom:"1px solid #f8f8f8" }}>
-                    <div>
-                      <div style={{ fontSize:"13px", fontWeight:800, color:"#1a2a3a" }}>{u.nombre_usuario||"—"}</div>
-                      <div style={{ fontSize:"10px", color:"#9a9a9a", fontWeight:600 }}>{u.codigo} · {new Date(u.created_at).toLocaleDateString("es-AR")}</div>
-                    </div>
-                    <span style={S.badge(u.es_promotor?"#d4a017":"#3a7bd5", u.es_promotor?"rgba(212,160,23,0.12)":"rgba(58,123,213,0.1)")}>
-                      {u.es_promotor ? "⭐ Promotor" : "👤 Free"}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
-
-          {/* ══ USUARIOS ════════════════════════════════════════════════════ */}
-          {tab === "usuarios" && (
-            <>
-              <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"22px", color:"#1a2a3a", letterSpacing:"1px", marginBottom:"14px" }}>👥 Gestión de Usuarios</div>
-
-              {/* Filtros */}
-              <div style={S.card}>
-                <input value={busqUser} onChange={e=>setBusqUser(e.target.value)} placeholder="🔍 Buscar por nombre, código o email..." style={{ ...S.input, marginBottom:"10px" }} />
-                <div style={{ display:"flex", gap:"6px", flexWrap:"wrap" }}>
-                  {["todos","promotor","bloqueado","empresa"].map(f => (
-                    <button key={f} onClick={()=>setFiltroTipo(f)}
-                      style={{ ...S.btn(filtroTipo===f?"#d4a017":"#f0f0f0"), color:filtroTipo===f?"#1a2a3a":"#666", fontSize:"11px", padding:"6px 12px" }}>
-                      {f.charAt(0).toUpperCase()+f.slice(1)}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div style={{ fontSize:"12px", color:"#9a9a9a", fontWeight:700, marginBottom:"10px" }}>{usuariosFiltrados.length} usuarios</div>
-
-              {usuariosFiltrados.map((u: any) => (
-                <div key={u.id} style={{ ...S.card, borderLeft: u.bloqueado ? "4px solid #e74c3c" : "4px solid transparent" }}>
-                  <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", marginBottom:"10px" }}>
-                    <div style={{ flex:1, minWidth:0 }}>
-                      <div style={{ display:"flex", alignItems:"center", gap:"8px", flexWrap:"wrap" }}>
-                        <span style={{ fontSize:"14px", fontWeight:900, color:"#1a2a3a" }}>{u.nombre_usuario||"—"}</span>
-                        <span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"13px", color:"#d4a017", letterSpacing:"1px" }}>{u.codigo}</span>
-                        {u.es_promotor && <span style={S.badge("#d4a017","rgba(212,160,23,0.12)")}>⭐ Promotor</span>}
-                        {u.bloqueado   && <span style={S.badge("#e74c3c","rgba(231,76,60,0.1)")}>🚫 Bloqueado</span>}
-                        {u.plan==="nexoempresa" && <span style={S.badge("#8e44ad","rgba(142,68,173,0.1)")}>🏢 Empresa</span>}
-                      </div>
-                      <div style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:600, marginTop:"3px" }}>
-                        {u.email} · {new Date(u.created_at).toLocaleDateString("es-AR")}
-                      </div>
-                      <div style={{ display:"flex", gap:"10px", marginTop:"6px", flexWrap:"wrap" }}>
-                        <span style={{ fontSize:"11px", fontWeight:700, color:"#3a7bd5" }}>💙 Free: {(u.bits_free||0).toLocaleString()}</span>
-                        <span style={{ fontSize:"11px", fontWeight:700, color:"#d4a017" }}>💛 Nexo: {(u.bits||0).toLocaleString()}</span>
-                        <span style={{ fontSize:"11px", fontWeight:700, color:"#27ae60" }}>⭐ Promo: {(u.bits_promotor||0).toLocaleString()}</span>
-                        <span style={{ fontSize:"11px", fontWeight:700, color:"#16a085" }}>🔍 Búsq: {(u.bits_busquedas||0).toLocaleString()}</span>
-                      </div>
-                      {u.referido_por && (
-                        <div style={{ fontSize:"10px", color:"#9a9a9a", fontWeight:600, marginTop:"3px" }}>
-                          Referido por: {usuarios.find((x:any)=>x.id===u.referido_por)?.codigo||u.referido_por.slice(0,8)}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <div style={{ display:"flex", gap:"6px", flexWrap:"wrap" }}>
-                    <button onClick={()=>{ setModalBit(u); setBitTipo("bits_free"); setBitCant(""); }} style={S.btn("#3a7bd5")}>💙 Asignar BIT</button>
-                    <button onClick={()=>{ setModalRef(u); setNuevoRefCodigo(""); }} style={S.btn("#8e44ad")}>🔁 Referido</button>
-                    <button onClick={()=>bloquearUsuario(u)} style={S.btn(u.bloqueado?"#27ae60":"#e74c3c")}>
-                      {u.bloqueado ? "✅ Desbloquear" : "🚫 Bloquear"}
-                    </button>
-                  </div>
+                  <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"18px",color:"#27ae60"}}>${p.monto?.toLocaleString("es-AR")}</div>
                 </div>
               ))}
-            </>
-          )}
+            </div>
 
-          {/* ══ PROMOTORES ══════════════════════════════════════════════════ */}
-          {tab === "promotores" && (
-            <>
-              <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"22px", color:"#1a2a3a", letterSpacing:"1px", marginBottom:"14px" }}>⭐ Promotores y Liquidaciones</div>
-
-              {/* Liquidaciones pendientes */}
-              {liqs.filter((l:any)=>l.estado==="pendiente").length > 0 && (
-                <div style={{ background:"rgba(231,76,60,0.06)", border:"2px solid rgba(231,76,60,0.2)", borderRadius:"16px", padding:"16px", marginBottom:"14px" }}>
-                  <div style={{ fontSize:"13px", fontWeight:900, color:"#e74c3c", marginBottom:"12px" }}>🔔 {liqs.filter((l:any)=>l.estado==="pendiente").length} liquidación(es) pendiente(s)</div>
-                  {liqs.filter((l:any)=>l.estado==="pendiente").map((l:any) => (
-                    <div key={l.id} style={{ background:"#fff", borderRadius:"12px", padding:"14px", marginBottom:"8px" }}>
-                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:"8px" }}>
-                        <div>
-                          <div style={{ fontSize:"13px", fontWeight:900, color:"#1a2a3a" }}>{l.usuarios?.nombre_usuario||"—"} · {l.usuarios?.codigo}</div>
-                          <div style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:600 }}>{l.usuarios?.email}</div>
-                          <div style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:600 }}>{new Date(l.created_at).toLocaleDateString("es-AR")}</div>
-                          {l.factura_url && <a href={l.factura_url} target="_blank" style={{ fontSize:"11px", color:"#3a7bd5", fontWeight:700 }}>📄 Ver factura</a>}
-                        </div>
-                        <div style={{ textAlign:"right" }}>
-                          <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"28px", color:"#d4a017" }}>{l.monto_bits.toLocaleString()}</div>
-                          <div style={{ fontSize:"10px", color:"#9a9a9a", fontWeight:600 }}>BIT · ${(l.monto_bits*1000).toLocaleString("es-AR")}</div>
-                        </div>
-                      </div>
-                      <div style={{ display:"flex", gap:"8px" }}>
-                        <button onClick={()=>aprobarLiq(l)} style={{ ...S.btn("#27ae60"), flex:1 }}>✅ Aprobar</button>
-                        <button onClick={()=>rechazarLiq(l)} style={{ ...S.btn("#e74c3c"), flex:1 }}>❌ Rechazar</button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Historial liquidaciones */}
-              <div style={S.card}>
-                <div style={{ fontSize:"11px", fontWeight:800, color:"#9a9a9a", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"14px" }}>📋 Historial de liquidaciones</div>
-                {liqs.length === 0 ? (
-                  <div style={{ textAlign:"center", padding:"20px", color:"#bbb", fontSize:"13px" }}>Sin liquidaciones</div>
-                ) : liqs.map((l:any) => (
-                  <div key={l.id} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 0", borderBottom:"1px solid #f8f8f8" }}>
-                    <div>
-                      <div style={{ fontSize:"13px", fontWeight:800, color:"#1a2a3a" }}>{l.usuarios?.nombre_usuario} · {l.usuarios?.codigo}</div>
-                      <div style={{ fontSize:"10px", color:"#9a9a9a", fontWeight:600 }}>{new Date(l.created_at).toLocaleDateString("es-AR")} · {l.monto_bits} BIT</div>
-                    </div>
-                    <span style={S.badge(
-                      l.estado==="aprobada"?"#27ae60":l.estado==="rechazada"?"#e74c3c":"#d4a017",
-                      l.estado==="aprobada"?"#e8f8ee":l.estado==="rechazada"?"#fef0ef":"#fff8e0"
-                    )}>{l.estado.toUpperCase()}</span>
+            <div style={S.card}>
+              <div style={S.sect}>👥 Últimos registros</div>
+              {usuarios.slice(0,8).map(u=>(
+                <div key={u.id} style={S.row}>
+                  <div style={{width:"36px",height:"36px",borderRadius:"50%",background:"linear-gradient(135deg,#1a2a3a,#3a7bd5)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"16px",flexShrink:0}}>
+                    {u.avatar_url?<img src={u.avatar_url} style={{width:"100%",height:"100%",borderRadius:"50%",objectFit:"cover"}} alt="av"/>:"👤"}
                   </div>
-                ))}
-              </div>
-
-              {/* Ranking promotores */}
-              <div style={S.card}>
-                <div style={{ fontSize:"11px", fontWeight:800, color:"#9a9a9a", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"14px" }}>🏆 Ranking de Promotores</div>
-                {usuarios.filter((u:any)=>u.es_promotor).sort((a:any,b:any)=>(b.bits_promotor_total||0)-(a.bits_promotor_total||0)).slice(0,20).map((u:any,i:number) => (
-                  <div key={u.id} style={{ display:"flex", alignItems:"center", gap:"12px", padding:"10px 0", borderBottom:"1px solid #f8f8f8" }}>
-                    <div style={{ width:"28px", height:"28px", borderRadius:"50%", background:i<3?"rgba(212,160,23,0.2)":"#f4f4f2", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"13px", fontWeight:900, color:i<3?"#d4a017":"#9a9a9a", flexShrink:0 }}>{i+1}</div>
-                    <div style={{ flex:1 }}>
-                      <div style={{ fontSize:"13px", fontWeight:800, color:"#1a2a3a" }}>{u.nombre_usuario} · <span style={{ color:"#d4a017" }}>{u.codigo}</span></div>
-                      <div style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:600 }}>{u.total_referidos||0} referidos</div>
-                    </div>
-                    <div style={{ textAlign:"right" }}>
-                      <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"20px", color:"#27ae60" }}>{(u.bits_promotor_total||0).toLocaleString()}</div>
-                      <div style={{ fontSize:"10px", color:"#9a9a9a", fontWeight:600 }}>BIT ganados</div>
-                    </div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:"13px",fontWeight:800,color:"#1a2a3a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{u.nombre_usuario||u.email}</div>
+                    <div style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600}}>{u.codigo} · {new Date(u.created_at).toLocaleDateString("es-AR")}</div>
                   </div>
-                ))}
-              </div>
-
-              {/* Últimas comisiones */}
-              <div style={S.card}>
-                <div style={{ fontSize:"11px", fontWeight:800, color:"#9a9a9a", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"14px" }}>💰 Últimas comisiones acreditadas</div>
-                {comisiones.slice(0,20).map((c:any) => (
-                  <div key={c.id} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"8px 0", borderBottom:"1px solid #f8f8f8" }}>
-                    <div>
-                      <div style={{ fontSize:"12px", fontWeight:800, color:"#1a2a3a" }}>
-                        {(c.promotor as any)?.nombre_usuario} ← {(c.origen as any)?.nombre_usuario}
-                      </div>
-                      <div style={{ fontSize:"10px", color:"#9a9a9a", fontWeight:600 }}>Nivel {c.nivel} · {c.concepto} · {new Date(c.created_at).toLocaleDateString("es-AR")}</div>
-                    </div>
-                    <span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"18px", color:"#27ae60" }}>+{c.monto_comision}</span>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
-
-          {/* ══ ANUNCIOS ════════════════════════════════════════════════════ */}
-          {tab === "anuncios" && (
-            <>
-              <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"22px", color:"#1a2a3a", letterSpacing:"1px", marginBottom:"14px" }}>📋 Moderación de Anuncios</div>
-              {anuncios.map((a:any) => (
-                <div key={a.id} style={{ ...S.card, borderLeft:`4px solid ${a.estado==="activo"?"#27ae60":a.estado==="bloqueado"?"#e74c3c":"#d4a017"}` }}>
-                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:"8px" }}>
-                    <div style={{ flex:1, minWidth:0 }}>
-                      <div style={{ fontSize:"14px", fontWeight:900, color:"#1a2a3a", marginBottom:"2px", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{a.titulo||"Sin título"}</div>
-                      <div style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:600 }}>
-                        {(a.usuarios as any)?.nombre_usuario} · {(a.usuarios as any)?.codigo} · {new Date(a.created_at).toLocaleDateString("es-AR")}
-                      </div>
-                      {a.precio && <div style={{ fontSize:"12px", fontWeight:800, color:"#d4a017", marginTop:"2px" }}>${Number(a.precio).toLocaleString("es-AR")}</div>}
-                    </div>
-                    <span style={S.badge(
-                      a.estado==="activo"?"#27ae60":a.estado==="bloqueado"?"#e74c3c":"#d4a017",
-                      a.estado==="activo"?"#e8f8ee":a.estado==="bloqueado"?"#fef0ef":"#fff8e0"
-                    )}>{a.estado?.toUpperCase()||"—"}</span>
-                  </div>
-                  {a.descripcion && <div style={{ fontSize:"12px", color:"#666", fontWeight:600, marginBottom:"10px", lineHeight:1.5, overflow:"hidden", display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical" as any }}>{a.descripcion}</div>}
-                  <div style={{ display:"flex", gap:"6px" }}>
-                    <button onClick={()=>toggleAnuncio(a)} style={S.btn(a.estado==="activo"?"#e74c3c":"#27ae60")}>
-                      {a.estado==="activo" ? "🚫 Bloquear" : "✅ Activar"}
-                    </button>
-                    <a href={`/anuncios/${a.id}`} target="_blank" style={{ ...S.btn("#3a7bd5"), textDecoration:"none", display:"inline-flex", alignItems:"center" }}>👁️ Ver</a>
-                  </div>
+                  {u.es_promotor && <span style={S.badge("#fff","#d4a017")}>PROMOTOR</span>}
                 </div>
               ))}
-            </>
-          )}
+            </div>
+          </>
+        )}
 
-          {/* ══ GRUPOS ══════════════════════════════════════════════════════ */}
-          {tab === "grupos" && (
-            <>
-              <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"22px", color:"#1a2a3a", letterSpacing:"1px", marginBottom:"14px" }}>🏘️ Gestión de Grupos</div>
-              {grupos.map((g:any) => (
-                <div key={g.id} style={S.card}>
-                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:"8px" }}>
-                    <div>
-                      <div style={{ fontSize:"14px", fontWeight:900, color:"#1a2a3a" }}>{g.nombre}</div>
-                      <div style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:600 }}>
-                        Creador: {(g.usuarios as any)?.nombre_usuario} · {g.miembros_count||0} miembros · {new Date(g.created_at).toLocaleDateString("es-AR")}
-                      </div>
-                    </div>
-                    <span style={S.badge(g.activo!==false?"#27ae60":"#e74c3c", g.activo!==false?"#e8f8ee":"#fef0ef")}>
-                      {g.activo!==false?"ACTIVO":"INACTIVO"}
-                    </span>
-                  </div>
-                  <div style={{ display:"flex", gap:"6px" }}>
-                    <button onClick={async()=>{
-                      await supabase.from("grupos").update({ activo: g.activo===false }).eq("id", g.id);
-                      setGrupos(prev=>prev.map(x=>x.id===g.id?{...x,activo:g.activo===false}:x));
-                    }} style={S.btn(g.activo!==false?"#e74c3c":"#27ae60")}>
-                      {g.activo!==false?"🚫 Desactivar":"✅ Activar"}
-                    </button>
-                    <a href={`/grupos/${g.id}`} target="_blank" style={{ ...S.btn("#3a7bd5"), textDecoration:"none", display:"inline-flex", alignItems:"center" }}>👁️ Ver</a>
-                  </div>
-                </div>
-              ))}
-            </>
-          )}
-
-          {/* ══ SOPORTE ═════════════════════════════════════════════════════ */}
-          {tab === "soporte" && (
-            <>
-              <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"22px", color:"#1a2a3a", letterSpacing:"1px", marginBottom:"14px" }}>💬 Soporte y Mensajes</div>
-              <div style={S.card}>
-                <div style={{ fontSize:"11px", fontWeight:800, color:"#9a9a9a", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"14px" }}>📨 Últimos mensajes</div>
-                {mensajes.length === 0 ? (
-                  <div style={{ textAlign:"center", padding:"20px", color:"#bbb", fontSize:"13px" }}>Sin mensajes</div>
-                ) : mensajes.map((m:any) => (
-                  <div key={m.id} style={{ padding:"10px 0", borderBottom:"1px solid #f8f8f8" }}>
-                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"3px" }}>
-                      <div style={{ fontSize:"12px", fontWeight:800, color:"#1a2a3a" }}>
-                        {(m.emisor as any)?.nombre_usuario||"—"} → {(m.receptor as any)?.nombre_usuario||"—"}
-                      </div>
-                      <div style={{ fontSize:"10px", color:"#bbb", fontWeight:600 }}>
-                        {new Date(m.created_at).toLocaleString("es-AR",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}
-                      </div>
-                    </div>
-                    <div style={{ fontSize:"12px", color:"#666", fontWeight:600, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{m.texto}</div>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
-
-          {/* ══ CONFIG ══════════════════════════════════════════════════════ */}
-          {tab === "config" && (
-            <>
-              <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"22px", color:"#1a2a3a", letterSpacing:"1px", marginBottom:"14px" }}>⚙️ Configuración</div>
-
-              <div style={S.card}>
-                <div style={{ fontSize:"11px", fontWeight:800, color:"#9a9a9a", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"14px" }}>📂 Rubros y Subrubros</div>
-                {rubros.map((r:any) => (
-                  <div key={r.id} style={{ marginBottom:"10px" }}>
-                    <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"8px 12px", background:"#f4f4f2", borderRadius:"10px", marginBottom:"4px" }}>
-                      <span style={{ fontSize:"13px", fontWeight:800, color:"#1a2a3a" }}>{r.nombre}</span>
-                      <span style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:700 }}>{(r.subrubros||[]).length} subrubros</span>
-                    </div>
-                    <div style={{ paddingLeft:"12px", display:"flex", flexWrap:"wrap", gap:"4px" }}>
-                      {(r.subrubros||[]).slice(0,8).map((s:any) => (
-                        <span key={s.id} style={{ background:"#fff", border:"1px solid #e8e8e6", borderRadius:"6px", padding:"2px 8px", fontSize:"10px", fontWeight:700, color:"#666" }}>{s.nombre}</span>
-                      ))}
-                      {(r.subrubros||[]).length > 8 && <span style={{ fontSize:"10px", color:"#bbb", fontWeight:600, padding:"2px 4px" }}>+{(r.subrubros||[]).length - 8} más</span>}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div style={{ ...S.card, background:"linear-gradient(135deg,#1a2a3a,#243b55)", color:"#fff" }}>
-                <div style={{ fontSize:"11px", fontWeight:800, color:"#8a9aaa", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"14px" }}>🔧 Acciones del sistema</div>
-                {[
-                  { l:"Recargar todos los datos", e:"🔄", fn:cargarTodo },
-                  { l:"Ir a nexonet.ar", e:"🌐", fn:()=>window.open("https://nexonet.ar","_blank") },
-                  { l:"Supabase Dashboard", e:"🗄️", fn:()=>window.open("https://supabase.com/dashboard","_blank") },
-                  { l:"Vercel Dashboard", e:"▲", fn:()=>window.open("https://vercel.com/dashboard","_blank") },
-                ].map(a => (
-                  <button key={a.l} onClick={a.fn}
-                    style={{ width:"100%", background:"rgba(255,255,255,0.07)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:"10px", padding:"12px 16px", fontSize:"13px", fontWeight:800, color:"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif", textAlign:"left", marginBottom:"8px", display:"flex", alignItems:"center", gap:"10px" }}>
-                    <span style={{ fontSize:"18px" }}>{a.e}</span>{a.l}
+        {/* ══ USUARIOS ════════════════════════════════════════════════════════ */}
+        {!loading && tab==="usuarios" && (
+          <>
+            <div style={S.card}>
+              <input style={S.input} placeholder="🔍 Buscar por nombre, email o código..." value={busqUser} onChange={e=>setBusqUser(e.target.value)} />
+              <div style={{display:"flex",gap:"6px",marginTop:"10px",flexWrap:"wrap"}}>
+                {["todos","promotores","bloqueados","sin_bits"].map(f=>(
+                  <button key={f} onClick={()=>setFiltroUser(f)} style={S.btn(filtroUser===f?"#d4a017":"#9a9a9a",filtroUser!==f)}>
+                    {f==="todos"?"Todos":f==="promotores"?"⭐ Promotores":f==="bloqueados"?"🔒 Bloqueados":"💸 Sin BIT"}
                   </button>
                 ))}
+                <div style={{marginLeft:"auto",fontSize:"12px",fontWeight:700,color:"#9a9a9a",alignSelf:"center"}}>{usuariosFiltrados.length} resultados</div>
               </div>
-            </>
-          )}
+            </div>
 
-        </div>
+            {usuariosFiltrados.map(u=>(
+              <div key={u.id} style={{...S.card,opacity:u.bloqueado?0.7:1,borderLeft:`4px solid ${u.bloqueado?"#e74c3c":u.es_promotor?"#d4a017":"#e8e8e6"}`}}>
+                <div style={{display:"flex",alignItems:"flex-start",gap:"12px"}}>
+                  <div style={{width:"44px",height:"44px",borderRadius:"50%",background:"linear-gradient(135deg,#1a2a3a,#3a7bd5)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"18px",flexShrink:0,overflow:"hidden"}}>
+                    {u.avatar_url?<img src={u.avatar_url} style={{width:"100%",height:"100%",objectFit:"cover"}} alt=""/>:"👤"}
+                  </div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{display:"flex",alignItems:"center",gap:"6px",flexWrap:"wrap"}}>
+                      <span style={{fontSize:"14px",fontWeight:900,color:"#1a2a3a"}}>{u.nombre_usuario||"Sin nombre"}</span>
+                      <span style={{fontSize:"10px",fontWeight:700,color:"#9a9a9a"}}>{u.codigo}</span>
+                      {u.es_promotor && <span style={S.badge("#fff","#d4a017")}>⭐ PROMOTOR</span>}
+                      {u.bloqueado   && <span style={S.badge("#fff","#e74c3c")}>🔒 BLOQUEADO</span>}
+                    </div>
+                    <div style={{fontSize:"12px",color:"#9a9a9a",fontWeight:600,marginTop:"2px"}}>{u.email}</div>
+                    {/* BIT */}
+                    <div style={{display:"flex",gap:"6px",flexWrap:"wrap",marginTop:"6px"}}>
+                      {[["bits","💛",u.bits||0],["bits_free","💙",u.bits_free||0],["bits_conexion","🔗",u.bits_conexion||0],["bits_anuncio","📋",u.bits_anuncio||0],["bits_busquedas","🤖",u.bits_busquedas||0]].map(([k,e,v]:any)=>(
+                        v>0&&<span key={k} style={{fontSize:"10px",fontWeight:700,color:"#555",background:"#f4f4f2",borderRadius:"8px",padding:"2px 7px"}}>{e} {v.toLocaleString()}</span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                {/* Acciones */}
+                <div style={{display:"flex",gap:"6px",marginTop:"12px",flexWrap:"wrap"}}>
+                  <button onClick={()=>{setModalBit(u);setBitTipo("bits");setBitCant("");setBitNota("");}} style={S.btn("#d4a017",true)}>💰 Asignar BIT</button>
+                  <button onClick={()=>{setModalMensaje(u);setMsgDest(u.id);setMsgTexto("");}} style={S.btn("#3a7bd5",true)}>💬 Mensaje</button>
+                  <button onClick={()=>setModalUsuario(u)} style={S.btn("#8e44ad",true)}>👁️ Ver</button>
+                  <button onClick={()=>bloquearUsuario(u)} style={S.btn(u.bloqueado?"#27ae60":"#e67e22",true)}>{u.bloqueado?"🔓 Desbloquear":"🔒 Bloquear"}</button>
+                  <button onClick={()=>eliminarUsuario(u)} style={S.btn("#e74c3c",true)}>🗑️ Eliminar</button>
+                </div>
+              </div>
+            ))}
+          </>
+        )}
+
+        {/* ══ ANUNCIOS ════════════════════════════════════════════════════════ */}
+        {!loading && tab==="anuncios" && (
+          <>
+            <div style={{display:"flex",gap:"8px",marginBottom:"14px"}}>
+              <input style={{...S.input,flex:1}} placeholder="🔍 Buscar anuncio..." value={busqAnuncio} onChange={e=>setBusqAnuncio(e.target.value)} />
+              <button onClick={()=>setModalNuevoAn(true)} style={S.btn("#27ae60")}>+ Publicar</button>
+            </div>
+
+            {anunciosFiltrados.map(a=>(
+              <div key={a.id} style={{...S.card,borderLeft:`4px solid ${a.estado==="bloqueado"?"#e74c3c":a.flash?"#d4a017":"#e8e8e6"}`}}>
+                <div style={{display:"flex",alignItems:"flex-start",gap:"10px"}}>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{display:"flex",gap:"6px",flexWrap:"wrap",alignItems:"center"}}>
+                      <span style={{fontSize:"14px",fontWeight:900,color:"#1a2a3a"}}>{a.titulo}</span>
+                      {a.flash && <span style={S.badge("#fff","#d4a017")}>⚡ FLASH</span>}
+                      {a.permuto && <span style={S.badge("#fff","#8e44ad")}>🔄 PERMUTA</span>}
+                      {a.estado==="bloqueado" && <span style={S.badge("#fff","#e74c3c")}>🔒 BLOQUEADO</span>}
+                    </div>
+                    <div style={{fontSize:"12px",color:"#9a9a9a",fontWeight:600,marginTop:"2px"}}>
+                      {a.usuarios?.nombre_usuario} · {a.ciudad||""}{a.ciudad&&a.provincia?", ":""}{a.provincia||""}
+                    </div>
+                    <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"20px",color:"#3a7bd5",marginTop:"2px"}}>
+                      ${parseFloat(a.precio||0).toLocaleString("es-AR")}
+                    </div>
+                  </div>
+                </div>
+                <div style={{display:"flex",gap:"6px",marginTop:"10px",flexWrap:"wrap"}}>
+                  <button onClick={()=>setModalAnuncio({...a})} style={S.btn("#3a7bd5",true)}>✏️ Editar</button>
+                  <button onClick={()=>bloquearAnuncio(a)} style={S.btn(a.estado==="bloqueado"?"#27ae60":"#e67e22",true)}>{a.estado==="bloqueado"?"✅ Activar":"🔒 Bloquear"}</button>
+                  <button onClick={()=>eliminarAnuncio(a)} style={S.btn("#e74c3c",true)}>🗑️ Eliminar</button>
+                  <button onClick={()=>router.push(`/anuncios/${a.id}`)} style={S.btn("#9a9a9a",true)}>👁️ Ver</button>
+                </div>
+              </div>
+            ))}
+          </>
+        )}
+
+        {/* ══ GRUPOS ══════════════════════════════════════════════════════════ */}
+        {!loading && tab==="grupos" && (
+          <>
+            <button onClick={()=>setModalNuevoGr(true)} style={{...S.btn("#27ae60"),marginBottom:"14px",display:"block"}}>+ Crear grupo</button>
+            {grupos.map(g=>(
+              <div key={g.id} style={{...S.card,borderLeft:`4px solid ${g.activo?"#27ae60":"#e74c3c"}`}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+                  <div>
+                    <div style={{fontSize:"14px",fontWeight:900,color:"#1a2a3a"}}>{g.nombre}</div>
+                    <div style={{fontSize:"12px",color:"#9a9a9a",fontWeight:600}}>{g.usuarios?.nombre_usuario} · {g.descripcion||"Sin descripción"}</div>
+                    <div style={{fontSize:"11px",color:"#9a9a9a",marginTop:"4px"}}>👥 {g.miembros||0} miembros</div>
+                  </div>
+                  <button onClick={()=>toggleGrupo(g)} style={S.btn(g.activo?"#e74c3c":"#27ae60",true)}>
+                    {g.activo?"Desactivar":"Activar"}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </>
+        )}
+
+        {/* ══ MENSAJES ════════════════════════════════════════════════════════ */}
+        {!loading && tab==="mensajes" && (
+          <>
+            {/* Envío masivo */}
+            <div style={S.card}>
+              <div style={S.sect}>📣 Enviar notificación</div>
+              <label style={S.label}>Destinatario</label>
+              <select style={{...S.input,marginBottom:"10px"}} value={msgDest} onChange={e=>setMsgDest(e.target.value)}>
+                <option value="">Seleccionar usuario...</option>
+                <option value="todos">📣 Todos los usuarios</option>
+                {usuarios.map(u=><option key={u.id} value={u.id}>{u.nombre_usuario} ({u.codigo})</option>)}
+              </select>
+              <label style={S.label}>Tipo</label>
+              <select style={{...S.input,marginBottom:"10px"}} value={msgTipo} onChange={e=>setMsgTipo(e.target.value)}>
+                <option value="sistema">⚙️ Sistema</option>
+                <option value="promocion">🎁 Promoción</option>
+                <option value="alerta">⚠️ Alerta</option>
+              </select>
+              <label style={S.label}>Mensaje</label>
+              <textarea style={{...S.input,minHeight:"80px",resize:"vertical",marginBottom:"10px"}} placeholder="Escribí el mensaje..." value={msgTexto} onChange={e=>setMsgTexto(e.target.value)} />
+              <button onClick={enviarMensaje} style={S.btn("#3a7bd5")} disabled={!msgTexto||!msgDest}>
+                📨 Enviar{msgDest==="todos"?` a todos (${usuarios.length})`:""}
+              </button>
+            </div>
+
+            {/* Historial mensajes */}
+            <div style={S.card}>
+              <div style={S.sect}>💬 Conversaciones recientes</div>
+              {mensajes.slice(0,30).map(m=>(
+                <div key={m.id} style={S.row}>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:"12px",fontWeight:800,color:"#1a2a3a"}}>{m.emisor?.nombre_usuario||"Sistema"} → {m.receptor?.nombre_usuario||"?"}</div>
+                    <div style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{m.mensaje||m.texto||"..."}</div>
+                  </div>
+                  <div style={{fontSize:"10px",color:"#bbb",flexShrink:0}}>{new Date(m.created_at).toLocaleDateString("es-AR")}</div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* ══ PROMOTORES ══════════════════════════════════════════════════════ */}
+        {!loading && tab==="promotores" && (
+          <>
+            <div style={S.card}>
+              <div style={S.sect}>💳 Liquidaciones pendientes</div>
+              {liqs.filter((l:any)=>l.estado==="pendiente").length===0 && <div style={{fontSize:"13px",color:"#9a9a9a",fontWeight:600}}>No hay liquidaciones pendientes.</div>}
+              {liqs.filter((l:any)=>l.estado==="pendiente").map((l:any)=>(
+                <div key={l.id} style={S.row}>
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:"13px",fontWeight:800}}>{l.usuarios?.nombre_usuario} ({l.usuarios?.codigo})</div>
+                    <div style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600}}>{l.usuarios?.email}</div>
+                  </div>
+                  <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"18px",color:"#27ae60"}}>${l.monto?.toLocaleString("es-AR")}</div>
+                  <div style={{display:"flex",gap:"6px"}}>
+                    <button onClick={async()=>{await supabase.from("liquidaciones_promotor").update({estado:"aprobada"}).eq("id",l.id);setLiqs(p=>p.map(x=>x.id===l.id?{...x,estado:"aprobada"}:x));showToast("✅ Liquidación aprobada");}} style={S.btn("#27ae60")}>✅</button>
+                    <button onClick={async()=>{await supabase.from("liquidaciones_promotor").update({estado:"rechazada"}).eq("id",l.id);setLiqs(p=>p.map(x=>x.id===l.id?{...x,estado:"rechazada"}:x));showToast("Rechazada");}} style={S.btn("#e74c3c")}>✕</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div style={S.card}>
+              <div style={S.sect}>🏆 Ranking promotores</div>
+              {usuarios.filter(u=>u.es_promotor).sort((a:any,b:any)=>(b.bits_promotor||0)-(a.bits_promotor||0)).slice(0,10).map((u:any,i:number)=>(
+                <div key={u.id} style={S.row}>
+                  <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"22px",color:"#d4a017",width:"30px"}}>{i+1}</span>
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:"13px",fontWeight:800}}>{u.nombre_usuario}</div>
+                    <div style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600}}>{u.codigo}</div>
+                  </div>
+                  <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"18px",color:"#d4a017"}}>{(u.bits_promotor||0).toLocaleString()} BIT</div>
+                </div>
+              ))}
+            </div>
+
+            <div style={S.card}>
+              <div style={S.sect}>💰 Últimas comisiones</div>
+              {comisiones.slice(0,20).map((c:any)=>(
+                <div key={c.id} style={S.row}>
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:"12px",fontWeight:800}}>{c.promotor?.nombre_usuario} ← {c.origen?.nombre_usuario}</div>
+                    <div style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600}}>{c.concepto}</div>
+                  </div>
+                  <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"16px",color:"#27ae60"}}>+{c.monto} BIT</div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* ══ PAGOS ════════════════════════════════════════════════════════════ */}
+        {!loading && tab==="pagos" && (
+          <>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px",marginBottom:"14px"}}>
+              <StatBox n={`$${((pagos.reduce((a,p)=>a+(p.monto||0),0))/1000).toFixed(1)}K`} l="Total recaudado" e="💰" c="#27ae60" />
+              <StatBox n={String(pagos.length)} l="Transacciones" e="💳" c="#3a7bd5" />
+            </div>
+            <div style={S.card}>
+              <div style={S.sect}>💳 Historial de pagos</div>
+              {pagos.map(p=>(
+                <div key={p.id} style={S.row}>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:"13px",fontWeight:800,color:"#1a2a3a"}}>{p.usuarios?.nombre_usuario||"—"} <span style={{fontWeight:600,color:"#9a9a9a",fontSize:"11px"}}>({p.usuarios?.codigo})</span></div>
+                    <div style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600}}>{p.paquete} · {new Date(p.created_at).toLocaleDateString("es-AR")}</div>
+                  </div>
+                  <div style={{textAlign:"right",flexShrink:0}}>
+                    <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"18px",color:"#27ae60"}}>${p.monto?.toLocaleString("es-AR")}</div>
+                    <span style={S.badge("#fff",p.estado==="approved"?"#27ae60":"#e67e22")}>{p.estado}</span>
+                  </div>
+                </div>
+              ))}
+              {pagos.length===0&&<div style={{fontSize:"13px",color:"#9a9a9a",fontWeight:600}}>No hay pagos registrados todavía.</div>}
+            </div>
+          </>
+        )}
+
+        {/* ══ ALARMAS ══════════════════════════════════════════════════════════ */}
+        {!loading && tab==="alarmas" && (
+          <>
+            <div style={S.card}>
+              <div style={S.sect}>📱 Notificaciones WhatsApp al admin</div>
+              <div style={{fontSize:"12px",color:"#9a9a9a",fontWeight:600,marginBottom:"16px"}}>Recibís un mensaje en tu WhatsApp cuando ocurre cada evento.</div>
+
+              {[
+                {k:"nuevo_usuario",    l:"👤 Nuevo usuario registrado",       d:"Cuando alguien se registra en NexoNet"},
+                {k:"compra_bit",       l:"💰 Compra de BIT con MercadoPago",  d:"Cuando se aprueba un pago"},
+                {k:"nuevo_anuncio",    l:"📋 Nuevo anuncio publicado",         d:"Cada vez que se publica un anuncio"},
+                {k:"nueva_conexion",   l:"🔗 Nueva conexión entre usuarios",   d:"Cuando alguien ve datos de contacto"},
+                {k:"nuevo_promotor",   l:"⭐ Nuevo promotor registrado",       d:"Cuando alguien activa su cuenta promotor"},
+                {k:"liq_pendiente",    l:"💳 Liquidación pendiente",           d:"Cuando un promotor solicita liquidación"},
+                {k:"nuevo_grupo",      l:"🏘️ Nuevo grupo creado",             d:"Cuando se crea un grupo"},
+              ].map(item=>(
+                <div key={item.k} style={{display:"flex",alignItems:"center",gap:"12px",padding:"12px 0",borderBottom:"1px solid #f0f0f0"}}>
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:"13px",fontWeight:800,color:"#1a2a3a"}}>{item.l}</div>
+                    <div style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600}}>{item.d}</div>
+                  </div>
+                  <div
+                    onClick={()=>guardarAlarmas({...alarmas,[item.k]:!alarmas[item.k]})}
+                    style={{width:"48px",height:"26px",borderRadius:"13px",background:alarmas[item.k]?"#27ae60":"#e0e0e0",cursor:"pointer",position:"relative",transition:"background .2s",flexShrink:0}}>
+                    <div style={{position:"absolute",top:"3px",left:alarmas[item.k]?"24px":"3px",width:"20px",height:"20px",borderRadius:"50%",background:"#fff",boxShadow:"0 1px 4px rgba(0,0,0,0.2)",transition:"left .2s"}} />
+                  </div>
+                </div>
+              ))}
+
+              <div style={{marginTop:"16px"}}>
+                <label style={S.label}>Tu número de WhatsApp (para recibir alertas)</label>
+                <input style={S.input} placeholder="+54 9 341 000 0000" value={alarmas.admin_wa||""} onChange={e=>setAlarmas({...alarmas,admin_wa:e.target.value})} />
+                <button onClick={()=>guardarAlarmas(alarmas)} style={{...S.btn("#27ae60"),marginTop:"10px"}}>💾 Guardar número</button>
+              </div>
+            </div>
+
+            <div style={S.card}>
+              <div style={S.sect}>⚙️ Estado del sistema de notificaciones</div>
+              <div style={{display:"flex",gap:"8px",flexWrap:"wrap"}}>
+                <span style={S.badge("#fff","#27ae60")}>✅ Notificaciones in-app activas</span>
+                <span style={S.badge("#fff",alarmas.admin_wa?"#25d366":"#9a9a9a")}>{alarmas.admin_wa?"✅ WA Admin configurado":"⚠️ WA Admin sin configurar"}</span>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* ══ CONFIG ═══════════════════════════════════════════════════════════ */}
+        {!loading && tab==="config" && (
+          <>
+            <div style={S.card}>
+              <div style={S.sect}>📂 Rubros y Subrubros</div>
+              {rubros.map((r:any)=>(
+                <div key={r.id} style={{marginBottom:"10px"}}>
+                  <div style={{fontSize:"13px",fontWeight:900,color:"#1a2a3a",marginBottom:"4px"}}>📁 {r.nombre}</div>
+                  <div style={{display:"flex",flexWrap:"wrap",gap:"4px",paddingLeft:"12px"}}>
+                    {(r.subrubros||[]).map((s:any)=>(
+                      <span key={s.id} style={{background:"#f4f4f2",borderRadius:"8px",padding:"2px 8px",fontSize:"11px",fontWeight:700,color:"#555"}}>{s.nombre}</span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div style={S.card}>
+              <div style={S.sect}>🔧 Acciones del sistema</div>
+              <div style={{display:"flex",gap:"8px",flexWrap:"wrap"}}>
+                <button onClick={cargarTodo}            style={S.btn("#3a7bd5")}>🔄 Refrescar datos</button>
+                <button onClick={()=>router.push("/")} style={S.btn("#d4a017")}>🏠 Ir al sitio</button>
+                <button onClick={async()=>{await supabase.auth.signOut();router.push("/admin/login");}} style={S.btn("#e74c3c")}>🚪 Cerrar sesión</button>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* ══ MODAL VER USUARIO ══════════════════════════════════════════════════ */}
+      {modalUsuario && (
+        <Modal titulo={`👤 ${modalUsuario.nombre_usuario}`} onClose={()=>setModalUsuario(null)}>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px",marginBottom:"16px"}}>
+            {[["Email",modalUsuario.email],["Código",modalUsuario.codigo],["WhatsApp",modalUsuario.whatsapp||"—"],["Provincia",modalUsuario.provincia||"—"],["Ciudad",modalUsuario.ciudad||"—"],["Referido por",modalUsuario.referido_por||"—"]].map(([l,v])=>(
+              <div key={l}>
+                <div style={{fontSize:"10px",fontWeight:800,color:"#9a9a9a",textTransform:"uppercase",letterSpacing:"0.5px"}}>{l}</div>
+                <div style={{fontSize:"13px",fontWeight:700,color:"#1a2a3a",overflow:"hidden",textOverflow:"ellipsis"}}>{v}</div>
+              </div>
+            ))}
+          </div>
+          <div style={S.sect}>💰 BIT disponibles</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"6px",marginBottom:"16px"}}>
+            {[["BIT Nexo 💛","bits"],["BIT Free 💙","bits_free"],["BIT Conexión 🔗","bits_conexion"],["BIT Anuncio 📋","bits_anuncio"],["BIT Búsquedas 🤖","bits_busquedas"],["BIT Promotor ⭐","bits_promotor"]].map(([l,k])=>(
+              <div key={k} style={{background:"#f4f4f2",borderRadius:"10px",padding:"8px 12px"}}>
+                <div style={{fontSize:"10px",fontWeight:800,color:"#9a9a9a"}}>{l}</div>
+                <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"20px",color:"#1a2a3a"}}>{(modalUsuario[k]||0).toLocaleString()}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{display:"flex",gap:"8px",flexWrap:"wrap"}}>
+            <button onClick={()=>{setModalUsuario(null);setModalBit(modalUsuario);setBitTipo("bits");setBitCant("");setBitNota("");}} style={S.btn("#d4a017")}>💰 Asignar BIT</button>
+            <button onClick={()=>bloquearUsuario(modalUsuario)} style={S.btn(modalUsuario.bloqueado?"#27ae60":"#e67e22")}>{modalUsuario.bloqueado?"🔓 Desbloquear":"🔒 Bloquear"}</button>
+          </div>
+        </Modal>
       )}
 
-      {/* ══ MODAL ASIGNAR BIT ══ */}
+      {/* ══ MODAL ASIGNAR BIT ══════════════════════════════════════════════════ */}
       {modalBit && (
-        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.7)", zIndex:500, display:"flex", alignItems:"flex-end" }} onClick={()=>setModalBit(null)}>
-          <div style={{ width:"100%", background:"#fff", borderRadius:"24px 24px 0 0", padding:"28px 20px 44px", fontFamily:"'Nunito',sans-serif" }} onClick={e=>e.stopPropagation()}>
-            <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"20px", color:"#1a2a3a", letterSpacing:"1px", marginBottom:"4px" }}>💙 Asignar BIT</div>
-            <div style={{ fontSize:"13px", color:"#9a9a9a", fontWeight:600, marginBottom:"20px" }}>{modalBit.nombre_usuario} · {modalBit.codigo}</div>
-            <label style={S.label}>Tipo de BIT</label>
-            <select value={bitTipo} onChange={e=>setBitTipo(e.target.value)} style={{ ...S.input, padding:"10px 14px", marginBottom:"14px" }}>
-              <option value="bits_free">BIT Free 💙</option>
-              <option value="bits">BIT Nexo 💛</option>
-              <option value="bits_busquedas">BIT Búsquedas 🔍</option>
-              <option value="bits_promotor">BIT Promotor ⭐</option>
-            </select>
-            <label style={S.label}>Cantidad</label>
-            <input type="number" value={bitCant} onChange={e=>setBitCant(e.target.value)} placeholder="Ej: 100" style={{ ...S.input, marginBottom:"14px" }} />
-            <label style={S.label}>Nota interna (opcional)</label>
-            <input type="text" value={bitNota} onChange={e=>setBitNota(e.target.value)} placeholder="Motivo..." style={{ ...S.input, marginBottom:"20px" }} />
-            <button onClick={asignarBit} style={{ ...S.btn(), width:"100%", padding:"14px", fontSize:"15px", boxShadow:"0 4px 0 #a07810", marginBottom:"10px" }}>✅ Confirmar asignación</button>
-            <button onClick={()=>setModalBit(null)} style={{ width:"100%", background:"none", border:"none", fontSize:"13px", fontWeight:700, color:"#9a9a9a", cursor:"pointer", fontFamily:"'Nunito',sans-serif", padding:"8px" }}>Cancelar</button>
+        <Modal titulo={`💰 Asignar BIT a ${modalBit.nombre_usuario}`} onClose={()=>setModalBit(null)}>
+          <label style={S.label}>Tipo de BIT</label>
+          <select style={{...S.input,marginBottom:"12px"}} value={bitTipo} onChange={e=>setBitTipo(e.target.value)}>
+            <option value="bits">💛 BIT Nexo (bits)</option>
+            <option value="bits_free">💙 BIT Free</option>
+            <option value="bits_conexion">🔗 BIT Conexión</option>
+            <option value="bits_anuncio">📋 BIT Anuncio</option>
+            <option value="bits_busquedas">🤖 BIT Búsquedas IA</option>
+            <option value="bits_promotor">⭐ BIT Promotor</option>
+            <option value="bits_link">🔗 BIT Link</option>
+            <option value="bits_adjunto">📎 BIT Adjunto</option>
+            <option value="bits_grupo">🏘️ BIT Grupo</option>
+          </select>
+          <label style={S.label}>Cantidad (puede ser negativa para quitar)</label>
+          <input style={{...S.input,marginBottom:"12px"}} type="number" placeholder="Ej: 500" value={bitCant} onChange={e=>setBitCant(e.target.value)} />
+          <label style={S.label}>Nota para el usuario (opcional)</label>
+          <input style={{...S.input,marginBottom:"16px"}} placeholder="Ej: Premio por participación" value={bitNota} onChange={e=>setBitNota(e.target.value)} />
+          <div style={{fontSize:"12px",color:"#9a9a9a",fontWeight:600,marginBottom:"12px"}}>
+            Saldo actual de {bitTipo}: <strong>{(modalBit[bitTipo]||0).toLocaleString()}</strong>
           </div>
-        </div>
+          <button onClick={asignarBit} style={S.btn("#d4a017")} disabled={!bitCant}>✅ Confirmar asignación</button>
+        </Modal>
       )}
 
-      {/* ══ MODAL REASIGNAR REFERIDO ══ */}
-      {modalRef && (
-        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.7)", zIndex:500, display:"flex", alignItems:"flex-end" }} onClick={()=>setModalRef(null)}>
-          <div style={{ width:"100%", background:"#fff", borderRadius:"24px 24px 0 0", padding:"28px 20px 44px", fontFamily:"'Nunito',sans-serif" }} onClick={e=>e.stopPropagation()}>
-            <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"20px", color:"#1a2a3a", letterSpacing:"1px", marginBottom:"4px" }}>🔁 Reasignar Referido</div>
-            <div style={{ fontSize:"13px", color:"#9a9a9a", fontWeight:600, marginBottom:"6px" }}>{modalRef.nombre_usuario} · {modalRef.codigo}</div>
-            <div style={{ fontSize:"12px", color:"#e74c3c", fontWeight:700, marginBottom:"20px" }}>⚠️ Las comisiones futuras se redirigirán al nuevo promotor</div>
-            <label style={S.label}>Código del nuevo promotor</label>
-            <input type="text" value={nuevoRefCodigo} onChange={e=>setNuevoRefCodigo(e.target.value.toUpperCase())} placeholder="NXN-00001" style={{ ...S.input, marginBottom:"20px" }} />
-            <button onClick={reasignarReferido} style={{ ...S.btn("#8e44ad"), width:"100%", padding:"14px", fontSize:"15px", marginBottom:"10px" }}>🔁 Confirmar reasignación</button>
-            <button onClick={()=>setModalRef(null)} style={{ width:"100%", background:"none", border:"none", fontSize:"13px", fontWeight:700, color:"#9a9a9a", cursor:"pointer", fontFamily:"'Nunito',sans-serif", padding:"8px" }}>Cancelar</button>
+      {/* ══ MODAL EDITAR ANUNCIO ════════════════════════════════════════════════ */}
+      {modalAnuncio && (
+        <Modal titulo="✏️ Editar anuncio" onClose={()=>setModalAnuncio(null)}>
+          <label style={S.label}>Título</label>
+          <input style={{...S.input,marginBottom:"10px"}} value={modalAnuncio.titulo||""} onChange={e=>setModalAnuncio({...modalAnuncio,titulo:e.target.value})} />
+          <label style={S.label}>Descripción</label>
+          <textarea style={{...S.input,minHeight:"70px",resize:"vertical",marginBottom:"10px"}} value={modalAnuncio.descripcion||""} onChange={e=>setModalAnuncio({...modalAnuncio,descripcion:e.target.value})} />
+          <label style={S.label}>Precio</label>
+          <input style={{...S.input,marginBottom:"10px"}} type="number" value={modalAnuncio.precio||""} onChange={e=>setModalAnuncio({...modalAnuncio,precio:e.target.value})} />
+          <label style={S.label}>Link externo</label>
+          <input style={{...S.input,marginBottom:"10px"}} placeholder="https://..." value={modalAnuncio.link||""} onChange={e=>setModalAnuncio({...modalAnuncio,link:e.target.value})} />
+          <label style={S.label}>Estado</label>
+          <select style={{...S.input,marginBottom:"16px"}} value={modalAnuncio.estado||"activo"} onChange={e=>setModalAnuncio({...modalAnuncio,estado:e.target.value})}>
+            <option value="activo">✅ Activo</option>
+            <option value="bloqueado">🔒 Bloqueado</option>
+            <option value="pausado">⏸️ Pausado</option>
+          </select>
+          <div style={{display:"flex",gap:"8px"}}>
+            <button onClick={()=>guardarAnuncio(modalAnuncio)} style={S.btn("#27ae60")}>💾 Guardar</button>
+            <button onClick={()=>router.push(`/anuncios/${modalAnuncio.id}`)} style={S.btn("#3a7bd5",true)}>👁️ Ver</button>
           </div>
-        </div>
+        </Modal>
       )}
 
+      {/* ══ MODAL PUBLICAR ANUNCIO ══════════════════════════════════════════════ */}
+      {modalNuevoAn && (
+        <Modal titulo="📋 Publicar anuncio" onClose={()=>setModalNuevoAn(false)}>
+          <label style={S.label}>Título</label>
+          <input style={{...S.input,marginBottom:"10px"}} placeholder="Título del anuncio" value={nuevaAn.titulo} onChange={e=>setNuevaAn({...nuevaAn,titulo:e.target.value})} />
+          <label style={S.label}>Descripción</label>
+          <textarea style={{...S.input,minHeight:"70px",resize:"vertical",marginBottom:"10px"}} placeholder="Descripción..." value={nuevaAn.descripcion} onChange={e=>setNuevaAn({...nuevaAn,descripcion:e.target.value})} />
+          <label style={S.label}>Precio</label>
+          <input style={{...S.input,marginBottom:"10px"}} type="number" placeholder="0" value={nuevaAn.precio} onChange={e=>setNuevaAn({...nuevaAn,precio:e.target.value})} />
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px",marginBottom:"10px"}}>
+            <div>
+              <label style={S.label}>Provincia</label>
+              <input style={S.input} placeholder="Ej: Santa Fe" value={nuevaAn.provincia} onChange={e=>setNuevaAn({...nuevaAn,provincia:e.target.value})} />
+            </div>
+            <div>
+              <label style={S.label}>Ciudad</label>
+              <input style={S.input} placeholder="Ej: Rosario" value={nuevaAn.ciudad} onChange={e=>setNuevaAn({...nuevaAn,ciudad:e.target.value})} />
+            </div>
+          </div>
+          <label style={S.label}>Tipo</label>
+          <select style={{...S.input,marginBottom:"10px"}} value={nuevaAn.tipo} onChange={e=>setNuevaAn({...nuevaAn,tipo:e.target.value})}>
+            <option value="conexion">🔗 Conexión</option>
+            <option value="free">💙 Free</option>
+            <option value="nexo">💛 Nexo</option>
+          </select>
+          <div style={{display:"flex",gap:"12px",marginBottom:"16px"}}>
+            <label style={{display:"flex",alignItems:"center",gap:"6px",fontSize:"13px",fontWeight:700,cursor:"pointer"}}>
+              <input type="checkbox" checked={nuevaAn.flash} onChange={e=>setNuevaAn({...nuevaAn,flash:e.target.checked})} />⚡ Flash
+            </label>
+            <label style={{display:"flex",alignItems:"center",gap:"6px",fontSize:"13px",fontWeight:700,cursor:"pointer"}}>
+              <input type="checkbox" checked={nuevaAn.permuto} onChange={e=>setNuevaAn({...nuevaAn,permuto:e.target.checked})} />🔄 Permuta
+            </label>
+          </div>
+          <button onClick={publicarAnuncio} style={S.btn("#27ae60")} disabled={!nuevaAn.titulo}>📋 Publicar anuncio</button>
+        </Modal>
+      )}
+
+      {/* ══ MODAL MENSAJE ════════════════════════════════════════════════════════ */}
+      {modalMensaje && (
+        <Modal titulo={`💬 Mensaje a ${modalMensaje.nombre_usuario}`} onClose={()=>setModalMensaje(null)}>
+          <label style={S.label}>Tipo</label>
+          <select style={{...S.input,marginBottom:"10px"}} value={msgTipo} onChange={e=>setMsgTipo(e.target.value)}>
+            <option value="sistema">⚙️ Sistema</option>
+            <option value="promocion">🎁 Promoción</option>
+            <option value="alerta">⚠️ Alerta</option>
+          </select>
+          <label style={S.label}>Mensaje</label>
+          <textarea style={{...S.input,minHeight:"90px",resize:"vertical",marginBottom:"16px"}} placeholder="Escribí el mensaje..." value={msgTexto} onChange={e=>setMsgTexto(e.target.value)} />
+          <button onClick={enviarMensaje} style={S.btn("#3a7bd5")} disabled={!msgTexto}>📨 Enviar mensaje</button>
+        </Modal>
+      )}
+
+      {/* ══ MODAL CREAR GRUPO ════════════════════════════════════════════════════ */}
+      {modalNuevoGr && (
+        <Modal titulo="🏘️ Crear grupo" onClose={()=>setModalNuevoGr(false)}>
+          <label style={S.label}>Nombre</label>
+          <input style={{...S.input,marginBottom:"10px"}} placeholder="Nombre del grupo" value={nuevoGr.nombre} onChange={e=>setNuevoGr({...nuevoGr,nombre:e.target.value})} />
+          <label style={S.label}>Descripción</label>
+          <textarea style={{...S.input,minHeight:"70px",resize:"vertical",marginBottom:"10px"}} placeholder="Descripción del grupo..." value={nuevoGr.descripcion} onChange={e=>setNuevoGr({...nuevoGr,descripcion:e.target.value})} />
+          <label style={S.label}>Rubro</label>
+          <select style={{...S.input,marginBottom:"16px"}} value={nuevoGr.rubro_id} onChange={e=>setNuevoGr({...nuevoGr,rubro_id:e.target.value})}>
+            <option value="">Sin rubro</option>
+            {rubros.map((r:any)=><option key={r.id} value={r.id}>{r.nombre}</option>)}
+          </select>
+          <button onClick={crearGrupo} style={S.btn("#27ae60")} disabled={!nuevoGr.nombre}>🏘️ Crear grupo</button>
+        </Modal>
+      )}
     </main>
   );
 }

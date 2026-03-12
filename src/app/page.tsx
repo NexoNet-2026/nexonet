@@ -20,10 +20,10 @@ type Anuncio = {
   mas_vendido: boolean; tienda_oficial: boolean;
   descuento_cantidad: boolean; presupuesto_sin_cargo: boolean;
   conexion_habilitada: boolean; descuento_porcentaje: number;
-  bits_posicion: number;
+  bits_posicion: number; permuto: boolean;
   subrubro: string; rubro: string;
   usuario_id: string;
-  owner_whatsapp?: string; // ← NUEVO: WA del dueño si tiene BIT + WA visible
+  owner_whatsapp?: string;
 };
 
 type Rubro = { id: number; nombre: string };
@@ -31,15 +31,16 @@ type Subrubro = { id: number; nombre: string; rubro_id: number };
 
 export default function Home() {
   const router = useRouter();
-  const [todos, setTodos]           = useState<Anuncio[]>([]);
-  const [rubros, setRubros]         = useState<Rubro[]>([]);
-  const [subrubros, setSubrubros]   = useState<Subrubro[]>([]);
-  const [loading, setLoading]       = useState(true);
+  const [todos, setTodos]             = useState<Anuncio[]>([]);
+  const [rubros, setRubros]           = useState<Rubro[]>([]);
+  const [subrubros, setSubrubros]     = useState<Subrubro[]>([]);
+  const [loading, setLoading]         = useState(true);
+  const [soloPermuto, setSoloPermuto] = useState(false);
 
-  const [query, setQuery]           = useState("");
-  const [rubroSel, setRubroSel]     = useState<Rubro | null>(null);
-  const [subrubroSel, setSubrubroSel] = useState<Subrubro | null>(null);
-  const [dropOpen, setDropOpen]     = useState(false);
+  const [query, setQuery]               = useState("");
+  const [rubroSel, setRubroSel]         = useState<Rubro | null>(null);
+  const [subrubroSel, setSubrubroSel]   = useState<Subrubro | null>(null);
+  const [dropOpen, setDropOpen]         = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropRef  = useRef<HTMLDivElement>(null);
 
@@ -52,7 +53,7 @@ export default function Home() {
           id, titulo, precio, moneda, ciudad, provincia, imagenes, flash,
           fuente, envio_gratis, mas_vendido, tienda_oficial, descuento_cantidad,
           presupuesto_sin_cargo, conexion_habilitada, descuento_porcentaje,
-          bits_posicion, created_at, usuario_id,
+          bits_posicion, created_at, usuario_id, permuto,
           subrubros!inner(nombre, rubros!inner(nombre))
         `).eq("estado", "activo").order("created_at", { ascending: false }).limit(80),
       ]);
@@ -69,12 +70,12 @@ export default function Home() {
           conexion_habilitada: a.conexion_habilitada || false,
           descuento_porcentaje: a.descuento_porcentaje || 0,
           bits_posicion: a.bits_posicion || 0,
+          permuto: a.permuto || false,
           subrubro: a.subrubros?.nombre || "",
           rubro: a.subrubros?.rubros?.nombre || "",
           usuario_id: a.usuario_id,
         }));
 
-        // ── NUEVO: cargar WA de dueños ──
         const uids = [...new Set(mapped.map(a => a.usuario_id).filter(Boolean))];
         if (uids.length > 0) {
           const { data: owners } = await supabase
@@ -91,7 +92,6 @@ export default function Home() {
             });
           }
         }
-
         setTodos(mapped);
       }
       setLoading(false);
@@ -122,7 +122,8 @@ export default function Home() {
         a.rubro.toLowerCase().includes(queryLow)  ||
         a.subrubro.toLowerCase().includes(queryLow)
       : true;
-    return matchRubro && matchSubrubro && matchQuery;
+    const matchPermuto = soloPermuto ? a.permuto === true : true;
+    return matchRubro && matchSubrubro && matchQuery && matchPermuto;
   });
 
   const destacados    = anunciosFiltrados.filter(a => a.bits_posicion > 0).sort((a, b) => b.bits_posicion - a.bits_posicion).slice(0, 10);
@@ -158,7 +159,6 @@ export default function Home() {
     <main style={{ paddingTop:"95px", paddingBottom:"130px", background:"#f4f4f2", minHeight:"100vh", fontFamily:"'Nunito', sans-serif" }}>
       <Header />
 
-      {/* HERO */}
       <div style={{ background:"linear-gradient(135deg, #1a2a3a 0%, #243b55 100%)", padding:"18px 16px 20px" }}>
         <div style={{ fontSize:"13px", fontWeight:700, color:"#d4a017", letterSpacing:"2px", textTransform:"uppercase", marginBottom:"4px", textAlign:"center" }}>
           Conectando Oportunidades
@@ -258,12 +258,26 @@ export default function Home() {
           )}
         </div>
 
+        {/* ── FILTROS: Permuta + Búsqueda IA ── */}
+        <div style={{ display:"flex", gap:"8px", justifyContent:"center", marginTop:"12px", flexWrap:"wrap" }}>
+          <button
+            onClick={() => setSoloPermuto(v => !v)}
+            style={{ background: soloPermuto ? "#d4a017" : "rgba(255,255,255,0.12)", border:`2px solid ${soloPermuto ? "#d4a017" : "rgba(255,255,255,0.3)"}`, borderRadius:"20px", padding:"7px 16px", fontSize:"12px", fontWeight:800, color: soloPermuto ? "#1a2a3a" : "#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif", display:"flex", alignItems:"center", gap:"6px" }}>
+            🔄 Permuta {soloPermuto && "✓"}
+          </button>
+          <button
+            onClick={() => router.push("/busqueda-ia")}
+            style={{ background:"linear-gradient(135deg,rgba(22,160,133,0.3),rgba(22,160,133,0.15))", border:"2px solid rgba(22,160,133,0.7)", borderRadius:"20px", padding:"7px 16px", fontSize:"12px", fontWeight:800, color:"#1abc9c", cursor:"pointer", fontFamily:"'Nunito',sans-serif", display:"flex", alignItems:"center", gap:"6px", boxShadow:"0 0 8px rgba(22,160,133,0.2)" }}>
+            🤖 Búsqueda IA
+          </button>
+        </div>
+
         {/* Píldoras lista / mapa */}
-        <div style={{display:"flex",gap:"8px",justifyContent:"center",marginTop:"10px"}}>
-          <button onClick={irABuscar} style={{background:"linear-gradient(135deg,#f0c040,#d4a017)",border:"none",borderRadius:"20px",padding:"8px 20px",fontSize:"13px",fontWeight:900,color:"#1a2a3a",cursor:"pointer",fontFamily:"'Nunito',sans-serif",boxShadow:"0 3px 0 #a07810",display:"flex",alignItems:"center",gap:"6px"}}>
+        <div style={{ display:"flex", gap:"8px", justifyContent:"center", marginTop:"10px" }}>
+          <button onClick={irABuscar} style={{ background:"linear-gradient(135deg,#f0c040,#d4a017)", border:"none", borderRadius:"20px", padding:"8px 20px", fontSize:"13px", fontWeight:900, color:"#1a2a3a", cursor:"pointer", fontFamily:"'Nunito',sans-serif", boxShadow:"0 3px 0 #a07810", display:"flex", alignItems:"center", gap:"6px" }}>
             📋 Ver en lista
           </button>
-          <button onClick={irAMapa} style={{background:"rgba(255,255,255,0.12)",border:"2px solid rgba(255,255,255,0.25)",borderRadius:"20px",padding:"8px 20px",fontSize:"13px",fontWeight:800,color:"#fff",cursor:"pointer",fontFamily:"'Nunito',sans-serif",display:"flex",alignItems:"center",gap:"6px"}}>
+          <button onClick={irAMapa} style={{ background:"rgba(255,255,255,0.12)", border:"2px solid rgba(255,255,255,0.25)", borderRadius:"20px", padding:"8px 20px", fontSize:"13px", fontWeight:800, color:"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif", display:"flex", alignItems:"center", gap:"6px" }}>
             🗺️ Ver en mapa
           </button>
         </div>
@@ -286,25 +300,48 @@ export default function Home() {
       ) : anunciosFiltrados.length === 0 ? (
         <div style={{ textAlign:"center", padding:"40px 20px" }}>
           <div style={{ fontSize:"40px", marginBottom:"12px" }}>🔍</div>
-          <div style={{ fontSize:"16px", fontWeight:800, color:"#1a2a3a", marginBottom:"6px" }}>Sin anuncios</div>
-          <div style={{ fontSize:"13px", color:"#9a9a9a", fontWeight:600, marginBottom:"20px" }}>No encontramos resultados para tu búsqueda</div>
-          <button onClick={limpiar} style={{ background:"linear-gradient(135deg,#d4a017,#f0c040)", border:"none", borderRadius:"12px", padding:"12px 24px", fontSize:"13px", fontWeight:800, color:"#1a2a3a", cursor:"pointer", fontFamily:"'Nunito', sans-serif" }}>
+          <div style={{ fontSize:"16px", fontWeight:800, color:"#1a2a3a", marginBottom:"6px" }}>
+            {soloPermuto ? "Sin anuncios con permuta" : "Sin anuncios"}
+          </div>
+          <div style={{ fontSize:"13px", color:"#9a9a9a", fontWeight:600, marginBottom:"20px" }}>
+            {soloPermuto ? "No hay anuncios que acepten permuta en este momento" : "No encontramos resultados para tu búsqueda"}
+          </div>
+          <button onClick={() => { limpiar(); setSoloPermuto(false); }} style={{ background:"linear-gradient(135deg,#d4a017,#f0c040)", border:"none", borderRadius:"12px", padding:"12px 24px", fontSize:"13px", fontWeight:800, color:"#1a2a3a", cursor:"pointer", fontFamily:"'Nunito', sans-serif" }}>
             Ver todos los anuncios
           </button>
         </div>
       ) : (
         <>
+          {soloPermuto && (
+            <div style={{ margin:"12px 16px 0", background:"rgba(212,160,23,0.1)", border:"1px solid rgba(212,160,23,0.3)", borderRadius:"12px", padding:"8px 14px", display:"flex", alignItems:"center", gap:"8px" }}>
+              <span style={{ fontSize:"16px" }}>🔄</span>
+              <span style={{ fontSize:"13px", fontWeight:800, color:"#d4a017" }}>{anunciosFiltrados.length} anuncio{anunciosFiltrados.length !== 1 ? "s" : ""} con permuta</span>
+              <button onClick={() => setSoloPermuto(false)} style={{ marginLeft:"auto", background:"none", border:"none", fontSize:"12px", color:"#9a9a9a", cursor:"pointer", fontWeight:700, fontFamily:"'Nunito',sans-serif" }}>✕ Quitar</button>
+            </div>
+          )}
           {destacados.length > 0 && (
-            <Seccion titulo="⭐ Anuncios Destacados" rubroId={rubroSel?.id} acento="#d4a017" bg="linear-gradient(135deg,rgba(212,160,23,0.08),rgba(212,160,23,0.03))">
-              {destacados.map(a => <Tarjeta key={a.id} anuncio={a} formatPrecio={formatPrecio} highlight="destacado" />)}
-            </Seccion>
+            <SliderSection
+              titulo="⭐ Anuncios Destacados"
+              items={destacados}
+              rubroId={rubroSel?.id}
+              acento="#d4a017"
+              bg="linear-gradient(135deg,rgba(212,160,23,0.08),rgba(212,160,23,0.03))"
+              autoplay
+              renderItem={(a) => <Tarjeta anuncio={a} formatPrecio={formatPrecio} highlight="destacado" />}
+            />
           )}
           {flashAnuncios.length > 0 && (
-            <Seccion titulo="⚡ Anuncios Flash" rubroId={rubroSel?.id} acento="#e63946" bg="linear-gradient(135deg,rgba(230,57,70,0.06),rgba(230,57,70,0.02))">
-              {flashAnuncios.map(a => <Tarjeta key={a.id} anuncio={a} formatPrecio={formatPrecio} highlight="flash" />)}
-            </Seccion>
+            <SliderSection
+              titulo="⚡ Anuncios Flash"
+              items={flashAnuncios}
+              rubroId={rubroSel?.id}
+              acento="#e63946"
+              bg="linear-gradient(135deg,rgba(230,57,70,0.06),rgba(230,57,70,0.02))"
+              autoplay
+              renderItem={(a) => <Tarjeta anuncio={a} formatPrecio={formatPrecio} highlight="flash" />}
+            />
           )}
-          <Seccion titulo={rubroSel ? `📂 ${rubroSel.nombre}${subrubroSel ? ` → ${subrubroSel.nombre}` : ""}` : "🕐 Recién publicados"} rubroId={rubroSel?.id} acento="#3a7bd5">
+          <Seccion titulo={rubroSel ? `📂 ${rubroSel.nombre}${subrubroSel ? ` → ${subrubroSel.nombre}` : ""}` : soloPermuto ? "🔄 Con Permuta" : "🕐 Recién publicados"} rubroId={rubroSel?.id} acento="#3a7bd5">
             {recientes.map(a => <Tarjeta key={a.id} anuncio={a} formatPrecio={formatPrecio} />)}
           </Seccion>
         </>
@@ -322,12 +359,94 @@ const itemDropStyle = (activo: boolean): React.CSSProperties => ({
   transition:"background .15s",
 });
 
+// ── Slider con flechas, dots y autoplay ──────────────────────────────────────
+function SliderSection({ titulo, items, rubroId, acento = "#d4a017", bg, autoplay = false, renderItem }: {
+  titulo: string; items: any[]; rubroId?: number; acento?: string; bg?: string;
+  autoplay?: boolean; renderItem: (item: any) => React.ReactNode;
+}) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [idx, setIdx] = useState(0);
+  const CARD_W = 202; // card 190 + gap 12
+  const total = items.length;
+  const href = rubroId ? `/buscar?rubro=${rubroId}` : "/buscar";
+
+  const scrollTo = (i: number) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const clamped = Math.max(0, Math.min(i, total - 1));
+    setIdx(clamped);
+    el.scrollTo({ left: clamped * CARD_W, behavior: "smooth" });
+  };
+
+  // Sync idx con scroll manual
+  const onScroll = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setIdx(Math.round(el.scrollLeft / CARD_W));
+  };
+
+  // Autoplay
+  useEffect(() => {
+    if (!autoplay || total <= 1) return;
+    const t = setInterval(() => {
+      setIdx(prev => {
+        const next = prev >= total - 1 ? 0 : prev + 1;
+        scrollRef.current?.scrollTo({ left: next * CARD_W, behavior: "smooth" });
+        return next;
+      });
+    }, 3500);
+    return () => clearInterval(t);
+  }, [autoplay, total]);
+
+  return (
+    <div style={{ marginBottom:"24px", background: bg || "transparent", padding: bg ? "14px 0 8px" : "0" }}>
+      {/* Header */}
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"0 16px 10px" }}>
+        <div style={{ display:"flex", alignItems:"center", gap:"8px" }}>
+          <div style={{ width:"3px", height:"18px", background: acento, borderRadius:"2px" }} />
+          <span style={{ fontSize:"16px", fontWeight:900, color:"#1a2a3a" }}>{titulo}</span>
+        </div>
+        <div style={{ display:"flex", alignItems:"center", gap:"8px" }}>
+          {/* Flechas */}
+          <button onClick={() => scrollTo(idx - 1)} disabled={idx === 0}
+            style={{ width:"28px", height:"28px", borderRadius:"50%", border:`2px solid ${acento}`, background: idx===0?"transparent":acento, color: idx===0?acento:"#1a2a3a", fontSize:"13px", cursor: idx===0?"not-allowed":"pointer", display:"flex", alignItems:"center", justifyContent:"center", opacity: idx===0?0.35:1, transition:"all .2s", flexShrink:0 }}>
+            ‹
+          </button>
+          <button onClick={() => scrollTo(idx + 1)} disabled={idx >= total - 1}
+            style={{ width:"28px", height:"28px", borderRadius:"50%", border:`2px solid ${acento}`, background: idx>=total-1?"transparent":acento, color: idx>=total-1?acento:"#1a2a3a", fontSize:"13px", cursor: idx>=total-1?"not-allowed":"pointer", display:"flex", alignItems:"center", justifyContent:"center", opacity: idx>=total-1?0.35:1, transition:"all .2s", flexShrink:0 }}>
+            ›
+          </button>
+          <a href={href} style={{ fontSize:"12px", fontWeight:700, color: acento, textDecoration:"none" }}>Ver todos →</a>
+        </div>
+      </div>
+
+      {/* Cards */}
+      <div ref={scrollRef} onScroll={onScroll}
+        style={{ display:"flex", gap:"12px", padding:"0 16px 8px", overflowX:"auto", scrollbarWidth:"none", scrollSnapType:"x mandatory" }}>
+        {items.map((item, i) => (
+          <div key={i} style={{ scrollSnapAlign:"start", flexShrink:0 }}>{renderItem(item)}</div>
+        ))}
+      </div>
+
+      {/* Dots */}
+      {total > 1 && (
+        <div style={{ display:"flex", justifyContent:"center", gap:"5px", padding:"6px 0 2px" }}>
+          {items.map((_, i) => (
+            <div key={i} onClick={() => scrollTo(i)}
+              style={{ width: i===idx ? "18px" : "6px", height:"6px", borderRadius:"3px", background: i===idx ? acento : "rgba(0,0,0,0.15)", cursor:"pointer", transition:"all .25s" }} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Seccion({ titulo, children, rubroId, acento = "#d4a017", bg }: {
   titulo: string; children: React.ReactNode; rubroId?: number; acento?: string; bg?: string;
 }) {
   const href = rubroId ? `/buscar?rubro=${rubroId}` : "/buscar";
   return (
-    <div style={{ marginBottom:"24px", background: bg || "transparent", borderRadius: bg ? "0" : undefined, padding: bg ? "14px 0 4px" : "0" }}>
+    <div style={{ marginBottom:"24px", background: bg || "transparent", padding: bg ? "14px 0 4px" : "0" }}>
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"0 16px 10px" }}>
         <div style={{ display:"flex", alignItems:"center", gap:"8px" }}>
           <div style={{ width:"3px", height:"18px", background: acento, borderRadius:"2px" }} />
@@ -349,7 +468,7 @@ function Tarjeta({ anuncio, formatPrecio, highlight }: {
 }) {
   const imagen  = anuncio.imagenes?.[0];
   const fuente  = FUENTES[anuncio.fuente] || FUENTES.nexonet;
-  const tieneWA = !!anuncio.owner_whatsapp; // ← NUEVO
+  const tieneWA = !!anuncio.owner_whatsapp;
   const badges = [
     anuncio.envio_gratis          && { label:"Envío gratis",     color:"#00a884", texto:"#fff"    },
     anuncio.mas_vendido           && { label:"Más vendido",      color:"#e63946", texto:"#fff"    },
@@ -358,6 +477,7 @@ function Tarjeta({ anuncio, formatPrecio, highlight }: {
     anuncio.presupuesto_sin_cargo && { label:"Presup. gratis",   color:"#6a0dad", texto:"#fff"    },
     anuncio.descuento_cantidad    && { label:"Desc. x cantidad", color:"#2d6a4f", texto:"#fff"    },
     anuncio.descuento_porcentaje > 0 && { label:`${anuncio.descuento_porcentaje}% OFF`, color:"#e63946", texto:"#fff" },
+    anuncio.permuto               && { label:"🔄 Permuta",       color:"#8e44ad", texto:"#fff"    },
   ].filter(Boolean) as { label:string; color:string; texto:string }[];
 
   const borderTop   = highlight === "destacado" ? "3px solid #d4a017" : highlight === "flash" ? "3px solid #e63946" : "none";
@@ -371,7 +491,6 @@ function Tarjeta({ anuncio, formatPrecio, highlight }: {
           <div style={{ display:"flex", gap:"4px", alignItems:"center" }}>
             {highlight === "destacado" && <span style={{ background:"#d4a017", color:"#1a2a3a", fontSize:"9px", fontWeight:900, padding:"1px 6px", borderRadius:"6px" }}>⭐ Dest.</span>}
             {(highlight === "flash" || anuncio.flash) && <span style={{ background:"#1a2a3a", color:"#d4a017", fontSize:"9px", fontWeight:900, padding:"1px 6px", borderRadius:"6px" }}>⚡ Flash</span>}
-            {/* ── NUEVO: ícono WA ── */}
             <div title={tieneWA?"WhatsApp activo":"Sin WhatsApp"} style={{width:"16px",height:"16px",borderRadius:"50%",background:tieneWA?"#25d366":"rgba(0,0,0,0.18)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"9px",opacity:tieneWA?1:0.35,boxShadow:tieneWA?"0 1px 4px rgba(37,211,102,0.5)":"none",flexShrink:0}}>
               📱
             </div>
@@ -389,7 +508,6 @@ function Tarjeta({ anuncio, formatPrecio, highlight }: {
           <div style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:700, marginBottom:"2px", textTransform:"uppercase", letterSpacing:"0.5px" }}>{anuncio.subrubro}</div>
           <div style={{ fontSize:"13px", fontWeight:800, color:"#2c2c2e", marginBottom:"3px", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{anuncio.titulo}</div>
           <div style={{ fontSize:"15px", fontWeight:900, color:"#d4a017" }}>{formatPrecio(anuncio.precio, anuncio.moneda)}</div>
-          {/* ── NUEVO: fila ciudad + badge WA ── */}
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginTop:"2px" }}>
             <div style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:600 }}>📍 {anuncio.ciudad}, {anuncio.provincia}</div>
             {tieneWA && <span style={{background:"rgba(37,211,102,0.15)",border:"1px solid rgba(37,211,102,0.4)",borderRadius:"20px",padding:"1px 7px",fontSize:"9px",fontWeight:900,color:"#1a7a4a"}}>WA</span>}
@@ -399,7 +517,3 @@ function Tarjeta({ anuncio, formatPrecio, highlight }: {
     </a>
   );
 }
-
-const accionStyle: React.CSSProperties = { background:"linear-gradient(135deg, #1a2a3a 0%, #243b55 100%)", borderRadius:"16px", padding:"18px 10px", textAlign:"center", boxShadow:"0 4px 12px rgba(0,0,0,0.15)", cursor:"pointer", textDecoration:"none", color:"#fff", display:"block", border:"1px solid rgba(255,255,255,0.08)" };
-const accionTituloStyle: React.CSSProperties = { fontSize:"13px", fontWeight:900, textTransform:"uppercase", letterSpacing:"0.5px", color:"#fff", marginBottom:"2px" };
-const accionSubStyle: React.CSSProperties = { fontSize:"11px", fontWeight:600, color:"#8a9aaa" };

@@ -425,6 +425,17 @@ export default function Publicar() {
               </div>
             </div>
 
+            {/* PERMUTO — PRIMER FILTRO */}
+            <div onClick={() => setPermuto(v => !v)} style={{ display:"flex", alignItems:"center", gap:"14px", padding:"14px 16px", background: permuto ? "rgba(142,68,173,0.1)" : "#fff", borderRadius:"16px", border: permuto ? "2px solid #8e44ad" : "2px solid #e8e8e6", cursor:"pointer", marginBottom:"10px", boxShadow:"0 2px 8px rgba(0,0,0,0.06)" }}>
+              <div style={{ width:"44px", height:"26px", borderRadius:"13px", background: permuto ? "#8e44ad" : "#d0d0d0", position:"relative", flexShrink:0, transition:"background .2s" }}>
+                <div style={{ position:"absolute", top:"3px", left: permuto ? "21px" : "3px", width:"20px", height:"20px", borderRadius:"50%", background:"#fff", boxShadow:"0 1px 4px rgba(0,0,0,0.2)", transition:"left .2s" }} />
+              </div>
+              <div>
+                <div style={{ fontSize:"14px", fontWeight:900, color: permuto ? "#8e44ad" : "#1a2a3a" }}>🔄 Acepto permuta</div>
+                <div style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:600 }}>Tu anuncio aparece en el filtro "Permuto"</div>
+              </div>
+            </div>
+
             {/* TÍTULO Y DESCRIPCIÓN */}
             <div style={cardStyle}>
               <Campo label="Título *" value={form.titulo} onChange={v => setForm({...form,titulo:v})} placeholder="Ej: iPhone 14 Pro 128GB" />
@@ -437,17 +448,6 @@ export default function Publicar() {
                     <option value="ARS">ARS $</option>
                     <option value="USD">USD U$D</option>
                   </select>
-                </div>
-              </div>
-
-              {/* PERMUTO */}
-              <div onClick={() => setPermuto(v => !v)} style={{ display:"flex", alignItems:"center", gap:"12px", padding:"12px 14px", background: permuto ? "rgba(212,160,23,0.1)" : "#f9f9f9", borderRadius:"12px", border: permuto ? "2px solid #d4a017" : "2px solid #e8e8e6", cursor:"pointer", marginTop:"4px" }}>
-                <div style={{ width:"24px", height:"24px", borderRadius:"6px", background: permuto ? "#d4a017" : "#e8e8e6", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"14px", flexShrink:0, transition:"background .2s" }}>
-                  {permuto ? "✓" : ""}
-                </div>
-                <div>
-                  <div style={{ fontSize:"13px", fontWeight:800, color: permuto ? "#d4a017" : "#1a2a3a" }}>🔄 Acepto permuta</div>
-                  <div style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:600 }}>Tu anuncio aparece en el filtro "Permuto"</div>
                 </div>
               </div>
             </div>

@@ -5,6 +5,13 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import PopupCompra, { MetodoPago } from "@/components/PopupCompra";
+const LINK_PLATAFORMAS = [
+  { nombre:"YouTube",   emoji:"▶️",  color:"#ff0000" },
+  { nombre:"Instagram", emoji:"📸",  color:"#e1306c" },
+  { nombre:"Facebook",  emoji:"👥",  color:"#1877f2" },
+  { nombre:"TikTok",    emoji:"🎵",  color:"#010101" },
+  { nombre:"Web",       emoji:"🌐",  color:"#3a7bd5" },
+];
 
 // ─── Todos los campos opcionales aceptan null (lo que devuelve Supabase) ──────
 type Anuncio = {

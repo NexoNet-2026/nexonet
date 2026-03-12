@@ -4,7 +4,7 @@ import BottomNav from "@/components/BottomNav";
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import PopupCompra from "@/components/PopupCompra";
+import PopupCompra, { MetodoPago } from "@/components/PopupCompra";
 
 const FUENTES: Record<string, { label: string; color: string; texto: string }> = {
   nexonet:       { label: "NexoNet",        color: "#d4a017", texto: "#1a2a3a" },
@@ -558,10 +558,20 @@ export default function AnuncioDetalle() {
       {/* POPUP dueño carga BIT */}
       {popupCompra && (
         <PopupCompra
-          tipo="conexion" tituloAccion="Cargar BIT Conexión"
-          bitsDisponibles={{ nexo: 0, promo: 0, free: 0 }}
+          titulo="Cargar BIT Conexión"
+          emoji="🔗"
+          costo="500 BIT / $500"
+          descripcion="Recargá BIT para que tu anuncio reciba conexiones"
+          bits={{ free: misBits?.bits_free || 0, nexo: misBits?.bits || 0, promo: misBits?.bits_promo || 0 }}
           onClose={() => setPopupCompra(false)}
-          onUsarBits={async () => { setPopupCompra(false); router.push("/mis-anuncios"); }}
+          onPagar={async (metodo) => {
+            setPopupCompra(false);
+            if (metodo === "bit_free" || metodo === "bit_nexo") {
+              router.push("/mis-anuncios");
+            } else {
+              alert("Próximamente — método de pago externo");
+            }
+          }}
         />
       )}
 

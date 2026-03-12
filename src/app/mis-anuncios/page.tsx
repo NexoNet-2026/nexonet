@@ -4,7 +4,7 @@ import BottomNav from "@/components/BottomNav";
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import PopupCompra from "@/components/PopupCompra";
+import PopupCompra, { MetodoPago } from "@/components/PopupCompra";
 import PopupPago, { LINK_PLATAFORMAS } from "@/components/PopupPago";
 
 // ─── Todos los campos opcionales aceptan null (lo que devuelve Supabase) ──────
@@ -827,26 +827,28 @@ export default function MisAnuncios() {
 
       {popupBitsCx && (
         <PopupCompra
-          tipo="conexion"
-          tituloAccion="Cargar BIT Conexión"
-          bitsDisponibles={{ nexo: bitsNexo, promo: bitsPromo, free: bitsFree }}
+          titulo="Cargar BIT Conexión"
+          emoji="🔗"
+          costo="500 BIT / $500"
+          descripcion="Cada buscador que vea tus datos consume 1 BIT"
+          bits={{ free: bitsFree, nexo: bitsNexo, promo: bitsPromo }}
           onClose={() => setPopupBitsCx(null)}
-          onUsarBits={async (cantidad, tipoBit) => {
+          onPagar={async (metodo: MetodoPago) => {
             const id = popupBitsCx;
-            // Cargar BIT en el anuncio
             const anuncio = anuncios.find(a => a.id === id);
             const actual  = anuncio?.bits_conexion ?? 0;
-            const paquete = cantidad >= 5000 ? 5000 : cantidad >= 1000 ? 1000 : 500;
-            await supabase.from("anuncios").update({ bits_conexion: actual + paquete }).eq("id", id);
-            // Descontar de la cuenta del usuario
-            if (tipoBit === "nexo") {
-              await supabase.from("usuarios").update({ bits: bitsNexo - paquete }).eq("id", session?.user?.id);
-            } else if (tipoBit === "promo") {
-              await supabase.from("usuarios").update({ bits_promo: bitsPromo - paquete }).eq("id", session?.user?.id);
-            } else {
+            const paquete = 500;
+            if (metodo === "bit_free") {
+              await supabase.from("anuncios").update({ bits_conexion: actual + paquete }).eq("id", id);
               await supabase.from("usuarios").update({ bits_free: bitsFree - paquete }).eq("id", session?.user?.id);
+              setAnuncios(prev => prev.map(a => a.id === id ? { ...a, bits_conexion: actual + paquete } : a));
+            } else if (metodo === "bit_nexo") {
+              await supabase.from("anuncios").update({ bits_conexion: actual + paquete }).eq("id", id);
+              await supabase.from("usuarios").update({ bits: bitsNexo - paquete }).eq("id", session?.user?.id);
+              setAnuncios(prev => prev.map(a => a.id === id ? { ...a, bits_conexion: actual + paquete } : a));
+            } else {
+              alert("Próximamente — método de pago externo");
             }
-            setAnuncios(prev => prev.map(a => a.id === id ? { ...a, bits_conexion: actual + paquete } : a));
             setPopupBitsCx(null);
           }}
         />

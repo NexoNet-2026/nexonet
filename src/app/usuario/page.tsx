@@ -6,7 +6,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 // v2
-import PopupCompra from "@/components/PopupCompra";
+import PopupCompra, { MetodoPago } from "@/components/PopupCompra";
 
 type Seccion = "cuenta" | "chat" | "datos" | "estadisticas" | "promotor" | "grupos" | "busquedas";
 
@@ -945,20 +945,41 @@ export default function Usuario() {
       {/* ══ POPUP COMPRAR BIT EMPRESA ══ */}
       {popupEmpresa && (
         <PopupCompra
-          tipo="anuncio"
-          tituloAccion="BIT Anuncios — Ampliar plan"
-          bitsDisponibles={{ nexo: bitsNexonet, promo: bitsPromotor, free: bitsFree }}
+          titulo="BIT Anuncios — Ampliar plan"
+          emoji="📋"
+          costo="$1.000 / $3.000 / $10.000"
+          descripcion="Ampliá la cantidad de anuncios publicados"
+          bits={{ free: bitsFree, nexo: bitsNexonet, promo: bitsPromotor }}
           onClose={() => setPopupEmpresa(false)}
+          onPagar={async (metodo: MetodoPago) => {
+            setPopupEmpresa(false);
+            alert("Próximamente — contactanos para ampliar tu plan");
+          }}
         />
       )}
 
       {/* ══ POPUP CARGAR BIT ══ */}
       {popupBits && (
         <PopupCompra
-          tipo="general"
-          tituloAccion="🔍 BIT Búsquedas Automáticas"
-          bitsDisponibles={{ nexo: bitsNexonet, promo: bitsPromotor, free: bitsFree }}
+          titulo="BIT Búsquedas Automáticas"
+          emoji="🔍"
+          costo="500 BIT / $500"
+          descripcion="Recibí notificaciones automáticas cuando aparezca lo que buscás"
+          bits={{ free: bitsFree, nexo: bitsNexonet, promo: bitsPromotor }}
           onClose={() => setPopupBits(false)}
+          onPagar={async (metodo: MetodoPago) => {
+            const paquete = 500;
+            if (metodo === "bit_free") {
+              await supabase.from("usuarios").update({ bits_free: bitsFree - paquete, bits_busquedas: bitsBusquedas + paquete }).eq("id", perfil.id);
+              setPerfil((p: any) => ({ ...p, bits_free: bitsFree - paquete, bits_busquedas: bitsBusquedas + paquete }));
+            } else if (metodo === "bit_nexo") {
+              await supabase.from("usuarios").update({ bits: bitsNexonet - paquete, bits_busquedas: bitsBusquedas + paquete }).eq("id", perfil.id);
+              setPerfil((p: any) => ({ ...p, bits: bitsNexonet - paquete, bits_busquedas: bitsBusquedas + paquete }));
+            } else {
+              alert("Próximamente — método de pago externo");
+            }
+            setPopupBits(false);
+          }}
         />
       )}
 

@@ -4,6 +4,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
 import { supabase } from "@/lib/supabase";
+import PopupCompra, { MetodoPago } from "@/components/PopupCompra";
 
 type Anuncio = {
   permuto?: boolean; id:number; titulo:string; precio:number; moneda:string;
@@ -71,6 +72,7 @@ function BuscarInner() {
   const [resultadoConex, setResultadoConex] = useState<string|null>(null);
   const [popupConexion,  setPopupConexion]  = useState(false);
   const [popupSinBits,   setPopupSinBits]   = useState(false);
+  const [popupPago,      setPopupPago]      = useState(false);
   const MENSAJES_PRESET = [
     "Hola, estoy interesado/a en tu anuncio. ¿Podemos hablar?",
     "Hola, vi tu publicación y me gustaría más información.",
@@ -511,7 +513,6 @@ function BuscarInner() {
               <button
                 onClick={()=>{
                   if(seleccionados.size===0) return;
-                  if(bits===0 || seleccionados.size>bits) { setPopupSinBits(true); return; }
                   setPopupConexion(true);
                 }}
                 disabled={seleccionados.size===0||conectando}
@@ -524,31 +525,7 @@ function BuscarInner() {
         </div>
       )}
 
-      {popupSinBits && (
-        <div style={{position:"fixed",inset:0,zIndex:200,background:"rgba(0,0,0,0.65)",display:"flex",alignItems:"flex-end",padding:"16px"}}>
-          <div style={{width:"100%",background:"#fff",borderRadius:"20px 20px 16px 16px",padding:"24px 20px 20px",boxShadow:"0 -8px 40px rgba(0,0,0,0.3)"}}>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"20px"}}>
-              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"22px",color:"#1a2a3a",letterSpacing:"1px"}}>⚡ Necesitás BIT</div>
-              <button onClick={()=>setPopupSinBits(false)} style={{background:"#f0f0f0",border:"none",borderRadius:"50%",width:"32px",height:"32px",fontSize:"16px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
-            </div>
-            <div style={{background:"linear-gradient(135deg,#1a2a3a,#243b55)",borderRadius:"16px",padding:"20px",textAlign:"center",marginBottom:"16px"}}>
-              <div style={{fontSize:"40px",marginBottom:"8px"}}>🔗</div>
-              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"26px",color:"#f0c040",letterSpacing:"1px",marginBottom:"6px"}}>
-                {bits===0 ? "No tenés BIT disponibles" : `Necesitás ${seleccionados.size} BIT, tenés ${bits}`}
-              </div>
-              <div style={{fontSize:"13px",color:"#8a9aaa",fontWeight:600,lineHeight:1.5}}>
-                Cargá BIT para conectarte con los anuncios que te interesan.
-              </div>
-            </div>
-            <button onClick={()=>{ setPopupSinBits(false); router.push("/comprar"); }} style={{width:"100%",background:"linear-gradient(135deg,#f0c040,#d4a017)",border:"none",borderRadius:"12px",padding:"14px",fontSize:"15px",fontWeight:900,color:"#1a2a3a",cursor:"pointer",fontFamily:"'Nunito',sans-serif",boxShadow:"0 4px 0 #a07810",marginBottom:"10px"}}>
-              ⚡ Cargar BIT ahora
-            </button>
-            <button onClick={()=>setPopupSinBits(false)} style={{width:"100%",background:"none",border:"none",padding:"10px",fontSize:"13px",fontWeight:700,color:"#9a9a9a",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>
-              Cancelar
-            </button>
-          </div>
-        </div>
-      )}
+
 
       {popupConexion && (
         <div style={{position:"fixed",inset:0,zIndex:200,background:"rgba(0,0,0,0.65)",display:"flex",alignItems:"flex-end",padding:"16px"}}>
@@ -580,14 +557,32 @@ function BuscarInner() {
                 placeholder="Escribí tu mensaje..." />
               <div style={{textAlign:"right",fontSize:"10px",color:"#bbb",fontWeight:600}}>{mensajeConexion.length}/200</div>
             </div>
-            <button onClick={async ()=>{ setPopupConexion(false); await ejecutarConexion(); }} disabled={!mensajeConexion.trim()}
+            <button onClick={()=>{ if(!mensajeConexion.trim()) return; setPopupConexion(false); setPopupPago(true); }} disabled={!mensajeConexion.trim()}
               style={{width:"100%",background:mensajeConexion.trim()?"linear-gradient(135deg,#f0c040,#d4a017)":"#f0f0f0",border:"none",borderRadius:"12px",padding:"14px",fontSize:"15px",fontWeight:900,color:mensajeConexion.trim()?"#1a2a3a":"#bbb",cursor:mensajeConexion.trim()?"pointer":"not-allowed",fontFamily:"'Nunito',sans-serif",boxShadow:mensajeConexion.trim()?"0 4px 0 #a07810":"none"}}>
-              {conectando?"Enviando...":"⚡ Enviar y conectar"}
+              🔗 Conectar con anuncio
             </button>
           </div>
         </div>
       )}
 
+      {popupPago && (
+        <PopupCompra
+          titulo={`Conectar con ${seleccionados.size} anuncio${seleccionados.size!==1?"s":""}`}
+          emoji="🔗"
+          costo={`${seleccionados.size} BIT`}
+          descripcion="Se enviará tu mensaje a los anuncios seleccionados"
+          bits={{ free: bits, nexo: 0, promo: 0 }}
+          onClose={() => setPopupPago(false)}
+          onPagar={async (metodo: MetodoPago) => {
+            setPopupPago(false);
+            if (metodo === "bit_free" || metodo === "bit_nexo") {
+              await ejecutarConexion();
+            } else {
+              alert("Próximamente — método de pago externo");
+            }
+          }}
+        />
+      )}
       <BottomNav />
     </main>
   );

@@ -5,7 +5,7 @@ import { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { supabase } from "@/lib/supabase";
-import PopupCompra from "@/components/PopupCompra";
+import PopupCompra, { MetodoPago } from "@/components/PopupCompra";
 
 const MapaLeaflet = dynamic(() => import("@/components/MapaLeaflet"), { ssr: false });
 
@@ -287,13 +287,19 @@ function MapaInner() {
       {/* POPUP CONEXIÓN */}
       {popupConexion && (
         <PopupCompra
-          tipo="conexion"
-  tituloAccion={`Conectar con ${seleccionados.size} anuncio${seleccionados.size !== 1 ? "s" : ""}`}
-  bitsDisponibles={{ nexo: bits, promo: bitsPromo, free: bitsFree }}
-  onClose={() => setPopupConexion(false)}
-  onUsarBits={async (_cantidad, _tipoBit) => {
+          titulo={`Conectar con ${seleccionados.size} anuncio${seleccionados.size !== 1 ? "s" : ""}`}
+          emoji="🔗"
+          costo={`${seleccionados.size} BIT`}
+          descripcion="Se enviará tu mensaje a los anuncios seleccionados"
+          bits={{ free: bitsFree, nexo: bits, promo: bitsPromo }}
+          onClose={() => setPopupConexion(false)}
+          onPagar={async (metodo: MetodoPago) => {
             setPopupConexion(false);
-            await ejecutarConexion();
+            if (metodo === "bit_free" || metodo === "bit_nexo") {
+              await ejecutarConexion();
+            } else {
+              alert("Próximamente — método de pago externo");
+            }
           }}
         />
       )}

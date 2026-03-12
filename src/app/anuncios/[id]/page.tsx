@@ -53,6 +53,7 @@ export default function AnuncioDetalle() {
   const [session,       setSession]       = useState<any>(null);
   const [conectando,    setConectando]    = useState(false);
   const [popupVerDatos, setPopupVerDatos] = useState(false);
+  const [popupPago,     setPopupPago]     = useState(false);
   // datosVisibles = true → ya pagó 1 BIT, puede ver datos Y conectar gratis
   const [datosVisibles, setDatosVisibles] = useState(false);
   const [misBits,       setMisBits]       = useState<any>(null);
@@ -139,7 +140,7 @@ export default function AnuncioDetalle() {
     if (!ub) return;
 
     const totalBits = (ub.bits_free || 0) + (ub.bits_promo || 0) + (ub.bits || 0);
-    if (totalBits <= 0) { alert("No tenés BIT disponibles. Cargá BIT en tu cuenta."); return; }
+    if (totalBits <= 0) { setPopupVerDatos(false); setPopupPago(true); return; }
 
     // Descontar 1 BIT del buscador (FREE → Promo → Nexo)
     if ((ub.bits_free || 0) > 0) {
@@ -556,6 +557,25 @@ export default function AnuncioDetalle() {
       </div>
 
       {/* POPUP dueño carga BIT */}
+      {popupPago && (
+        <PopupCompra
+          titulo="Ver datos de contacto"
+          emoji="🔍"
+          costo="1 BIT"
+          descripcion="Accedé a WhatsApp, teléfono y dirección del vendedor"
+          bits={{ free: misBits?.bits_free || 0, nexo: misBits?.bits || 0, promo: misBits?.bits_promo || 0 }}
+          onClose={() => setPopupPago(false)}
+          onPagar={async (metodo) => {
+            setPopupPago(false);
+            if (metodo === "bit_free" || metodo === "bit_nexo") {
+              await ejecutarVerDatos();
+            } else {
+              alert("Próximamente — método de pago externo");
+            }
+          }}
+        />
+      )}
+
       {popupCompra && (
         <PopupCompra
           titulo="Cargar BIT Conexión"

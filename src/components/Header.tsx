@@ -62,13 +62,13 @@ export default function Header() {
           display: "flex", alignItems: "center", gap: "6px", textDecoration: "none",
           background: "linear-gradient(135deg, #d4a017, #f0c040)",
           borderRadius: "20px", padding: "7px 16px",
-          boxShadow: "0 4px 0 rgba(0,0,0,0.4), 0 0 12px rgba(212,160,23,0.4)",
+          boxShadow: "0 4px 0 rgba(0,0,0,0.4), 0 0 12px rgba(212,160,23,0.3)",
         }}>
           <span style={{ fontSize: "16px" }}>🏠</span>
           <span style={{ fontSize: "11px", fontWeight: 900, color: "#1a2a3a", textTransform: "uppercase", letterSpacing: "1.5px" }}>HOME</span>
         </Link>
 
-        {/* USUARIO si logueado, espacio vacío si no */}
+        {/* USUARIO si logueado */}
         {usuario ? (
           <Link href="/usuario" style={{ textDecoration: "none", display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
             <span style={{ fontSize: "13px", fontWeight: 800, color: "#fff", maxWidth: "100px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -84,8 +84,8 @@ export default function Header() {
 
       </header>
 
-      {/* FRANJA NEXO PROMOTOR */}
-      <Link href="/usuario" style={{
+      {/* FRANJA NEXO PROMOTOR → apunta a /promotor */}
+      <Link href="/promotor" style={{
         display: "flex",
         alignItems: "center",
         justifyContent: "center",

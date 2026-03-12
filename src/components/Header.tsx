@@ -155,10 +155,10 @@ export default function Header() {
               {/* PANEL NOTIFICACIONES */}
               {panelOpen && (
                 <div style={{
-                  position: "absolute", top: "calc(100% + 8px)", right: 0,
-                  width: "300px", background: "#fff", borderRadius: "16px",
+                  position: "fixed", top: "95px", left: "8px", right: "8px",
+                  width: "auto", background: "#fff", borderRadius: "16px",
                   boxShadow: "0 8px 32px rgba(0,0,0,0.25)", border: "1px solid #e8e8e6",
-                  maxHeight: "400px", overflow: "hidden", display: "flex", flexDirection: "column",
+                  maxHeight: "60vh", overflow: "hidden", display: "flex", flexDirection: "column",
                   zIndex: 200,
                 }}>
                   <div style={{

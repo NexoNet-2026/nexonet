@@ -669,16 +669,32 @@ export default function Publicar() {
       </div>
 
       {popupLinkCompra && (
-        <PopupCompra tipo="link" tituloAccion="Agregar link al anuncio" bitsDisponibles={{ nexo: bitsNexo, promo: bitsPromo, free: bitsFree }} onClose={() => setPopupLinkCompra(false)} onUsarBits={() => { setPopupLinkCompra(false); setLinksHabilitados(true); }} />
+        <PopupCompra titulo="Habilitar Link Multimedia" emoji="🔗" costo="500 BIT / $500"
+          descripcion="YouTube · Instagram · Facebook · cualquier URL"
+          bits={{ free: bitsFree, nexo: bitsNexo, promo: bitsPromo }}
+          onClose={() => setPopupLinkCompra(false)}
+          onPagar={async (metodo) => { setPopupLinkCompra(false); setLinksHabilitados(true); }} />
       )}
       {popupAdjuntoCompra && (
-        <PopupCompra tipo="adjunto" tituloAccion="Agregar adjunto al anuncio" bitsDisponibles={{ nexo: bitsNexo, promo: bitsPromo, free: bitsFree }} onClose={() => setPopupAdjuntoCompra(false)} onUsarBits={() => { setPopupAdjuntoCompra(false); setArchivosHabilitados(true); }} />
+        <PopupCompra titulo="Habilitar Adjuntos" emoji="📎" costo="500 BIT / $500"
+          descripcion="PDF, catálogo, ficha técnica · hasta 5 archivos"
+          bits={{ free: bitsFree, nexo: bitsNexo, promo: bitsPromo }}
+          onClose={() => setPopupAdjuntoCompra(false)}
+          onPagar={async (metodo) => { setPopupAdjuntoCompra(false); setArchivosHabilitados(true); }} />
       )}
       {popupAnuncioCompra && (
-        <PopupCompra tipo="anuncio" tituloAccion="Publicar anuncio" bitsDisponibles={{ nexo: bitsNexo, promo: bitsPromo, free: bitsFree }} onClose={() => setPopupAnuncioCompra(false)} />
+        <PopupCompra titulo="Publicar anuncio" emoji="📋" costo="1 BIT Anuncio"
+          descripcion="Tu anuncio quedará activo por 30 días"
+          bits={{ free: bitsFree, nexo: bitsNexo, promo: bitsPromo }}
+          onClose={() => setPopupAnuncioCompra(false)}
+          onPagar={async (metodo) => { setPopupAnuncioCompra(false); }} />
       )}
       {popupFlashCompra && (
-        <PopupCompra tipo="flash" tituloAccion="PROMO Flash — Destacar anuncio" bitsDisponibles={{ nexo: bitsNexo, promo: bitsPromo, free: bitsFree }} onClose={() => setPopupFlashCompra(false)} />
+        <PopupCompra titulo="Promo Flash — Destacar anuncio" emoji="⚡" costo="$500 / $2.000 / $5.000 / $10.000"
+          descripcion="Destacá en barrio · ciudad · provincia · país"
+          bits={{ free: bitsFree, nexo: bitsNexo, promo: bitsPromo }}
+          onClose={() => setPopupFlashCompra(false)}
+          onPagar={async (metodo) => { setPopupFlashCompra(false); }} />
       )}
 
       <BottomNav />

@@ -87,8 +87,6 @@ export default function AdminPanel() {
   // ── form nuevo grupo ──
   const [nuevoGr, setNuevoGr] = useState({ nombre:"", descripcion:"", rubro_id:"" });
 
-  showToast = (msg:string) => { setToast(msg); setTimeout(()=>setToast(""),3000); };
-
   // ── auth ──
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {

@@ -37,6 +37,8 @@ export default function Usuario() {
   const [seccion, setSeccion] = useState<Seccion>("cuenta");
   const [perfil, setPerfil]   = useState<any>(null);
   const [guardando, setGuardando] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [subiendoAvatar, setSubiendoAvatar] = useState(false);
   const [totalAnuncios, setTotalAnuncios] = useState(0);
   const [anunciosActivos, setAnunciosActivos] = useState(0);
   const [gruposCreados, setGruposCreados] = useState(0);
@@ -93,6 +95,7 @@ export default function Usuario() {
       const { data } = await supabase.from("usuarios").select("*").eq("id", session.user.id).single();
       if (data) {
         setPerfil(data);
+        setAvatarUrl(data.avatar_url || null);
         setPersonal({ nombre_usuario:data.nombre_usuario||"", nombre:data.nombre||"", apellido:data.apellido||"", whatsapp:data.whatsapp||"", provincia:data.provincia||"", ciudad:data.ciudad||"", barrio:data.barrio||"", direccion:data.direccion||"", lat:data.lat||"", lng:data.lng||"" });
         if (data.vis_personal) setVisP(data.vis_personal);
         setEmp({ nombre_empresa:data.nombre_empresa||"", telefono:data.telefono||"", whatsapp_empresa:data.whatsapp_empresa||"", provincia_empresa:data.provincia_empresa||"", ciudad_empresa:data.ciudad_empresa||"", barrio_empresa:data.barrio_empresa||"", direccion_empresa:data.direccion_empresa||"", lat_empresa:data.lat_empresa||"", lng_empresa:data.lng_empresa||"" });
@@ -170,6 +173,23 @@ export default function Usuario() {
     };
     cargar();
   }, []);
+
+  const subirAvatar = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !perfil) return;
+    if (file.size > 2 * 1024 * 1024) { alert("La imagen no puede superar 2MB"); return; }
+    setSubiendoAvatar(true);
+    const ext  = file.name.split(".").pop();
+    const path = `${perfil.id}/avatar.${ext}`;
+    const { error: upErr } = await supabase.storage.from("avatares").upload(path, file, { upsert: true });
+    if (upErr) { alert("Error al subir imagen"); setSubiendoAvatar(false); return; }
+    const { data: urlData } = supabase.storage.from("avatares").getPublicUrl(path);
+    const url = `${urlData.publicUrl}?t=${Date.now()}`;
+    await supabase.from("usuarios").update({ avatar_url: url }).eq("id", perfil.id);
+    setAvatarUrl(url);
+    setPerfil((p: any) => ({ ...p, avatar_url: url }));
+    setSubiendoAvatar(false);
+  };
 
   const geolocPersonal = () => {
     if (!navigator.geolocation) return alert("GPS no disponible");
@@ -257,8 +277,18 @@ export default function Usuario() {
 
       <div style={{ background:"linear-gradient(135deg, #1a2a3a 0%, #243b55 100%)", padding:"16px 16px 0" }}>
         <div style={{ display:"flex", alignItems:"center", gap:"14px", marginBottom:"10px" }}>
-          <div style={{ width:"56px", height:"56px", borderRadius:"50%", background:"linear-gradient(135deg, #d4a017, #f0c040)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"26px", boxShadow:"0 4px 16px rgba(212,160,23,0.4)", flexShrink:0 }}>
-            {esEmpresa ? "🏢" : "👤"}
+          <div style={{ position:"relative", flexShrink:0 }}>
+            <div style={{ width:"56px", height:"56px", borderRadius:"50%", background:"linear-gradient(135deg, #d4a017, #f0c040)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"26px", boxShadow:"0 4px 16px rgba(212,160,23,0.4)", overflow:"hidden" }}>
+              {avatarUrl
+                ? <img src={avatarUrl} alt="avatar" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+                : <span>{esEmpresa ? "🏢" : "👤"}</span>
+              }
+            </div>
+            {/* Botón cámara */}
+            <label style={{ position:"absolute", bottom:"-2px", right:"-2px", width:"22px", height:"22px", borderRadius:"50%", background:"#d4a017", display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", boxShadow:"0 2px 6px rgba(0,0,0,0.3)", border:"2px solid #1a2a3a" }}>
+              <span style={{ fontSize:"11px" }}>{subiendoAvatar ? "⏳" : "📷"}</span>
+              <input type="file" accept="image/*" onChange={subirAvatar} style={{ display:"none" }} disabled={subiendoAvatar} />
+            </label>
           </div>
           <div style={{ flex:1, minWidth:0 }}>
             <div style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:"22px", color:"#fff", letterSpacing:"1px", lineHeight:1.1 }}>

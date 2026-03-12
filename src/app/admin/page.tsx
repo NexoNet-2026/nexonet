@@ -222,7 +222,7 @@ export default function AdminPanel() {
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10px", marginBottom:"14px" }}>
                 <StatBox n={String(stats.totalUsers||0)}    l="Usuarios"     e="👥" />
                 <StatBox n={String(stats.totalAnuncios||0)} l="Anuncios"     e="📋" />
-                <StatBox n={String(stats.totalGrupos||0)}   l="Grupos"       e:"🏘️" e="🏘️" />
+                <StatBox n={String(stats.totalGrupos||0)}   l="Grupos"       e="🏘️" />
                 <StatBox n={String(stats.promotores||0)}    l="Promotores"   e="⭐" c="#27ae60" />
                 <StatBox n={String(stats.totalMensajes||0)} l="Mensajes"     e="💬" c="#3a7bd5" />
                 <StatBox n={String(stats.liqPend||0)}       l="Liqs pendientes" e="💳" c="#e74c3c" />

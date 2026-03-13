@@ -227,9 +227,9 @@ export default function Usuario() {
   const toggleP = (k:string) => setVisP(v=>({...v,[k]:!v[k]}));
   const toggleE = (k:string) => setVisE(v=>({...v,[k]:!v[k]}));
 
-  const bitsNexonet   = perfil?.bits                 || 0;
-  const bitsPromotor  = perfil?.bits_promo           || 0;
-  const bitsFree      = perfil?.bits_free            || 0;
+  const bitsNexonet   = Math.max(0, perfil?.bits         || 0);
+  const bitsPromotor  = Math.max(0, perfil?.bits_promo   || 0);
+  const bitsFree      = Math.max(0, perfil?.bits_free    || 0);
   const bitsBusquedas = perfil?.bits_busquedas       || 0;
   const bitsGrupo     = perfil?.bits_grupo           || 0;
   const bitsGastados  = perfil?.bits_gastados        || 0;

@@ -149,14 +149,33 @@ export default function Usuario() {
         .select("rol, estado, grupo_id, grupos(id,nombre,imagen,tipo,miembros_count,categoria_id,grupo_categorias(nombre,emoji),grupo_subcategorias(nombre))")
         .eq("usuario_id", session.user.id)
         .in("estado", ["activo","pendiente"]);
-      if (mgData) setMisGruposData(mgData.map((m:any)=>({
+
+      // También traer grupos donde el usuario es creador (por si no están en grupo_miembros)
+      const { data: creadosData } = await supabase
+        .from("grupos")
+        .select("id,nombre,imagen,tipo,miembros_count,categoria_id,grupo_categorias(nombre,emoji),grupo_subcategorias(nombre)")
+        .eq("creador_id", session.user.id);
+
+      const miembroIds = new Set((mgData||[]).map((m:any) => m.grupos?.id));
+      const creadosExtra = (creadosData||[]).filter((g:any) => !miembroIds.has(g.id));
+
+      const fromMiembros = (mgData||[]).map((m:any)=>({
         ...m.grupos,
         mi_rol:    m.rol,
         mi_estado: m.estado,
         categoria_nombre:    m.grupos?.grupo_categorias?.nombre || "",
         categoria_emoji:     m.grupos?.grupo_categorias?.emoji  || "👥",
         subcategoria_nombre: m.grupos?.grupo_subcategorias?.nombre || "",
-      })));
+      }));
+      const fromCreados = creadosExtra.map((g:any)=>({
+        ...g,
+        mi_rol:    "creador",
+        mi_estado: "activo",
+        categoria_nombre:    (g.grupo_categorias as any)?.nombre || "",
+        categoria_emoji:     (g.grupo_categorias as any)?.emoji  || "👥",
+        subcategoria_nombre: (g.grupo_subcategorias as any)?.nombre || "",
+      }));
+      setMisGruposData([...fromMiembros, ...fromCreados]);
     };
     cargar();
   }, []);
@@ -230,17 +249,15 @@ export default function Usuario() {
   const bitsNexonet   = Math.max(0, perfil?.bits         || 0);
   const bitsPromotor  = Math.max(0, perfil?.bits_promo   || 0);
   const bitsFree      = Math.max(0, perfil?.bits_free    || 0);
-  const bitsBusquedas = perfil?.bits_busquedas       || 0;
-  const bitsGrupo     = perfil?.bits_grupo           || 0;
   const bitsGastados  = perfil?.bits_gastados        || 0;
   const promoGastados = perfil?.bits_promo_gastados  || 0;
   const freeGastados  = perfil?.bits_free_gastados   || 0;
   const gastAnuncios  = perfil?.bits_gastados_anuncios  || 0;
   const gastConexion  = perfil?.bits_gastados_conexion  || 0;
   const gastLink      = perfil?.bits_gastados_link      || 0;
-  const gastFlash     = perfil?.bits_gastados_flash     || 0;
   const gastBusquedas = perfil?.bits_gastados_busquedas || 0;
   const gastGrupo     = perfil?.bits_gastados_grupo     || 0;
+  const gastAdjuntos  = perfil?.bits_gastados_adjuntos  || 0;
   const promoGanados  = perfil?.bits_promo_ganados   || 0;
   const promoReembolso= perfil?.bits_promo_reembolso || 0;
   const totalConsum   = bitsGastados + promoGastados + freeGastados;
@@ -334,36 +351,63 @@ export default function Usuario() {
         {/* ═══ CUENTA ═══ */}
         {seccion === "cuenta" && (
           <div style={{ display:"flex", flexDirection:"column", gap:"14px" }}>
+
+            {/* SALDO UNIFICADO */}
             <div style={{ background:"linear-gradient(135deg,#1a2a3a,#243b55)", borderRadius:"18px", padding:"20px", boxShadow:"0 6px 24px rgba(0,0,0,0.18)" }}>
-              <div style={{ fontSize:"11px", fontWeight:800, color:"#8a9aaa", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"16px" }}>💳 Estado de Cuenta</div>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px", marginBottom:"16px" }}>
-                <div style={{ background:"rgba(212,160,23,0.15)", borderRadius:"14px", padding:"16px", border:"1px solid rgba(212,160,23,0.3)" }}>
-                  <div style={{ fontSize:"10px", fontWeight:800, color:"#d4a017", textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:"6px" }}>BIT Disponibles</div>
-                  <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"38px", color:"#f0c040", lineHeight:1 }}>{(bitsNexonet+bitsPromotor+bitsFree).toLocaleString()}</div>
-                  <div style={{ fontSize:"10px", color:"#8a9aaa", fontWeight:600, marginTop:"4px" }}>para usar ahora</div>
-                </div>
-                <div style={{ background:"rgba(255,255,255,0.05)", borderRadius:"14px", padding:"16px", border:"1px solid rgba(255,255,255,0.08)" }}>
-                  <div style={{ fontSize:"10px", fontWeight:800, color:"#8a9aaa", textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:"6px" }}>BIT Consumidos</div>
-                  <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"38px", color:"#fff", lineHeight:1 }}>{totalConsum.toLocaleString()}</div>
-                  <div style={{ fontSize:"10px", color:"#8a9aaa", fontWeight:600, marginTop:"4px" }}>historial total</div>
-                </div>
+              <div style={{ fontSize:"11px", fontWeight:800, color:"#8a9aaa", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"14px" }}>💳 Tu saldo BIT</div>
+              <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"56px", color:"#f0c040", letterSpacing:"2px", lineHeight:1, marginBottom:"4px" }}>
+                {(bitsNexonet+bitsPromotor+bitsFree).toLocaleString()}
+                <span style={{ fontSize:"22px", color:"#d4a017", marginLeft:"8px" }}>BIT</span>
               </div>
-              <button onClick={()=>setPopupBits(true)} style={{ width:"100%", background:"linear-gradient(135deg,#f0c040,#d4a017)", border:"none", borderRadius:"12px", padding:"14px", fontSize:"15px", fontWeight:900, color:"#1a2a3a", cursor:"pointer", fontFamily:"'Nunito',sans-serif", boxShadow:"0 4px 0 #a07810", letterSpacing:"0.5px" }}>
-                🔍 BIT Búsquedas Automáticas
+              <div style={{ fontSize:"11px", color:"#8a9aaa", fontWeight:600, marginBottom:"16px" }}>disponibles para usar en todo</div>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:"8px", marginBottom:"16px" }}>
+                <SaldoPill label="Nexo"  valor={bitsNexonet}  color="#d4a017" />
+                <SaldoPill label="Free"  valor={bitsFree}     color="#2980b9" />
+                <SaldoPill label="Promo" valor={bitsPromotor} color="#27ae60" />
+              </div>
+              <button onClick={()=>router.push("/tienda")}
+                style={{ width:"100%", background:"linear-gradient(135deg,#f0c040,#d4a017)", border:"none", borderRadius:"12px", padding:"14px", fontSize:"15px", fontWeight:900, color:"#1a2a3a", cursor:"pointer", fontFamily:"'Nunito',sans-serif", boxShadow:"0 4px 0 #a07810", letterSpacing:"0.5px" }}>
+                💰 Cargar BIT
               </button>
             </div>
 
-            <DesglosePanel
-              bitsNexonet={bitsNexonet} bitsGastados={bitsGastados}
-              gastAnuncios={gastAnuncios} gastConexion={gastConexion}
-              gastLink={gastLink} gastFlash={gastFlash}
-              bitsPromotor={bitsPromotor} promoGastados={promoGastados}
-              promoGanados={promoGanados} promoReembolso={promoReembolso}
-              bitsFree={bitsFree} freeGastados={freeGastados}
-              bitsBusquedas={bitsBusquedas} gastBusquedas={gastBusquedas}
-              bitsGrupo={bitsGrupo} gastGrupo={gastGrupo}
-            />
+            {/* DESGLOSE DE CONSUMO */}
+            <div style={{ background:"#fff", borderRadius:"16px", padding:"18px", boxShadow:"0 2px 10px rgba(0,0,0,0.06)" }}>
+              <div style={{ fontSize:"11px", fontWeight:800, color:"#9a9a9a", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"4px" }}>📊 Cómo usaste tus BIT</div>
+              <div style={{ fontSize:"11px", color:"#bbb", fontWeight:600, marginBottom:"16px" }}>Total consumido: <strong style={{ color:"#1a2a3a" }}>{totalConsum.toLocaleString()} BIT</strong></div>
+              {[
+                { emoji:"📋", label:"Anuncios",       valor:gastAnuncios,  color:"#d4a017" },
+                { emoji:"🔗", label:"Conexiones",     valor:gastConexion,  color:"#3a7bd5" },
+                { emoji:"🔍", label:"Búsquedas auto", valor:gastBusquedas, color:"#16a085" },
+                { emoji:"👥", label:"Grupos",          valor:gastGrupo,     color:"#8e44ad" },
+                { emoji:"🔗", label:"Links",           valor:gastLink,      color:"#e67e22" },
+                { emoji:"📎", label:"Adjuntos",        valor:gastAdjuntos,  color:"#e74c3c" },
+              ].filter(f => f.valor > 0 || totalConsum === 0).map((f, i, arr) => {
+                const pct = totalConsum > 0 ? Math.round((f.valor / totalConsum) * 100) : 0;
+                return (
+                  <div key={f.label} style={{ marginBottom: i < arr.length-1 ? "12px" : "0" }}>
+                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"5px" }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:"8px" }}>
+                        <span style={{ fontSize:"14px" }}>{f.emoji}</span>
+                        <span style={{ fontSize:"13px", fontWeight:800, color:"#1a2a3a" }}>{f.label}</span>
+                      </div>
+                      <div style={{ display:"flex", alignItems:"center", gap:"8px" }}>
+                        <span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"16px", color:f.color }}>{f.valor.toLocaleString()}</span>
+                        <span style={{ fontSize:"10px", color:"#bbb", fontWeight:600, minWidth:"28px", textAlign:"right" }}>{pct}%</span>
+                      </div>
+                    </div>
+                    <div style={{ height:"6px", background:"#f0f0f0", borderRadius:"3px", overflow:"hidden" }}>
+                      <div style={{ height:"100%", width:`${pct}%`, background:f.color, borderRadius:"3px", transition:"width .4s" }} />
+                    </div>
+                  </div>
+                );
+              })}
+              {totalConsum === 0 && (
+                <div style={{ textAlign:"center", padding:"16px", color:"#bbb", fontSize:"13px", fontWeight:600 }}>Todavía no consumiste BIT</div>
+              )}
+            </div>
 
+            {/* FORMAS DE PAGO */}
             <div style={{ background:"#fff", borderRadius:"16px", padding:"16px", boxShadow:"0 2px 12px rgba(0,0,0,0.06)" }}>
               <div style={{ fontSize:"11px", fontWeight:800, color:"#9a9a9a", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"14px" }}>💳 Formas de pago</div>
               {[
@@ -389,8 +433,8 @@ export default function Usuario() {
 
             {bitsPromotor > 0 && (
               <div style={{ background:"linear-gradient(135deg,#1a3a2a,#1e4a30)", borderRadius:"16px", padding:"16px", border:"1px solid rgba(39,174,96,0.3)" }}>
-                <div style={{ fontSize:"12px", fontWeight:800, color:"#27ae60", marginBottom:"6px" }}>💚 BIT NexoPromotor reembolsables</div>
-                <div style={{ fontSize:"12px", color:"#8abba0", fontWeight:600, marginBottom:"14px" }}>Podés solicitar el reembolso de tus {bitsPromotor.toLocaleString()} BIT Promo contra factura A o C.</div>
+                <div style={{ fontSize:"12px", fontWeight:800, color:"#27ae60", marginBottom:"6px" }}>💚 BIT Promotor reembolsables</div>
+                <div style={{ fontSize:"12px", color:"#8abba0", fontWeight:600, marginBottom:"14px" }}>Tenés {bitsPromotor.toLocaleString()} BIT Promotor. {bitsPromotor >= 100000 ? "Ya podés solicitar el reembolso en pesos." : `Te faltan ${(100000 - bitsPromotor).toLocaleString()} BIT para poder reembolsar.`}</div>
                 <button onClick={()=>router.push("/promotor")} style={{ width:"100%", background:"linear-gradient(135deg,#27ae60,#1e8449)", border:"none", borderRadius:"10px", padding:"12px", fontSize:"13px", fontWeight:900, color:"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif", boxShadow:"0 4px 0 #155a2e" }}>
                   ⭐ Ir a mi página de Promotor
                 </button>
@@ -750,22 +794,22 @@ export default function Usuario() {
         <PopupCompra titulo="BIT Anuncios — Ampliar plan" emoji="📋" costo="$1.000 / $3.000 / $10.000" descripcion="Ampliá la cantidad de anuncios publicados" bits={{ free: bitsFree, nexo: bitsNexonet, promo: bitsPromotor }} onClose={() => setPopupEmpresa(false)} onPagar={async (metodo: MetodoPago) => { setPopupEmpresa(false); alert("Próximamente — contactanos para ampliar tu plan"); }} />
       )}
 
-      {popupBits && (
-        <PopupCompra titulo="BIT Búsquedas Automáticas" emoji="🔍" costo="500 BIT / $500" descripcion="Recibí notificaciones automáticas cuando aparezca lo que buscás" bits={{ free: bitsFree, nexo: bitsNexonet, promo: bitsPromotor }} onClose={() => setPopupBits(false)} onPagar={async (metodo: MetodoPago) => {
-          const paquete = 500;
-          if (metodo === "bit_free") { await supabase.from("usuarios").update({ bits_free: bitsFree - paquete, bits_busquedas: bitsBusquedas + paquete }).eq("id", perfil.id); setPerfil((p: any) => ({ ...p, bits_free: bitsFree - paquete, bits_busquedas: bitsBusquedas + paquete })); }
-          else if (metodo === "bit_nexo") { await supabase.from("usuarios").update({ bits: bitsNexonet - paquete, bits_busquedas: bitsBusquedas + paquete }).eq("id", perfil.id); setPerfil((p: any) => ({ ...p, bits: bitsNexonet - paquete, bits_busquedas: bitsBusquedas + paquete })); }
-          else { alert("Próximamente — método de pago externo"); }
-          setPopupBits(false);
-        }} />
-      )}
-
       <BottomNav />
     </main>
   );
 }
 
-function DesglosePanel({ bitsNexonet, bitsGastados, gastAnuncios, gastConexion, gastLink, gastFlash, bitsPromotor, promoGastados, promoGanados, promoReembolso, bitsFree, freeGastados, bitsBusquedas, gastBusquedas, bitsGrupo, gastGrupo }:{ bitsNexonet:number; bitsGastados:number; gastAnuncios:number; gastConexion:number; gastLink:number; gastFlash:number; bitsPromotor:number; promoGastados:number; promoGanados:number; promoReembolso:number; bitsFree:number; freeGastados:number; bitsBusquedas:number; gastBusquedas:number; bitsGrupo:number; gastGrupo:number; }) {
+function SaldoPill({ label, valor, color }: { label:string; valor:number; color:string }) {
+  return (
+    <div style={{ flex:1, background:`${color}18`, borderRadius:"10px", padding:"8px 6px", border:`1px solid ${color}30`, textAlign:"center" }}>
+      <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"18px", color, letterSpacing:"1px" }}>{valor.toLocaleString()}</div>
+      <div style={{ fontSize:"9px", fontWeight:800, color:"rgba(255,255,255,0.5)", textTransform:"uppercase", letterSpacing:"0.5px" }}>{label}</div>
+    </div>
+  );
+}
+
+// ── Funciones eliminadas: DesglosePanel, BitCard (reemplazadas por desglose unificado) ──
+function _DesglosePanel_ELIMINADO({ bitsNexonet, bitsGastados, gastAnuncios, gastConexion, gastLink, gastFlash, bitsPromotor, promoGastados, promoGanados, promoReembolso, bitsFree, freeGastados, bitsBusquedas, gastBusquedas, bitsGrupo, gastGrupo }:{ bitsNexonet:number; bitsGastados:number; gastAnuncios:number; gastConexion:number; gastLink:number; gastFlash:number; bitsPromotor:number; promoGastados:number; promoGanados:number; promoReembolso:number; bitsFree:number; freeGastados:number; bitsBusquedas:number; gastBusquedas:number; bitsGrupo:number; gastGrupo:number; }) {
   const [exp, setExp] = React.useState<string|null>(null);
   const toggle = (k:string) => setExp(e => e===k ? null : k);
   const filas = [

@@ -102,7 +102,7 @@ export default function PromoterPage() {
   };
 
   const solicitarLiquidacion = async () => {
-    if (!perfil || (perfil.bits_promotor || 0) < 100) return;
+    if (!perfil || (perfil.bits_promotor || 0) < 100000) return;
     setSolicitando(true);
     await supabase.from("liquidaciones_promotor").insert({
       promotor_id: perfil.id,
@@ -117,7 +117,6 @@ export default function PromoterPage() {
     setPopupLiquidar(false);
     setSolicitando(false);
     setFacturaUrl("");
-    // Recargar liquidaciones
     const { data } = await supabase.from("liquidaciones_promotor")
       .select("*").eq("promotor_id", perfil.id).order("created_at", { ascending: false });
     setLiquidaciones((data as any) || []);
@@ -130,7 +129,7 @@ export default function PromoterPage() {
   );
 
   const bitsPromotor   = perfil?.bits_promotor || 0;
-  const puedeConvertir = bitsPromotor >= 100;
+  const puedeConvertir = bitsPromotor >= 100000;
   const totalRefs      = perfil?.total_referidos || 0;
   const totalGanado    = perfil?.bits_promotor_total || 0;
 
@@ -161,7 +160,6 @@ export default function PromoterPage() {
           )}
         </div>
 
-        {/* Stats fila */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px" }}>
           <StatCard label="BIT Promotor" value={bitsPromotor.toLocaleString()} color="#d4a017" />
           <StatCard label="Referidos" value={totalRefs.toLocaleString()} color="#27ae60" />
@@ -191,11 +189,10 @@ export default function PromoterPage() {
 
       <div style={{ padding: "16px" }}>
 
-        {/* ── TAB INICIO ──────────────────────────────────────────────── */}
+        {/* ── TAB INICIO ── */}
         {tab === "inicio" && (
           <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
 
-            {/* Cómo funciona */}
             <div style={{ background: "#fff", borderRadius: "16px", padding: "18px" }}>
               <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: "18px", color: "#1a2a3a",
                              letterSpacing: "1px", marginBottom: "14px" }}>
@@ -205,7 +202,7 @@ export default function PromoterPage() {
                 { n: "1", t: "Compartí tu link", d: "Cualquiera que se registre con tu código te convierte en su Promotor." },
                 { n: "2", t: "Ganás el 30%", d: "Cada vez que tu referido paga BIT Nexo, vos recibís el 30% de ese monto." },
                 { n: "3", t: "Cadena infinita", d: "Si tu referido tiene sus propios referidos, vos ganás el 30% de lo que él gana." },
-                { n: "4", t: "Convertí a dinero", d: "Con más de 100 BIT Promotor podés solicitar el pago contra factura." },
+                { n: "4", t: "Convertí a dinero", d: "Con 100.000 BIT Promotor podés solicitar el pago contra factura." },
               ].map(item => (
                 <div key={item.n} style={{ display: "flex", gap: "12px", marginBottom: "12px" }}>
                   <div style={{ width: "30px", height: "30px", borderRadius: "50%", background: "#d4a017",
@@ -221,7 +218,6 @@ export default function PromoterPage() {
               ))}
             </div>
 
-            {/* Link de referido */}
             <div style={{ background: "#fff", borderRadius: "16px", padding: "18px" }}>
               <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: "18px", color: "#1a2a3a",
                              letterSpacing: "1px", marginBottom: "14px" }}>
@@ -250,7 +246,6 @@ export default function PromoterPage() {
               </div>
             </div>
 
-            {/* Saldo y convertir */}
             <div style={{ background: "linear-gradient(135deg,#1a2a3a,#243b55)", borderRadius: "16px", padding: "18px", border: "2px solid #d4a017" }}>
               <div style={{ fontSize: "12px", fontWeight: 800, color: "#d4a017", textTransform: "uppercase",
                              letterSpacing: "1px", marginBottom: "8px" }}>
@@ -277,13 +272,13 @@ export default function PromoterPage() {
                            boxShadow: puedeConvertir ? "0 3px 0 #a07810" : "none" }}>
                 {puedeConvertir
                   ? "💳 Solicitar cobro"
-                  : `Necesitás 100 BIT mínimo (tenés ${bitsPromotor})`}
+                  : `Necesitás 100.000 BIT para solicitar reembolso en dinero`}
               </button>
             </div>
           </div>
         )}
 
-        {/* ── TAB REFERIDOS ───────────────────────────────────────────── */}
+        {/* ── TAB REFERIDOS ── */}
         {tab === "referidos" && (
           <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
             {referidos.length === 0 ? (
@@ -313,7 +308,7 @@ export default function PromoterPage() {
           </div>
         )}
 
-        {/* ── TAB COMISIONES ──────────────────────────────────────────── */}
+        {/* ── TAB COMISIONES ── */}
         {tab === "comisiones" && (
           <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
             {comisiones.length === 0 ? (
@@ -350,7 +345,7 @@ export default function PromoterPage() {
           </div>
         )}
 
-        {/* ── TAB LIQUIDAR ────────────────────────────────────────────── */}
+        {/* ── TAB LIQUIDAR ── */}
         {tab === "liquidar" && (
           <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
             <div style={{ background: "#fff", borderRadius: "16px", padding: "18px" }}>
@@ -359,7 +354,7 @@ export default function PromoterPage() {
                 Condiciones para cobrar
               </div>
               {[
-                { ok: bitsPromotor >= 100, t: `Mínimo 100 BIT Promotor (tenés ${bitsPromotor})` },
+                { ok: bitsPromotor >= 100000, t: `Mínimo 100.000 BIT Promotor (tenés ${bitsPromotor.toLocaleString()})` },
                 { ok: true, t: "Emitir factura A o C a NexoNet Argentina SRL" },
                 { ok: true, t: "Concepto: Servicios de promoción y publicidad" },
                 { ok: true, t: "IVA 21% incluido en el monto" },
@@ -386,7 +381,6 @@ export default function PromoterPage() {
               💳 Solicitar cobro de {bitsPromotor.toLocaleString()} BIT
             </button>
 
-            {/* Historial liquidaciones */}
             {liquidaciones.length > 0 && (
               <div>
                 <div style={{ fontSize: "11px", fontWeight: 800, color: "#9a9a9a",

@@ -469,8 +469,11 @@ function BuscarInner() {
                   return (
                     <div key={rubro.id} style={{marginBottom:"8px",background:"#fff",paddingBottom:"12px",borderBottom:"6px solid #f4f4f2"}}>
                       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 16px 8px"}}>
-                        <span style={{fontSize:"16px",fontWeight:900,color:"#1a2a3a"}}>{rubro.nombre}</span>
-                        <span style={{fontSize:"12px",fontWeight:700,color:"#d4a017",cursor:"pointer"}}>Ver todos →</span>
+                        <button onClick={()=>router.push(`/categoria/${rubro.id}`)}
+                          style={{fontSize:"16px",fontWeight:900,color:"#1a2a3a",background:"none",border:"none",cursor:"pointer",fontFamily:"'Nunito',sans-serif",padding:0,textAlign:"left"}}>
+                          {rubro.nombre} →
+                        </button>
+                        <span onClick={()=>router.push(`/categoria/${rubro.id}`)} style={{fontSize:"12px",fontWeight:700,color:"#d4a017",cursor:"pointer"}}>Ver todos →</span>
                       </div>
                       <div style={{display:"flex",gap:"8px",padding:"0 16px 12px",overflowX:"auto",scrollbarWidth:"none"}}>
                         {rubro.subrubros.map((sub:any)=>(

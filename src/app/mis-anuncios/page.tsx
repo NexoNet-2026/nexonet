@@ -13,7 +13,6 @@ const LINK_PLATAFORMAS = [
   { nombre:"Web",       emoji:"🌐",  color:"#3a7bd5" },
 ];
 
-// ─── Todos los campos opcionales aceptan null (lo que devuelve Supabase) ──────
 type Anuncio = {
   id: string;
   titulo: string;
@@ -41,12 +40,12 @@ export default function MisAnuncios() {
   const [perfil,    setPerfil]    = useState<any>(null);
   const [session,   setSession]   = useState<any>(null);
 
-  const [popupPlan,  setPopupPlan]  = useState(false);
-  const [popupBits,  setPopupBits]  = useState(false);
-  const [popupBitsCx, setPopupBitsCx] = useState<string | null>(null); // id del anuncio
-  const [popupLink,  setPopupLink]  = useState<string | null>(null);
-  const [popupAdj,   setPopupAdj]   = useState<string | null>(null);
-  const [popupFlash, setPopupFlash] = useState<string | null>(null);
+  const [popupPlan,   setPopupPlan]   = useState(false);
+  const [popupBits,   setPopupBits]   = useState(false);
+  const [popupBitsCx, setPopupBitsCx] = useState<string | null>(null);
+  const [popupLink,   setPopupLink]   = useState<string | null>(null);
+  const [popupAdj,    setPopupAdj]    = useState<string | null>(null);
+  const [popupFlash,  setPopupFlash]  = useState<string | null>(null);
 
   const [editando,    setEditando]    = useState<Anuncio | null>(null);
   const [editForm,    setEditForm]    = useState({ titulo: "", descripcion: "", precio: "", moneda: "ARS", permuto: false });
@@ -221,23 +220,15 @@ export default function MisAnuncios() {
     <main style={{ paddingTop:"95px", paddingBottom:"130px", background:"#f4f4f2", minHeight:"100vh", fontFamily:"'Nunito',sans-serif" }}>
       <Header />
 
-      {/* HEADER */}
+      {/* HEADER — sin botón publicar */}
       <div style={{ background:"linear-gradient(135deg,#1a2a3a,#243b55)", padding:"16px" }}>
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"10px" }}>
-          <div>
-            <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"22px", color:"#fff", letterSpacing:"1px" }}>
-              📋 Mis Anuncios
-            </div>
-            <div style={{ fontSize:"12px", color:"#8a9aaa", fontWeight:600, marginTop:"2px" }}>
-              {slots} publicados · {slotsLibres} slots disponibles
-            </div>
+        <div style={{ marginBottom:"10px" }}>
+          <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"22px", color:"#fff", letterSpacing:"1px" }}>
+            📋 Mis Anuncios
           </div>
-          <button onClick={() => router.push("/publicar")}
-            style={{ background:"linear-gradient(135deg,#f0c040,#d4a017)", border:"none", borderRadius:"12px",
-                     padding:"10px 16px", fontSize:"13px", fontWeight:900, color:"#1a2a3a",
-                     cursor:"pointer", fontFamily:"'Nunito',sans-serif", boxShadow:"0 3px 0 #a07810" }}>
-            ＋ Publicar
-          </button>
+          <div style={{ fontSize:"12px", color:"#8a9aaa", fontWeight:600, marginTop:"2px" }}>
+            {slots} publicados · {slotsLibres} slots disponibles
+          </div>
         </div>
         <div style={{ background:"rgba(255,255,255,0.06)", borderRadius:"10px", padding:"10px 14px",
                        display:"flex", alignItems:"center", justifyContent:"space-between" }}>
@@ -271,7 +262,7 @@ export default function MisAnuncios() {
               +
             </div>
             <div style={{ textAlign:"left" }}>
-              <div style={{ fontWeight:900, fontSize:"14px", color:"#1a2a3a" }}>Publicar anuncio</div>
+              <div style={{ fontWeight:900, fontSize:"14px", color:"#1a2a3a" }}>Creá un Nexo</div>
               <div style={{ fontSize:"12px", color:"#9a9a9a", fontWeight:600, marginTop:"2px" }}>
                 Slot disponible — tocá para publicar
               </div>
@@ -349,7 +340,7 @@ export default function MisAnuncios() {
                 </button>
               </div>
 
-              {/* Mini BIT Conexión — visible antes de abrir el anuncio */}
+              {/* Mini BIT Conexión */}
               <div style={{ margin:"0 14px 12px", background: (a.bits_conexion ?? 0) > 0 ? "rgba(58,123,213,0.07)" : "rgba(231,76,60,0.07)",
                              border: `2px solid ${(a.bits_conexion ?? 0) > 0 ? "rgba(58,123,213,0.25)" : "rgba(231,76,60,0.25)"}`,
                              borderRadius:"12px", padding:"10px 14px",
@@ -560,24 +551,6 @@ export default function MisAnuncios() {
                     ⚡ Cargar BIT Conexión
                   </button>
                 </div>
-
-                {/* Promo Flash */}
-                <button onClick={() => setPopupFlash(a.id)}
-                  style={{ width:"100%", background:"rgba(26,42,58,0.05)",
-                           border:"2px solid rgba(26,42,58,0.12)", borderRadius:"10px", padding:"10px",
-                           display:"flex", alignItems:"center", justifyContent:"space-between",
-                           cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
-                  <div style={{ display:"flex", alignItems:"center", gap:"8px" }}>
-                    <span style={{ fontSize:"18px" }}>⚡</span>
-                    <div style={{ textAlign:"left" }}>
-                      <div style={{ fontSize:"12px", fontWeight:900, color:"#1a2a3a" }}>Promo Flash</div>
-                      <div style={{ fontSize:"10px", color:"#9a9a9a", fontWeight:600 }}>
-                        Destacá en barrio / ciudad / provincia / país
-                      </div>
-                    </div>
-                  </div>
-                  <span style={{ fontSize:"11px", fontWeight:800, color:"#d4a017" }}>desde $500 →</span>
-                </button>
               </div>
             </div>
           );
@@ -590,12 +563,9 @@ export default function MisAnuncios() {
             <div style={{ fontSize:"16px", fontWeight:800, color:"#1a2a3a", marginBottom:"16px" }}>
               No publicaste anuncios aún
             </div>
-            <button onClick={() => router.push("/publicar")}
-              style={{ background:"linear-gradient(135deg,#d4a017,#f0c040)", border:"none",
-                       borderRadius:"12px", padding:"14px 28px", fontSize:"14px", fontWeight:900,
-                       color:"#1a2a3a", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
-              ➕ Publicar mi primer anuncio
-            </button>
+            <div style={{ fontSize:"13px", color:"#9a9a9a", fontWeight:600 }}>
+              Usá el botón ＋ del menú para crear tu primer Nexo
+            </div>
           </div>
         )}
 
@@ -682,7 +652,6 @@ export default function MisAnuncios() {
                 </div>
               </div>
 
-              {/* Permuta */}
               <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between",
                              background:"rgba(142,68,173,0.06)", border:"2px solid rgba(142,68,173,0.2)",
                              borderRadius:"12px", padding:"12px 14px" }}>
@@ -704,7 +673,6 @@ export default function MisAnuncios() {
               </div>
             </div>
 
-            {/* Imágenes */}
             <div style={{ marginBottom:"20px" }}>
               <label style={{ ...LS, marginBottom:"10px", display:"block" }}>
                 📷 Imágenes ({editImgs.length}/8) · La primera es la portada
@@ -767,28 +735,21 @@ export default function MisAnuncios() {
 
       {/* POPUPS */}
       {popupBits && (
-        <PopupCompra
-          titulo="⚡ Cargar BIT" emoji="⚡" costo="$500 / $1.000 / $3.000"
+        <PopupCompra titulo="⚡ Cargar BIT" emoji="⚡" costo="$500 / $1.000 / $3.000"
           descripcion="BIT generales para usar en la plataforma"
           bits={{ free: bitsFree, nexo: bitsNexo, promo: bitsPromo }}
           onClose={() => setPopupBits(false)}
-          onPagar={async (metodo) => { setPopupBits(false); alert("Próximamente — método de pago externo"); }}
-        />
+          onPagar={async () => { setPopupBits(false); alert("Próximamente"); }} />
       )}
-
       {popupPlan && (
-        <PopupCompra
-          titulo="Ampliar plan de anuncios" emoji="📋" costo="$1.000 / $3.000 / $10.000"
+        <PopupCompra titulo="Ampliar plan de anuncios" emoji="📋" costo="$1.000 / $3.000 / $10.000"
           descripcion="Publicá más anuncios ampliando tu plan"
           bits={{ free: bitsFree, nexo: bitsNexo, promo: bitsPromo }}
           onClose={() => setPopupPlan(false)}
-          onPagar={async (metodo) => { setPopupPlan(false); alert("Próximamente — contactanos para ampliar tu plan"); }}
-        />
+          onPagar={async () => { setPopupPlan(false); alert("Próximamente — contactanos"); }} />
       )}
-
       {popupLink && (
-        <PopupCompra
-          titulo="Habilitar Link Multimedia" emoji="🔗" costo="500 BIT / $500"
+        <PopupCompra titulo="Habilitar Link Multimedia" emoji="🔗" costo="500 BIT / $500"
           descripcion="YouTube · Instagram · Facebook · cualquier URL"
           bits={{ free: bitsFree, nexo: bitsNexo, promo: bitsPromo }}
           onClose={() => setPopupLink(null)}
@@ -797,17 +758,12 @@ export default function MisAnuncios() {
             if (metodo === "bit_free" || metodo === "bit_nexo") {
               await supabase.from("anuncios").update({ link_habilitado: true }).eq("id", id);
               setAnuncios(prev => prev.map(a => a.id === id ? ({ ...a, link_habilitado: true } as Anuncio) : a));
-            } else {
-              alert("Próximamente — método de pago externo");
-            }
+            } else { alert("Próximamente"); }
             setPopupLink(null);
-          }}
-        />
+          }} />
       )}
-
       {popupAdj && (
-        <PopupCompra
-          titulo="Habilitar Adjuntos" emoji="📎" costo="500 BIT / $500"
+        <PopupCompra titulo="Habilitar Adjuntos" emoji="📎" costo="500 BIT / $500"
           descripcion="PDF, catálogo, ficha técnica · hasta 5 archivos"
           bits={{ free: bitsFree, nexo: bitsNexo, promo: bitsPromo }}
           onClose={() => setPopupAdj(null)}
@@ -816,19 +772,12 @@ export default function MisAnuncios() {
             if (metodo === "bit_free" || metodo === "bit_nexo") {
               await supabase.from("anuncios").update({ adjunto_habilitado: true }).eq("id", id);
               setAnuncios(prev => prev.map(a => a.id === id ? ({ ...a, adjunto_habilitado: true } as Anuncio) : a));
-            } else {
-              alert("Próximamente — método de pago externo");
-            }
+            } else { alert("Próximamente"); }
             setPopupAdj(null);
-          }}
-        />
+          }} />
       )}
-
       {popupBitsCx && (
-        <PopupCompra
-          titulo="Cargar BIT Conexión"
-          emoji="🔗"
-          costo="500 BIT / $500"
+        <PopupCompra titulo="Cargar BIT Conexión" emoji="🔗" costo="500 BIT / $500"
           descripcion="Cada buscador que vea tus datos consume 1 BIT"
           bits={{ free: bitsFree, nexo: bitsNexo, promo: bitsPromo }}
           onClose={() => setPopupBitsCx(null)}
@@ -845,22 +794,16 @@ export default function MisAnuncios() {
               await supabase.from("anuncios").update({ bits_conexion: actual + paquete }).eq("id", id);
               await supabase.from("usuarios").update({ bits: bitsNexo - paquete }).eq("id", session?.user?.id);
               setAnuncios(prev => prev.map(a => a.id === id ? { ...a, bits_conexion: actual + paquete } : a));
-            } else {
-              alert("Próximamente — método de pago externo");
-            }
+            } else { alert("Próximamente"); }
             setPopupBitsCx(null);
-          }}
-        />
+          }} />
       )}
-
       {popupFlash && (
-        <PopupCompra
-          titulo="Promo Flash" emoji="⚡" costo="$500 / $2.000 / $5.000 / $10.000"
+        <PopupCompra titulo="Promo Flash" emoji="⚡" costo="$500 / $2.000 / $5.000 / $10.000"
           descripcion="Destacá en barrio · ciudad · provincia · país"
           bits={{ free: bitsFree, nexo: bitsNexo, promo: bitsPromo }}
           onClose={() => setPopupFlash(null)}
-          onPagar={async (metodo) => { setPopupFlash(null); alert("Próximamente — Promo Flash"); }}
-        />
+          onPagar={async () => { setPopupFlash(null); alert("Próximamente"); }} />
       )}
 
       <BottomNav />
@@ -868,7 +811,6 @@ export default function MisAnuncios() {
   );
 }
 
-// ─── Estilos helper ────────────────────────────────────────────────────────────
 const Btn = (bg: string, color: string, border: string): React.CSSProperties => ({
   flex: 1, background: bg, border, borderRadius:"10px", padding:"9px",
   fontSize:"12px", fontWeight:800, color, cursor:"pointer", fontFamily:"'Nunito',sans-serif",

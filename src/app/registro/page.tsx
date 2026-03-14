@@ -1,101 +1,82 @@
 "use client";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
 export default function Registro() {
+  return (
+    <Suspense fallback={<div style={{paddingTop:"95px",textAlign:"center",color:"#9a9a9a",fontFamily:"'Nunito',sans-serif"}}>Cargando...</div>}>
+      <RegistroInner />
+    </Suspense>
+  );
+}
+
+function RegistroInner() {
   const router = useRouter();
-  const [paso, setPaso] = useState(1);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [codigoValido, setCodigoValido] = useState<boolean | null>(null);
+  const sp = useSearchParams();
+  const refParam = sp.get("ref")?.toUpperCase() || "";
+
+  const [paso,          setPaso]          = useState(1);
+  const [loading,       setLoading]       = useState(false);
+  const [error,         setError]         = useState("");
+  const [promotorInfo,  setPromotorInfo]  = useState<{nombre:string;codigo:string}|null>(null);
   const [form, setForm] = useState({
-    nombre_usuario: "",
-    nombre: "",
-    email: "",
-    whatsapp: "",
-    password: "",
-    confirmar: "",
-    codigo_promotor_ref: "",
+    nombre_usuario: "", nombre: "", email: "",
+    whatsapp: "", password: "", confirmar: "",
   });
 
-  // Valida el código promotor en tiempo real al salir del campo
-  const validarCodigo = async (codigo: string) => {
-    if (!codigo.trim()) { setCodigoValido(null); return; }
-    const { data } = await supabase
-      .from("usuarios")
-      .select("id")
-      .eq("codigo", codigo.trim().toUpperCase())
-      .single();
-    setCodigoValido(!!data);
-  };
+  // Cargar info del promotor si viene en la URL
+  useEffect(() => {
+    if (!refParam) return;
+    supabase.from("usuarios")
+      .select("id,nombre,nombre_usuario,codigo")
+      .eq("codigo", refParam)
+      .single()
+      .then(({ data }) => {
+        if (data) setPromotorInfo({ nombre: data.nombre || data.nombre_usuario || refParam, codigo: data.codigo });
+      });
+  }, [refParam]);
 
   const handleRegistro = async () => {
     if (!form.nombre_usuario || !form.email || !form.password) {
-      setError("Completá los campos obligatorios");
-      return;
+      setError("Completá los campos obligatorios"); return;
     }
     if (form.password !== form.confirmar) {
-      setError("Las contraseñas no coinciden");
-      return;
+      setError("Las contraseñas no coinciden"); return;
     }
     if (form.password.length < 6) {
-      setError("La contraseña debe tener al menos 6 caracteres");
-      return;
-    }
-    // Si ingresaron código pero es inválido, bloquear
-    if (form.codigo_promotor_ref.trim() && codigoValido === false) {
-      setError("El código de promotor no existe. Verificalo o dejá el campo vacío.");
-      return;
+      setError("La contraseña debe tener al menos 6 caracteres"); return;
     }
 
-    setLoading(true);
-    setError("");
+    setLoading(true); setError("");
 
-    // 1. Crear en Supabase Auth
     const { data, error: authError } = await supabase.auth.signUp({
-      email: form.email,
-      password: form.password,
+      email: form.email, password: form.password,
     });
 
     if (authError) {
       setError(authError.message === "User already registered"
         ? "Este email ya está registrado"
-        : "Error al registrarse: " + authError.message
-      );
-      setLoading(false);
-      return;
+        : "Error: " + authError.message);
+      setLoading(false); return;
     }
-
     if (!data.user) {
-      setError("No se pudo crear el usuario. Intentá de nuevo.");
-      setLoading(false);
-      return;
+      setError("No se pudo crear el usuario."); setLoading(false); return;
     }
 
-    // 2. Resolver código promotor → UUID (referido_por)
+    // Resolver referido_por
     let referidoPor: string | null = null;
-    const codigoRef = form.codigo_promotor_ref.trim().toUpperCase();
+    const codigoRef = promotorInfo?.codigo || refParam || "";
     if (codigoRef) {
-      const { data: promotorData } = await supabase
-        .from("usuarios")
-        .select("id")
-        .eq("codigo", codigoRef)
-        .single();
-      if (promotorData) referidoPor = promotorData.id;
+      const { data: p } = await supabase.from("usuarios").select("id").eq("codigo", codigoRef).single();
+      if (p) referidoPor = p.id;
     }
 
-    // 3. Generar código NXN del nuevo usuario
     const { data: codigoData, error: rpcError } = await supabase.rpc("generar_codigo_usuario");
-    if (rpcError) {
-      setError("Error generando código: " + rpcError.message);
-      setLoading(false);
-      return;
-    }
+    if (rpcError) { setError("Error generando código: " + rpcError.message); setLoading(false); return; }
 
-    // 4. Insertar perfil con referido_por resuelto
     const { error: insertError } = await supabase.from("usuarios").insert({
       id:                  data.user.id,
       email:               form.email,
@@ -103,174 +84,125 @@ export default function Registro() {
       nombre_usuario:      form.nombre_usuario,
       whatsapp:            form.whatsapp || null,
       codigo:              codigoData,
-      codigo_promotor_ref: codigoRef || null,   // guarda el texto del código por historial
-      referido_por:        referidoPor,          // UUID del promotor, activa el trigger de comisiones
+      codigo_promotor_ref: codigoRef || null,
+      referido_por:        referidoPor,
     });
 
-    if (insertError) {
-      setError("Error guardando perfil: " + insertError.message);
-      setLoading(false);
-      return;
-    }
+    if (insertError) { setError("Error guardando perfil: " + insertError.message); setLoading(false); return; }
 
     setLoading(false);
     setPaso(2);
   };
 
   return (
-    <main style={{ paddingTop: "95px", paddingBottom: "130px", background: "#f4f4f2", minHeight: "100vh", fontFamily: "'Nunito', sans-serif" }}>
+    <main style={{paddingTop:"95px",paddingBottom:"130px",background:"#f4f4f2",minHeight:"100vh",fontFamily:"'Nunito',sans-serif"}}>
       <Header />
-      <div style={{ padding: "24px 16px", maxWidth: "400px", margin: "0 auto" }}>
+      <div style={{padding:"24px 16px",maxWidth:"400px",margin:"0 auto"}}>
 
         {/* PASOS */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", marginBottom: "28px" }}>
-          {[1, 2].map((p) => (
-            <div key={p} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <div style={{
-                width: "32px", height: "32px", borderRadius: "50%",
-                background: paso >= p ? "linear-gradient(135deg, #d4a017, #f0c040)" : "#e8e8e6",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: "13px", fontWeight: 900, color: paso >= p ? "#1a2a3a" : "#9a9a9a",
-              }}>{p}</div>
-              {p < 2 && <div style={{ width: "40px", height: "2px", background: paso > p ? "#d4a017" : "#e8e8e6", borderRadius: "2px" }} />}
+        <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:"8px",marginBottom:"28px"}}>
+          {[1,2].map(p=>(
+            <div key={p} style={{display:"flex",alignItems:"center",gap:"8px"}}>
+              <div style={{width:"32px",height:"32px",borderRadius:"50%",background:paso>=p?"linear-gradient(135deg,#d4a017,#f0c040)":"#e8e8e6",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"13px",fontWeight:900,color:paso>=p?"#1a2a3a":"#9a9a9a"}}>{p}</div>
+              {p<2&&<div style={{width:"40px",height:"2px",background:paso>p?"#d4a017":"#e8e8e6",borderRadius:"2px"}}/>}
             </div>
           ))}
         </div>
 
         {/* PASO 1 */}
-        {paso === 1 && (
-          <div style={{ background: "#fff", borderRadius: "20px", padding: "24px", boxShadow: "0 4px 20px rgba(0,0,0,0.08)" }}>
-            <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "24px", color: "#1a2a3a", letterSpacing: "2px", marginBottom: "20px" }}>
+        {paso===1 && (
+          <div style={{background:"#fff",borderRadius:"20px",padding:"24px",boxShadow:"0 4px 20px rgba(0,0,0,0.08)"}}>
+            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"24px",color:"#1a2a3a",letterSpacing:"2px",marginBottom:"20px"}}>
               Creá tu cuenta
             </div>
 
+            {/* BANNER PROMOTOR — solo si viene con ref */}
+            {promotorInfo && (
+              <div style={{background:"linear-gradient(135deg,rgba(212,160,23,0.12),rgba(212,160,23,0.06))",border:"2px solid rgba(212,160,23,0.4)",borderRadius:"14px",padding:"12px 16px",marginBottom:"20px",display:"flex",alignItems:"center",gap:"12px"}}>
+                <div style={{width:"38px",height:"38px",borderRadius:"50%",background:"rgba(212,160,23,0.2)",border:"2px solid #d4a017",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"18px",flexShrink:0}}>
+                  ⭐
+                </div>
+                <div>
+                  <div style={{fontSize:"12px",fontWeight:900,color:"#d4a017",textTransform:"uppercase" as const,letterSpacing:"0.5px"}}>Invitación especial</div>
+                  <div style={{fontSize:"14px",fontWeight:800,color:"#1a2a3a"}}>
+                    <span style={{color:"#d4a017"}}>{promotorInfo.nombre}</span> te invitó a NexoNet
+                  </div>
+                  <div style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600,marginTop:"2px"}}>
+                    Quedás vinculado automáticamente como referido
+                  </div>
+                </div>
+              </div>
+            )}
+
             {error && (
-              <div style={{ background: "#fff0f0", border: "1px solid #ffcccc", borderRadius: "10px", padding: "12px", marginBottom: "16px", fontSize: "13px", color: "#cc0000", fontWeight: 700 }}>
+              <div style={{background:"#fff0f0",border:"1px solid #ffcccc",borderRadius:"10px",padding:"12px",marginBottom:"16px",fontSize:"13px",color:"#cc0000",fontWeight:700}}>
                 ⚠️ {error}
               </div>
             )}
 
-            <Campo label="Nombre de usuario *" value={form.nombre_usuario} onChange={(v) => setForm({ ...form, nombre_usuario: v })} placeholder="El nombre que verán los demás" />
-            <Campo label="Nombre real" value={form.nombre} onChange={(v) => setForm({ ...form, nombre: v })} placeholder="Tu nombre (opcional)" />
-            <Campo label="Email *" value={form.email} onChange={(v) => setForm({ ...form, email: v })} placeholder="tu@email.com" type="email" />
-            <Campo label="WhatsApp" value={form.whatsapp} onChange={(v) => setForm({ ...form, whatsapp: v })} placeholder="Ej: 3492123456" type="tel" />
-            <Campo label="Contraseña *" value={form.password} onChange={(v) => setForm({ ...form, password: v })} placeholder="Mínimo 6 caracteres" type="password" />
-            <Campo label="Confirmar contraseña *" value={form.confirmar} onChange={(v) => setForm({ ...form, confirmar: v })} placeholder="Repetí tu contraseña" type="password" />
+            <Campo label="Nombre de usuario *" value={form.nombre_usuario} onChange={v=>setForm({...form,nombre_usuario:v})} placeholder="El nombre que verán los demás"/>
+            <Campo label="Nombre real" value={form.nombre} onChange={v=>setForm({...form,nombre:v})} placeholder="Tu nombre (opcional)"/>
+            <Campo label="Email *" value={form.email} onChange={v=>setForm({...form,email:v})} placeholder="tu@email.com" type="email"/>
+            <Campo label="WhatsApp" value={form.whatsapp} onChange={v=>setForm({...form,whatsapp:v})} placeholder="Ej: 3492123456" type="tel"/>
+            <Campo label="Contraseña *" value={form.password} onChange={v=>setForm({...form,password:v})} placeholder="Mínimo 6 caracteres" type="password"/>
+            <Campo label="Confirmar contraseña *" value={form.confirmar} onChange={v=>setForm({...form,confirmar:v})} placeholder="Repetí tu contraseña" type="password"/>
 
-            {/* CÓDIGO PROMOTOR */}
-            <div style={{ marginBottom: "14px", background: "rgba(212,160,23,0.06)", border: `1px solid ${codigoValido === true ? "#27ae60" : codigoValido === false ? "#e74c3c" : "rgba(212,160,23,0.3)"}`, borderRadius: "12px", padding: "12px" }}>
-              <label style={{ display: "block", fontSize: "11px", fontWeight: 800, color: "#d4a017", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "6px" }}>
-                ⭐ Código de promotor (opcional)
-              </label>
-              <input
-                type="text"
-                value={form.codigo_promotor_ref}
-                onChange={(e) => {
-                  setForm({ ...form, codigo_promotor_ref: e.target.value.toUpperCase() });
-                  setCodigoValido(null);
-                }}
-                onBlur={(e) => validarCodigo(e.target.value)}
-                placeholder="Ej: NXN-00001"
-                style={{
-                  width: "100%",
-                  border: `2px solid ${codigoValido === true ? "#27ae60" : codigoValido === false ? "#e74c3c" : "rgba(212,160,23,0.4)"}`,
-                  borderRadius: "10px", padding: "10px 14px", fontSize: "14px",
-                  fontFamily: "'Nunito', sans-serif", color: "#2c2c2e", outline: "none",
-                  boxSizing: "border-box", background: "#fff",
-                }}
-              />
-              <div style={{ fontSize: "11px", fontWeight: 600, marginTop: "6px", color: codigoValido === true ? "#27ae60" : codigoValido === false ? "#e74c3c" : "#9a9a9a" }}>
-                {codigoValido === true  && "✅ Código válido — te van a acreditar como referido"}
-                {codigoValido === false && "❌ Código no encontrado — verificalo o dejá el campo vacío"}
-                {codigoValido === null  && "Si alguien te invitó, ingresá su código NXN-XXXXX"}
-              </div>
-            </div>
-
-            <button
-              onClick={handleRegistro}
-              disabled={loading}
-              style={{
-                width: "100%",
-                background: loading ? "#ccc" : "linear-gradient(135deg, #d4a017, #f0c040)",
-                color: "#1a2a3a", border: "none", borderRadius: "12px", padding: "16px",
-                fontSize: "15px", fontWeight: 800, fontFamily: "'Nunito', sans-serif",
-                cursor: loading ? "not-allowed" : "pointer", letterSpacing: "1px",
-                textTransform: "uppercase", marginTop: "8px",
-                boxShadow: loading ? "none" : "0 4px 0 #a07810",
-              }}>
-              {loading ? "Registrando..." : "Crear cuenta →"}
+            <button onClick={handleRegistro} disabled={loading}
+              style={{width:"100%",background:loading?"#ccc":"linear-gradient(135deg,#d4a017,#f0c040)",color:"#1a2a3a",border:"none",borderRadius:"12px",padding:"16px",fontSize:"15px",fontWeight:800,fontFamily:"'Nunito',sans-serif",cursor:loading?"not-allowed":"pointer",letterSpacing:"1px",textTransform:"uppercase" as const,marginTop:"8px",boxShadow:loading?"none":"0 4px 0 #a07810"}}>
+              {loading?"Registrando...":"Crear cuenta →"}
             </button>
 
-            <div style={{ textAlign: "center", marginTop: "16px" }}>
-              <span style={{ fontSize: "13px", color: "#666", fontWeight: 600 }}>¿Ya tenés cuenta? </span>
-              <a href="/login" style={{ fontSize: "13px", color: "#d4a017", fontWeight: 800, textDecoration: "none" }}>Ingresá →</a>
+            <div style={{textAlign:"center",marginTop:"16px"}}>
+              <span style={{fontSize:"13px",color:"#666",fontWeight:600}}>¿Ya tenés cuenta? </span>
+              <a href="/login" style={{fontSize:"13px",color:"#d4a017",fontWeight:800,textDecoration:"none"}}>Ingresá →</a>
             </div>
           </div>
         )}
 
         {/* PASO 2 — BIENVENIDA */}
-        {paso === 2 && (
-          <div style={{ background: "#fff", borderRadius: "20px", padding: "32px 24px", boxShadow: "0 4px 20px rgba(0,0,0,0.08)", textAlign: "center" }}>
-            <div style={{ fontSize: "60px", marginBottom: "16px" }}>🎉</div>
-            <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "26px", color: "#1a2a3a", letterSpacing: "2px", marginBottom: "12px" }}>
+        {paso===2 && (
+          <div style={{background:"#fff",borderRadius:"20px",padding:"32px 24px",boxShadow:"0 4px 20px rgba(0,0,0,0.08)",textAlign:"center"}}>
+            <div style={{fontSize:"60px",marginBottom:"16px"}}>🎉</div>
+            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"26px",color:"#1a2a3a",letterSpacing:"2px",marginBottom:"12px"}}>
               ¡Bienvenido!
             </div>
-            <div style={{ fontSize: "14px", color: "#666", fontWeight: 600, lineHeight: 1.6, marginBottom: "8px" }}>
+            <div style={{fontSize:"14px",color:"#666",fontWeight:600,lineHeight:1.6,marginBottom:"8px"}}>
               Tu cuenta fue creada con éxito
             </div>
-            <div style={{ fontSize: "15px", fontWeight: 800, color: "#1a2a3a", marginBottom: "20px" }}>
-              {form.email}
+            <div style={{fontSize:"15px",fontWeight:800,color:"#1a2a3a",marginBottom:"20px"}}>{form.email}</div>
+            <div style={{background:"#f4f4f2",borderRadius:"12px",padding:"14px",marginBottom:"16px"}}>
+              <div style={{fontSize:"12px",color:"#9a9a9a",fontWeight:600,marginBottom:"4px"}}>Tu nombre de usuario</div>
+              <div style={{fontSize:"18px",fontWeight:900,color:"#1a2a3a"}}>{form.nombre_usuario}</div>
+              <div style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600,marginTop:"4px"}}>Tu código NXN se generó automáticamente</div>
             </div>
-            <div style={{ background: "#f4f4f2", borderRadius: "12px", padding: "14px", marginBottom: "16px" }}>
-              <div style={{ fontSize: "12px", color: "#9a9a9a", fontWeight: 600, marginBottom: "4px" }}>Tu nombre de usuario</div>
-              <div style={{ fontSize: "18px", fontWeight: 900, color: "#1a2a3a" }}>{form.nombre_usuario}</div>
-              <div style={{ fontSize: "11px", color: "#9a9a9a", fontWeight: 600, marginTop: "4px" }}>Tu código NXN se generó automáticamente</div>
-            </div>
-            {/* Confirmar si quedó vinculado a promotor */}
-            {form.codigo_promotor_ref && codigoValido && (
-              <div style={{ background: "rgba(212,160,23,0.08)", border: "1px solid rgba(212,160,23,0.3)", borderRadius: "12px", padding: "12px", marginBottom: "16px" }}>
-                <div style={{ fontSize: "13px", fontWeight: 800, color: "#d4a017" }}>⭐ Referido registrado</div>
-                <div style={{ fontSize: "12px", color: "#666", fontWeight: 600, marginTop: "4px" }}>
-                  Quedaste vinculado al promotor {form.codigo_promotor_ref}
+            {promotorInfo && (
+              <div style={{background:"rgba(212,160,23,0.08)",border:"1px solid rgba(212,160,23,0.3)",borderRadius:"12px",padding:"12px",marginBottom:"16px"}}>
+                <div style={{fontSize:"13px",fontWeight:800,color:"#d4a017"}}>⭐ Referido de {promotorInfo.nombre}</div>
+                <div style={{fontSize:"12px",color:"#666",fontWeight:600,marginTop:"4px"}}>
+                  Quedaste vinculado como referido
                 </div>
               </div>
             )}
-            <button
-              onClick={() => router.push("/login")}
-              style={{
-                width: "100%",
-                background: "linear-gradient(135deg, #d4a017, #f0c040)",
-                color: "#1a2a3a", border: "none", borderRadius: "12px", padding: "16px",
-                fontSize: "15px", fontWeight: 800, fontFamily: "'Nunito', sans-serif",
-                cursor: "pointer", letterSpacing: "1px", textTransform: "uppercase",
-                boxShadow: "0 4px 0 #a07810",
-              }}>
+            <button onClick={()=>router.push("/login")}
+              style={{width:"100%",background:"linear-gradient(135deg,#d4a017,#f0c040)",color:"#1a2a3a",border:"none",borderRadius:"12px",padding:"16px",fontSize:"15px",fontWeight:800,fontFamily:"'Nunito',sans-serif",cursor:"pointer",letterSpacing:"1px",textTransform:"uppercase" as const,boxShadow:"0 4px 0 #a07810"}}>
               Ir al login →
             </button>
           </div>
         )}
-
       </div>
       <BottomNav />
     </main>
   );
 }
 
-function Campo({ label, value, onChange, placeholder, type = "text" }: {
-  label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string;
+function Campo({ label, value, onChange, placeholder, type="text" }: {
+  label:string; value:string; onChange:(v:string)=>void; placeholder?:string; type?:string;
 }) {
   return (
-    <div style={{ marginBottom: "14px" }}>
-      <label style={{ display: "block", fontSize: "11px", fontWeight: 800, color: "#666", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "6px" }}>
-        {label}
-      </label>
-      <input
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        style={{ width: "100%", border: "2px solid #e8e8e6", borderRadius: "10px", padding: "12px 14px", fontSize: "14px", fontFamily: "'Nunito', sans-serif", color: "#2c2c2e", outline: "none", boxSizing: "border-box" }}
-      />
+    <div style={{marginBottom:"14px"}}>
+      <label style={{display:"block",fontSize:"11px",fontWeight:800,color:"#666",textTransform:"uppercase" as const,letterSpacing:"1px",marginBottom:"6px"}}>{label}</label>
+      <input type={type} value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder}
+        style={{width:"100%",border:"2px solid #e8e8e6",borderRadius:"10px",padding:"12px 14px",fontSize:"14px",fontFamily:"'Nunito',sans-serif",color:"#2c2c2e",outline:"none",boxSizing:"border-box" as const}}/>
     </div>
   );
 }

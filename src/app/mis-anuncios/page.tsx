@@ -87,7 +87,15 @@ export default function MisAnuncios() {
 
   const eliminarAnuncio = async (id: string) => {
     if (!confirm("¿Eliminar este anuncio?")) return;
-    await supabase.from("anuncios").delete().eq("id", id);
+    const { error } = await supabase
+      .from("anuncios")
+      .delete()
+      .eq("id", id)
+      .eq("usuario_id", session?.user?.id);
+    if (error) {
+      alert("Error al eliminar: " + error.message);
+      return;
+    }
     setAnuncios(prev => prev.filter(a => a.id !== id));
   };
 

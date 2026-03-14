@@ -66,7 +66,7 @@ function MapaInner() {
     Promise.all([
       supabase.from("rubros").select("id,nombre,subrubros(id,nombre)").order("nombre"),
       supabase.from("anuncios")
-        .select("id,titulo,precio,moneda,imagenes,flash,ciudad,provincia,lat,lng,subrubro_id,usuario_id,tipo,avatar_url")
+        .select("id,titulo,precio,moneda,imagenes,flash,ciudad,provincia,lat,lng,subrubro_id,usuario_id")
         .eq("estado","activo").not("lat","is",null).not("lng","is",null),
     ]).then(([{data:rData},{data:aData}]) => {
       if (rData) {
@@ -80,8 +80,7 @@ function MapaInner() {
         moneda:a.moneda||"ARS",
         imagenes:a.imagenes||[],
         flash:a.flash||false,
-        tipo: a.tipo || "anuncio",
-        avatar_url: a.avatar_url || null,
+        tipo: "anuncio",
       }));
         setAnuncios(lista);
         if (paramId) {

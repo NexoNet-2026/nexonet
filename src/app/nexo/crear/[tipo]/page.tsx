@@ -231,10 +231,12 @@ export default function NexoCrearPage() {
   // ── FORMULARIO ANUNCIO / TRABAJO (sin sliders, todo en 1 paso) ────────────
   if (!usaSliders) {
     return (
-      <main style={{paddingTop:"0",paddingBottom:"100px",background:"#f4f4f2",minHeight:"100vh",fontFamily:"'Nunito',sans-serif"}}>
+      <main style={{paddingTop:"95px",paddingBottom:"100px",background:"#f4f4f2",minHeight:"100vh",fontFamily:"'Nunito',sans-serif"}}>
         <Header/>
-        <div style={{background:`linear-gradient(135deg,${colorPage}cc,${colorPage})`,paddingTop:"80px",padding:"80px 16px 16px",display:"flex",alignItems:"center",gap:"12px"}}>
-          <button onClick={()=>router.push("/publicar")} style={{background:"rgba(255,255,255,0.2)",border:"1px solid rgba(255,255,255,0.3)",borderRadius:"10px",padding:"7px 14px",color:"#fff",fontSize:"13px",fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>← Volver</button>
+
+        {/* HEADER SIMPLE */}
+        <div style={{background:`linear-gradient(135deg,${colorPage}dd,${colorPage})`,padding:"14px 16px",display:"flex",alignItems:"center",gap:"12px"}}>
+          <button onClick={()=>router.push("/publicar")} style={{background:"rgba(255,255,255,0.2)",border:"1px solid rgba(255,255,255,0.3)",borderRadius:"10px",padding:"7px 14px",color:"#fff",fontSize:"13px",fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',sans-serif",flexShrink:0}}>← Volver</button>
           <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"22px",color:"#fff",letterSpacing:"1px"}}>{emojiPage} {tituloPage}</div>
         </div>
 
@@ -367,11 +369,11 @@ export default function NexoCrearPage() {
 
   // ── FORMULARIO CON SLIDERS (grupo / empresa / servicio) ──────────────────
   return (
-    <main style={{paddingTop:"0",paddingBottom:"100px",background:"#f4f4f2",minHeight:"100vh",fontFamily:"'Nunito',sans-serif"}}>
+    <main style={{paddingTop:"95px",paddingBottom:"100px",background:"#f4f4f2",minHeight:"100vh",fontFamily:"'Nunito',sans-serif"}}>
       <Header/>
 
       {/* HERO */}
-      <div style={{background:form.banner_url?`url(${form.banner_url}) center/cover no-repeat`:"linear-gradient(135deg,#1a2a3a,#243b55)",paddingTop:"80px",minHeight:"160px",position:"relative"}}>
+      <div style={{background:form.banner_url?`url(${form.banner_url}) center/cover no-repeat`:"linear-gradient(135deg,#1a2a3a,#243b55)",minHeight:"130px",position:"relative"}}>
         {form.banner_url && <div style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.5)"}}/>}
         <div style={{position:"relative",zIndex:1,padding:"16px 16px 20px"}}>
           <button onClick={()=>router.push("/publicar")}

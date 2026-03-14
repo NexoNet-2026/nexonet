@@ -16,7 +16,6 @@ type SubrubroFlat = { id:number; nombre:string; rubro_id:number };
 function MapaInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  // Params de URL: ?lat=X&lng=Y&id=Z (vienen desde /anuncios/[id])
   const paramLat = searchParams.get("lat");
   const paramLng = searchParams.get("lng");
   const paramId  = searchParams.get("id");
@@ -30,7 +29,6 @@ function MapaInner() {
   const [dropOpen,      setDropOpen]      = useState(false);
   const [anuncioSel,    setAnuncioSel]    = useState<Anuncio|null>(null);
   const [loading,       setLoading]       = useState(true);
-  // Centro del mapa: si hay params lo usamos, si no default Rosario
   const [centroMapa,    setCentroMapa]    = useState<[number,number]|null>(
     paramLat && paramLng ? [parseFloat(paramLat), parseFloat(paramLng)] : null
   );
@@ -46,6 +44,8 @@ function MapaInner() {
   const [conectando,     setConectando]     = useState(false);
   const [resultadoConex, setResultadoConex] = useState<string|null>(null);
   const [popupConexion,  setPopupConexion]  = useState(false);
+  const [popupPago,      setPopupPago]      = useState(false);
+
   const MENSAJES_PRESET = [
     "Hola, estoy interesado/a en tu anuncio. ¿Podemos hablar?",
     "Hola, vi tu publicación y me gustaría más información.",
@@ -76,7 +76,6 @@ function MapaInner() {
       if (aData) {
         const lista = (aData as any[]).map(a=>({...a,rubro:"Otros",moneda:a.moneda||"ARS",imagenes:a.imagenes||[],flash:a.flash||false}));
         setAnuncios(lista);
-        // Si llegamos desde un anuncio con ?id=, auto-seleccionarlo en el popup
         if (paramId) {
           const target = lista.find((a:any) => String(a.id) === paramId);
           if (target) setAnuncioSel(target);
@@ -124,7 +123,9 @@ function MapaInner() {
     if (!session) { router.push("/login"); return; }
     setModoConexion(true); setSeleccionados(new Set()); setAnuncioSel(null);
   };
-  const cancelarConexion = () => { setModoConexion(false); setSeleccionados(new Set()); setResultadoConex(null); };
+  const cancelarConexion = () => {
+    setModoConexion(false); setSeleccionados(new Set()); setResultadoConex(null);
+  };
 
   const ejecutarConexion = async () => {
     if (seleccionados.size===0) return;
@@ -133,13 +134,17 @@ function MapaInner() {
     const { data: anuData } = await supabase.from("anuncios").select("id,usuario_id,conexiones").in("id",ids);
     if (anuData) {
       await Promise.all(anuData.map((a:any) => supabase.from("anuncios").update({conexiones:(a.conexiones||0)+1}).eq("id",a.id)));
-      await supabase.from("notificaciones").insert(anuData.map((a:any)=>({usuario_id:a.usuario_id,emisor_id:session.user.id,anuncio_id:a.id,tipo:"conexion",mensaje:mensajeConexion})));
+      await supabase.from("notificaciones").insert(anuData.map((a:any)=>({
+        usuario_id:a.usuario_id, emisor_id:session.user.id,
+        anuncio_id:a.id, tipo:"conexion", mensaje:mensajeConexion,
+      })));
       const nb = bits - ids.length;
-      await supabase.from("usuarios").update({bits:nb,bits_gastados:bits-nb}).eq("id",session.user.id);
+      await supabase.from("usuarios").update({bits:nb, bits_gastados_conexion: nb}).eq("id",session.user.id);
       setBits(nb);
     }
     setResultadoConex(`✅ Mensaje enviado a ${ids.length} anuncio${ids.length!==1?"s":""}. Usaste ${ids.length} BIT.`);
-    setConectando(false); setSeleccionados(new Set());
+    setConectando(false);
+    setSeleccionados(new Set());
     setMensajeConexion(MENSAJES_PRESET[0]);
     setTimeout(() => cancelarConexion(), 3000);
   };
@@ -159,7 +164,7 @@ function MapaInner() {
                 style={{width:"100%",border:"none",padding:"11px 16px",fontFamily:"'Nunito',sans-serif",fontSize:"14px",color:"#2c2c2e",outline:"none",background:"transparent",boxSizing:"border-box",borderRadius:"14px 0 0 14px"}}
               />
               {(rSel||sSel) && (
-                <div onClick={limpQ} style={{position:"absolute",right:"8px",top:"50%",transform:"translateY(-50%)",background:"#d4a017",borderRadius:"20px",padding:"3px 10px",fontSize:"11px",fontWeight:800,color:sSel?"#fff":"#1a2a3a",cursor:"pointer"}}>
+                <div onClick={limpQ} style={{position:"absolute",right:"8px",top:"50%",transform:"translateY(-50%)",background:"#d4a017",borderRadius:"20px",padding:"3px 10px",fontSize:"11px",fontWeight:800,color:"#1a2a3a",cursor:"pointer"}}>
                   {sSel?sSel.nombre:rSel!.nombre} ✕
                 </div>
               )}
@@ -284,17 +289,50 @@ function MapaInner() {
         </div>
       )}
 
-      {/* POPUP CONEXIÓN */}
+      {/* POPUP MENSAJE — igual que en buscar */}
       {popupConexion && (
+        <div style={{position:"fixed",inset:0,zIndex:500,background:"rgba(0,0,0,0.65)",display:"flex",alignItems:"flex-end",padding:"16px"}}>
+          <div style={{width:"100%",background:"#fff",borderRadius:"20px 20px 16px 16px",padding:"24px 20px 20px",boxShadow:"0 -8px 40px rgba(0,0,0,0.3)"}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"18px"}}>
+              <div>
+                <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"22px",color:"#1a2a3a",letterSpacing:"1px"}}>🔗 Mensaje de conexión</div>
+                <div style={{fontSize:"12px",color:"#9a9a9a",fontWeight:600}}>Se enviará a {seleccionados.size} anuncio{seleccionados.size!==1?"s":""} · {seleccionados.size} BIT</div>
+              </div>
+              <button onClick={()=>setPopupConexion(false)} style={{background:"#f0f0f0",border:"none",borderRadius:"50%",width:"32px",height:"32px",fontSize:"16px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
+            </div>
+            <div style={{display:"flex",flexDirection:"column",gap:"8px",marginBottom:"14px"}}>
+              {MENSAJES_PRESET.map((m,i) => (
+                <button key={i} onClick={()=>setMensajeConexion(m)} style={{textAlign:"left",background:mensajeConexion===m?"linear-gradient(135deg,#fff8e0,#fff3c0)":"#f8f8f8",border:mensajeConexion===m?"2px solid #d4a017":"2px solid transparent",borderRadius:"12px",padding:"10px 14px",fontSize:"13px",fontWeight:700,color:"#1a2a3a",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>
+                  {mensajeConexion===m && <span style={{color:"#d4a017",marginRight:"6px"}}>✓</span>}{m}
+                </button>
+              ))}
+            </div>
+            <div style={{marginBottom:"16px"}}>
+              <div style={{fontSize:"11px",fontWeight:800,color:"#9a9a9a",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"6px"}}>✏️ O escribí tu propio mensaje</div>
+              <textarea value={mensajeConexion} onChange={e=>setMensajeConexion(e.target.value)} maxLength={200} rows={3}
+                style={{width:"100%",borderRadius:"12px",border:"2px solid #e8e8e8",padding:"10px 14px",fontSize:"13px",fontWeight:600,color:"#1a2a3a",fontFamily:"'Nunito',sans-serif",resize:"none",outline:"none",boxSizing:"border-box"}}
+                placeholder="Escribí tu mensaje..." />
+              <div style={{textAlign:"right",fontSize:"10px",color:"#bbb",fontWeight:600}}>{mensajeConexion.length}/200</div>
+            </div>
+            <button onClick={()=>{ if(!mensajeConexion.trim()) return; setPopupConexion(false); setPopupPago(true); }} disabled={!mensajeConexion.trim()}
+              style={{width:"100%",background:mensajeConexion.trim()?"linear-gradient(135deg,#f0c040,#d4a017)":"#f0f0f0",border:"none",borderRadius:"12px",padding:"14px",fontSize:"15px",fontWeight:900,color:mensajeConexion.trim()?"#1a2a3a":"#bbb",cursor:mensajeConexion.trim()?"pointer":"not-allowed",fontFamily:"'Nunito',sans-serif",boxShadow:mensajeConexion.trim()?"0 4px 0 #a07810":"none"}}>
+              🔗 Conectar con anuncio
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* POPUP PAGO */}
+      {popupPago && (
         <PopupCompra
-          titulo={`Conectar con ${seleccionados.size} anuncio${seleccionados.size !== 1 ? "s" : ""}`}
+          titulo={`Conectar con ${seleccionados.size} anuncio${seleccionados.size!==1?"s":""}`}
           emoji="🔗"
           costo={`${seleccionados.size} BIT`}
           descripcion="Se enviará tu mensaje a los anuncios seleccionados"
           bits={{ free: bitsFree, nexo: bits, promo: bitsPromo }}
-          onClose={() => setPopupConexion(false)}
+          onClose={() => setPopupPago(false)}
           onPagar={async (metodo: MetodoPago) => {
-            setPopupConexion(false);
+            setPopupPago(false);
             if (metodo === "bit_free" || metodo === "bit_nexo") {
               await ejecutarConexion();
             } else {

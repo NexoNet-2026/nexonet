@@ -126,7 +126,10 @@ function BuscarInner() {
       supabase.from("nexos")
         .select("id,titulo,descripcion,tipo,subtipo,ciudad,provincia,avatar_url,banner_url,precio,moneda,usuario_id,config")
         .eq("estado","activo").order("created_at",{ascending:false}).limit(100),
-    ]).then(async ([{data:pData},{data:rData},{data:sData},{data:aData},{data:nData}]) => {
+      supabase.from("grupos")
+        .select("id,nombre,descripcion,tipo,modelo_acceso,ciudad,provincia,imagen_url,creador_id,miembros_count,grupo_categorias(nombre,emoji),grupo_subcategorias(nombre)")
+        .order("created_at",{ascending:false}).limit(100),
+    ]).then(async ([{data:pData},{data:rData},{data:sData},{data:aData},{data:nData},{data:gData}]) => {
 
       if (pData) setProvs(pData);
 
@@ -172,7 +175,25 @@ function BuscarInner() {
         setAnuncios(mapped);
       }
 
-      if (nData) setNexos(nData as Nexo[]);
+      // Combinar nexos + grupos existentes (tabla grupos)
+      const nexosArr: Nexo[] = nData ? (nData as Nexo[]) : [];
+      const gruposArr: Nexo[] = gData ? (gData as any[]).map((g:any) => ({
+        id: g.id,
+        titulo: g.nombre,
+        descripcion: g.descripcion || "",
+        tipo: "grupo",
+        subtipo: (g.grupo_categorias as any)?.nombre || "",
+        ciudad: g.ciudad || "",
+        provincia: g.provincia || "",
+        avatar_url: g.imagen_url || "",
+        banner_url: "",
+        precio: 0,
+        moneda: "ARS",
+        usuario_id: g.creador_id,
+        miembros_count: g.miembros_count || 0,
+        config: { tipo_acceso: g.modelo_acceso || "libre" },
+      })) : [];
+      setNexos([...nexosArr, ...gruposArr]);
       setLoading(false);
     });
   }, []);
@@ -523,7 +544,8 @@ function BuscarInner() {
                 </div>
               ) : (
                 (nexosPorTipo[tipoActivo]||[]).map(n => (
-                  <TarjetaNexo key={n.id} nexo={n} color={colorActivo} onNavigate={()=>router.push(`/nexo/${n.id}`)} />
+                  <TarjetaNexo key={n.id} nexo={n} color={colorActivo}
+                    onNavigate={()=>router.push(n.tipo==="grupo" && !n.banner_url ? `/grupos/${n.id}` : `/nexo/${n.id}`)} />
                 ))
               )}
             </div>
@@ -687,6 +709,7 @@ function TarjetaNexo({ nexo, color, onNavigate }: { nexo:Nexo; color:string; onN
         )}
         <div style={{display:"flex",gap:"8px",alignItems:"center",flexWrap:"wrap"}}>
           {nexo.ciudad && <span style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600}}>📍 {nexo.ciudad}</span>}
+          {nexo.tipo==="grupo" && <span style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600}}>👥 {nexo.miembros_count||0} miembros</span>}
           {nexo.tipo==="grupo" && nexo.config?.tipo_acceso==="pago" && (
             <span style={{background:`${color}18`,color,borderRadius:"20px",padding:"2px 8px",fontSize:"10px",fontWeight:800}}>💰 500 BIT</span>
           )}

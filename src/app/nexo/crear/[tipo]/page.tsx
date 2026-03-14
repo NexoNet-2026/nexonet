@@ -235,48 +235,14 @@ export default function NexoCrearPage() {
         <Header/>
 
         {/* HEADER SIMPLE */}
-        <div style={{background:`linear-gradient(135deg,${colorPage}dd,${colorPage})`,padding:"14px 16px",display:"flex",alignItems:"center",gap:"12px"}}>
-          <button onClick={()=>router.push("/publicar")} style={{background:"rgba(255,255,255,0.2)",border:"1px solid rgba(255,255,255,0.3)",borderRadius:"10px",padding:"7px 14px",color:"#fff",fontSize:"13px",fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',sans-serif",flexShrink:0}}>← Volver</button>
-          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"22px",color:"#fff",letterSpacing:"1px"}}>{emojiPage} {tituloPage}</div>
+        <div style={{background:`linear-gradient(135deg,${colorPage}dd,${colorPage})`,padding:"12px 16px",display:"flex",alignItems:"center",gap:"12px"}}>
+          <button onClick={()=>router.push("/publicar")} style={{background:"rgba(255,255,255,0.2)",border:"1px solid rgba(255,255,255,0.3)",borderRadius:"10px",padding:"6px 12px",color:"#fff",fontSize:"13px",fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',sans-serif",flexShrink:0}}>← Volver</button>
+          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"20px",color:"#fff",letterSpacing:"1px"}}>{emojiPage} {tituloPage}</div>
         </div>
 
         <div style={{padding:"16px",display:"flex",flexDirection:"column",gap:"14px",maxWidth:"500px",margin:"0 auto"}}>
 
-          {/* INFO PRINCIPAL */}
-          <div style={CAJA}>
-            <SL>📝 Información</SL>
-            <L>Título *</L>
-            <input value={form.titulo} onChange={e=>F("titulo",e.target.value)}
-              placeholder={tipo==="trabajo"?"Ej: Diseñador gráfico disponible":"Ej: Bicicleta rodado 26 impecable"}
-              style={IS}/>
-
-            <L>Descripción</L>
-            <textarea value={form.descripcion} onChange={e=>F("descripcion",e.target.value)}
-              placeholder="Describí en detalle..." rows={4}
-              style={{...IS,resize:"vertical" as any,marginBottom:"12px"}}/>
-
-            {tipo==="anuncio" && (<>
-              <div style={{display:"grid",gridTemplateColumns:"2fr 1fr",gap:"10px",marginBottom:"12px"}}>
-                <div>
-                  <L>Precio</L>
-                  <input type="number" value={form.precio} onChange={e=>F("precio",e.target.value)} placeholder="0" style={IS}/>
-                </div>
-                <div>
-                  <L>Moneda</L>
-                  <select value={form.moneda} onChange={e=>F("moneda",e.target.value)} style={{...IS,padding:"11px 10px"}}>
-                    <option value="ARS">ARS $</option>
-                    <option value="USD">USD U$S</option>
-                  </select>
-                </div>
-              </div>
-              <label style={{display:"flex",alignItems:"center",gap:"10px",cursor:"pointer",padding:"8px 0",marginBottom:"8px"}}>
-                <input type="checkbox" checked={form.permuto} onChange={e=>F("permuto",e.target.checked)} style={{width:"18px",height:"18px",accentColor:colorPage}}/>
-                <span style={{fontSize:"13px",fontWeight:700,color:"#1a2a3a"}}>🔄 Acepto permuta</span>
-              </label>
-            </>)}
-          </div>
-
-          {/* CATEGORÍA — solo para anuncios */}
+          {/* 1. CATEGORÍA — solo para anuncios */}
           {tipo==="anuncio" && (
             <div style={CAJA}>
               <SL>📂 Categoría</SL>
@@ -295,7 +261,7 @@ export default function NexoCrearPage() {
             </div>
           )}
 
-          {/* UBICACIÓN CON GPS */}
+          {/* 2. UBICACIÓN CON GPS */}
           <div style={CAJA}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"12px"}}>
               <SL style={{margin:0}}>📍 Ubicación</SL>
@@ -304,13 +270,11 @@ export default function NexoCrearPage() {
                 {gpsLoad?"⏳ Buscando...":"📍 Usar mi ubicación"}
               </button>
             </div>
-
             <L>Provincia</L>
             <select value={form.provincia} onChange={e=>cambiarProv(e.target.value)} style={{...IS,marginBottom:"12px"}}>
               <option value="">— Elegí una provincia —</option>
               {provs.map(p=><option key={p.id} value={p.nombre}>{p.nombre}</option>)}
             </select>
-
             {form.provincia && (<>
               <L>Ciudad</L>
               <select value={form.ciudad} onChange={e=>F("ciudad",e.target.value)} style={{...IS,marginBottom:"0"}}>
@@ -318,43 +282,67 @@ export default function NexoCrearPage() {
                 {ciudades.map(c=><option key={c.id} value={c.nombre}>{c.nombre}</option>)}
               </select>
             </>)}
-
             {form.lat && (
-              <div style={{marginTop:"8px",fontSize:"11px",color:"#27ae60",fontWeight:700,display:"flex",alignItems:"center",gap:"4px"}}>
-                ✅ Ubicación GPS detectada
-              </div>
+              <div style={{marginTop:"8px",fontSize:"11px",color:"#27ae60",fontWeight:700}}>✅ Ubicación GPS detectada</div>
             )}
           </div>
 
-          {/* CONTACTO */}
+          {/* 3. INFORMACIÓN */}
           <div style={CAJA}>
-            <SL>📱 Contacto</SL>
+            <SL>📝 Información</SL>
+            <L>Título *</L>
+            <input value={form.titulo} onChange={e=>F("titulo",e.target.value)}
+              placeholder={tipo==="trabajo"?"Ej: Diseñador gráfico disponible":"Ej: Bicicleta rodado 26 impecable"}
+              style={IS}/>
+            <L>Descripción</L>
+            <textarea value={form.descripcion} onChange={e=>F("descripcion",e.target.value)}
+              placeholder="Describí en detalle..." rows={4}
+              style={{...IS,resize:"vertical" as any}}/>
+            {tipo==="anuncio" && (<>
+              <div style={{display:"grid",gridTemplateColumns:"2fr 1fr",gap:"10px",marginTop:"4px"}}>
+                <div>
+                  <L>Precio</L>
+                  <input type="number" value={form.precio} onChange={e=>F("precio",e.target.value)} placeholder="0" style={IS}/>
+                </div>
+                <div>
+                  <L>Moneda</L>
+                  <select value={form.moneda} onChange={e=>F("moneda",e.target.value)} style={{...IS,padding:"11px 10px"}}>
+                    <option value="ARS">ARS $</option>
+                    <option value="USD">USD U$S</option>
+                  </select>
+                </div>
+              </div>
+              <label style={{display:"flex",alignItems:"center",gap:"10px",cursor:"pointer",padding:"8px 0"}}>
+                <input type="checkbox" checked={form.permuto} onChange={e=>F("permuto",e.target.checked)} style={{width:"18px",height:"18px",accentColor:colorPage}}/>
+                <span style={{fontSize:"13px",fontWeight:700,color:"#1a2a3a"}}>🔄 Acepto permuta</span>
+              </label>
+            </>)}
             <L>WhatsApp</L>
-            <input value={form.whatsapp} onChange={e=>F("whatsapp",e.target.value)} placeholder="Ej: 3412345678" style={IS}/>
+            <input value={form.whatsapp} onChange={e=>F("whatsapp",e.target.value)} placeholder="Ej: 3412345678" style={{...IS,marginBottom:"0"}}/>
           </div>
 
-          {/* IMÁGENES */}
+          {/* 4. IMÁGENES */}
           <div style={CAJA}>
             <SL>📷 Imágenes</SL>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px"}}>
               <label style={{cursor:"pointer"}}>
-                <div style={{height:"80px",background:"#f4f4f2",borderRadius:"12px",border:"2px dashed #d4a017",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:"4px",overflow:"hidden"}}>
+                <div style={{height:"90px",background:"#f4f4f2",borderRadius:"12px",border:"2px dashed #d4a017",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:"4px",overflow:"hidden"}}>
                   {form.avatar_url
                     ? <img src={form.avatar_url} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
-                    : <><span style={{fontSize:"22px"}}>📷</span><span style={{fontSize:"10px",fontWeight:700,color:"#9a9a9a"}}>Foto principal</span></>}
+                    : <><span style={{fontSize:"26px"}}>📷</span><span style={{fontSize:"10px",fontWeight:700,color:"#9a9a9a"}}>Foto principal</span></>}
                 </div>
                 <input type="file" accept="image/*" onChange={e=>subirImagen(e,"avatar")} style={{display:"none"}}/>
               </label>
               <label style={{cursor:"pointer"}}>
-                <div style={{height:"80px",background:"#f4f4f2",borderRadius:"12px",border:"2px dashed rgba(58,123,213,0.4)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:"4px",overflow:"hidden"}}>
+                <div style={{height:"90px",background:"#f4f4f2",borderRadius:"12px",border:"2px dashed rgba(58,123,213,0.4)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:"4px",overflow:"hidden"}}>
                   {form.banner_url
                     ? <img src={form.banner_url} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
-                    : <><span style={{fontSize:"22px"}}>🖼️</span><span style={{fontSize:"10px",fontWeight:700,color:"#9a9a9a"}}>Banner</span></>}
+                    : <><span style={{fontSize:"26px"}}>🖼️</span><span style={{fontSize:"10px",fontWeight:700,color:"#9a9a9a"}}>Banner</span></>}
                 </div>
                 <input type="file" accept="image/*" onChange={e=>subirImagen(e,"banner")} style={{display:"none"}}/>
               </label>
             </div>
-            {subiendoImg && <div style={{textAlign:"center",fontSize:"12px",color:"#9a9a9a",marginTop:"8px"}}>⏳ Subiendo...</div>}
+            {subiendoImg && <div style={{textAlign:"center",fontSize:"12px",color:"#9a9a9a",marginTop:"8px"}}>⏳ Subiendo imagen...</div>}
           </div>
 
           <button onClick={crear} disabled={guardando||!form.titulo.trim()}

@@ -127,7 +127,8 @@ function BuscarInner() {
         .select("id,titulo,descripcion,tipo,subtipo,ciudad,provincia,avatar_url,banner_url,precio,moneda,usuario_id,config")
         .eq("estado","activo").order("created_at",{ascending:false}).limit(100),
       supabase.from("grupos")
-        .select("id,nombre,descripcion,tipo,modelo_acceso,ciudad,provincia,imagen,creador_id,miembros_count")
+        .select("id,nombre,descripcion,imagen,ciudad,provincia,creador_id,miembros_count,pago_ingreso_admin,config,activo")
+        .eq("activo", true)
         .order("created_at",{ascending:false}).limit(100),
     ]).then(async ([{data:pData},{data:rData},{data:sData},{data:aData},{data:nData},{data:gData}]) => {
 
@@ -178,20 +179,20 @@ function BuscarInner() {
       // Combinar nexos + grupos existentes (tabla grupos)
       const nexosArr: Nexo[] = nData ? (nData as Nexo[]) : [];
       const gruposArr: Nexo[] = gData ? (gData as any[]).map((g:any) => ({
-        id: g.id,
-        titulo: g.nombre || "Sin nombre",
-        descripcion: g.descripcion || "",
-        tipo: "grupo",
-        subtipo: "",
-        ciudad: g.ciudad || "",
-        provincia: g.provincia || "",
-        avatar_url: g.imagen || "",
-        banner_url: "",
-        precio: 0,
-        moneda: "ARS",
-        usuario_id: g.creador_id,
+        id:            String(g.id),
+        titulo:        g.nombre || "Sin nombre",
+        descripcion:   g.descripcion || "",
+        tipo:          "grupo",
+        subtipo:       "",
+        ciudad:        g.ciudad || "",
+        provincia:     g.provincia || "",
+        avatar_url:    g.imagen || "",
+        banner_url:    g.imagen_fondo || "",
+        precio:        0,
+        moneda:        "ARS",
+        usuario_id:    g.creador_id,
         miembros_count: g.miembros_count || 0,
-        config: { tipo_acceso: g.modelo_acceso || "libre" },
+        config:        { tipo_acceso: g.pago_ingreso_admin ? "pago" : (g.config?.tipo_acceso || "libre") },
       })) : [];
       setNexos([...nexosArr, ...gruposArr]);
       setLoading(false);

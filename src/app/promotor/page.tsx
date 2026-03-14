@@ -130,7 +130,7 @@ export default function PromoterPage() {
 
   const bitsPromotor   = perfil?.bits_promotor || 0;
   const puedeConvertir = bitsPromotor >= 100000;
-  const totalRefs      = perfil?.total_referidos || 0;
+  const totalRefs      = referidos.length;   // ← usa el resultado real de la query
   const totalGanado    = perfil?.bits_promotor_total || 0;
 
   return (

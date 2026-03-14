@@ -191,9 +191,11 @@ export default function MisAnuncios() {
     setAnuncios(prev => prev.map(a => a.id === anuncioId ? ({ ...a, adjuntos } as Anuncio) : a));
   };
 
-  const slotsMax    = perfil?.plan === "nexoempresa" ? 50 : 3;
+  const esEmpresa   = perfil?.plan === "nexoempresa";
+  const slotsMax    = esEmpresa ? 50 : 3;
   const slots       = anuncios.length;
   const slotsLibres = Math.max(0, slotsMax - slots);
+  const puedeCrear  = slotsLibres > 0;
 
   const fmt = (p: number | null, m: string | null) =>
     p == null ? "Consultar" : `${m === "USD" ? "U$D" : "$"} ${p.toLocaleString("es-AR")}`;
@@ -233,7 +235,7 @@ export default function MisAnuncios() {
         <div style={{ background:"rgba(255,255,255,0.06)", borderRadius:"10px", padding:"10px 14px",
                        display:"flex", alignItems:"center", justifyContent:"space-between" }}>
           <div style={{ fontSize:"12px", fontWeight:700, color:"#d4a017" }}>
-            Plan {perfil?.plan === "nexoempresa" ? "Empresa" : "Free"} · {slotsMax} slots
+            Plan {esEmpresa ? "Empresa" : "Free"} · {slotsMax} slots
           </div>
           <div style={{ display:"flex", gap:"4px" }}>
             {Array.from({ length: Math.min(slotsMax, 10) }).map((_, i) => (
@@ -241,30 +243,27 @@ export default function MisAnuncios() {
                                      background: i < slots ? "#d4a017" : "rgba(255,255,255,0.2)" }} />
             ))}
           </div>
-          <button onClick={() => setPopupPlan(true)}
-            style={{ background:"rgba(212,160,23,0.2)", border:"1px solid rgba(212,160,23,0.4)",
-                     borderRadius:"8px", padding:"4px 10px", fontSize:"11px", fontWeight:800,
-                     color:"#d4a017", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
-            AMPLIAR
-          </button>
+          <div style={{ fontSize:"11px", fontWeight:700, color: slotsLibres > 0 ? "#27ae60" : "#e74c3c" }}>
+            {slotsLibres > 0 ? `${slotsLibres} libre${slotsLibres > 1 ? "s" : ""}` : "Lleno"}
+          </div>
         </div>
       </div>
 
       <div style={{ padding:"12px 16px", display:"flex", flexDirection:"column", gap:"14px" }}>
 
-        {/* Slots libres */}
+        {/* Slots libres — solo si hay espacio */}
         {Array.from({ length: slotsLibres }).map((_, i) => (
           <button key={`sl${i}`} onClick={() => router.push("/publicar")}
             style={{ background:"#fff", borderRadius:"16px", padding:"20px", border:"2px dashed #d4a017",
                      display:"flex", alignItems:"center", gap:"16px", cursor:"pointer", width:"100%" }}>
             <div style={{ width:"60px", height:"60px", borderRadius:"12px", background:"rgba(212,160,23,0.08)",
                            display:"flex", alignItems:"center", justifyContent:"center", fontSize:"28px", flexShrink:0 }}>
-              +
+              ➕
             </div>
             <div style={{ textAlign:"left" }}>
-              <div style={{ fontWeight:900, fontSize:"14px", color:"#1a2a3a" }}>Creá un Nexo</div>
+              <div style={{ fontWeight:900, fontSize:"14px", color:"#1a2a3a" }}>Slot disponible</div>
               <div style={{ fontSize:"12px", color:"#9a9a9a", fontWeight:600, marginTop:"2px" }}>
-                Slot disponible — tocá para publicar
+                Tocá para crear un Nexo
               </div>
             </div>
           </button>
@@ -338,39 +337,6 @@ export default function MisAnuncios() {
                            color:"#e74c3c", cursor:"pointer" }}>
                   🗑️
                 </button>
-              </div>
-
-              {/* Mini BIT Conexión */}
-              <div style={{ margin:"0 14px 12px", background: (a.bits_conexion ?? 0) > 0 ? "rgba(58,123,213,0.07)" : "rgba(231,76,60,0.07)",
-                             border: `2px solid ${(a.bits_conexion ?? 0) > 0 ? "rgba(58,123,213,0.25)" : "rgba(231,76,60,0.25)"}`,
-                             borderRadius:"12px", padding:"10px 14px",
-                             display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-                <div style={{ display:"flex", alignItems:"center", gap:"8px" }}>
-                  <span style={{ fontSize:"18px" }}>🔗</span>
-                  <div>
-                    <div style={{ fontSize:"12px", fontWeight:900, color:"#1a2a3a" }}>BIT Conexión</div>
-                    <div style={{ fontSize:"10px", color:"#9a9a9a", fontWeight:600 }}>
-                      {(a.bits_conexion ?? 0) > 0 ? "Recibiendo conexiones" : "Sin saldo — no recibe conexiones"}
-                    </div>
-                  </div>
-                </div>
-                <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
-                  <div style={{ textAlign:"right" }}>
-                    <div style={{ fontSize:"22px", fontWeight:900, fontFamily:"'Bebas Neue',sans-serif",
-                                   color: (a.bits_conexion ?? 0) > 0 ? "#3a7bd5" : "#e74c3c",
-                                   letterSpacing:"1px" }}>
-                      {a.bits_conexion ?? 0}
-                    </div>
-                    <div style={{ fontSize:"9px", color:"#9a9a9a", fontWeight:700 }}>BIT</div>
-                  </div>
-                  <button onClick={() => setPopupBitsCx(a.id)}
-                    style={{ background:"linear-gradient(135deg,#3a7bd5,#2962b0)", border:"none",
-                             borderRadius:"10px", padding:"8px 12px", fontSize:"12px", fontWeight:900,
-                             color:"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif",
-                             whiteSpace:"nowrap" }}>
-                    ⚡ Cargar
-                  </button>
-                </div>
               </div>
 
               {/* Extras */}
@@ -569,38 +535,29 @@ export default function MisAnuncios() {
           </div>
         )}
 
-        {/* Ampliar plan */}
-        <div style={{ background:"#fff", borderRadius:"16px", padding:"16px",
-                       boxShadow:"0 2px 10px rgba(0,0,0,0.06)" }}>
-          <div style={{ fontSize:"11px", fontWeight:800, color:"#9a9a9a", textTransform:"uppercase",
-                         letterSpacing:"1px", marginBottom:"12px" }}>
-            AMPLIAR PLAN
-          </div>
-          {([
-            { label:"BIT Anuncios × 3",  precio:"$1.000", badge: null,             color:"#d4a017" },
-            { label:"BIT Anuncios × 10", precio:"$3.000", badge:"AHORRÁS $1.000",  color:"#27ae60" },
-            { label:"Empresa × 50",      precio:"$10.000",badge:"EMPRESA",          color:"#c0392b" },
-          ] as const).map((p, i) => (
-            <button key={i} onClick={() => setPopupPlan(true)}
-              style={{ display:"flex", alignItems:"center", justifyContent:"space-between",
-                       background:`${p.color}08`, border:`2px solid ${p.color}25`,
-                       borderRadius:"12px", padding:"12px 14px", cursor:"pointer",
-                       fontFamily:"'Nunito',sans-serif", width:"100%", textAlign:"left",
-                       marginBottom:"8px", position:"relative" }}>
-              {p.badge && (
-                <span style={{ position:"absolute", top:"-8px", right:"12px", background:p.color,
-                                color:"#fff", fontSize:"9px", fontWeight:900,
-                                padding:"2px 8px", borderRadius:"20px" }}>
-                  {p.badge}
-                </span>
-              )}
-              <div style={{ fontSize:"14px", fontWeight:900, color:"#1a2a3a" }}>{p.label}</div>
-              <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"22px", color:p.color }}>
-                {p.precio}
+        {/* BOTÓN CREAR OTRO ANUNCIO — siempre visible al final */}
+        {!esEmpresa && (
+          <button onClick={() => setPopupPlan(true)}
+            style={{ background:"#fff", borderRadius:"16px", padding:"20px", border:"2px dashed rgba(212,160,23,0.5)",
+                     display:"flex", alignItems:"center", gap:"16px", cursor:"pointer", width:"100%",
+                     boxShadow:"0 2px 10px rgba(0,0,0,0.06)" }}>
+            <div style={{ width:"60px", height:"60px", borderRadius:"12px",
+                           background: puedeCrear ? "rgba(212,160,23,0.08)" : "rgba(192,57,43,0.08)",
+                           display:"flex", alignItems:"center", justifyContent:"center", fontSize:"28px", flexShrink:0 }}>
+              {puedeCrear ? "➕" : "🔒"}
+            </div>
+            <div style={{ textAlign:"left" }}>
+              <div style={{ fontWeight:900, fontSize:"14px", color:"#1a2a3a" }}>
+                {puedeCrear ? "Crear otro anuncio" : "Crear otro anuncio"}
               </div>
-            </button>
-          ))}
-        </div>
+              <div style={{ fontSize:"12px", fontWeight:600, marginTop:"2px",
+                             color: puedeCrear ? "#9a9a9a" : "#c0392b" }}>
+                {puedeCrear ? "Slot disponible" : "Límite alcanzado · 500 BIT o convertí en Empresa"}
+              </div>
+            </div>
+            <span style={{ marginLeft:"auto", fontSize:"18px", color:"#d4a017", flexShrink:0 }}>›</span>
+          </button>
+        )}
       </div>
 
       {/* MODAL EDICIÓN */}
@@ -741,12 +698,99 @@ export default function MisAnuncios() {
           onClose={() => setPopupBits(false)}
           onPagar={async () => { setPopupBits(false); alert("Próximamente"); }} />
       )}
+      {/* POPUP CREAR ANUNCIO / UPGRADE */}
       {popupPlan && (
-        <PopupCompra titulo="Ampliar plan de anuncios" emoji="📋" costo="$1.000 / $3.000 / $10.000"
-          descripcion="Publicá más anuncios ampliando tu plan"
-          bits={{ free: bitsFree, nexo: bitsNexo, promo: bitsPromo }}
-          onClose={() => setPopupPlan(false)}
-          onPagar={async () => { setPopupPlan(false); alert("Próximamente — contactanos"); }} />
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.7)", zIndex:500,
+                       display:"flex", alignItems:"flex-end" }} onClick={() => setPopupPlan(false)}>
+          <div style={{ background:"#fff", borderRadius:"24px 24px 0 0", padding:"24px 20px 44px",
+                         width:"100%", fontFamily:"'Nunito',sans-serif" }} onClick={e => e.stopPropagation()}>
+            <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"22px", color:"#1a2a3a",
+                           letterSpacing:"1px", marginBottom:"6px" }}>
+              ➕ Crear otro anuncio
+            </div>
+            <div style={{ fontSize:"13px", color:"#9a9a9a", fontWeight:600, marginBottom:"20px" }}>
+              Ya usaste tus 3 slots gratuitos. Elegí una opción:
+            </div>
+
+            {/* OPCIÓN 1 — 1 anuncio extra */}
+            <button onClick={async () => {
+              const bitsTotal = Math.max(0,bitsNexo) + Math.max(0,bitsFree) + Math.max(0,bitsPromo);
+              if (bitsTotal < 500) { alert("Necesitás 500 BIT para agregar un anuncio extra. Cargá BIT en la tienda."); return; }
+              // Descontar 500 BIT y aumentar slotsMax
+              const campoDescontar = bitsNexo >= 500 ? "bits" : bitsFree >= 500 ? "bits_free" : "bits_promo";
+              const valorActual    = campoDescontar === "bits" ? bitsNexo : campoDescontar === "bits_free" ? bitsFree : bitsPromo;
+              await supabase.from("usuarios").update({
+                [campoDescontar]: valorActual - 500,
+                slots_extra: (perfil?.slots_extra || 0) + 1,
+              }).eq("id", session?.user?.id);
+              setPerfil((p:any) => ({ ...p, [campoDescontar]: valorActual - 500, slots_extra: (p?.slots_extra||0)+1 }));
+              setPopupPlan(false);
+              router.push("/publicar");
+            }}
+              style={{ width:"100%", background:"linear-gradient(135deg,#1a2a3a,#243b55)", border:"2px solid rgba(212,160,23,0.3)",
+                       borderRadius:"16px", padding:"18px 20px", marginBottom:"12px", cursor:"pointer",
+                       display:"flex", alignItems:"center", justifyContent:"space-between",
+                       fontFamily:"'Nunito',sans-serif", textAlign:"left" }}>
+              <div>
+                <div style={{ fontSize:"15px", fontWeight:900, color:"#fff", marginBottom:"4px" }}>
+                  📣 1 Anuncio extra
+                </div>
+                <div style={{ fontSize:"12px", color:"#8a9aaa", fontWeight:600 }}>
+                  Se descuenta de tu saldo BIT disponible
+                </div>
+              </div>
+              <div style={{ textAlign:"right", flexShrink:0 }}>
+                <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"28px", color:"#d4a017" }}>500</div>
+                <div style={{ fontSize:"10px", color:"#8a9aaa", fontWeight:700 }}>BIT</div>
+              </div>
+            </button>
+
+            {/* OPCIÓN 2 — Nexo Empresa */}
+            <button onClick={async () => {
+              const bitsTotal = Math.max(0,bitsNexo) + Math.max(0,bitsFree) + Math.max(0,bitsPromo);
+              if (bitsTotal < 10000) { alert("Necesitás 10.000 BIT para convertirte en Nexo Empresa. Cargá BIT en la tienda."); return; }
+              const campoDescontar = bitsNexo >= 10000 ? "bits" : bitsFree >= 10000 ? "bits_free" : "bits_promo";
+              const valorActual    = campoDescontar === "bits" ? bitsNexo : campoDescontar === "bits_free" ? bitsFree : bitsPromo;
+              await supabase.from("usuarios").update({
+                [campoDescontar]: valorActual - 10000,
+                plan: "nexoempresa",
+              }).eq("id", session?.user?.id);
+              setPerfil((p:any) => ({ ...p, [campoDescontar]: valorActual - 10000, plan: "nexoempresa" }));
+              setPopupPlan(false);
+              alert("🏢 ¡Felicitaciones! Ya sos Nexo Empresa con 50 slots de anuncios.");
+            }}
+              style={{ width:"100%", background:"linear-gradient(135deg,#2c1a1a,#4a2020)", border:"2px solid rgba(192,57,43,0.4)",
+                       borderRadius:"16px", padding:"18px 20px", cursor:"pointer",
+                       display:"flex", alignItems:"center", justifyContent:"space-between",
+                       fontFamily:"'Nunito',sans-serif", textAlign:"left", position:"relative", overflow:"hidden" }}>
+              <span style={{ position:"absolute", top:0, right:0, background:"#c0392b", color:"#fff",
+                              fontSize:"9px", fontWeight:900, padding:"4px 12px",
+                              borderRadius:"0 14px 0 12px", letterSpacing:"0.5px" }}>
+                EMPRESA
+              </span>
+              <div>
+                <div style={{ fontSize:"15px", fontWeight:900, color:"#fff", marginBottom:"4px" }}>
+                  🏢 Nexo Empresa · 50 anuncios
+                </div>
+                <div style={{ fontSize:"12px", color:"#e88a8a", fontWeight:600 }}>
+                  Perfil comercial completo con 50 slots
+                </div>
+              </div>
+              <div style={{ textAlign:"right", flexShrink:0 }}>
+                <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"28px", color:"#e74c3c" }}>10.000</div>
+                <div style={{ fontSize:"10px", color:"#e88a8a", fontWeight:700 }}>BIT</div>
+              </div>
+            </button>
+
+            <button onClick={() => setPopupPlan(false)}
+              style={{ width:"100%", background:"none", border:"none", padding:"14px",
+                       fontSize:"13px", fontWeight:700, color:"#9a9a9a", cursor:"pointer",
+                       fontFamily:"'Nunito',sans-serif", marginTop:"4px" }}>
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
       )}
       {popupLink && (
         <PopupCompra titulo="Habilitar Link Multimedia" emoji="🔗" costo="500 BIT / $500"

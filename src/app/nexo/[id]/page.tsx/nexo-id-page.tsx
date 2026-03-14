@@ -154,8 +154,12 @@ export default function NexoPage() {
 
     // Descontar del comprador
     await supabase.from("usuarios").update({ bits: Math.max(0,(perfil.bits||0) - descarga.precio_bits) }).eq("id",perfil.id);
-    // Acreditar al admin del nexo
-    await supabase.from("usuarios").update({ bits: (nexo?.usuarios?.bits||0) + bitsAdmin }).eq("id",nexo.usuario_id);
+    // Acreditar BIT Promotor al admin del nexo (80%)
+    const { data: adminData } = await supabase.from("usuarios").select("bits_promo,bits_promotor_total").eq("id", nexo.usuario_id).single();
+    await supabase.from("usuarios").update({
+      bits_promo:          ((adminData as any)?.bits_promo          || 0) + bitsAdmin,
+      bits_promotor_total: ((adminData as any)?.bits_promotor_total || 0) + bitsAdmin,
+    }).eq("id", nexo.usuario_id);
     // Registrar pago
     await supabase.from("nexo_descargas_pagos").insert({
       descarga_id:descarga.id, nexo_id:id, comprador_id:perfil.id,

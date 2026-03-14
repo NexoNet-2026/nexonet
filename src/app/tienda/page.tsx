@@ -224,7 +224,7 @@ export default function Tienda() {
               {[
                 { color:"#d4a017", bg:"rgba(212,160,23,0.15)", emoji:"💛", nombre:"BIT Nexo", desc:"Lo comprás vos. Se usa para todo.", extra:"" },
                 { color:"#2980b9", bg:"rgba(41,128,185,0.15)",  emoji:"💙", nombre:"BIT Free", desc:"Lo acredita el sistema. Funciona igual que el Nexo.", extra:"Respaldo legal de consumo gratuito" },
-                { color:"#27ae60", bg:"rgba(39,174,96,0.15)",   emoji:"💚", nombre:"BIT Promotor", desc:"Lo ganás por referidos. Se usa para todo.", extra:"Reembolsable en pesos contra factura" },
+                { color:"#27ae60", bg:"rgba(39,174,96,0.15)",   emoji:"💚", nombre:"BIT Promotor", desc:"Lo ganás por referidos (30%) o por descargas en tu Nexo (80%).", extra:"Reembolsable en pesos contra factura" },
               ].map(t => (
                 <div key={t.nombre} style={{ background:t.bg, borderRadius:"12px", padding:"14px", marginBottom:"8px", border:`1px solid ${t.color}30`, display:"flex", gap:"12px", alignItems:"flex-start" }}>
                   <span style={{ fontSize:"24px" }}>{t.emoji}</span>

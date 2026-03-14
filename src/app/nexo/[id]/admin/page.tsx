@@ -693,7 +693,7 @@ function AccBtn({ label, color, onClick }: { label:string; color:string; onClick
 function MiniBtn({ emoji, onClick, disabled, color="#9a9a9a", label }: { emoji:string; onClick:()=>void; disabled?:boolean; color?:string; label?:string }) {
   return (
     <button onClick={onClick} disabled={disabled} title={label}
-      style={{ background:`${color}15`, border:`1px solid ${color}30`, borderRadius:"8px", minWidth:"30px", height:"30px", padding:"0 8px", fontSize:"13px", cursor:disabled?"default":"pointer", opacity:disabled?0.3:1, display:"flex", alignItems:"center", justifyContent:"center", gap:"4px", fontFamily:"'Nunito',sans-serif", fontSize:"11px" }}>
+      style={{ background:`${color}15`, border:`1px solid ${color}30`, borderRadius:"8px", minWidth:"30px", height:"30px", padding:"0 8px", fontSize:"11px", cursor:disabled?"default":"pointer", opacity:disabled?0.3:1, display:"flex", alignItems:"center", justifyContent:"center", gap:"4px", fontFamily:"'Nunito',sans-serif" }}>
       {emoji}{label&&<span style={{ fontSize:"9px", fontWeight:800, color }}>{label}</span>}
     </button>
   );

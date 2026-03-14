@@ -337,6 +337,7 @@ export default function Usuario() {
             </button>
           ))}
         </div>
+      </div>
 
       <div style={{ padding:"16px", maxWidth:"480px", margin:"0 auto" }}>
 

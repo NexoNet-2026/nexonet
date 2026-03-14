@@ -127,7 +127,7 @@ function BuscarInner() {
         .select("id,titulo,descripcion,tipo,subtipo,ciudad,provincia,avatar_url,banner_url,precio,moneda,usuario_id,config")
         .eq("estado","activo").order("created_at",{ascending:false}).limit(100),
       supabase.from("grupos")
-        .select("id,nombre,descripcion,tipo,modelo_acceso,ciudad,provincia,imagen_url,creador_id,miembros_count,grupo_categorias(nombre,emoji),grupo_subcategorias(nombre)")
+        .select("id,nombre,descripcion,tipo,modelo_acceso,ciudad,provincia,imagen,creador_id,miembros_count")
         .order("created_at",{ascending:false}).limit(100),
     ]).then(async ([{data:pData},{data:rData},{data:sData},{data:aData},{data:nData},{data:gData}]) => {
 
@@ -179,13 +179,13 @@ function BuscarInner() {
       const nexosArr: Nexo[] = nData ? (nData as Nexo[]) : [];
       const gruposArr: Nexo[] = gData ? (gData as any[]).map((g:any) => ({
         id: g.id,
-        titulo: g.nombre,
+        titulo: g.nombre || "Sin nombre",
         descripcion: g.descripcion || "",
         tipo: "grupo",
-        subtipo: (g.grupo_categorias as any)?.nombre || "",
+        subtipo: "",
         ciudad: g.ciudad || "",
         provincia: g.provincia || "",
-        avatar_url: g.imagen_url || "",
+        avatar_url: g.imagen || "",
         banner_url: "",
         precio: 0,
         moneda: "ARS",
@@ -545,7 +545,7 @@ function BuscarInner() {
               ) : (
                 (nexosPorTipo[tipoActivo]||[]).map(n => (
                   <TarjetaNexo key={n.id} nexo={n} color={colorActivo}
-                    onNavigate={()=>router.push(n.tipo==="grupo" && !n.banner_url ? `/grupos/${n.id}` : `/nexo/${n.id}`)} />
+                    onNavigate={()=>router.push(n.tipo==="grupo" ? `/grupos/${n.id}` : `/nexo/${n.id}`)} />
                 ))
               )}
             </div>

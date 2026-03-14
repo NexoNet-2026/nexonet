@@ -66,7 +66,7 @@ function MapaInner() {
     Promise.all([
       supabase.from("rubros").select("id,nombre,subrubros(id,nombre)").order("nombre"),
       supabase.from("anuncios")
-        .select("id,titulo,precio,moneda,imagenes,flash,ciudad,provincia,lat,lng,subrubro_id,usuario_id")
+        .select("id,titulo,precio,moneda,imagenes,flash,ciudad,provincia,lat,lng,subrubro_id,usuario_id,tipo,avatar_url")
         .eq("estado","activo").not("lat","is",null).not("lng","is",null),
     ]).then(([{data:rData},{data:aData}]) => {
       if (rData) {
@@ -74,7 +74,15 @@ function MapaInner() {
         setSFlat(rData.flatMap((r:any) => (r.subrubros||[]).map((s:any) => ({id:s.id,nombre:s.nombre,rubro_id:r.id}))));
       }
       if (aData) {
-        const lista = (aData as any[]).map(a=>({...a,rubro:"Otros",moneda:a.moneda||"ARS",imagenes:a.imagenes||[],flash:a.flash||false}));
+        const lista = (aData as any[]).map(a=>({
+        ...a,
+        rubro:"Otros",
+        moneda:a.moneda||"ARS",
+        imagenes:a.imagenes||[],
+        flash:a.flash||false,
+        tipo: a.tipo || "anuncio",
+        avatar_url: a.avatar_url || null,
+      }));
         setAnuncios(lista);
         if (paramId) {
           const target = lista.find((a:any) => String(a.id) === paramId);

@@ -25,6 +25,8 @@ type Anuncio = {
   link_habilitado: boolean | null;
   adjunto_habilitado: boolean | null;
   bits_conexion: number | null;
+  renovar_automatico: boolean;
+  fecha_vencimiento: string | null;
   estado: string;
   vistas: number | null;
   conexiones: number | null;
@@ -344,6 +346,36 @@ export default function MisAnuncios() {
                            borderRadius:"10px", padding:"9px 12px", fontSize:"14px",
                            color:"#e74c3c", cursor:"pointer" }}>
                   🗑️
+                </button>
+              </div>
+
+              {/* RENOVACIÓN AUTOMÁTICA */}
+              <div style={{ margin:"0 14px 12px", background: a.renovar_automatico ? "rgba(39,174,96,0.06)" : "rgba(212,160,23,0.04)", border:`1px solid ${a.renovar_automatico ? "rgba(39,174,96,0.25)" : "rgba(212,160,23,0.2)"}`, borderRadius:"12px", padding:"10px 14px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                <div>
+                  <div style={{ fontSize:"12px", fontWeight:900, color:"#1a2a3a", display:"flex", alignItems:"center", gap:"6px" }}>
+                    🔄 Renovación automática
+                    {a.fecha_vencimiento && (
+                      <span style={{ fontSize:"10px", fontWeight:600, color:"#9a9a9a" }}>
+                        · vence {new Date(a.fecha_vencimiento).toLocaleDateString("es-AR")}
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ fontSize:"10px", color:"#9a9a9a", fontWeight:600, marginTop:"2px" }}>
+                    {a.renovar_automatico ? "500 BIT/mes — se descuenta automáticamente" : "Activá para no perder tu anuncio"}
+                  </div>
+                </div>
+                <button onClick={async () => {
+                  const nuevo = !a.renovar_automatico;
+                  await supabase.from("anuncios").update({ renovar_automatico: nuevo }).eq("id", a.id);
+                  setAnuncios(prev => prev.map(x => x.id === a.id ? { ...x, renovar_automatico: nuevo } : x));
+                }}
+                  style={{ width:"46px", height:"26px", borderRadius:"13px", border:"none", position:"relative",
+                           background: a.renovar_automatico ? "#27ae60" : "#e0e0e0",
+                           cursor:"pointer", flexShrink:0, transition:"background .2s" }}>
+                  <div style={{ width:"20px", height:"20px", borderRadius:"50%", background:"#fff",
+                                position:"absolute", top:"3px",
+                                left: a.renovar_automatico ? "23px" : "3px",
+                                transition:"left .2s", boxShadow:"0 1px 3px rgba(0,0,0,0.25)" }}/>
                 </button>
               </div>
 

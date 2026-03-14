@@ -62,13 +62,18 @@ export default function BusquedaIA() {
       setSession(s);
       if (!s) { setLoading(false); return; }
       Promise.all([
-        supabase.from("usuarios").select("bits_busquedas").eq("id", s.user.id).single(),
+        // ← Leer saldo unificado: bits + bits_free + bits_promo
+        supabase.from("usuarios").select("bits,bits_free,bits_promo").eq("id", s.user.id).single(),
         supabase.from("rubros").select("id,nombre").order("nombre"),
         supabase.from("subrubros").select("id,nombre,rubro_id").order("nombre"),
         supabase.from("provincias").select("id,nombre").order("nombre"),
         supabase.from("busquedas_automaticas").select("*").eq("usuario_id", s.user.id).order("created_at"),
       ]).then(([{ data: u }, { data: r }, { data: s2 }, { data: p }, { data: bData }]) => {
-        if (u)  setBitsBusc(u.bits_busquedas || 0);
+        if (u) {
+          // Saldo total unificado — igual que en el resto de la app
+          const total = Math.max(0, u.bits || 0) + Math.max(0, u.bits_free || 0) + Math.max(0, u.bits_promo || 0);
+          setBitsBusc(total);
+        }
         if (r)  setRubros(r.map((x: any) => ({ id: Number(x.id), nombre: x.nombre })));
         if (s2) setSubrubros(s2.map((x: any) => ({ id: Number(x.id), nombre: x.nombre, rubro_id: Number(x.rubro_id) })));
         if (p)  setProvs(p);
@@ -135,7 +140,7 @@ export default function BusquedaIA() {
 
   const toggleActiva = async (b: Busqueda) => {
     if (!b.activa && bitsBusc <= 0) {
-      alert("⚠️ No tenés BIT Búsquedas disponibles.");
+      alert("⚠️ No tenés BIT disponibles. Cargá BIT desde la tienda.");
       return;
     }
     const nueva = !b.activa;
@@ -192,15 +197,16 @@ export default function BusquedaIA() {
             <div style={{fontSize:"12px",color:"#8a9aaa",fontWeight:600}}>Te avisamos cuando aparezca lo que buscás</div>
           </div>
           <div style={{background:"rgba(22,160,133,0.2)",border:"1px solid rgba(22,160,133,0.5)",borderRadius:"20px",padding:"6px 14px",textAlign:"center"}}>
-            <div style={{fontSize:"18px",fontWeight:900,color:"#1abc9c"}}>{bitsBusc}</div>
-            <div style={{fontSize:"9px",fontWeight:800,color:"#8a9aaa",textTransform:"uppercase",letterSpacing:"0.5px"}}>BIT búsquedas</div>
+            <div style={{fontSize:"18px",fontWeight:900,color:"#1abc9c"}}>{bitsBusc.toLocaleString()}</div>
+            <div style={{fontSize:"9px",fontWeight:800,color:"#8a9aaa",textTransform:"uppercase",letterSpacing:"0.5px"}}>BIT disponibles</div>
           </div>
         </div>
+        {/* Advertencia solo si realmente no tiene BIT */}
         {bitsBusc <= 0 && (
           <div style={{background:"rgba(230,57,70,0.15)",border:"1px solid rgba(230,57,70,0.3)",borderRadius:"10px",padding:"8px 12px",display:"flex",alignItems:"center",gap:"8px"}}>
             <span style={{fontSize:"14px"}}>⚠️</span>
             <span style={{fontSize:"12px",fontWeight:700,color:"#e63946"}}>Sin BIT disponibles — las búsquedas no se activarán</span>
-            <button onClick={() => router.push("/comprar?cat=busquedas")} style={{marginLeft:"auto",background:"#e63946",border:"none",borderRadius:"8px",padding:"4px 10px",fontSize:"11px",fontWeight:900,color:"#fff",cursor:"pointer",fontFamily:"'Nunito',sans-serif",whiteSpace:"nowrap"}}>
+            <button onClick={() => router.push("/tienda")} style={{marginLeft:"auto",background:"#e63946",border:"none",borderRadius:"8px",padding:"4px 10px",fontSize:"11px",fontWeight:900,color:"#fff",cursor:"pointer",fontFamily:"'Nunito',sans-serif",whiteSpace:"nowrap"}}>
               Cargar BIT
             </button>
           </div>
@@ -234,7 +240,6 @@ export default function BusquedaIA() {
           ))
         )}
 
-        {/* ── BOTÓN AGREGAR ── */}
         <button onClick={agregarBusqueda} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:"10px",background:"#fff",border:"3px dashed #d4a017",borderRadius:"16px",padding:"18px",cursor:"pointer",fontFamily:"'Nunito',sans-serif",width:"100%"}}>
           <div style={{width:"36px",height:"36px",borderRadius:"50%",background:"linear-gradient(135deg,#f0c040,#d4a017)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"22px",fontWeight:900,color:"#1a2a3a",boxShadow:"0 3px 0 #a07810"}}>
             +
@@ -248,7 +253,6 @@ export default function BusquedaIA() {
   );
 }
 
-// ── TARJETA DE BÚSQUEDA ──
 function TarjetaBusqueda({
   b, idx, rubros, subrubros, provs, ciudades, bitsBusc,
   sinsRubro, tieneKm, tieneAnio,
@@ -274,7 +278,6 @@ function TarjetaBusqueda({
   return (
     <div style={{background:"#fff",borderRadius:"16px",boxShadow:"0 2px 12px rgba(0,0,0,0.08)",overflow:"hidden",border:b.activa?"2px solid #1abc9c":"2px solid transparent"}}>
 
-      {/* Header tarjeta */}
       <div style={{background:b.activa?"linear-gradient(135deg,#0d6e5e,#16a085)":"linear-gradient(135deg,#1a2a3a,#243b55)",padding:"12px 16px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
         <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
           <div style={{width:"28px",height:"28px",borderRadius:"50%",background:"rgba(255,255,255,0.15)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"13px",fontWeight:900,color:"#f0c040"}}>
@@ -294,14 +297,12 @@ function TarjetaBusqueda({
 
       <div style={{padding:"14px 16px",display:"flex",flexDirection:"column",gap:"12px"}}>
 
-        {/* Nombre */}
         <div>
           <Label>📝 Nombre de la búsqueda</Label>
           <input value={b.titulo} onChange={e => onUpd(b.id, "titulo", e.target.value)}
             placeholder="Ej: Auto Toyota hasta $15M" style={iStyle}/>
         </div>
 
-        {/* Rubro */}
         <div>
           <Label>📂 Rubro</Label>
           <select value={b.rubro_id || ""} onChange={e => {
@@ -313,7 +314,6 @@ function TarjetaBusqueda({
           </select>
         </div>
 
-        {/* Subrubro */}
         {b.rubro_id && subsFiltrados.length > 0 && (
           <div>
             <Label>📋 Subrubro</Label>
@@ -324,7 +324,6 @@ function TarjetaBusqueda({
           </div>
         )}
 
-        {/* Keywords */}
         <div>
           <Label>🔍 Palabras clave</Label>
           <input value={b.keywords} onChange={e => onUpd(b.id, "keywords", e.target.value)}
@@ -332,7 +331,6 @@ function TarjetaBusqueda({
           <div style={{fontSize:"10px",color:"#9a9a9a",fontWeight:600,marginTop:"4px"}}>Separadas por espacio — todas deben aparecer en el anuncio</div>
         </div>
 
-        {/* Precio */}
         <div>
           <Label>💰 Rango de precio</Label>
           <div style={{display:"flex",gap:"8px",alignItems:"center"}}>
@@ -347,7 +345,6 @@ function TarjetaBusqueda({
           </div>
         </div>
 
-        {/* KM */}
         {showKm && (
           <div>
             <Label>🚗 Rango de KM</Label>
@@ -361,7 +358,6 @@ function TarjetaBusqueda({
           </div>
         )}
 
-        {/* Año */}
         {showAnio && (
           <div>
             <Label>📅 Año de fabricación</Label>
@@ -375,7 +371,6 @@ function TarjetaBusqueda({
           </div>
         )}
 
-        {/* Ubicación */}
         <div>
           <Label>📍 Ubicación</Label>
           <div style={{display:"flex",gap:"8px"}}>
@@ -396,26 +391,24 @@ function TarjetaBusqueda({
           </div>
         </div>
 
-        {/* Botones */}
         <div style={{display:"flex",flexDirection:"column",gap:"10px",paddingTop:"4px",borderTop:"1px solid #f0f0f0",marginTop:"4px"}}>
 
-          {/* Toggle activa */}
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 14px",background:b.activa?"rgba(22,160,133,0.08)":"#f9f9f9",borderRadius:"12px",border:b.activa?"1px solid rgba(22,160,133,0.3)":"1px solid #eee"}}>
             <div>
               <div style={{fontSize:"13px",fontWeight:800,color:"#1a2a3a"}}>🔔 Mantener búsqueda activa</div>
               <div style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600}}>
-                {sinBits ? "⚠️ Sin BIT disponibles" : b.activa ? `Consume 1 BIT por match (tenés ${bitsBusc})` : "Activar para recibir alertas"}
+                {sinBits ? "⚠️ Sin BIT disponibles" : b.activa ? `Consume 1 BIT por match (tenés ${bitsBusc.toLocaleString()})` : "Activar para recibir alertas"}
               </div>
             </div>
             <button onClick={() => onToggleActiva(b)} disabled={sinBits && !b.activa}
               style={{width:"50px",height:"28px",borderRadius:"14px",border:"none",
-                background:b.activa?"#1abc9c":sinBits?"#e0e0e0":"#e0e0e0",
-                position:"relative",cursor:(sinBits&&!b.activa)?"not-allowed":"pointer",flexShrink:0,opacity:(sinBits&&!b.activa)?0.5:1,transition:"background .2s"}}>
+                background:b.activa?"#1abc9c":"#e0e0e0",
+                position:"relative",cursor:(sinBits&&!b.activa)?"not-allowed":"pointer",
+                flexShrink:0,opacity:(sinBits&&!b.activa)?0.5:1,transition:"background .2s"}}>
               <div style={{width:"22px",height:"22px",borderRadius:"50%",background:"#fff",position:"absolute",top:"3px",left:b.activa?"25px":"3px",transition:"left .2s",boxShadow:"0 1px 3px rgba(0,0,0,0.25)"}}/>
             </button>
           </div>
 
-          {/* Guardar */}
           <button onClick={() => onGuardar(b)} disabled={b.guardando || sinBits}
             style={{width:"100%",background:(b.guardando||sinBits)?"#f0f0f0":"linear-gradient(135deg,#f0c040,#d4a017)",
               border:"none",borderRadius:"12px",padding:"13px",fontSize:"14px",fontWeight:900,
@@ -423,12 +416,6 @@ function TarjetaBusqueda({
               fontFamily:"'Nunito',sans-serif",boxShadow:(b.guardando||sinBits)?"none":"0 3px 0 #a07810"}}>
             {b.guardando ? "Guardando..." : b.dbId ? "💾 Actualizar búsqueda" : "🔍 Guardar búsqueda"}
           </button>
-
-          {sinBits && (
-            <div style={{textAlign:"center",fontSize:"12px",color:"#e63946",fontWeight:700}}>
-              ⚠️ Necesitás BIT Búsquedas para guardar y activar
-            </div>
-          )}
         </div>
       </div>
     </div>

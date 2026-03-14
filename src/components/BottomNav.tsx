@@ -17,7 +17,7 @@ export default function BottomNav() {
   const navItems = [
     { icon: "🔍", label: "Buscar",  href: "/buscar" },
     { icon: "🗺️", label: "Mapa",    href: "/mapa" },
-    { icon: "➕", label: "Publicar", href: "/mis-anuncios", central: true },
+    { icon: "➕", label: "Crear",   href: "/publicar", central: true },
     { icon: "👥", label: "Grupos",  href: "/grupos" },
     { icon: "👤", label: "Perfil",  href: "/usuario" },
   ];
@@ -69,7 +69,7 @@ export default function BottomNav() {
         }}>
           <span style={{ fontSize: "14px" }}>👥</span>
           <span style={{ fontSize: "12px", fontWeight: 800, color: "#fff", letterSpacing: "0.3px" }}>
-            Creá un <span style={{ color: "#d4a017" }}>GRUPO GRATIS</span> y ganá
+            Creá un <span style={{ color: "#d4a017" }}>NEXO GRATIS</span> y ganá
           </span>
           <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "20px", color: "#f0c040", textShadow: "0 2px 4px rgba(0,0,0,0.4)" }}>30%</span>
         </Link>
@@ -86,7 +86,8 @@ export default function BottomNav() {
         position: "relative",
       }}>
         {navItems.map(({ icon, label, href, central }: any) => {
-          const isActive = pathname === href || (href === "/mis-anuncios" && pathname === "/publicar");
+          const isActive = pathname === href ||
+            (href === "/publicar" && (pathname === "/publicar" || pathname?.startsWith("/nexo/crear")));
 
           if (central) {
             return (

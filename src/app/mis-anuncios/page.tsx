@@ -791,7 +791,6 @@ export default function MisAnuncios() {
           </div>
         </div>
       )}
-      )}
       {popupLink && (
         <PopupCompra titulo="Habilitar Link Multimedia" emoji="🔗" costo="500 BIT / $500"
           descripcion="YouTube · Instagram · Facebook · cualquier URL"

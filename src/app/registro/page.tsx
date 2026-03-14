@@ -198,11 +198,21 @@ function RegistroInner() {
 function Campo({ label, value, onChange, placeholder, type="text" }: {
   label:string; value:string; onChange:(v:string)=>void; placeholder?:string; type?:string;
 }) {
+  const [showPass, setShowPass] = useState(false);
+  const isPassword = type === "password";
   return (
     <div style={{marginBottom:"14px"}}>
       <label style={{display:"block",fontSize:"11px",fontWeight:800,color:"#666",textTransform:"uppercase" as const,letterSpacing:"1px",marginBottom:"6px"}}>{label}</label>
-      <input type={type} value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder}
-        style={{width:"100%",border:"2px solid #e8e8e6",borderRadius:"10px",padding:"12px 14px",fontSize:"14px",fontFamily:"'Nunito',sans-serif",color:"#2c2c2e",outline:"none",boxSizing:"border-box" as const}}/>
+      <div style={{position:"relative"}}>
+        <input type={isPassword && showPass ? "text" : type} value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder}
+          style={{width:"100%",border:"2px solid #e8e8e6",borderRadius:"10px",padding:isPassword?"12px 44px 12px 14px":"12px 14px",fontSize:"14px",fontFamily:"'Nunito',sans-serif",color:"#2c2c2e",outline:"none",boxSizing:"border-box" as const}}/>
+        {isPassword && (
+          <button type="button" onClick={()=>setShowPass(v=>!v)}
+            style={{position:"absolute",right:"12px",top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",fontSize:"18px",color:"#9a9a9a",padding:"0",lineHeight:1}}>
+            {showPass ? "🙈" : "👁️"}
+          </button>
+        )}
+      </div>
     </div>
   );
 }

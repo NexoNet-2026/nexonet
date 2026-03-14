@@ -86,6 +86,8 @@ function RegistroInner() {
       codigo:              codigoData,
       codigo_promotor_ref: codigoRef || null,
       referido_por:        referidoPor,
+      bits_free:           3000,          // ← BIT Free de bienvenida
+      bits_free_fecha:     new Date().toISOString(), // ← fecha de acreditación
     });
 
     if (insertError) { setError("Error guardando perfil: " + insertError.message); setLoading(false); return; }

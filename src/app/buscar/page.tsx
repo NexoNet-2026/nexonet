@@ -79,6 +79,7 @@ function BuscarInner() {
   const [anuncios, setAnuncios] = useState<Anuncio[]>([]);
   const [nexos,    setNexos]    = useState<Nexo[]>([]);
   const [subAct,   setSubAct]   = useState<Record<number,number|null>>({});
+  const [grupoCats, setGrupoCats] = useState<{id:number;nombre:string;emoji:string}[]>([]);
   const [loading,  setLoading]  = useState(true);
 
   const [session,  setSession]  = useState<any>(null);
@@ -127,10 +128,14 @@ function BuscarInner() {
         .select("id,titulo,descripcion,tipo,subtipo,ciudad,provincia,avatar_url,banner_url,precio,moneda,usuario_id,config")
         .eq("estado","activo").order("created_at",{ascending:false}).limit(100),
       supabase.from("grupos")
-        .select("id,nombre,descripcion,imagen,ciudad,provincia,creador_id,miembros_count,pago_ingreso_admin,config,activo")
+        .select("id,nombre,descripcion,imagen,ciudad,provincia,creador_id,miembros_count,pago_ingreso_admin,config,activo,categoria_id")
         .eq("activo", true)
         .order("created_at",{ascending:false}).limit(100),
-    ]).then(async ([{data:pData},{data:rData},{data:sData},{data:aData},{data:nData},{data:gData}]) => {
+      supabase.from("grupo_categorias")
+        .select("id,nombre,emoji")
+        .eq("activo", true)
+        .order("orden"),
+    ]).then(async ([{data:pData},{data:rData},{data:sData},{data:aData},{data:nData},{data:gData},{data:catData}]) => {
 
       if (pData) setProvs(pData);
 
@@ -156,7 +161,9 @@ function BuscarInner() {
           flash: a.flash || false, fuente: a.fuente || "nexonet",
           usuario_id: a.usuario_id, permuto: a.permuto || false,
           subrubro_nombre: a.subrubros?.nombre || "",
-          rubro_nombre: a.subrubros?.rubros?.nombre || "",
+          rubro_nombre: Array.isArray(a.subrubros?.rubros)
+            ? (a.subrubros.rubros[0]?.nombre || "")
+            : (a.subrubros?.rubros?.nombre || ""),
           tipo: "anuncio",
         }));
         const uids = [...new Set(mapped.map(a => a.usuario_id).filter(Boolean))];
@@ -178,12 +185,14 @@ function BuscarInner() {
 
       // Combinar nexos + grupos existentes (tabla grupos)
       const nexosArr: Nexo[] = nData ? (nData as Nexo[]) : [];
+      if (catData) setGrupoCats(catData as any);
+
       const gruposArr: Nexo[] = gData ? (gData as any[]).map((g:any) => ({
         id:            String(g.id),
         titulo:        g.nombre || "Sin nombre",
         descripcion:   g.descripcion || "",
         tipo:          "grupo",
-        subtipo:       "",
+        subtipo:       String(g.categoria_id || ""),
         ciudad:        g.ciudad || "",
         provincia:     g.provincia || "",
         avatar_url:    g.imagen || "",
@@ -526,8 +535,53 @@ function BuscarInner() {
             )
           )}
 
-          {/* GRUPOS / EMPRESAS / SERVICIOS / TRABAJO */}
-          {tipoActivo !== "anuncios" && (
+          {/* GRUPOS — sliders por categoría */}
+          {tipoActivo === "grupos" && (
+            <div>
+              {(nexosPorTipo["grupos"]||[]).length === 0 ? (
+                <div style={{textAlign:"center",padding:"50px 20px"}}>
+                  <div style={{fontSize:"48px",marginBottom:"12px"}}>👥</div>
+                  <div style={{fontSize:"16px",fontWeight:900,color:"#1a2a3a",marginBottom:"6px"}}>No hay grupos todavía</div>
+                  <div style={{fontSize:"13px",color:"#9a9a9a",fontWeight:600,marginBottom:"20px"}}>Sé el primero en crear uno</div>
+                  <button onClick={()=>router.push("/publicar")}
+                    style={{background:"linear-gradient(135deg,#3a7bd5cc,#3a7bd5)",border:"none",borderRadius:"12px",padding:"12px 24px",fontSize:"13px",fontWeight:900,color:"#fff",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>
+                    ➕ Crear grupo
+                  </button>
+                </div>
+              ) : (() => {
+                const grupos = nexosPorTipo["grupos"] || [];
+                // Grupos sin categoría
+                const sinCat = grupos.filter(g => !g.subtipo);
+                // Por categoría
+                const cats = grupoCats.length > 0 ? grupoCats : [];
+                // Si no hay categorías cargadas, mostrar todo en un slider
+                const bloques = cats.length > 0
+                  ? cats.map(c => ({ cat: c, items: grupos.filter(g => g.subtipo === String(c.id)) })).filter(b => b.items.length > 0)
+                  : [{ cat: { id:0, nombre:"Grupos", emoji:"👥" }, items: grupos }];
+                if (sinCat.length > 0) bloques.push({ cat:{ id:-1, nombre:"Otros grupos", emoji:"✨" }, items: sinCat });
+                return bloques.map(bloque => (
+                  <div key={bloque.cat.id} style={{marginBottom:"8px",background:"#fff",paddingBottom:"14px",borderBottom:"6px solid #f4f4f2"}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 16px 10px"}}>
+                      <span style={{fontSize:"16px",fontWeight:900,color:"#1a2a3a"}}>
+                        {bloque.cat.emoji} {bloque.cat.nombre}
+                        <span style={{fontSize:"12px",fontWeight:600,color:"#9a9a9a",marginLeft:"8px"}}>({bloque.items.length})</span>
+                      </span>
+                      <span style={{fontSize:"12px",fontWeight:700,color:"#3a7bd5"}}>Ver todos →</span>
+                    </div>
+                    <div style={{display:"flex",gap:"12px",padding:"0 16px",overflowX:"auto",scrollbarWidth:"none",WebkitOverflowScrolling:"touch"}}>
+                      {bloque.items.slice(0,8).map(n => (
+                        <TarjetaGrupoSlider key={n.id} nexo={n}
+                          onNavigate={()=>router.push(`/grupos/${n.id}`)} />
+                      ))}
+                    </div>
+                  </div>
+                ));
+              })()}
+            </div>
+          )}
+
+          {/* EMPRESAS / SERVICIOS / TRABAJO — lista */}
+          {tipoActivo !== "anuncios" && tipoActivo !== "grupos" && (
             <div style={{padding:"16px",display:"flex",flexDirection:"column",gap:"12px"}}>
               {(nexosPorTipo[tipoActivo]||[]).length === 0 ? (
                 <div style={{textAlign:"center",padding:"50px 20px"}}>
@@ -535,9 +589,7 @@ function BuscarInner() {
                   <div style={{fontSize:"16px",fontWeight:900,color:"#1a2a3a",marginBottom:"6px"}}>
                     No hay {TIPOS.find(t=>t.key===tipoActivo)?.label.toLowerCase()} todavía
                   </div>
-                  <div style={{fontSize:"13px",color:"#9a9a9a",fontWeight:600,marginBottom:"20px"}}>
-                    {ubiActiva ? `Sin resultados en ${barrSel||ciudSel||provSel}` : "Sé el primero en crear uno"}
-                  </div>
+                  <div style={{fontSize:"13px",color:"#9a9a9a",fontWeight:600,marginBottom:"20px"}}>Sé el primero en crear uno</div>
                   <button onClick={()=>router.push("/publicar")}
                     style={{background:`linear-gradient(135deg,${colorActivo}cc,${colorActivo})`,border:"none",borderRadius:"12px",padding:"12px 24px",fontSize:"13px",fontWeight:900,color:"#fff",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>
                     ➕ Crear {TIPOS.find(t=>t.key===tipoActivo)?.label.slice(0,-1)}
@@ -546,7 +598,7 @@ function BuscarInner() {
               ) : (
                 (nexosPorTipo[tipoActivo]||[]).map(n => (
                   <TarjetaNexo key={n.id} nexo={n} color={colorActivo}
-                    onNavigate={()=>router.push(n.tipo==="grupo" ? `/grupos/${n.id}` : `/nexo/${n.id}`)} />
+                    onNavigate={()=>router.push(`/nexo/${n.id}`)} />
                 ))
               )}
             </div>
@@ -673,6 +725,34 @@ function TarjetaAnuncio({ a, fmt, qLow, query, horizontal, modoConexion, selecci
           </div>
         </div>
       </a>
+    </div>
+  );
+}
+
+// ── TARJETA GRUPO SLIDER (horizontal, compacta) ──
+function TarjetaGrupoSlider({ nexo, onNavigate }: { nexo:Nexo; onNavigate:()=>void }) {
+  return (
+    <div onClick={onNavigate} style={{flexShrink:0,width:"150px",cursor:"pointer"}}>
+      <div style={{background:"#fff",borderRadius:"14px",overflow:"hidden",boxShadow:"0 2px 10px rgba(0,0,0,0.08)",border:"2px solid rgba(58,123,213,0.15)"}}>
+        <div style={{width:"100%",height:"90px",background:"linear-gradient(135deg,#1a2a3a,#243b55)",display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden",position:"relative"}}>
+          {nexo.avatar_url
+            ? <img src={nexo.avatar_url} alt={nexo.titulo} style={{width:"100%",height:"100%",objectFit:"cover"}} />
+            : <span style={{fontSize:"36px",opacity:0.5}}>👥</span>
+          }
+          {nexo.config?.tipo_acceso === "pago" && (
+            <div style={{position:"absolute",top:"6px",right:"6px",background:"rgba(212,160,23,0.95)",borderRadius:"8px",padding:"2px 7px",fontSize:"9px",fontWeight:900,color:"#1a2a3a"}}>💰 500 BIT</div>
+          )}
+        </div>
+        <div style={{padding:"8px 10px 10px"}}>
+          <div style={{fontSize:"12px",fontWeight:800,color:"#1a2a3a",overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical" as any,marginBottom:"4px"}}>
+            {nexo.titulo}
+          </div>
+          <div style={{display:"flex",alignItems:"center",gap:"6px"}}>
+            <span style={{fontSize:"10px",color:"#9a9a9a",fontWeight:600}}>👥 {nexo.miembros_count||0}</span>
+            {nexo.ciudad && <span style={{fontSize:"10px",color:"#9a9a9a",fontWeight:600}}>· {nexo.ciudad}</span>}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

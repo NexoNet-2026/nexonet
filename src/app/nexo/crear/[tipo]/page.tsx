@@ -237,7 +237,8 @@ export default function NexoCrearPage() {
         {/* HEADER SIMPLE */}
         <div style={{background:`linear-gradient(135deg,${colorPage}dd,${colorPage})`,padding:"12px 16px",display:"flex",alignItems:"center",gap:"12px"}}>
           <button onClick={()=>router.push("/publicar")} style={{background:"rgba(255,255,255,0.2)",border:"1px solid rgba(255,255,255,0.3)",borderRadius:"10px",padding:"6px 12px",color:"#fff",fontSize:"13px",fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',sans-serif",flexShrink:0}}>← Volver</button>
-          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"20px",color:"#fff",letterSpacing:"1px"}}>{emojiPage} {tituloPage}</div>
+          <div style={{flex:1,textAlign:"center",fontFamily:"'Bebas Neue',sans-serif",fontSize:"20px",color:"#fff",letterSpacing:"1px"}}>{emojiPage} {tituloPage}</div>
+          <div style={{width:"72px",flexShrink:0}}/>{/* spacer para centrar el título */}
         </div>
 
         <div style={{padding:"16px",display:"flex",flexDirection:"column",gap:"14px",maxWidth:"500px",margin:"0 auto"}}>
@@ -346,7 +347,7 @@ export default function NexoCrearPage() {
           </div>
 
           <button onClick={crear} disabled={guardando||!form.titulo.trim()}
-            style={{width:"100%",background:guardando||!form.titulo.trim()?`${colorPage}60`:`linear-gradient(135deg,${colorPage}cc,${colorPage})`,border:"none",borderRadius:"14px",padding:"16px",fontSize:"16px",fontWeight:900,color:"#fff",cursor:guardando||!form.titulo.trim()?"not-allowed":"pointer",fontFamily:"'Nunito',sans-serif",boxShadow:`0 4px 0 ${colorPage}66`}}>
+            style={{width:"100%",background:guardando||!form.titulo.trim()?`${colorPage}50`:`linear-gradient(135deg,${colorPage},${colorPage}dd)`,border:"none",borderRadius:"14px",padding:"18px",fontSize:"17px",fontWeight:900,color:guardando||!form.titulo.trim()?"rgba(255,255,255,0.5)":"#fff",cursor:guardando||!form.titulo.trim()?"not-allowed":"pointer",fontFamily:"'Nunito',sans-serif",boxShadow:guardando||!form.titulo.trim()?"none":`0 5px 0 ${colorPage}88`,letterSpacing:"0.5px"}}>
             {guardando?"⏳ Creando...": tipo==="trabajo" ? "✅ Publicar búsqueda de trabajo" : "✅ Publicar anuncio"}
           </button>
         </div>

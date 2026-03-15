@@ -59,9 +59,9 @@ export default function Home() {
         supabase.from("rubros").select("id,nombre").order("nombre"),
         supabase.from("subrubros").select("id,nombre,rubro_id").order("nombre"),
         supabase.from("anuncios").select(`
-          id,titulo,precio,moneda,ciudad,provincia,imagenes,flash,
-          fuente,permuto,created_at,usuario_id,
-          subrubros!inner(nombre,rubros!inner(nombre))
+          id,titulo,precio,moneda,ciudad,provincia,imagenes,avatar_url,banner_url,flash,
+          fuente,permuto,created_at,usuario_id,subrubro_id,
+          subrubros(nombre,rubros(nombre))
         `).eq("estado","activo").order("created_at",{ascending:false}).limit(80),
         supabase.from("nexos")
           .select("id,titulo,descripcion,tipo,ciudad,provincia,avatar_url,config,miembros_count")
@@ -380,7 +380,9 @@ function TarjetaAnuncio({ a, fmt }: { a:Anuncio; fmt:(p:number,m:string)=>string
           </div>
         </div>
         <div style={{width:"100%",height:"120px",background:"#e8e8e6",display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden"}}>
-          {a.imagenes?.[0] ? <img src={a.imagenes[0]} alt={a.titulo} style={{width:"100%",height:"100%",objectFit:"cover"}}/> : <span style={{fontSize:"40px"}}>📦</span>}
+          {(a.imagenes?.[0] || (a as any).avatar_url || (a as any).banner_url)
+            ? <img src={a.imagenes?.[0] || (a as any).avatar_url || (a as any).banner_url} alt={a.titulo} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+            : <span style={{fontSize:"40px"}}>📦</span>}
         </div>
         <div style={{padding:"8px 10px 12px"}}>
           <div style={{fontSize:"10px",color:"#9a9a9a",fontWeight:700,marginBottom:"2px",textTransform:"uppercase",letterSpacing:"0.5px"}}>{a.subrubro}</div>

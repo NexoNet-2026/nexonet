@@ -118,23 +118,41 @@ export default function AnuncioDetalle() {
     if (!session || !anuncio) return;
     setConectando(true);
     setPopupMensaje(false);
+
+    // 1. Obtener datos del anuncio y número de WA del vendedor (sin mostrarlo)
     const { data: anuData } = await supabase
       .from("anuncios").select("id, usuario_id, conexiones").eq("id", anuncio.id).single();
     if (!anuData) { setConectando(false); return; }
 
+    const { data: vendedor } = await supabase
+      .from("usuarios").select("whatsapp, whatsapp_empresa").eq("id", anuData.usuario_id).single();
+
+    // 2. Registrar conexión + notificación + mensaje en chat interno
     await supabase.from("anuncios").update({ conexiones: (anuData.conexiones || 0) + 1 }).eq("id", anuncio.id);
     await supabase.from("notificaciones").insert({
       usuario_id: anuData.usuario_id, emisor_id: session.user.id,
-      anuncio_id: anuncio.id, tipo: "conexion",
-      mensaje: mensajeConexion,
+      anuncio_id: anuncio.id, tipo: "conexion", mensaje: mensajeConexion,
     });
     await supabase.from("mensajes").insert({
-      anuncio_id: anuncio.id, emisor_id: session.user.id,
+      anuncio_id: anuncio.id,
+      emisor_id:  session.user.id,
       receptor_id: anuData.usuario_id,
       texto: mensajeConexion,
     });
+
     setAnuncio((prev: any) => ({ ...prev, conexiones: (anuData.conexiones || 0) + 1 }));
     setConectando(false);
+
+    // 3. Abrir WhatsApp directamente con el número (sin mostrarlo al usuario)
+    const numeroWA = vendedor?.whatsapp_empresa || vendedor?.whatsapp;
+    if (numeroWA) {
+      const texto = encodeURIComponent(
+        `Hola! Te contacto por tu anuncio "${anuncio.titulo}" en NexoNet.\n\n${mensajeConexion}`
+      );
+      window.open(`https://wa.me/54${numeroWA}?text=${texto}`, "_blank");
+    }
+
+    // 4. También abrir chat interno
     router.push(`/chat/${anuncio.id}/${anuData.usuario_id}`);
   };
 
@@ -162,7 +180,10 @@ export default function AnuncioDetalle() {
   );
 
   const fuente    = FUENTES[anuncio.fuente] || FUENTES.nexonet;
-  const imagenes: string[] = anuncio.imagenes || [];
+  const rawImagenes: string[] = anuncio.imagenes || [];
+  const imagenes: string[] = rawImagenes.length > 0
+    ? rawImagenes
+    : [anuncio.avatar_url, anuncio.banner_url].filter(Boolean);
   const links:    string[] = (anuncio.links || []).filter((l: string) => l?.trim());
   const tieneUbicacion = anuncio.lat && anuncio.lng;
   const tieneBits      = (anuncio.bits_conexion ?? 0) > 0;
@@ -374,28 +395,18 @@ export default function AnuncioDetalle() {
                 <div style={{ background:"#fff", borderRadius:"16px", padding:"16px", boxShadow:"0 2px 10px rgba(0,0,0,0.06)" }}>
                   <div style={{ fontSize:"11px", fontWeight:800, color:"#1a2a3a", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"12px" }}>📋 Datos de contacto</div>
                   <div style={{ display:"flex", flexDirection:"column", gap:"8px" }}>
-                    {usuario?.whatsapp && (
-                      <a href={`https://wa.me/54${usuario.whatsapp}`} target="_blank" rel="noopener noreferrer" style={{ display:"flex", alignItems:"center", gap:"12px", background:"rgba(39,174,96,0.08)", border:"2px solid rgba(39,174,96,0.25)", borderRadius:"12px", padding:"12px 14px", textDecoration:"none" }}>
-                        <span style={{ fontSize:"24px" }}>💬</span>
-                        <div><div style={{ fontSize:"11px", fontWeight:700, color:"#27ae60", textTransform:"uppercase" }}>WhatsApp</div><div style={{ fontSize:"14px", fontWeight:900, color:"#1a2a3a" }}>{usuario.whatsapp}</div></div>
-                        <span style={{ marginLeft:"auto", fontSize:"18px", color:"#27ae60" }}>→</span>
-                      </a>
-                    )}
-                    {usuario?.telefono && (
-                      <a href={`tel:${usuario.telefono}`} style={{ display:"flex", alignItems:"center", gap:"12px", background:"rgba(58,123,213,0.08)", border:"2px solid rgba(58,123,213,0.25)", borderRadius:"12px", padding:"12px 14px", textDecoration:"none" }}>
-                        <span style={{ fontSize:"24px" }}>📞</span>
-                        <div><div style={{ fontSize:"11px", fontWeight:700, color:"#3a7bd5", textTransform:"uppercase" }}>Teléfono</div><div style={{ fontSize:"14px", fontWeight:900, color:"#1a2a3a" }}>{usuario.telefono}</div></div>
-                        <span style={{ marginLeft:"auto", fontSize:"18px", color:"#3a7bd5" }}>→</span>
-                      </a>
-                    )}
-                    {usuario?.direccion && (
-                      <div style={{ display:"flex", alignItems:"center", gap:"12px", background:"rgba(212,160,23,0.08)", border:"2px solid rgba(212,160,23,0.25)", borderRadius:"12px", padding:"12px 14px" }}>
-                        <span style={{ fontSize:"24px" }}>📍</span>
-                        <div><div style={{ fontSize:"11px", fontWeight:700, color:"#d4a017", textTransform:"uppercase" }}>Dirección</div><div style={{ fontSize:"13px", fontWeight:700, color:"#1a2a3a" }}>{[usuario.direccion, usuario.barrio, usuario.ciudad, usuario.provincia].filter(Boolean).join(", ")}</div></div>
-                      </div>
-                    )}
                     {!usuario?.whatsapp && !usuario?.telefono && !usuario?.direccion && (
                       <div style={{ textAlign:"center", padding:"16px", color:"#9a9a9a", fontSize:"13px", fontWeight:600 }}>El vendedor no cargó datos de contacto aún.</div>
+                    )}
+                    {(usuario?.whatsapp || usuario?.whatsapp_empresa) && (
+                      <div style={{ display:"flex", alignItems:"center", gap:"12px", background:"rgba(39,174,96,0.08)", border:"2px solid rgba(39,174,96,0.25)", borderRadius:"12px", padding:"12px 14px" }}>
+                        <span style={{ fontSize:"24px" }}>💬</span>
+                        <div style={{ flex:1 }}>
+                          <div style={{ fontSize:"11px", fontWeight:700, color:"#27ae60", textTransform:"uppercase" as const }}>WhatsApp disponible</div>
+                          <div style={{ fontSize:"12px", fontWeight:600, color:"#9a9a9a" }}>Usá el botón Conectar para escribirle</div>
+                        </div>
+                        <span style={{ fontSize:"16px", color:"#27ae60" }}>✓</span>
+                      </div>
                     )}
                   </div>
                 </div>

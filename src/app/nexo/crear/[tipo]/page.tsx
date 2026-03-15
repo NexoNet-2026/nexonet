@@ -216,6 +216,11 @@ function NexoCrearInner() {
       if (form.lat)        payload.lat       = parseFloat(form.lat);
       if (form.lng)        payload.lng       = parseFloat(form.lng);
       if (form.subrubro_id) payload.subrubro_id = parseInt(form.subrubro_id);
+      // Guardar imágenes también en el array imagenes para compatibilidad
+      if (tipo==="anuncio"||tipo==="trabajo") {
+        const imgs = [form.avatar_url, form.banner_url].filter(Boolean);
+        if (imgs.length > 0) payload.imagenes = imgs;
+      }
 
       // Anuncios y trabajo → tabla anuncios. Grupos/empresa/servicio → tabla nexos
       const tabla = (tipo==="anuncio"||tipo==="trabajo") ? "anuncios" : "nexos";

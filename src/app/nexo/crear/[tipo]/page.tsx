@@ -235,7 +235,7 @@ export default function NexoCrearPage() {
         <Header/>
 
         {/* HEADER SIMPLE */}
-        <div style={{background:`linear-gradient(135deg,${colorPage}dd,${colorPage})`,padding:"14px 16px",display:"flex",alignItems:"center"}}>
+        <div style={{background:`linear-gradient(135deg,${colorPage}dd,${colorPage})`,padding:"22px 16px",display:"flex",alignItems:"center"}}>
           <button onClick={()=>router.push("/publicar")} style={{background:"rgba(255,255,255,0.2)",border:"1px solid rgba(255,255,255,0.3)",borderRadius:"10px",padding:"6px 12px",color:"#fff",fontSize:"13px",fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',sans-serif",flexShrink:0,whiteSpace:"nowrap"}}>← Volver</button>
           <div style={{flex:1,textAlign:"center",fontFamily:"'Bebas Neue',sans-serif",fontSize:"20px",color:"#fff",letterSpacing:"1px"}}>{emojiPage} {tituloPage}</div>
           <div style={{width:"68px",flexShrink:0}}/>
@@ -347,7 +347,7 @@ export default function NexoCrearPage() {
           </div>
 
           <button onClick={crear} disabled={guardando||!form.titulo.trim()}
-            style={{width:"100%",background:guardando||!form.titulo.trim()?`${colorPage}50`:`linear-gradient(135deg,${colorPage}cc,${colorPage})`,border:"none",borderRadius:"14px",padding:"16px",fontSize:"16px",fontWeight:900,color:"#fff",cursor:guardando||!form.titulo.trim()?"not-allowed":"pointer",fontFamily:"'Nunito',sans-serif",boxShadow:guardando||!form.titulo.trim()?"none":`0 4px 0 ${colorPage}88`,marginBottom:"16px"}}>
+            style={{width:"100%",background:guardando||!form.titulo.trim()?`${colorPage}50`:`linear-gradient(135deg,${colorPage}cc,${colorPage})`,border:"none",borderRadius:"14px",padding:"16px",fontSize:"16px",fontWeight:900,color:"#fff",cursor:guardando||!form.titulo.trim()?"not-allowed":"pointer",fontFamily:"'Nunito',sans-serif",boxShadow:guardando||!form.titulo.trim()?"none":`0 4px 0 ${colorPage}88`,marginBottom:"8px"}}>
             {guardando?"⏳ Creando...": tipo==="trabajo" ? "✅ Publicar búsqueda de trabajo" : "✅ Publicar anuncio"}
           </button>
         </div>
@@ -358,7 +358,7 @@ export default function NexoCrearPage() {
 
   // ── FORMULARIO CON SLIDERS (grupo / empresa / servicio) ──────────────────
   return (
-    <main style={{paddingTop:"95px",paddingBottom:"100px",background:"#f4f4f2",minHeight:"100vh",fontFamily:"'Nunito',sans-serif"}}>
+    <main style={{paddingTop:"95px",paddingBottom:"130px",background:"#f4f4f2",minHeight:"100vh",fontFamily:"'Nunito',sans-serif"}}>
       <Header/>
 
       {/* HERO */}
@@ -368,6 +368,7 @@ export default function NexoCrearPage() {
           <button onClick={()=>router.push("/publicar")}
             style={{background:"rgba(255,255,255,0.15)",border:"1px solid rgba(255,255,255,0.25)",borderRadius:"10px",padding:"7px 14px",color:"#fff",fontSize:"13px",fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',sans-serif",marginBottom:"14px"}}>
             ← Volver
+            
           </button>
           <div style={{display:"flex",alignItems:"center",gap:"14px"}}>
             <div style={{position:"relative"}}>

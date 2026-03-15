@@ -442,13 +442,10 @@ function NexoCrearInner() {
           onClose={() => setPopupConfirmar(false)}
           onPagar={async (metodo: MetodoPago) => {
             setPopupConfirmar(false);
-            // Descontar según método elegido
             if (metodo === "bit_free") {
               await supabase.from("usuarios").update({ bits_free: Math.max(0,(perfil?.bits_free||0)-500) }).eq("id", perfil.id);
             } else if (metodo === "bit_nexo") {
               await supabase.from("usuarios").update({ bits: Math.max(0,(perfil?.bits||0)-500) }).eq("id", perfil.id);
-            } else if (metodo === "bit_promo") {
-              await supabase.from("usuarios").update({ bits_promo: Math.max(0,(perfil?.bits_promo||0)-500) }).eq("id", perfil.id);
             } else {
               alert("Próximamente — pagos con tarjeta/transferencia");
               return;

@@ -185,9 +185,11 @@ function NexoCrearInner() {
     const path = `anuncios/${perfil.id}/${campo}_${Date.now()}.${ext}`;
     await supabase.storage.from("anuncios").upload(path, file, { upsert:true });
     const { data } = supabase.storage.from("anuncios").getPublicUrl(path);
-    F(`${campo}_url`, data.publicUrl); // sin ?t= para que la URL sea estable
+    F(`${campo}_url`, data.publicUrl);
     setSubiendoImg(null);
   };
+
+  const agregarSlider = (cat:any) => {
     if (sliders.find(s=>s.tipo===cat.tipo)) return;
     setSliders(prev=>[...prev,{...cat,orden:prev.length}]);
     setPopupSlider(false);

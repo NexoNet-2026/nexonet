@@ -230,6 +230,8 @@ function NexoCrearInner() {
       // Empresa → ir a mis-anuncios para empezar a cargar anuncios
       if (tipo==="empresa") {
         window.location.href = "/mis-anuncios";
+      } else if (tipo==="anuncio" || tipo==="trabajo") {
+        window.location.href = `/anuncios/${nexo.id}`;
       } else {
         router.push(`/nexo/${nexo.id}`);
       }

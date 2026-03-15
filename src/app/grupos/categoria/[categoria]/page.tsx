@@ -9,7 +9,7 @@ type Grupo = {
   id: string; nombre: string; descripcion: string | null;
   imagen: string | null; ciudad: string | null; provincia: string | null;
   miembros_count: number; pago_ingreso_admin: boolean;
-  config: any; subtipo: string | null; activo: boolean;
+  config: any; categoria_id: number; activo: boolean;
 };
 
 type GrupoCategoria = { id: number; nombre: string; emoji: string; slug: string };
@@ -42,12 +42,10 @@ function GruposCategoriaInner() {
 
   useEffect(() => {
     const cargar = async () => {
-      // Buscar categoría por slug o id
-      const esNumero = !isNaN(Number(catSlug));
       const { data: cats } = await supabase
         .from("grupo_categorias")
-        .select("id,nombre,emoji,slug")
-        .eq(esNumero ? "id" : "slug", esNumero ? Number(catSlug) : catSlug)
+        .select("id,nombre,emoji")
+        .eq("id", Number(catSlug))
         .single();
 
       if (!cats) { setLoading(false); return; }
@@ -64,9 +62,9 @@ function GruposCategoriaInner() {
       // Grupos de esta categoría
       const { data: gs } = await supabase
         .from("grupos")
-        .select("id,nombre,descripcion,imagen,ciudad,provincia,miembros_count,pago_ingreso_admin,config,subtipo,activo")
+        .select("id,nombre,descripcion,imagen,ciudad,provincia,miembros_count,pago_ingreso_admin,config,categoria_id,activo")
         .eq("activo", true)
-        .eq("subtipo", String(cats.id))
+        .eq("categoria_id", cats.id)
         .order("miembros_count", { ascending: false });
       if (gs) setGrupos(gs);
 

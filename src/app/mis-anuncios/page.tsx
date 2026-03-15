@@ -202,10 +202,12 @@ export default function MisAnuncios() {
   };
 
   const esEmpresa   = perfil?.plan === "nexoempresa";
-  const slotsMax    = esEmpresa ? 50 : 3;
+  const slotsMax    = esEmpresa ? 50 : 999; // Free: ilimitado mientras tenga BIT FREE
   const slots       = anuncios.length;
-  const slotsLibres = Math.max(0, slotsMax - slots);
-  const puedeCrear  = slotsLibres > 0;
+  const bitsFreeDisp = Math.max(0, perfil?.bits_free ?? 0);
+  // Free puede crear si tiene BIT FREE. Empresa puede crear si no llegó a 50.
+  const puedeCrear  = esEmpresa ? slots < 50 : bitsFreeDisp > 0 || slots < 3;
+  const slotsLibres = esEmpresa ? Math.max(0, 50 - slots) : (puedeCrear ? 1 : 0);
 
   const fmt = (p: number | null, m: string | null) =>
     p == null ? "Consultar" : `${m === "USD" ? "U$D" : "$"} ${p.toLocaleString("es-AR")}`;
@@ -239,49 +241,31 @@ export default function MisAnuncios() {
             📋 Mis Anuncios
           </div>
           <div style={{ fontSize:"12px", color:"#8a9aaa", fontWeight:600, marginTop:"2px" }}>
-            {slots} publicados · {slotsLibres} slots disponibles
+            {slots} publicados · {esEmpresa ? `${Math.max(0,50-slots)} slots libres` : `${bitsFreeDisp} BIT FREE disponibles`}
           </div>
         </div>
         <div style={{ background:"rgba(255,255,255,0.06)", borderRadius:"10px", padding:"10px 14px",
                        display:"flex", alignItems:"center", justifyContent:"space-between" }}>
           <div style={{ fontSize:"12px", fontWeight:700, color:"#d4a017" }}>
-            Plan {esEmpresa ? "Empresa" : "Free"} · {slotsMax} slots
+            Plan {esEmpresa ? "Empresa · 50 slots" : "Free"}
           </div>
           <div style={{ display:"flex", gap:"4px" }}>
-            {Array.from({ length: Math.min(slotsMax, 10) }).map((_, i) => (
+            {esEmpresa && Array.from({ length: 10 }).map((_, i) => (
               <div key={i} style={{ width:"16px", height:"8px", borderRadius:"4px",
-                                     background: i < slots ? "#d4a017" : "rgba(255,255,255,0.2)" }} />
+                                     background: i < Math.round(slots/5) ? "#d4a017" : "rgba(255,255,255,0.2)" }} />
             ))}
           </div>
-          <div style={{ fontSize:"11px", fontWeight:700, color: slotsLibres > 0 ? "#27ae60" : "#e74c3c" }}>
+          <div style={{ fontSize:"11px", fontWeight:700, color: puedeCrear ? "#27ae60" : "#e74c3c" }}>
             {esEmpresa
-              ? `${slots} de ${slotsMax} anuncios`
-              : slotsLibres > 0 ? `${slotsLibres} libre${slotsLibres > 1 ? "s" : ""}` : "Lleno"}
+              ? (slots < 50 ? `${slots} de 50` : "🔒 Lleno")
+              : (puedeCrear ? "✓ Podés crear más" : "Sin BIT FREE")}
           </div>
         </div>
       </div>
 
       <div style={{ padding:"12px 16px", display:"flex", flexDirection:"column", gap:"14px" }}>
 
-        {/* Slots libres — solo si hay espacio */}
-        {Array.from({ length: slotsLibres }).map((_, i) => (
-          <button key={`sl${i}`} onClick={() => { window.location.href = "/nexo/crear/anuncio"; }}
-            style={{ background:"#fff", borderRadius:"16px", padding:"20px", border:"2px dashed #d4a017",
-                     display:"flex", alignItems:"center", gap:"16px", cursor:"pointer", width:"100%" }}>
-            <div style={{ width:"60px", height:"60px", borderRadius:"12px", background:"rgba(212,160,23,0.08)",
-                           display:"flex", alignItems:"center", justifyContent:"center", fontSize:"28px", flexShrink:0 }}>
-              ➕
-            </div>
-            <div style={{ textAlign:"left" }}>
-              <div style={{ fontWeight:900, fontSize:"14px", color:"#1a2a3a" }}>Slot disponible</div>
-              <div style={{ fontSize:"12px", color:"#9a9a9a", fontWeight:600, marginTop:"2px" }}>
-                Tocá para crear un anuncio
-              </div>
-            </div>
-          </button>
-        ))}
-
-        {/* Lista de anuncios */}
+        {/* Lista de anuncios — primero los creados */}
         {anuncios.map(a => {
           const imgs   = a.imagenes  ?? [];
           const adjs   = a.adjuntos  ?? [];
@@ -594,34 +578,40 @@ export default function MisAnuncios() {
             <div style={{ fontSize:"16px", fontWeight:800, color:"#1a2a3a", marginBottom:"16px" }}>
               No publicaste anuncios aún
             </div>
-            <div style={{ fontSize:"13px", color:"#9a9a9a", fontWeight:600 }}>
-              Usá el botón ＋ del menú para crear tu primer Nexo
-            </div>
           </div>
         )}
 
-        {/* BOTÓN CREAR OTRO ANUNCIO — siempre visible al final */}
-        {!esEmpresa && (
-          <button onClick={() => puedeCrear ? (window.location.href="/nexo/crear/anuncio") : setPopupPlan(true)}
+        {/* BOTÓN CREAR AL FINAL — para todos */}
+        {puedeCrear ? (
+          <button onClick={() => window.location.href="/nexo/crear/anuncio"}
             style={{ background:"#fff", borderRadius:"16px", padding:"20px", border:"2px dashed rgba(212,160,23,0.5)",
                      display:"flex", alignItems:"center", gap:"16px", cursor:"pointer", width:"100%",
                      boxShadow:"0 2px 10px rgba(0,0,0,0.06)" }}>
-            <div style={{ width:"60px", height:"60px", borderRadius:"12px",
-                           background: puedeCrear ? "rgba(212,160,23,0.08)" : "rgba(192,57,43,0.08)",
+            <div style={{ width:"60px", height:"60px", borderRadius:"12px", background:"rgba(212,160,23,0.08)",
                            display:"flex", alignItems:"center", justifyContent:"center", fontSize:"28px", flexShrink:0 }}>
-              {puedeCrear ? "➕" : "🔒"}
+              ➕
             </div>
             <div style={{ textAlign:"left" }}>
-              <div style={{ fontWeight:900, fontSize:"14px", color:"#1a2a3a" }}>
-                {puedeCrear ? "Crear otro anuncio" : "Agregar anuncio extra"}
-              </div>
-              <div style={{ fontSize:"12px", fontWeight:600, marginTop:"2px",
-                             color: puedeCrear ? "#9a9a9a" : "#c0392b" }}>
-                {puedeCrear ? "Slot disponible — gratis" : "Límite alcanzado · 500 BIT"}
+              <div style={{ fontWeight:900, fontSize:"14px", color:"#1a2a3a" }}>Crear anuncio</div>
+              <div style={{ fontSize:"12px", fontWeight:600, marginTop:"2px", color:"#9a9a9a" }}>
+                {esEmpresa ? `${Math.max(0,50-slots)} slots disponibles` : `Gratis con tus BIT FREE`}
               </div>
             </div>
             <span style={{ marginLeft:"auto", fontSize:"18px", color:"#d4a017", flexShrink:0 }}>›</span>
           </button>
+        ) : (
+          <div style={{ background:"rgba(231,76,60,0.06)", borderRadius:"16px", padding:"20px", border:"2px solid rgba(231,76,60,0.2)",
+                        display:"flex", alignItems:"center", gap:"16px" }}>
+            <span style={{ fontSize:"32px" }}>🔒</span>
+            <div>
+              <div style={{ fontWeight:900, fontSize:"14px", color:"#1a2a3a" }}>
+                {esEmpresa ? "Límite de 50 anuncios alcanzado" : "Sin BIT FREE disponibles"}
+              </div>
+              <div style={{ fontSize:"12px", color:"#e74c3c", fontWeight:600, marginTop:"2px" }}>
+                {esEmpresa ? "El plan Empresa tiene un máximo de 50 anuncios" : "Cargá BIT FREE desde la tienda para seguir publicando"}
+              </div>
+            </div>
+          </div>
         )}
       </div>
 

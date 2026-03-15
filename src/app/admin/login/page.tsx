@@ -11,6 +11,7 @@ export default function AdminLogin() {
   const [pass,     setPass]     = useState("");
   const [error,    setError]    = useState("");
   const [loading,  setLoading]  = useState(false);
+  const [showPass, setShowPass] = useState(false);
 
   const handleLogin = async () => {
     if (!email || !pass) { setError("Completá los campos"); return; }
@@ -52,13 +53,21 @@ export default function AdminLogin() {
               placeholder="admin@nexonet.ar"
               style={{ width:"100%", background:"rgba(255,255,255,0.08)", border:"2px solid rgba(255,255,255,0.1)", borderRadius:"10px", padding:"12px 14px", fontSize:"14px", fontFamily:"'Nunito',sans-serif", color:"#fff", outline:"none", boxSizing:"border-box" }} />
           </div>
+
           <div style={{ marginBottom:"20px" }}>
             <label style={{ display:"block", fontSize:"11px", fontWeight:800, color:"#8a9aaa", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"6px" }}>Contraseña</label>
-            <input type="password" value={pass} onChange={e=>setPass(e.target.value)}
-              onKeyDown={e=>e.key==="Enter"&&handleLogin()}
-              placeholder="••••••••"
-              style={{ width:"100%", background:"rgba(255,255,255,0.08)", border:"2px solid rgba(255,255,255,0.1)", borderRadius:"10px", padding:"12px 14px", fontSize:"14px", fontFamily:"'Nunito',sans-serif", color:"#fff", outline:"none", boxSizing:"border-box" }} />
+            <div style={{ position:"relative" }}>
+              <input type={showPass?"text":"password"} value={pass} onChange={e=>setPass(e.target.value)}
+                onKeyDown={e=>e.key==="Enter"&&handleLogin()}
+                placeholder="••••••••"
+                style={{ width:"100%", background:"rgba(255,255,255,0.08)", border:"2px solid rgba(255,255,255,0.1)", borderRadius:"10px", padding:"12px 44px 12px 14px", fontSize:"14px", fontFamily:"'Nunito',sans-serif", color:"#fff", outline:"none", boxSizing:"border-box" }} />
+              <button onClick={()=>setShowPass(p=>!p)}
+                style={{ position:"absolute", right:"12px", top:"50%", transform:"translateY(-50%)", background:"none", border:"none", cursor:"pointer", fontSize:"18px", color:"#8a9aaa", padding:"0", lineHeight:1 }}>
+                {showPass ? "🙈" : "👁️"}
+              </button>
+            </div>
           </div>
+
           <button onClick={handleLogin} disabled={loading}
             style={{ width:"100%", background:loading?"#666":"linear-gradient(135deg,#d4a017,#f0c040)", border:"none", borderRadius:"12px", padding:"14px", fontSize:"15px", fontWeight:900, color:"#1a2a3a", cursor:loading?"not-allowed":"pointer", fontFamily:"'Nunito',sans-serif", boxShadow:loading?"none":"0 4px 0 #a07810", letterSpacing:"0.5px" }}>
             {loading ? "Verificando..." : "Ingresar →"}

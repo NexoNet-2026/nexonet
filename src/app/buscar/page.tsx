@@ -583,9 +583,11 @@ function BuscarInner() {
                 return bloques.map(bloque => (
                   <div key={bloque.cat.id} style={{marginBottom:"8px",background:"#fff",paddingBottom:"14px",borderBottom:"6px solid #f4f4f2"}}>
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 16px 10px"}}>
-                      <span style={{fontSize:"16px",fontWeight:900,color:"#1a2a3a"}}>
+                      <span onClick={()=>router.push(`/grupos/categoria/${bloque.cat.id}`)}
+                        style={{fontSize:"16px",fontWeight:900,color:"#1a2a3a",cursor:"pointer",display:"flex",alignItems:"center",gap:"6px"}}>
                         {bloque.cat.emoji} {bloque.cat.nombre}
-                        <span style={{fontSize:"12px",fontWeight:600,color:"#9a9a9a",marginLeft:"8px"}}>({bloque.items.length})</span>
+                        <span style={{fontSize:"12px",fontWeight:600,color:"#9a9a9a"}}>({bloque.items.length})</span>
+                        <span style={{fontSize:"12px",color:"#3a7bd5"}}>→</span>
                       </span>
                       <span onClick={()=>router.push(`/grupos/categoria/${bloque.cat.id}`)}
                         style={{fontSize:"12px",fontWeight:700,color:"#3a7bd5",cursor:"pointer"}}>Ver todos →</span>

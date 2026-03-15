@@ -168,10 +168,10 @@ function NexoCrearInner() {
     if (file.size > 5*1024*1024) { alert("Máximo 5MB"); return; }
     setSubiendoImg(campo);
     const ext = file.name.split(".").pop();
-    const path = `nexos/${perfil.id}/${campo}_${Date.now()}.${ext}`;
-    const { error } = await supabase.storage.from("nexos").upload(path, file, { upsert:true });
+    const path = `anuncios/${perfil.id}/${campo}_${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from("imagenes").upload(path, file, { upsert:true });
     if (error) { alert("Error: " + error.message); setSubiendoImg(null); return; }
-    const { data } = supabase.storage.from("nexos").getPublicUrl(path);
+    const { data } = supabase.storage.from("imagenes").getPublicUrl(path);
     F(`${campo}_url`, data.publicUrl);
     setSubiendoImg(null);
   };
@@ -182,10 +182,10 @@ function NexoCrearInner() {
     if (file.size > 5*1024*1024) { alert("Máximo 5MB"); return; }
     setSubiendoImg("avatar");
     const ext = file.name.split(".").pop();
-    const path = `nexos/${perfil.id}/${campo}_${Date.now()}.${ext}`;
-    const { error } = await supabase.storage.from("nexos").upload(path, file, { upsert:true });
+    const path = `anuncios/${perfil.id}/${campo}_${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from("imagenes").upload(path, file, { upsert:true });
     if (error) { alert("Error: " + error.message); setSubiendoImg(null); return; }
-    const { data } = supabase.storage.from("nexos").getPublicUrl(path);
+    const { data } = supabase.storage.from("imagenes").getPublicUrl(path);
     F(`${campo}_url`, data.publicUrl);
     setSubiendoImg(null);
   };

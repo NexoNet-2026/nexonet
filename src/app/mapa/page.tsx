@@ -298,7 +298,11 @@ function MapaInner() {
               <button onClick={()=>setAnuncioSel(null)} style={{background:"none",border:"none",fontSize:"16px",cursor:"pointer",color:"#9a9a9a"}}>✕</button>
               <a href={`/anuncios/${anuncioSel.id}`} style={{background:"#d4a017",color:"#1a2a3a",border:"none",borderRadius:"8px",padding:"4px 8px",fontSize:"11px",fontWeight:800,textDecoration:"none",textAlign:"center"}}>Ver →</a>
               {session && (
-                <button onClick={()=>{toggleSeleccion(anuncioSel.id);setModoConexion(true);}} style={{background:"#d4a017",border:"none",borderRadius:"8px",padding:"4px 8px",fontSize:"11px",fontWeight:800,color:"#fff",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>🔗</button>
+                <button onClick={()=>{
+                  toggleSeleccion(anuncioSel.id);
+                  setModoConexion(true);
+                  setPopupConexion(true);
+                }} style={{background:"#d4a017",border:"none",borderRadius:"8px",padding:"4px 8px",fontSize:"11px",fontWeight:800,color:"#1a2a3a",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>🔗</button>
               )}
             </div>
           </div>

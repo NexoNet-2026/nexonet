@@ -145,6 +145,16 @@ export default function CategoriaPage() {
               {loading ? "Cargando..." : `${anunciosFiltrados.length} anuncio${anunciosFiltrados.length!==1?"s":""}`}
             </div>
           </div>
+          <button onClick={() => {
+            const params = new URLSearchParams();
+            if (subSel) params.set("subrubro", String(subSel));
+            if (provincia) params.set("provincia", provincia);
+            if (ciudad) params.set("ciudad", ciudad);
+            router.push(`/mapa?${params.toString()}`);
+          }}
+            style={{ background:"rgba(58,123,213,0.2)", border:"1px solid rgba(58,123,213,0.5)", borderRadius:"10px", padding:"7px 12px", fontSize:"12px", fontWeight:800, color:"#7fb3f5", cursor:"pointer", fontFamily:"'Nunito',sans-serif", whiteSpace:"nowrap" }}>
+            🗺️ Mapa
+          </button>
           <button onClick={() => router.push("/busqueda-ia")}
             style={{ background:"rgba(22,160,133,0.2)", border:"1px solid rgba(22,160,133,0.5)", borderRadius:"10px", padding:"7px 12px", fontSize:"12px", fontWeight:800, color:"#1abc9c", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
             🤖 IA

@@ -294,11 +294,14 @@ function NexoCrearInner() {
             </select>
             {form.provincia && (<>
               <L>Ciudad</L>
-              <select value={form.ciudad} onChange={e=>F("ciudad",e.target.value)} style={{...IS,marginBottom:"0"}}>
+              <select value={form.ciudad} onChange={e=>F("ciudad",e.target.value)} style={{...IS,marginBottom:"12px"}}>
                 <option value="">— Elegí una ciudad —</option>
                 {ciudades.map(c=><option key={c.id} value={c.nombre}>{c.nombre}</option>)}
               </select>
             </>)}
+            <L>Dirección (opcional)</L>
+            <input value={form.direccion} onChange={e=>F("direccion",e.target.value)}
+              placeholder="Ej: San Martín 1234, local 3" style={{...IS,marginBottom:"0"}}/>
             {form.lat && (
               <div style={{marginTop:"8px",fontSize:"11px",color:"#27ae60",fontWeight:700}}>✅ Ubicación GPS detectada</div>
             )}

@@ -552,6 +552,11 @@ function NexoCrearInner() {
                 <input value={form.direccion} onChange={e=>F("direccion",e.target.value)}
                   placeholder="Ej: San Martín 1234, local 3" style={{...IS,marginBottom:"0"}}/>
               </>)}
+              {(tipo==="grupo"||tipo==="servicio") && (<>
+                <L>Dirección (opcional)</L>
+                <input value={form.direccion} onChange={e=>F("direccion",e.target.value)}
+                  placeholder="Ej: San Martín 1234, local 3" style={{...IS,marginBottom:"0"}}/>
+              </>)}
             </div>
 
             <div style={{...CAJA, opacity: tipo==="empresa" && !pagoBITEmpresa ? 0.4 : 1, pointerEvents: tipo==="empresa" && !pagoBITEmpresa ? "none" as any : "auto"}}>

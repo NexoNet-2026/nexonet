@@ -12,7 +12,7 @@ type Grupo = {
   config: any; categoria_id: number; activo: boolean;
 };
 
-type GrupoCategoria = { id: number; nombre: string; emoji: string; slug: string };
+type GrupoCategoria = { id: number; nombre: string; emoji: string };
 type GrupoSubcategoria = { id: number; nombre: string; categoria_id: number };
 
 export default function GruposCategoriaPage() {

@@ -247,7 +247,6 @@ function MapaInner() {
               <div style={{fontSize:"16px",fontWeight:900,color:"#d4a017"}}>{fmt(anuncioSel.precio,anuncioSel.moneda)}</div>
               <div style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600}}>📍 {anuncioSel.ciudad}{anuncioSel.provincia?`, ${anuncioSel.provincia}`:""}</div>
             </div>
-            {anuncioSel.flash&&<div style={{background:"#d4a017",color:"#1a2a3a",fontSize:"9px",fontWeight:900,padding:"3px 7px",borderRadius:"8px",textTransform:"uppercase",alignSelf:"flex-start"}}>⚡Flash</div>}
             <div style={{display:"flex",flexDirection:"column",gap:"4px",alignSelf:"flex-start"}}>
               <button onClick={()=>setAnuncioSel(null)} style={{background:"none",border:"none",fontSize:"16px",cursor:"pointer",color:"#9a9a9a"}}>✕</button>
               <a href={`/anuncios/${anuncioSel.id}`} style={{background:"#d4a017",color:"#1a2a3a",border:"none",borderRadius:"8px",padding:"4px 8px",fontSize:"11px",fontWeight:800,textDecoration:"none",textAlign:"center"}}>Ver →</a>

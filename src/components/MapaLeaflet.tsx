@@ -53,7 +53,6 @@ const crearIcono = (flash: boolean, tipo?: string, avatarUrl?: string) => {
       ">
         ${interiorHtml}
       </div>
-      ${flash ? `<div style="position:absolute;top:-6px;right:-6px;background:#f0c040;color:#1a2a3a;font-size:8px;font-weight:900;padding:2px 5px;border-radius:6px;font-family:sans-serif;white-space:nowrap;">⚡</div>` : ""}
     `,
     className: "",
     iconSize:    [42, 42],

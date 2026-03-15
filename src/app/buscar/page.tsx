@@ -587,7 +587,8 @@ function BuscarInner() {
                         {bloque.cat.emoji} {bloque.cat.nombre}
                         <span style={{fontSize:"12px",fontWeight:600,color:"#9a9a9a",marginLeft:"8px"}}>({bloque.items.length})</span>
                       </span>
-                      <span style={{fontSize:"12px",fontWeight:700,color:"#3a7bd5"}}>Ver todos →</span>
+                      <span onClick={()=>router.push(`/grupos/categoria/${bloque.cat.id}`)}
+                        style={{fontSize:"12px",fontWeight:700,color:"#3a7bd5",cursor:"pointer"}}>Ver todos →</span>
                     </div>
                     <div style={{display:"flex",gap:"12px",padding:"0 16px",overflowX:"auto",scrollbarWidth:"none",WebkitOverflowScrolling:"touch"}}>
                       {bloque.items.slice(0,8).map(n => (

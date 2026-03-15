@@ -1,6 +1,6 @@
 "use client";
-import { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
 import { supabase } from "@/lib/supabase";
@@ -17,16 +17,25 @@ const ANIO_MIN = 1950;
 const ANIO_MAX = new Date().getFullYear();
 
 export default function CategoriaPage() {
-  const params  = useParams();
-  const router  = useRouter();
-  const rubroId = parseInt(params?.rubro as string);
+  return (
+    <Suspense fallback={<div style={{paddingTop:"95px",textAlign:"center",color:"#9a9a9a",fontFamily:"'Nunito',sans-serif"}}>Cargando...</div>}>
+      <CategoriaInner />
+    </Suspense>
+  );
+}
+
+function CategoriaInner() {
+  const params     = useParams();
+  const router     = useRouter();
+  const searchP    = useSearchParams();
+  const rubroId    = parseInt(params?.rubro as string);
 
   const [rubroNombre, setRubroNombre] = useState("");
   const [subrubros,   setSubrubros]   = useState<Subrubro[]>([]);
   const [anuncios,    setAnuncios]    = useState<Anuncio[]>([]);
   const [loading,     setLoading]     = useState(true);
 
-  // Filtros
+  // Filtros — pre-rellenar desde params de URL si vienen de buscar
   const [subSel,      setSubSel]      = useState<number|null>(null);
   const [precioMin,   setPrecioMin]   = useState("");
   const [precioMax,   setPrecioMax]   = useState("");
@@ -35,8 +44,8 @@ export default function CategoriaPage() {
   const [anioMax,     setAnioMax]     = useState("");
   const [kmMin,       setKmMin]       = useState("");
   const [kmMax,       setKmMax]       = useState("");
-  const [provincia,   setProvincia]   = useState("");
-  const [ciudad,      setCiudad]      = useState("");
+  const [provincia,   setProvincia]   = useState(searchP?.get("provincia") || "");
+  const [ciudad,      setCiudad]      = useState(searchP?.get("ciudad") || "");
   const [soloPermuto, setSoloPermuto] = useState(false);
   const [keywords,    setKeywords]    = useState("");
   const [orden,       setOrden]       = useState<"reciente"|"menor"|"mayor">("reciente");

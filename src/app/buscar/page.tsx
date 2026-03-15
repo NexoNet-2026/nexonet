@@ -424,6 +424,17 @@ function BuscarInner() {
               style={{background:"linear-gradient(135deg,rgba(22,160,133,0.3),rgba(22,160,133,0.15))", border:"2px solid rgba(22,160,133,0.7)", borderRadius:"20px", padding:"6px 14px", fontSize:"12px", fontWeight:800, color:"#1abc9c", cursor:"pointer", fontFamily:"'Nunito',sans-serif"}}>
               🤖 Búsqueda IA
             </button>
+            <button onClick={() => {
+              const params = new URLSearchParams();
+              if (sSel) params.set("subrubro", String(sSel.id));
+              else if (rSel) params.set("rubro", String(rSel.id));
+              if (provSel) params.set("provincia", provSel);
+              if (ciudSel) params.set("ciudad", ciudSel);
+              router.push(`/mapa?${params.toString()}`);
+            }}
+              style={{background:"linear-gradient(135deg,rgba(58,123,213,0.3),rgba(58,123,213,0.15))", border:"2px solid rgba(58,123,213,0.7)", borderRadius:"20px", padding:"6px 14px", fontSize:"12px", fontWeight:800, color:"#7fb3f5", cursor:"pointer", fontFamily:"'Nunito',sans-serif"}}>
+              🗺️ Ver en mapa
+            </button>
           </div>
         )}
 
@@ -500,11 +511,21 @@ function BuscarInner() {
                   return (
                     <div key={rubro.id} style={{marginBottom:"8px",background:"#fff",paddingBottom:"12px",borderBottom:"6px solid #f4f4f2"}}>
                       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 16px 8px"}}>
-                        <button onClick={()=>router.push(`/categoria/${rubro.id}`)}
+                        <button onClick={()=>{
+                          const p = new URLSearchParams();
+                          if (provSel) p.set("provincia", provSel);
+                          if (ciudSel) p.set("ciudad", ciudSel);
+                          router.push(`/categoria/${rubro.id}${p.toString()?"?"+p.toString():""}`);
+                        }}
                           style={{fontSize:"16px",fontWeight:900,color:"#1a2a3a",background:"none",border:"none",cursor:"pointer",fontFamily:"'Nunito',sans-serif",padding:0,textAlign:"left"}}>
                           {rubro.nombre} →
                         </button>
-                        <span onClick={()=>router.push(`/categoria/${rubro.id}`)} style={{fontSize:"12px",fontWeight:700,color:"#d4a017",cursor:"pointer"}}>Ver todos →</span>
+                        <span onClick={()=>{
+                          const p = new URLSearchParams();
+                          if (provSel) p.set("provincia", provSel);
+                          if (ciudSel) p.set("ciudad", ciudSel);
+                          router.push(`/categoria/${rubro.id}${p.toString()?"?"+p.toString():""}`);
+                        }} style={{fontSize:"12px",fontWeight:700,color:"#d4a017",cursor:"pointer"}}>Ver todos →</span>
                       </div>
                       <div style={{display:"flex",gap:"8px",padding:"0 16px 12px",overflowX:"auto",scrollbarWidth:"none"}}>
                         {rubro.subrubros.map((sub:any)=>(

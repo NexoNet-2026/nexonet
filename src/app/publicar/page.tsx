@@ -31,7 +31,7 @@ export default function PublicarSelector() {
     const destino = subtipoId
       ? `/nexo/crear/${tipoId}?subtipo=${subtipoId}`
       : `/nexo/crear/${tipoId}`;
-    router.push(destino);
+    window.location.href = destino;
   };
 
   return (

@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import PopupCompra, { MetodoPago } from "@/components/PopupCompra";
 
-type Seccion = "cuenta" | "chat" | "datos" | "estadisticas" | "promotor" | "grupos" | "busquedas" | "anuncios";
+type Seccion = "cuenta" | "chat" | "datos" | "estadisticas" | "promotor" | "grupos" | "busquedas" | "anuncios" | "empresa";
 
 const DIAS_SEMANA = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
 const FERIADOS_ARG: Record<string, string> = {
@@ -313,6 +313,7 @@ export default function Usuario() {
           {([
             ["cuenta",       "💳", "Cuenta",     "#d4a017"],
             ["anuncios",     "📋", "Anuncios",   "#d4a017"],
+            ["empresa",      "🏢", "Empresa",    "#c0392b"],
             ["promotor",     "⭐", "Promotor",   "#d4a017"],
             ["grupos",       "👥", "Grupos",     "#d4a017"],
             ["datos",        "👤", "Datos",      "#d4a017"],
@@ -320,7 +321,7 @@ export default function Usuario() {
             ["busquedas",    "🔍", "Búsquedas",  "#16a085"],
             ["estadisticas", "📊", "Stats",      "#d4a017"],
           ] as [Seccion,string,string,string][]).map(([id,e,l,color]) => (
-            <button key={id} onClick={()=> id === "anuncios" ? router.push("/mis-anuncios") : setSeccion(id)}
+            <button key={id} onClick={()=> id === "anuncios" ? router.push("/mis-anuncios") : id === "empresa" ? router.push("/nexo/crear/empresa") : setSeccion(id)}
               style={{ flexShrink:0, minWidth:"60px", background:"none", border:"none",
                        borderBottom: seccion===id ? `3px solid ${color}` : "3px solid transparent",
                        padding:"10px 6px", cursor:"pointer", display:"flex", flexDirection:"column",

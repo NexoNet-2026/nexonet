@@ -169,7 +169,7 @@ function NexoCrearInner() {
     setSubiendoImg(campo);
     const ext = file.name.split(".").pop();
     const bucket = (tipo==="anuncio"||tipo==="trabajo") ? "anuncios" : "nexos";
-    const path = `${bucket}/${perfil.id}/${campo}_${Date.now()}.${ext}`;
+    const path = `${perfil.id}/${campo}_${Date.now()}.${ext}`;
     await supabase.storage.from(bucket).upload(path, file, { upsert:true });
     const { data } = supabase.storage.from(bucket).getPublicUrl(path);
     F(`${campo}_url`, data.publicUrl); // sin ?t= para URL estable
@@ -182,7 +182,7 @@ function NexoCrearInner() {
     if (file.size > 5*1024*1024) { alert("Máximo 5MB"); return; }
     setSubiendoImg("avatar");
     const ext = file.name.split(".").pop();
-    const path = `anuncios/${perfil.id}/${campo}_${Date.now()}.${ext}`;
+    const path = `${perfil.id}/${campo}_${Date.now()}.${ext}`;
     await supabase.storage.from("anuncios").upload(path, file, { upsert:true });
     const { data } = supabase.storage.from("anuncios").getPublicUrl(path);
     F(`${campo}_url`, data.publicUrl);

@@ -167,9 +167,10 @@ function NexoCrearInner() {
     if (file.size > 5*1024*1024) { alert("Máximo 5MB"); return; }
     setSubiendoImg(campo);
     const ext = file.name.split(".").pop();
-    const path = `nexos/${perfil.id}/${campo}_${Date.now()}.${ext}`;
-    await supabase.storage.from("nexos").upload(path, file, { upsert:true });
-    const { data } = supabase.storage.from("nexos").getPublicUrl(path);
+    const bucket = (tipo==="anuncio"||tipo==="trabajo") ? "anuncios" : "nexos";
+    const path = `${bucket}/${perfil.id}/${campo}_${Date.now()}.${ext}`;
+    await supabase.storage.from(bucket).upload(path, file, { upsert:true });
+    const { data } = supabase.storage.from(bucket).getPublicUrl(path);
     F(`${campo}_url`, `${data.publicUrl}?t=${Date.now()}`);
     setSubiendoImg(null);
   };

@@ -77,6 +77,9 @@ export default function AdminPanel() {
   const [modalAnuncio,  setModalAnuncio]  = useState<any>(null);
   const [modalMensaje,  setModalMensaje]  = useState<any>(null);
   const [modalBit,      setModalBit]      = useState<any>(null);
+  const [modalPassword, setModalPassword] = useState<any>(null);
+  const [nuevaPass,     setNuevaPass]     = useState("");
+  const [showPass,      setShowPass]      = useState(false);
   const [modalNuevoAn,  setModalNuevoAn]  = useState(false);
   const [modalNuevoGr,  setModalNuevoGr]  = useState(false);
 
@@ -169,7 +172,21 @@ export default function AdminPanel() {
     setModalBit(null); setBitCant(""); setBitNota("");
     showToast(`✅ ${cant} ${bitTipo} acreditados`);
   };
-  const enviarMensaje = async () => {
+  const resetPassword = async () => {
+    if (!modalPassword || !nuevaPass.trim()) return;
+    if (nuevaPass.length < 6) { showToast("❌ Mínimo 6 caracteres"); return; }
+    // Enviar email de reset al usuario
+    const { error } = await supabase.auth.resetPasswordForEmail(modalPassword.email, {
+      redirectTo: `${window.location.origin}/nueva-contrasena`,
+    });
+    if (error) {
+      showToast("❌ Error: " + error.message);
+    } else {
+      showToast(`✅ Email de reset enviado a ${modalPassword.email}`);
+      setModalPassword(null);
+      setNuevaPass("");
+    }
+  };
     if (!msgTexto.trim()) return;
     if (msgDest==="todos") {
       const inserts = usuarios.map(u=>({usuario_id:u.id,tipo:msgTipo,mensaje:msgTexto,leida:false}));
@@ -819,6 +836,7 @@ export default function AdminPanel() {
           </div>
           <div style={{display:"flex",gap:"8px",flexWrap:"wrap"}}>
             <button onClick={()=>{setModalUsuario(null);setModalBit(modalUsuario);setBitTipo("bits");setBitCant("");setBitNota("");}} style={S.btn("#d4a017")}>💰 Asignar BIT</button>
+            <button onClick={()=>{setModalUsuario(null);setModalPassword(modalUsuario);setNuevaPass("");setShowPass(false);}} style={S.btn("#3a7bd5")}>🔑 Contraseña</button>
             <button onClick={()=>bloquearUsuario(modalUsuario)} style={S.btn(modalUsuario.bloqueado?"#27ae60":"#e67e22")}>{modalUsuario.bloqueado?"🔓 Desbloquear":"🔒 Bloquear"}</button>
           </div>
         </Modal>
@@ -987,6 +1005,21 @@ export default function AdminPanel() {
             Subcategoría activa
           </label>
           <button onClick={()=>guardarGrupoSubcat(modalGrupoSubcat)} style={S.btn("#27ae60")} disabled={!modalGrupoSubcat.nombre}>💾 Guardar</button>
+        </Modal>
+      )}
+      {/* ══ MODAL RESET CONTRASEÑA ══════════════════════════════════════════════ */}
+      {modalPassword && (
+        <Modal titulo={`🔑 Restablecer contraseña`} onClose={()=>setModalPassword(null)}>
+          <div style={{fontSize:"13px",color:"#9a9a9a",fontWeight:600,marginBottom:"16px"}}>
+            Se enviará un email de restablecimiento a:<br/>
+            <strong style={{color:"#1a2a3a"}}>{modalPassword.email}</strong>
+          </div>
+          <div style={{background:"rgba(58,123,213,0.06)",border:"2px solid rgba(58,123,213,0.2)",borderRadius:"12px",padding:"12px 14px",marginBottom:"16px",fontSize:"12px",color:"#3a7bd5",fontWeight:700}}>
+            ℹ️ El usuario recibirá un link para crear su nueva contraseña
+          </div>
+          <button onClick={resetPassword} style={S.btn("#3a7bd5")}>
+            📧 Enviar email de restablecimiento
+          </button>
         </Modal>
       )}
     </main>

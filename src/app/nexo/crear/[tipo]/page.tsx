@@ -91,6 +91,7 @@ function NexoCrearInner() {
     titulo:"", descripcion:"", precio:"", moneda:"ARS",
     provincia:"", ciudad:"", direccion:"", whatsapp:"", link_externo:"",
     permuto:false, banner_url:"", avatar_url:"",
+    foto1_url:"", foto2_url:"", foto3_url:"",
     tipo_acceso:"libre", rubro_id:"", subrubro_id:"",
     lat:"", lng:"",
   });
@@ -175,7 +176,18 @@ function NexoCrearInner() {
     setSubiendoImg(null);
   };
 
-  const agregarSlider = (cat:any) => {
+  const subirImagenAnuncio = async (e:React.ChangeEvent<HTMLInputElement>, campo:string) => {
+    const file = e.target.files?.[0];
+    if (!file || !perfil) return;
+    if (file.size > 5*1024*1024) { alert("Máximo 5MB"); return; }
+    setSubiendoImg("avatar");
+    const ext = file.name.split(".").pop();
+    const path = `anuncios/${perfil.id}/${campo}_${Date.now()}.${ext}`;
+    await supabase.storage.from("anuncios").upload(path, file, { upsert:true });
+    const { data } = supabase.storage.from("anuncios").getPublicUrl(path);
+    F(`${campo}_url`, data.publicUrl); // sin ?t= para que la URL sea estable
+    setSubiendoImg(null);
+  };
     if (sliders.find(s=>s.tipo===cat.tipo)) return;
     setSliders(prev=>[...prev,{...cat,orden:prev.length}]);
     setPopupSlider(false);
@@ -218,8 +230,12 @@ function NexoCrearInner() {
       if (form.subrubro_id) payload.subrubro_id = parseInt(form.subrubro_id);
       // Guardar imágenes también en el array imagenes para compatibilidad
       if (tipo==="anuncio"||tipo==="trabajo") {
-        const imgs = [form.avatar_url, form.banner_url].filter(Boolean);
-        if (imgs.length > 0) payload.imagenes = imgs;
+        const imgs = [form.foto1_url, form.foto2_url, form.foto3_url].filter(Boolean);
+        if (imgs.length > 0) {
+          payload.imagenes  = imgs;
+          payload.avatar_url = imgs[0]; // primera foto como principal
+        }
+        delete payload.banner_url; // anuncios no tienen banner
       }
 
       // Anuncios y trabajo → tabla anuncios. Grupos/empresa/servicio → tabla nexos
@@ -353,24 +369,18 @@ function NexoCrearInner() {
 
           {/* 4. IMÁGENES */}
           <div style={CAJA}>
-            <SL>📷 Imágenes</SL>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px"}}>
-              <label style={{cursor:"pointer"}}>
-                <div style={{height:"90px",background:"#f4f4f2",borderRadius:"12px",border:"2px dashed #d4a017",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:"4px",overflow:"hidden"}}>
-                  {form.avatar_url
-                    ? <img src={form.avatar_url} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
-                    : <><span style={{fontSize:"26px"}}>📷</span><span style={{fontSize:"10px",fontWeight:700,color:"#9a9a9a"}}>Foto principal</span></>}
-                </div>
-                <input type="file" accept="image/*" onChange={e=>subirImagen(e,"avatar")} style={{display:"none"}}/>
-              </label>
-              <label style={{cursor:"pointer"}}>
-                <div style={{height:"90px",background:"#f4f4f2",borderRadius:"12px",border:"2px dashed rgba(58,123,213,0.4)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:"4px",overflow:"hidden"}}>
-                  {form.banner_url
-                    ? <img src={form.banner_url} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
-                    : <><span style={{fontSize:"26px"}}>🖼️</span><span style={{fontSize:"10px",fontWeight:700,color:"#9a9a9a"}}>Banner</span></>}
-                </div>
-                <input type="file" accept="image/*" onChange={e=>subirImagen(e,"banner")} style={{display:"none"}}/>
-              </label>
+            <SL>📷 Fotos del producto</SL>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"8px"}}>
+              {["foto1","foto2","foto3"].map((campo,i) => (
+                <label key={campo} style={{cursor:"pointer"}}>
+                  <div style={{height:"80px",background:"#f4f4f2",borderRadius:"12px",border:`2px dashed ${(form as any)[campo+"_url"] ? "#d4a017" : "rgba(212,160,23,0.3)"}`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:"4px",overflow:"hidden",position:"relative"}}>
+                    {(form as any)[campo+"_url"]
+                      ? <><img src={(form as any)[campo+"_url"]} style={{width:"100%",height:"100%",objectFit:"cover"}}/><div style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.3)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"18px"}}>📷</div></>
+                      : <><span style={{fontSize:"22px"}}>📷</span><span style={{fontSize:"9px",fontWeight:700,color:"#9a9a9a"}}>Foto {i+1}</span></>}
+                  </div>
+                  <input type="file" accept="image/*" onChange={e=>subirImagenAnuncio(e,campo)} style={{display:"none"}}/>
+                </label>
+              ))}
             </div>
             {subiendoImg && <div style={{textAlign:"center",fontSize:"12px",color:"#9a9a9a",marginTop:"8px"}}>⏳ Subiendo imagen...</div>}
           </div>

@@ -16,9 +16,12 @@ type SubrubroFlat = { id:number; nombre:string; rubro_id:number };
 function MapaInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const paramLat = searchParams.get("lat");
-  const paramLng = searchParams.get("lng");
-  const paramId  = searchParams.get("id");
+  const paramLat      = searchParams.get("lat");
+  const paramLng      = searchParams.get("lng");
+  const paramId       = searchParams.get("id");
+  const paramSubrubro = searchParams.get("subrubro");
+  const paramProvincia= searchParams.get("provincia");
+  const paramCiudad   = searchParams.get("ciudad");
 
   const [anuncios,      setAnuncios]      = useState<Anuncio[]>([]);
   const [rFlat,         setRFlat]         = useState<RubroFlat[]>([]);
@@ -70,8 +73,19 @@ function MapaInner() {
         .eq("estado","activo").not("lat","is",null).not("lng","is",null),
     ]).then(([{data:rData},{data:aData}]) => {
       if (rData) {
-        setRFlat(rData.map((r:any) => ({id:r.id,nombre:r.nombre})));
-        setSFlat(rData.flatMap((r:any) => (r.subrubros||[]).map((s:any) => ({id:s.id,nombre:s.nombre,rubro_id:r.id}))));
+        const rf = rData.map((r:any) => ({id:r.id,nombre:r.nombre}));
+        const sf = rData.flatMap((r:any) => (r.subrubros||[]).map((s:any) => ({id:s.id,nombre:s.nombre,rubro_id:r.id})));
+        setRFlat(rf);
+        setSFlat(sf);
+        // Pre-seleccionar subrubro si viene en URL
+        if (paramSubrubro) {
+          const s = sf.find((x:any) => x.id === parseInt(paramSubrubro));
+          if (s) {
+            setSSel(s);
+            setRSel(rf.find((r:any) => r.id === s.rubro_id) || null);
+            setQuery(s.nombre);
+          }
+        }
       }
       if (aData) {
         const lista = (aData as any[]).map(a=>({
@@ -110,8 +124,10 @@ function MapaInner() {
 
   const anunciosFiltrados = anuncios.filter(a => {
     if (session && a.usuario_id === session?.user.id) return false;
-    if (sSel) return a.subrubro_id===sSel.id;
-    if (rSel) return sFlat.filter(s=>s.rubro_id===rSel.id).map(s=>s.id).includes(a.subrubro_id);
+    if (sSel) { if (a.subrubro_id!==sSel.id) return false; }
+    else if (rSel) { if (!sFlat.filter(s=>s.rubro_id===rSel.id).map(s=>s.id).includes(a.subrubro_id)) return false; }
+    if (paramProvincia && a.provincia?.toLowerCase() !== paramProvincia.toLowerCase()) return false;
+    if (paramCiudad && a.ciudad?.toLowerCase() !== paramCiudad.toLowerCase()) return false;
     return true;
   });
 

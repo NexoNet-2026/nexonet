@@ -230,9 +230,9 @@ export default function AnuncioDetalle() {
         <div style={{ background:fuente.color, padding:"5px 16px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
           <span style={{ fontSize:"11px", fontWeight:900, color:fuente.texto, textTransform:"uppercase", letterSpacing:"1px" }}>{fuente.label}</span>
         </div>
-        <div style={{ height:"280px", display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden" }}>
+        <div style={{ maxHeight:"420px", display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden", background:"#000" }}>
           {imagenes.length > 0
-            ? <img src={imagenes[imgActiva]} alt={anuncio.titulo} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+            ? <img src={imagenes[imgActiva]} alt={anuncio.titulo} style={{ width:"100%", height:"auto", maxHeight:"420px", objectFit:"contain" }} />
             : <span style={{ fontSize:"80px" }}>📦</span>}
         </div>
         <button onClick={() => router.back()} style={{ position:"absolute", top:"44px", left:"12px", background:"rgba(0,0,0,0.5)", border:"none", borderRadius:"50%", width:"36px", height:"36px", color:"#fff", fontSize:"18px", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>←</button>

@@ -216,7 +216,9 @@ function NexoCrearInner() {
       if (form.lng)        payload.lng       = parseFloat(form.lng);
       if (form.subrubro_id) payload.subrubro_id = parseInt(form.subrubro_id);
 
-      const { data: nexo, error } = await supabase.from("nexos").insert(payload).select().single();
+      // Anuncios y trabajo → tabla anuncios. Grupos/empresa/servicio → tabla nexos
+      const tabla = (tipo==="anuncio"||tipo==="trabajo") ? "anuncios" : "nexos";
+      const { data: nexo, error } = await supabase.from(tabla).insert(payload).select().single();
       if (error) { console.error(error); alert(`Error: ${error.message}`); setGuardando(false); return; }
 
       if (sliders.length > 0) {

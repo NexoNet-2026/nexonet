@@ -79,6 +79,7 @@ function NexoCrearInner() {
   const [guardando,   setGuardando]   = useState(false);
   const [subiendoImg, setSubiendoImg] = useState<"banner"|"avatar"|null>(null);
   const [popupSlider, setPopupSlider] = useState(false);
+  const [popupConfirmar, setPopupConfirmar] = useState(false);
   const [gpsLoad,     setGpsLoad]     = useState(false);
 
   // Ubicación
@@ -431,12 +432,61 @@ function NexoCrearInner() {
             {subiendoImg && <div style={{textAlign:"center",fontSize:"12px",color:"#9a9a9a",marginTop:"8px"}}>⏳ Subiendo imagen...</div>}
           </div>
 
-          <button onClick={crear} disabled={guardando||!form.titulo.trim()}
+          <button onClick={()=>{
+              if ((tipo==="anuncio"||tipo==="trabajo") && perfil?.plan !== "nexoempresa") {
+                setPopupConfirmar(true);
+              } else {
+                crear();
+              }
+            }} disabled={guardando||!form.titulo.trim()}
             style={{width:"100%",background:guardando||!form.titulo.trim()?`${colorPage}50`:`linear-gradient(135deg,${colorPage}cc,${colorPage})`,border:"none",borderRadius:"14px",padding:"16px",fontSize:"16px",fontWeight:900,color:"#fff",cursor:guardando||!form.titulo.trim()?"not-allowed":"pointer",fontFamily:"'Nunito',sans-serif",boxShadow:guardando||!form.titulo.trim()?"none":`0 4px 0 ${colorPage}88`}}>
             {guardando?"⏳ Creando...": tipo==="trabajo" ? "✅ Publicar búsqueda de trabajo" : "✅ Publicar anuncio"}
           </button>
         </div>
         <BottomNav/>
+
+      {/* POPUP CONFIRMAR PUBLICACIÓN */}
+      {popupConfirmar && (
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",zIndex:500,display:"flex",alignItems:"flex-end"}}
+          onClick={()=>setPopupConfirmar(false)}>
+          <div style={{background:"#fff",borderRadius:"24px 24px 0 0",padding:"24px 20px 44px",width:"100%",fontFamily:"'Nunito',sans-serif"}}
+            onClick={e=>e.stopPropagation()}>
+            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"22px",color:"#1a2a3a",letterSpacing:"1px",marginBottom:"6px"}}>
+              📣 Publicar anuncio
+            </div>
+            <div style={{fontSize:"13px",color:"#9a9a9a",fontWeight:600,marginBottom:"20px"}}>
+              Confirmá para publicar tu anuncio
+            </div>
+            <div style={{background:"rgba(212,160,23,0.08)",border:"2px solid rgba(212,160,23,0.3)",borderRadius:"14px",padding:"16px",marginBottom:"20px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+              <div>
+                <div style={{fontSize:"13px",fontWeight:900,color:"#1a2a3a"}}>⚡ Costo de publicación</div>
+                <div style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600,marginTop:"2px"}}>
+                  Disponible: {Math.max(0, perfil?.bits_free || 0)} BIT FREE
+                </div>
+              </div>
+              <div style={{textAlign:"right"}}>
+                <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"32px",color:"#d4a017"}}>1</div>
+                <div style={{fontSize:"10px",color:"#9a9a9a",fontWeight:700}}>BIT FREE</div>
+              </div>
+            </div>
+            {(perfil?.bits_free || 0) <= 0 ? (
+              <div style={{background:"rgba(231,76,60,0.08)",border:"2px solid rgba(231,76,60,0.2)",borderRadius:"12px",padding:"14px",textAlign:"center",marginBottom:"16px"}}>
+                <div style={{fontSize:"13px",fontWeight:900,color:"#e74c3c"}}>Sin BIT FREE disponibles</div>
+                <div style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600,marginTop:"4px"}}>Cargá BIT FREE desde la tienda para publicar</div>
+              </div>
+            ) : (
+              <button onClick={()=>{ setPopupConfirmar(false); crear(); }}
+                style={{width:"100%",background:"linear-gradient(135deg,#d4a017,#f0c040)",border:"none",borderRadius:"14px",padding:"16px",fontSize:"15px",fontWeight:900,color:"#1a2a3a",cursor:"pointer",fontFamily:"'Nunito',sans-serif",boxShadow:"0 4px 0 #a07810",marginBottom:"10px"}}>
+                ✅ Confirmar y publicar — 1 BIT FREE
+              </button>
+            )}
+            <button onClick={()=>setPopupConfirmar(false)}
+              style={{width:"100%",background:"none",border:"none",padding:"12px",fontSize:"13px",fontWeight:700,color:"#9a9a9a",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
       </main>
     );
   }

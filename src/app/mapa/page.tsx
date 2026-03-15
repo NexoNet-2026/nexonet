@@ -154,6 +154,7 @@ function MapaInner() {
     if (seleccionados.size===0) return;
     setConectando(true);
     const ids = Array.from(seleccionados);
+    const costo = ids.length;
     const { data: anuData } = await supabase.from("anuncios").select("id,usuario_id,conexiones").in("id",ids);
     if (anuData) {
       await Promise.all(anuData.map((a:any) => supabase.from("anuncios").update({conexiones:(a.conexiones||0)+1}).eq("id",a.id)));
@@ -161,9 +162,39 @@ function MapaInner() {
         usuario_id:a.usuario_id, emisor_id:session.user.id,
         anuncio_id:a.id, tipo:"conexion", mensaje:mensajeConexion,
       })));
-      const nb = bits - ids.length;
-      await supabase.from("usuarios").update({bits:nb, bits_gastados_conexion: nb}).eq("id",session.user.id);
-      setBits(nb);
+
+      // Descontar en orden: FREE → PROMO → NEXO
+      let resta = costo;
+      let newFree  = bitsFree;
+      let newPromo = bitsPromo;
+      let newBits  = bits;
+
+      if (newFree >= resta) {
+        newFree -= resta; resta = 0;
+      } else if (newFree > 0) {
+        resta -= newFree; newFree = 0;
+      }
+      if (resta > 0) {
+        if (newPromo >= resta) {
+          newPromo -= resta; resta = 0;
+        } else if (newPromo > 0) {
+          resta -= newPromo; newPromo = 0;
+        }
+      }
+      if (resta > 0) {
+        newBits -= resta;
+      }
+
+      await supabase.from("usuarios").update({
+        bits: Math.max(0, newBits),
+        bits_free: Math.max(0, newFree),
+        bits_promo: Math.max(0, newPromo),
+        bits_gastados_conexion: (costo),
+      }).eq("id", session.user.id);
+
+      setBits(Math.max(0, newBits));
+      setBitsFree(Math.max(0, newFree));
+      setBitsPromo(Math.max(0, newPromo));
     }
     setResultadoConex(`✅ Mensaje enviado a ${ids.length} anuncio${ids.length!==1?"s":""}. Usaste ${ids.length} BIT.`);
     setConectando(false);

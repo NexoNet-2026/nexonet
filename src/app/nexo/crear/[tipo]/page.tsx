@@ -208,6 +208,27 @@ function NexoCrearInner() {
   const crear = async () => {
     if (!form.titulo.trim()) { alert("Escribí un título"); return; }
     if (!perfil) { alert("Sesión no válida"); return; }
+
+    // Verificar BIT FREE para usuarios free en anuncios/trabajo
+    if ((tipo==="anuncio"||tipo==="trabajo") && perfil.plan !== "nexoempresa") {
+      const bitsFree = Math.max(0, perfil.bits_free || 0);
+      if (bitsFree <= 0) {
+        alert("Necesitás BIT FREE para publicar un anuncio. Cargá BIT FREE desde la tienda.");
+        return;
+      }
+    }
+
+    // Verificar límite de 50 para empresa
+    if (perfil.plan === "nexoempresa") {
+      const { count } = await supabase.from("anuncios")
+        .select("id", { count:"exact", head:true })
+        .eq("usuario_id", perfil.id);
+      if ((count || 0) >= 50) {
+        alert("Alcanzaste el límite de 50 anuncios del plan Empresa.");
+        return;
+      }
+    }
+
     setGuardando(true);
     try {
       const payload: any = {
@@ -245,6 +266,12 @@ function NexoCrearInner() {
       const tabla = (tipo==="anuncio"||tipo==="trabajo") ? "anuncios" : "nexos";
       const { data: nexo, error } = await supabase.from(tabla).insert(payload).select().single();
       if (error) { console.error(error); alert(`Error: ${error.message}`); setGuardando(false); return; }
+
+      // Descontar 1 BIT FREE al publicar anuncio (usuarios free)
+      if ((tipo==="anuncio"||tipo==="trabajo") && perfil.plan !== "nexoempresa") {
+        const bitsFree = Math.max(0, perfil.bits_free || 0);
+        await supabase.from("usuarios").update({ bits_free: bitsFree - 1 }).eq("id", perfil.id);
+      }
 
       if (sliders.length > 0) {
         await supabase.from("nexo_sliders").insert(

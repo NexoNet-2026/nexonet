@@ -125,6 +125,11 @@ function GruposInner() {
     setGrupoPopup(g);
   };
 
+  // Navegar a página de categoría (igual que rubros en buscar)
+  const irACategoria = (cat: Categoria) => {
+    router.push(`/grupos/categoria/${cat.id}`);
+  };
+
   return (
     <main style={{ paddingTop:"95px", paddingBottom:"130px", background:"#f4f4f2", minHeight:"100vh", fontFamily:"'Nunito',sans-serif" }}>
       <Header />
@@ -254,8 +259,16 @@ function GruposInner() {
             return(
               <div key={cat.id} style={{ marginBottom:"8px", background:"#fff", paddingBottom:"12px", borderBottom:"6px solid #f4f4f2" }}>
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"14px 16px 8px" }}>
-                  <span style={{ fontSize:"16px", fontWeight:900, color:"#1a2a3a" }}>{cat.emoji} {cat.nombre}</span>
-                  <span style={{ fontSize:"12px", fontWeight:700, color:"#d4a017", cursor:"pointer" }}>Ver todos →</span>
+                  {/* TÍTULO CLICKEABLE → abre página de categoría */}
+                  <span onClick={()=>irACategoria(cat)}
+                    style={{ fontSize:"16px", fontWeight:900, color:"#1a2a3a", cursor:"pointer", display:"flex", alignItems:"center", gap:"6px" }}>
+                    {cat.emoji} {cat.nombre}
+                    <span style={{ fontSize:"13px", color:"#d4a017" }}>→</span>
+                  </span>
+                  <span onClick={()=>irACategoria(cat)}
+                    style={{ fontSize:"12px", fontWeight:700, color:"#d4a017", cursor:"pointer" }}>
+                    Ver todos →
+                  </span>
                 </div>
                 {/* Subcategorías como chips */}
                 {subs.length>0&&(
@@ -330,7 +343,6 @@ function TarjetaGrupo({ g, esMiembro, onUnirse, grid }:{ g:Grupo; esMiembro:bool
     <div style={{ textDecoration:"none", flexShrink:grid?undefined:0, width:grid?undefined:"180px", cursor:"pointer" }}
          onClick={()=>window.location.href=`/grupos/${g.id}`}>
       <div style={{ background:"#fff", borderRadius:"16px", overflow:"hidden", boxShadow:"0 2px 10px rgba(0,0,0,0.08)", border:"1px solid #f0f0f0" }}>
-        {/* Imagen */}
         <div style={{ width:"100%", height:"95px", background:"linear-gradient(135deg,#1a2a3a,#243b55)", display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden", position:"relative" }}>
           {g.imagen
             ?<img src={g.imagen} alt={g.nombre} style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
@@ -344,7 +356,6 @@ function TarjetaGrupo({ g, esMiembro, onUnirse, grid }:{ g:Grupo; esMiembro:bool
           </div>
           {esMiembro&&<div style={{ position:"absolute", top:"6px", left:"6px", background:"rgba(212,160,23,0.9)", borderRadius:"20px", padding:"2px 7px", fontSize:"9px", fontWeight:800, color:"#1a2a3a" }}>⭐</div>}
         </div>
-        {/* Info */}
         <div style={{ padding:"9px 10px 11px" }}>
           {g.subcategoria_nombre&&<div style={{ fontSize:"10px", color:"#9a9a9a", fontWeight:700, textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:"2px" }}>{g.subcategoria_nombre}</div>}
           <div style={{ fontSize:"13px", fontWeight:800, color:"#1a2a3a", marginBottom:"3px", overflow:"hidden", whiteSpace:"nowrap", textOverflow:"ellipsis" }}>{g.nombre}</div>

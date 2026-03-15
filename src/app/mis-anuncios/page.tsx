@@ -263,7 +263,7 @@ export default function MisAnuncios() {
 
         {/* Slots libres — solo si hay espacio */}
         {Array.from({ length: slotsLibres }).map((_, i) => (
-          <button key={`sl${i}`} onClick={() => router.push("/publicar")}
+          <button key={`sl${i}`} onClick={() => { window.location.href = "/nexo/crear/anuncio"; }}
             style={{ background:"#fff", borderRadius:"16px", padding:"20px", border:"2px dashed #d4a017",
                      display:"flex", alignItems:"center", gap:"16px", cursor:"pointer", width:"100%" }}>
             <div style={{ width:"60px", height:"60px", borderRadius:"12px", background:"rgba(212,160,23,0.08)",
@@ -273,7 +273,7 @@ export default function MisAnuncios() {
             <div style={{ textAlign:"left" }}>
               <div style={{ fontWeight:900, fontSize:"14px", color:"#1a2a3a" }}>Slot disponible</div>
               <div style={{ fontSize:"12px", color:"#9a9a9a", fontWeight:600, marginTop:"2px" }}>
-                Tocá para crear un Nexo
+                Tocá para crear un anuncio
               </div>
             </div>
           </button>
@@ -577,7 +577,7 @@ export default function MisAnuncios() {
 
         {/* BOTÓN CREAR OTRO ANUNCIO — siempre visible al final */}
         {!esEmpresa && (
-          <button onClick={() => setPopupPlan(true)}
+          <button onClick={() => puedeCrear ? (window.location.href="/nexo/crear/anuncio") : setPopupPlan(true)}
             style={{ background:"#fff", borderRadius:"16px", padding:"20px", border:"2px dashed rgba(212,160,23,0.5)",
                      display:"flex", alignItems:"center", gap:"16px", cursor:"pointer", width:"100%",
                      boxShadow:"0 2px 10px rgba(0,0,0,0.06)" }}>
@@ -588,11 +588,11 @@ export default function MisAnuncios() {
             </div>
             <div style={{ textAlign:"left" }}>
               <div style={{ fontWeight:900, fontSize:"14px", color:"#1a2a3a" }}>
-                {puedeCrear ? "Crear otro anuncio" : "Crear otro anuncio"}
+                {puedeCrear ? "Crear otro anuncio" : "Agregar anuncio extra"}
               </div>
               <div style={{ fontSize:"12px", fontWeight:600, marginTop:"2px",
                              color: puedeCrear ? "#9a9a9a" : "#c0392b" }}>
-                {puedeCrear ? "Slot disponible" : "Límite alcanzado · 500 BIT o convertí en Empresa"}
+                {puedeCrear ? "Slot disponible — gratis" : "Límite alcanzado · 500 BIT"}
               </div>
             </div>
             <span style={{ marginLeft:"auto", fontSize:"18px", color:"#d4a017", flexShrink:0 }}>›</span>
@@ -765,7 +765,7 @@ export default function MisAnuncios() {
               }).eq("id", session?.user?.id);
               setPerfil((p:any) => ({ ...p, [campoDescontar]: valorActual - 500, slots_extra: (p?.slots_extra||0)+1 }));
               setPopupPlan(false);
-              router.push("/publicar");
+              window.location.href = "/nexo/crear/anuncio";
             }}
               style={{ width:"100%", background:"linear-gradient(135deg,#1a2a3a,#243b55)", border:"2px solid rgba(212,160,23,0.3)",
                        borderRadius:"16px", padding:"18px 20px", marginBottom:"12px", cursor:"pointer",

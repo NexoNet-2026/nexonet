@@ -172,7 +172,7 @@ function NexoCrearInner() {
     const path = `${bucket}/${perfil.id}/${campo}_${Date.now()}.${ext}`;
     await supabase.storage.from(bucket).upload(path, file, { upsert:true });
     const { data } = supabase.storage.from(bucket).getPublicUrl(path);
-    F(`${campo}_url`, `${data.publicUrl}?t=${Date.now()}`);
+    F(`${campo}_url`, data.publicUrl); // sin ?t= para URL estable
     setSubiendoImg(null);
   };
 

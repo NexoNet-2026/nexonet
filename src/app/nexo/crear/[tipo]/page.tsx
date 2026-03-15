@@ -420,6 +420,11 @@ function NexoCrearInner() {
 
           <button onClick={()=>{
               if ((tipo==="anuncio"||tipo==="trabajo") && perfil?.plan !== "nexoempresa") {
+                const totalBits = (perfil?.bits_free||0) + (perfil?.bits||0);
+                if (totalBits < 500) {
+                  alert(`Necesitás 500 BIT para publicar. Tenés ${totalBits} BIT disponibles. Cargá más desde la tienda.`);
+                  return;
+                }
                 setPopupConfirmar(true);
               } else {
                 crear();
@@ -443,9 +448,11 @@ function NexoCrearInner() {
           onPagar={async (metodo: MetodoPago) => {
             setPopupConfirmar(false);
             if (metodo === "bit_free") {
-              await supabase.from("usuarios").update({ bits_free: Math.max(0,(perfil?.bits_free||0)-500) }).eq("id", perfil.id);
+              if ((perfil?.bits_free || 0) < 500) { alert("No tenés suficientes BIT FREE. Necesitás 500."); return; }
+              await supabase.from("usuarios").update({ bits_free: (perfil.bits_free) - 500 }).eq("id", perfil.id);
             } else if (metodo === "bit_nexo") {
-              await supabase.from("usuarios").update({ bits: Math.max(0,(perfil?.bits||0)-500) }).eq("id", perfil.id);
+              if ((perfil?.bits || 0) < 500) { alert("No tenés suficientes BIT Nexo. Necesitás 500."); return; }
+              await supabase.from("usuarios").update({ bits: (perfil.bits) - 500 }).eq("id", perfil.id);
             } else {
               alert("Próximamente — pagos con tarjeta/transferencia");
               return;

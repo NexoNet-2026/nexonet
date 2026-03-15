@@ -89,11 +89,13 @@ function NexoCrearInner() {
 
   const [form, setForm] = useState({
     titulo:"", descripcion:"", precio:"", moneda:"ARS",
-    provincia:"", ciudad:"", whatsapp:"", link_externo:"",
+    provincia:"", ciudad:"", direccion:"", whatsapp:"", link_externo:"",
     permuto:false, banner_url:"", avatar_url:"",
     tipo_acceso:"libre", rubro_id:"", subrubro_id:"",
     lat:"", lng:"",
   });
+  const [pagoBITEmpresa, setPagoBITEmpresa] = useState(false);
+  const [popupPagarEmpresa, setPopupPagarEmpresa] = useState(false);
 
   const [sliders, setSliders] = useState<{id:string;emoji:string;titulo:string;tipo:string;orden:number}[]>([]);
 
@@ -200,6 +202,7 @@ function NexoCrearInner() {
         descripcion:  form.descripcion||null,
         ciudad:       form.ciudad||null,
         provincia:    form.provincia||null,
+        direccion:    form.direccion||null,
         whatsapp:     form.whatsapp||null,
         link_externo: form.link_externo||null,
         banner_url:   form.banner_url||null,
@@ -224,7 +227,12 @@ function NexoCrearInner() {
       if (tipo==="grupo") {
         await supabase.from("nexo_miembros").insert({ nexo_id:nexo.id, usuario_id:perfil.id, rol:"creador", estado:"activo" });
       }
-      router.push(`/nexo/${nexo.id}`);
+      // Empresa → ir a mis-anuncios para empezar a cargar anuncios
+      if (tipo==="empresa") {
+        window.location.href = "/mis-anuncios";
+      } else {
+        router.push(`/nexo/${nexo.id}`);
+      }
     } catch(e:any) {
       alert("Error al crear: " + (e?.message||"Intentá de nuevo"));
       setGuardando(false);
@@ -414,11 +422,48 @@ function NexoCrearInner() {
         {/* PASO 1 */}
         {paso===1 && (
           <div style={{display:"flex",flexDirection:"column",gap:"14px"}}>
-            <div style={CAJA}>
+
+            {/* GATE: pago 10.000 BIT para empresa */}
+            {tipo==="empresa" && !pagoBITEmpresa && (
+              <div style={{background:"linear-gradient(135deg,#2c1a1a,#4a2020)",borderRadius:"16px",padding:"20px",border:"2px solid rgba(192,57,43,0.4)"}}>
+                <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"20px",color:"#e74c3c",letterSpacing:"1px",marginBottom:"8px"}}>🏢 Nexo Empresa</div>
+                <div style={{fontSize:"13px",color:"#e88a8a",fontWeight:600,lineHeight:1.6,marginBottom:"16px"}}>
+                  Para crear tu perfil empresarial con <strong style={{color:"#fff"}}>50 slots de anuncios</strong> necesitás abonar el plan Empresa.
+                </div>
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",background:"rgba(0,0,0,0.2)",borderRadius:"12px",padding:"12px 16px",marginBottom:"16px"}}>
+                  <span style={{fontSize:"13px",fontWeight:700,color:"#e88a8a"}}>Costo del plan</span>
+                  <div style={{textAlign:"right"}}>
+                    <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"28px",color:"#e74c3c"}}>10.000</div>
+                    <div style={{fontSize:"10px",color:"#e88a8a",fontWeight:700}}>BIT</div>
+                  </div>
+                </div>
+                <button onClick={async () => {
+                  const bitsTotal = Math.max(0,perfil?.bits||0)+Math.max(0,perfil?.bits_free||0)+Math.max(0,perfil?.bits_promo||0);
+                  if (bitsTotal < 10000) { alert("Necesitás 10.000 BIT. Cargá BIT desde la tienda."); return; }
+                  const campo = (perfil?.bits_free||0)>=10000?"bits_free":(perfil?.bits_promo||0)>=10000?"bits_promo":"bits";
+                  const valor = campo==="bits_free"?perfil.bits_free:campo==="bits_promo"?perfil.bits_promo:perfil.bits;
+                  await supabase.from("usuarios").update({[campo]:valor-10000,plan:"nexoempresa"}).eq("id",perfil.id);
+                  setPerfil((p:any)=>({...p,[campo]:valor-10000,plan:"nexoempresa"}));
+                  setPagoBITEmpresa(true);
+                }}
+                  style={{width:"100%",background:"linear-gradient(135deg,#c0392b,#e74c3c)",border:"none",borderRadius:"12px",padding:"14px",fontSize:"15px",fontWeight:900,color:"#fff",cursor:"pointer",fontFamily:"'Nunito',sans-serif",boxShadow:"0 4px 0 rgba(0,0,0,0.3)"}}>
+                  💳 Pagar 10.000 BIT y activar Empresa
+                </button>
+              </div>
+            )}
+
+            {tipo==="empresa" && pagoBITEmpresa && (
+              <div style={{background:"rgba(39,174,96,0.1)",border:"2px solid rgba(39,174,96,0.3)",borderRadius:"12px",padding:"12px 16px",display:"flex",alignItems:"center",gap:"10px"}}>
+                <span style={{fontSize:"20px"}}>✅</span>
+                <div style={{fontSize:"13px",fontWeight:800,color:"#27ae60"}}>Plan Empresa activado · 50 slots disponibles</div>
+              </div>
+            )}
+
+            <div style={{...CAJA, opacity: tipo==="empresa" && !pagoBITEmpresa ? 0.4 : 1, pointerEvents: tipo==="empresa" && !pagoBITEmpresa ? "none" as any : "auto"}}>
               <SL>📝 Información básica</SL>
               <L>Nombre / Título *</L>
               <input value={form.titulo} onChange={e=>F("titulo",e.target.value)}
-                placeholder={tipo==="servicio"?"Ej: Plomería y gas — reparaciones urgentes":"Ej: Comunidad de Emprendedores Rosario"}
+                placeholder={tipo==="servicio"?"Ej: Plomería y gas — reparaciones urgentes":"Ej: Ferretería San Martín"}
                 style={{...IS,marginBottom:"12px"}}/>
               <L>Descripción</L>
               <textarea value={form.descripcion} onChange={e=>F("descripcion",e.target.value)}
@@ -440,7 +485,7 @@ function NexoCrearInner() {
             </div>
 
             {/* UBICACIÓN */}
-            <div style={CAJA}>
+            <div style={{...CAJA, opacity: tipo==="empresa" && !pagoBITEmpresa ? 0.4 : 1, pointerEvents: tipo==="empresa" && !pagoBITEmpresa ? "none" as any : "auto"}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"12px"}}>
                 <SL style={{margin:0}}>📍 Ubicación</SL>
                 <button onClick={gps} disabled={gpsLoad}
@@ -455,14 +500,19 @@ function NexoCrearInner() {
               </select>
               {form.provincia && (<>
                 <L>Ciudad</L>
-                <select value={form.ciudad} onChange={e=>F("ciudad",e.target.value)} style={{...IS,marginBottom:"0"}}>
+                <select value={form.ciudad} onChange={e=>F("ciudad",e.target.value)} style={{...IS,marginBottom:"12px"}}>
                   <option value="">— Elegí una ciudad —</option>
                   {ciudades.map(c=><option key={c.id} value={c.nombre}>{c.nombre}</option>)}
                 </select>
               </>)}
+              {tipo==="empresa" && (<>
+                <L>Dirección del local</L>
+                <input value={form.direccion} onChange={e=>F("direccion",e.target.value)}
+                  placeholder="Ej: San Martín 1234, local 3" style={{...IS,marginBottom:"0"}}/>
+              </>)}
             </div>
 
-            <div style={CAJA}>
+            <div style={{...CAJA, opacity: tipo==="empresa" && !pagoBITEmpresa ? 0.4 : 1, pointerEvents: tipo==="empresa" && !pagoBITEmpresa ? "none" as any : "auto"}}>
               <SL>📱 Contacto</SL>
               <L>WhatsApp</L>
               <input value={form.whatsapp} onChange={e=>F("whatsapp",e.target.value)} placeholder="Ej: 3412345678" style={IS}/>

@@ -254,7 +254,9 @@ export default function MisAnuncios() {
             ))}
           </div>
           <div style={{ fontSize:"11px", fontWeight:700, color: slotsLibres > 0 ? "#27ae60" : "#e74c3c" }}>
-            {slotsLibres > 0 ? `${slotsLibres} libre${slotsLibres > 1 ? "s" : ""}` : "Lleno"}
+            {esEmpresa
+              ? `${slots} de ${slotsMax} anuncios`
+              : slotsLibres > 0 ? `${slotsLibres} libre${slotsLibres > 1 ? "s" : ""}` : "Lleno"}
           </div>
         </div>
       </div>

@@ -382,47 +382,87 @@ export default function AnuncioDetalle() {
             {!session && (
               <>
                 <button onClick={() => router.push("/login")} style={{ width:"100%", background:"linear-gradient(135deg,#d4a017,#f0c040)", border:"none", borderRadius:"14px", padding:"16px", fontSize:"15px", fontWeight:900, color:"#1a2a3a", cursor:"pointer", fontFamily:"'Nunito',sans-serif", boxShadow:"0 4px 0 #a07810" }}>
-                  🔐 Iniciá sesión para ver datos y conectar
-                </button>
-                <button onClick={() => router.push("/login")} style={{ width:"100%", background:"linear-gradient(135deg,#1a2a3a,#243b55)", border:"none", borderRadius:"14px", padding:"14px", fontSize:"14px", fontWeight:800, color:"#d4a017", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
-                  💬 Chat interno — iniciá sesión
+                  🔐 Iniciá sesión para conectar
                 </button>
               </>
             )}
 
-            {session && (
-              <>
-                <div style={{ background:"#fff", borderRadius:"16px", padding:"16px", boxShadow:"0 2px 10px rgba(0,0,0,0.06)" }}>
-                  <div style={{ fontSize:"11px", fontWeight:800, color:"#1a2a3a", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"12px" }}>📋 Datos de contacto</div>
-                  <div style={{ display:"flex", flexDirection:"column", gap:"8px" }}>
-                    {!usuario?.whatsapp && !usuario?.telefono && !usuario?.direccion && (
-                      <div style={{ textAlign:"center", padding:"16px", color:"#9a9a9a", fontSize:"13px", fontWeight:600 }}>El vendedor no cargó datos de contacto aún.</div>
-                    )}
-                    {(usuario?.whatsapp || usuario?.whatsapp_empresa) && (
-                      <div style={{ display:"flex", alignItems:"center", gap:"12px", background:"rgba(39,174,96,0.08)", border:"2px solid rgba(39,174,96,0.25)", borderRadius:"12px", padding:"12px 14px" }}>
-                        <span style={{ fontSize:"24px" }}>💬</span>
-                        <div style={{ flex:1 }}>
-                          <div style={{ fontSize:"11px", fontWeight:700, color:"#27ae60", textTransform:"uppercase" as const }}>WhatsApp disponible</div>
-                          <div style={{ fontSize:"12px", fontWeight:600, color:"#9a9a9a" }}>Usá el botón Conectar para escribirle</div>
-                        </div>
-                        <span style={{ fontSize:"16px", color:"#27ae60" }}>✓</span>
+            {session && (() => {
+              const tipoContacto = anuncio.config?.tipo_contacto || "datos";
+              const soloChatInterno = tipoContacto === "chat";
+
+              return (
+                <>
+                  {/* SECCIÓN DATOS DE CONTACTO — solo si no es solo chat */}
+                  {!soloChatInterno && (
+                    <div style={{ background:"#fff", borderRadius:"16px", padding:"16px", boxShadow:"0 2px 10px rgba(0,0,0,0.06)" }}>
+                      <div style={{ fontSize:"11px", fontWeight:800, color:"#1a2a3a", textTransform:"uppercase" as const, letterSpacing:"1px", marginBottom:"12px" }}>📋 Datos de contacto</div>
+                      <div style={{ display:"flex", flexDirection:"column", gap:"8px" }}>
+                        {!anuncio.whatsapp && !usuario?.whatsapp && !usuario?.telefono && (
+                          <div style={{ textAlign:"center", padding:"16px", color:"#9a9a9a", fontSize:"13px", fontWeight:600 }}>El vendedor no cargó datos de contacto aún.</div>
+                        )}
+                        {(anuncio.whatsapp || usuario?.whatsapp) && (
+                          <div style={{ display:"flex", alignItems:"center", gap:"12px", background:"rgba(39,174,96,0.08)", border:"2px solid rgba(39,174,96,0.25)", borderRadius:"12px", padding:"12px 14px" }}>
+                            <span style={{ fontSize:"24px" }}>💬</span>
+                            <div style={{ flex:1 }}>
+                              <div style={{ fontSize:"11px", fontWeight:700, color:"#27ae60", textTransform:"uppercase" as const }}>WhatsApp</div>
+                              <div style={{ fontSize:"15px", fontWeight:900, color:"#1a2a3a" }}>{anuncio.whatsapp || usuario?.whatsapp}</div>
+                            </div>
+                          </div>
+                        )}
+                        {usuario?.telefono && (
+                          <div style={{ display:"flex", alignItems:"center", gap:"12px", background:"rgba(58,123,213,0.08)", border:"2px solid rgba(58,123,213,0.2)", borderRadius:"12px", padding:"12px 14px" }}>
+                            <span style={{ fontSize:"24px" }}>📞</span>
+                            <div style={{ flex:1 }}>
+                              <div style={{ fontSize:"11px", fontWeight:700, color:"#3a7bd5", textTransform:"uppercase" as const }}>Teléfono</div>
+                              <div style={{ fontSize:"15px", fontWeight:900, color:"#1a2a3a" }}>{usuario.telefono}</div>
+                            </div>
+                          </div>
+                        )}
+                        {anuncio.direccion && (
+                          <div style={{ display:"flex", alignItems:"center", gap:"12px", background:"rgba(212,160,23,0.08)", border:"2px solid rgba(212,160,23,0.2)", borderRadius:"12px", padding:"12px 14px" }}>
+                            <span style={{ fontSize:"24px" }}>📍</span>
+                            <div style={{ flex:1 }}>
+                              <div style={{ fontSize:"11px", fontWeight:700, color:"#d4a017", textTransform:"uppercase" as const }}>Dirección</div>
+                              <div style={{ fontSize:"13px", fontWeight:800, color:"#1a2a3a" }}>{anuncio.direccion}</div>
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                </div>
+                    </div>
+                  )}
 
-                {/* Conectar GRATIS — abre popup de mensaje */}
-                <button onClick={() => setPopupMensaje(true)} disabled={conectando}
-                  style={{ width:"100%", background:"linear-gradient(135deg,#27ae60,#1e8449)", border:"none", borderRadius:"14px", padding:"16px", fontSize:"15px", fontWeight:900, color:"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif", boxShadow:"0 4px 0 #155a2e", display:"flex", alignItems:"center", justifyContent:"center", gap:"10px", opacity:conectando?0.7:1 }}>
-                  <span style={{ fontSize:"20px" }}>🔗</span>
-                  <span>{conectando ? "Conectando..." : "Conectar — gratis"}</span>
-                </button>
+                  {/* SOLO CHAT — aviso */}
+                  {soloChatInterno && (
+                    <div style={{ background:"rgba(58,123,213,0.06)", border:"2px solid rgba(58,123,213,0.2)", borderRadius:"14px", padding:"14px 16px", display:"flex", gap:"12px", alignItems:"center" }}>
+                      <span style={{ fontSize:"24px" }}>💬</span>
+                      <div>
+                        <div style={{ fontSize:"13px", fontWeight:900, color:"#1a2a3a" }}>Este vendedor prefiere el chat interno</div>
+                        <div style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:600, marginTop:"2px" }}>Escribile por el chat y él te responderá</div>
+                      </div>
+                    </div>
+                  )}
 
-                <button onClick={() => router.push(`/chat/${anuncio.id}/${anuncio.usuario_id}`)} style={{ width:"100%", background:"linear-gradient(135deg,#1a2a3a,#243b55)", border:"none", borderRadius:"14px", padding:"14px", fontSize:"14px", fontWeight:800, color:"#d4a017", cursor:"pointer", fontFamily:"'Nunito',sans-serif", boxShadow:"0 4px 0 #0a1015", display:"flex", alignItems:"center", justifyContent:"center", gap:"10px" }}>
-                  <span style={{ fontSize:"18px" }}>💬</span><span>Chat interno — gratis</span>
-                </button>
-              </>
-            )}
+                  {/* BOTÓN CONECTAR POR WHATSAPP — solo si muestra datos */}
+                  {!soloChatInterno && (anuncio.whatsapp || usuario?.whatsapp) && (
+                    <button onClick={() => setPopupMensaje(true)} disabled={conectando}
+                      style={{ width:"100%", background:"linear-gradient(135deg,#27ae60,#1e8449)", border:"none", borderRadius:"14px", padding:"16px", fontSize:"15px", fontWeight:900, color:"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif", boxShadow:"0 4px 0 #155a2e", display:"flex", alignItems:"center", justifyContent:"center", gap:"10px", opacity:conectando?0.7:1 }}>
+                      <span style={{ fontSize:"20px" }}>🔗</span>
+                      <span>{conectando ? "Conectando..." : "Conectar por WhatsApp — gratis"}</span>
+                    </button>
+                  )}
+
+                  {/* BOTÓN CHAT INTERNO — siempre visible */}
+                  <button onClick={() => {
+                    if (!session?.user?.id) { router.push("/login"); return; }
+                    router.push(`/chat/${anuncio.usuario_id}?anuncio=${anuncio.id}`);
+                  }}
+                    style={{ width:"100%", background:"linear-gradient(135deg,#1a2a3a,#243b55)", border:"none", borderRadius:"14px", padding:"14px", fontSize:"14px", fontWeight:800, color:"#d4a017", cursor:"pointer", fontFamily:"'Nunito',sans-serif", boxShadow:"0 4px 0 #0a1015", display:"flex", alignItems:"center", justifyContent:"center", gap:"10px" }}>
+                    <span style={{ fontSize:"18px" }}>💬</span><span>Chat interno — gratis</span>
+                  </button>
+                </>
+              );
+            })()}
 
             {tieneUbicacion && (
               <button onClick={() => router.push(`/mapa?lat=${anuncio.lat}&lng=${anuncio.lng}&id=${anuncio.id}`)} style={{ width:"100%", background:"rgba(26,42,58,0.05)", border:"2px solid rgba(26,42,58,0.15)", borderRadius:"12px", padding:"13px", fontSize:"13px", fontWeight:800, color:"#1a2a3a", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>

@@ -92,7 +92,7 @@ function NexoCrearInner() {
     provincia:"", ciudad:"", direccion:"", whatsapp:"", link_externo:"",
     permuto:false, banner_url:"", avatar_url:"",
     foto1_url:"", foto2_url:"", foto3_url:"",
-    tipo_acceso:"libre", rubro_id:"", subrubro_id:"",
+    tipo_acceso:"libre", tipo_contacto:"datos", rubro_id:"", subrubro_id:"",
     lat:"", lng:"",
   });
   const [pagoBITEmpresa, setPagoBITEmpresa] = useState(false);
@@ -224,7 +224,7 @@ function NexoCrearInner() {
         banner_url:   form.banner_url||null,
         avatar_url:   form.avatar_url||null,
         estado:       "activo",
-        config:       { tipo_acceso:form.tipo_acceso, permuto:form.permuto },
+        config:       { tipo_acceso:form.tipo_acceso, permuto:form.permuto, tipo_contacto:form.tipo_contacto },
       };
       if (form.precio)     payload.precio    = parseFloat(form.precio);
       if (form.moneda)     payload.moneda    = form.moneda;
@@ -367,7 +367,23 @@ function NexoCrearInner() {
               </label>
             </>)}
             <L>WhatsApp</L>
-            <input value={form.whatsapp} onChange={e=>F("whatsapp",e.target.value)} placeholder="Ej: 3412345678" style={{...IS,marginBottom:"0"}}/>
+            <input value={form.whatsapp} onChange={e=>F("whatsapp",e.target.value)} placeholder="Ej: 3412345678" style={{...IS,marginBottom:"12px"}}/>
+
+            <SL>📬 Tipo de contacto</SL>
+            {[
+              {v:"datos", e:"📋", l:"Mostrar mis datos", d:"El comprador ve tu WhatsApp y puede conectarse"},
+              {v:"chat",  e:"💬", l:"Solo chat interno", d:"Nadie ve tu WhatsApp — solo pueden escribirte por chat"},
+            ].map(o=>(
+              <div key={o.v} onClick={()=>F("tipo_contacto",o.v)}
+                style={{display:"flex",gap:"12px",alignItems:"center",padding:"12px 14px",borderRadius:"12px",border:`2px solid ${form.tipo_contacto===o.v?colorPage:"#e8e8e6"}`,background:form.tipo_contacto===o.v?`${colorPage}08`:"#fafafa",cursor:"pointer",marginBottom:"8px"}}>
+                <span style={{fontSize:"22px"}}>{o.e}</span>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:"13px",fontWeight:900,color:form.tipo_contacto===o.v?colorPage:"#1a2a3a"}}>{o.l}</div>
+                  <div style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600}}>{o.d}</div>
+                </div>
+                {form.tipo_contacto===o.v&&<span style={{color:colorPage,fontSize:"18px"}}>✓</span>}
+              </div>
+            ))}
           </div>
 
           {/* 4. IMÁGENES */}

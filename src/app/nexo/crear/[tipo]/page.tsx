@@ -4,6 +4,7 @@ import { useRouter, useParams, useSearchParams } from "next/navigation";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
 import { supabase } from "@/lib/supabase";
+import PopupCompra, { MetodoPago } from "@/components/PopupCompra";
 
 const SLIDERS_PREDEFINIDOS: Record<string, { id:string; emoji:string; titulo:string; tipo:string; desc:string }[]> = {
   galeria:      [{ id:"galeria",      emoji:"📸", titulo:"Galería de fotos",    tipo:"galeria",      desc:"Fotos e imágenes" }],
@@ -210,15 +211,6 @@ function NexoCrearInner() {
     if (!form.titulo.trim()) { alert("Escribí un título"); return; }
     if (!perfil) { alert("Sesión no válida"); return; }
 
-    // Verificar BIT FREE para usuarios free en anuncios/trabajo
-    if ((tipo==="anuncio"||tipo==="trabajo") && perfil.plan !== "nexoempresa") {
-      const bitsFree = Math.max(0, perfil.bits_free || 0);
-      if (bitsFree <= 0) {
-        alert("Necesitás BIT FREE para publicar un anuncio. Cargá BIT FREE desde la tienda.");
-        return;
-      }
-    }
-
     // Verificar límite de 50 para empresa
     if (perfil.plan === "nexoempresa") {
       const { count } = await supabase.from("anuncios")
@@ -267,12 +259,6 @@ function NexoCrearInner() {
       const tabla = (tipo==="anuncio"||tipo==="trabajo") ? "anuncios" : "nexos";
       const { data: nexo, error } = await supabase.from(tabla).insert(payload).select().single();
       if (error) { console.error(error); alert(`Error: ${error.message}`); setGuardando(false); return; }
-
-      // Descontar 1 BIT FREE al publicar anuncio (usuarios free)
-      if ((tipo==="anuncio"||tipo==="trabajo") && perfil.plan !== "nexoempresa") {
-        const bitsFree = Math.max(0, perfil.bits_free || 0);
-        await supabase.from("usuarios").update({ bits_free: bitsFree - 1 }).eq("id", perfil.id);
-      }
 
       if (sliders.length > 0) {
         await supabase.from("nexo_sliders").insert(
@@ -445,47 +431,31 @@ function NexoCrearInner() {
         </div>
         <BottomNav/>
 
-      {/* POPUP CONFIRMAR PUBLICACIÓN */}
+      {/* POPUP PAGAR PUBLICACIÓN */}
       {popupConfirmar && (
-        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",zIndex:500,display:"flex",alignItems:"flex-end"}}
-          onClick={()=>setPopupConfirmar(false)}>
-          <div style={{background:"#fff",borderRadius:"24px 24px 0 0",padding:"24px 20px 44px",width:"100%",fontFamily:"'Nunito',sans-serif"}}
-            onClick={e=>e.stopPropagation()}>
-            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"22px",color:"#1a2a3a",letterSpacing:"1px",marginBottom:"6px"}}>
-              📣 Publicar anuncio
-            </div>
-            <div style={{fontSize:"13px",color:"#9a9a9a",fontWeight:600,marginBottom:"20px"}}>
-              Confirmá para publicar tu anuncio
-            </div>
-            <div style={{background:"rgba(212,160,23,0.08)",border:"2px solid rgba(212,160,23,0.3)",borderRadius:"14px",padding:"16px",marginBottom:"20px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-              <div>
-                <div style={{fontSize:"13px",fontWeight:900,color:"#1a2a3a"}}>⚡ Costo de publicación</div>
-                <div style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600,marginTop:"2px"}}>
-                  Disponible: {Math.max(0, perfil?.bits_free || 0)} BIT FREE
-                </div>
-              </div>
-              <div style={{textAlign:"right"}}>
-                <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"32px",color:"#d4a017"}}>1</div>
-                <div style={{fontSize:"10px",color:"#9a9a9a",fontWeight:700}}>BIT FREE</div>
-              </div>
-            </div>
-            {(perfil?.bits_free || 0) <= 0 ? (
-              <div style={{background:"rgba(231,76,60,0.08)",border:"2px solid rgba(231,76,60,0.2)",borderRadius:"12px",padding:"14px",textAlign:"center",marginBottom:"16px"}}>
-                <div style={{fontSize:"13px",fontWeight:900,color:"#e74c3c"}}>Sin BIT FREE disponibles</div>
-                <div style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600,marginTop:"4px"}}>Cargá BIT FREE desde la tienda para publicar</div>
-              </div>
-            ) : (
-              <button onClick={()=>{ setPopupConfirmar(false); crear(); }}
-                style={{width:"100%",background:"linear-gradient(135deg,#d4a017,#f0c040)",border:"none",borderRadius:"14px",padding:"16px",fontSize:"15px",fontWeight:900,color:"#1a2a3a",cursor:"pointer",fontFamily:"'Nunito',sans-serif",boxShadow:"0 4px 0 #a07810",marginBottom:"10px"}}>
-                ✅ Confirmar y publicar — 1 BIT FREE
-              </button>
-            )}
-            <button onClick={()=>setPopupConfirmar(false)}
-              style={{width:"100%",background:"none",border:"none",padding:"12px",fontSize:"13px",fontWeight:700,color:"#9a9a9a",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>
-              Cancelar
-            </button>
-          </div>
-        </div>
+        <PopupCompra
+          titulo="📣 Publicar anuncio"
+          emoji="📣"
+          costo="500 BIT"
+          descripcion="Publicá tu anuncio en NexoNet"
+          bits={{ free: Math.max(0, perfil?.bits_free || 0), nexo: Math.max(0, perfil?.bits || 0), promo: Math.max(0, perfil?.bits_promo || 0) }}
+          onClose={() => setPopupConfirmar(false)}
+          onPagar={async (metodo: MetodoPago) => {
+            setPopupConfirmar(false);
+            // Descontar según método elegido
+            if (metodo === "bit_free") {
+              await supabase.from("usuarios").update({ bits_free: Math.max(0,(perfil?.bits_free||0)-500) }).eq("id", perfil.id);
+            } else if (metodo === "bit_nexo") {
+              await supabase.from("usuarios").update({ bits: Math.max(0,(perfil?.bits||0)-500) }).eq("id", perfil.id);
+            } else if (metodo === "bit_promo") {
+              await supabase.from("usuarios").update({ bits_promo: Math.max(0,(perfil?.bits_promo||0)-500) }).eq("id", perfil.id);
+            } else {
+              alert("Próximamente — pagos con tarjeta/transferencia");
+              return;
+            }
+            crear();
+          }}
+        />
       )}
       </main>
     );

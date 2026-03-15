@@ -9,7 +9,7 @@ type Grupo = {
   id: string; nombre: string; descripcion: string | null;
   imagen: string | null; ciudad: string | null; provincia: string | null;
   miembros_count: number; pago_ingreso_admin: boolean;
-  config: any; categoria_id: number; activo: boolean;
+  config: any; categoria_id: number; subcategoria_id: number | null; activo: boolean;
 };
 
 type GrupoCategoria = { id: number; nombre: string; emoji: string };
@@ -62,7 +62,7 @@ function GruposCategoriaInner() {
       // Grupos de esta categoría
       const { data: gs } = await supabase
         .from("grupos")
-        .select("id,nombre,descripcion,imagen,ciudad,provincia,miembros_count,pago_ingreso_admin,config,categoria_id,activo")
+        .select("id,nombre,descripcion,imagen,ciudad,provincia,miembros_count,pago_ingreso_admin,config,categoria_id,subcategoria_id,activo")
         .eq("activo", true)
         .eq("categoria_id", cats.id)
         .order("miembros_count", { ascending: false });
@@ -74,6 +74,7 @@ function GruposCategoriaInner() {
   }, [catSlug]);
 
   const gruposFiltrados = grupos.filter(g => {
+    if (subSel !== null && g.subcategoria_id !== subSel) return false;
     if (busqueda && !g.nombre.toLowerCase().includes(busqueda.toLowerCase())) return false;
     if (provincia && g.provincia !== provincia) return false;
     if (ciudad && g.ciudad !== ciudad) return false;

@@ -202,12 +202,9 @@ export default function MisAnuncios() {
   };
 
   const esEmpresa   = perfil?.plan === "nexoempresa";
-  const slotsMax    = esEmpresa ? 50 : 999; // Free: ilimitado mientras tenga BIT FREE
   const slots       = anuncios.length;
   const bitsFreeDisp = Math.max(0, perfil?.bits_free ?? 0);
-  // Free puede crear si tiene BIT FREE. Empresa puede crear si no llegó a 50.
   const puedeCrear  = esEmpresa ? slots < 50 : bitsFreeDisp > 0 || slots < 3;
-  const slotsLibres = esEmpresa ? Math.max(0, 50 - slots) : (puedeCrear ? 1 : 0);
 
   const fmt = (p: number | null, m: string | null) =>
     p == null ? "Consultar" : `${m === "USD" ? "U$D" : "$"} ${p.toLocaleString("es-AR")}`;
@@ -234,7 +231,6 @@ export default function MisAnuncios() {
     <main style={{ paddingTop:"95px", paddingBottom:"130px", background:"#f4f4f2", minHeight:"100vh", fontFamily:"'Nunito',sans-serif" }}>
       <Header />
 
-      {/* HEADER — sin botón publicar */}
       <div style={{ background:"linear-gradient(135deg,#1a2a3a,#243b55)", padding:"16px" }}>
         <div style={{ marginBottom:"10px" }}>
           <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"22px", color:"#fff", letterSpacing:"1px" }}>
@@ -265,7 +261,6 @@ export default function MisAnuncios() {
 
       <div style={{ padding:"12px 16px", display:"flex", flexDirection:"column", gap:"14px" }}>
 
-        {/* Lista de anuncios — primero los creados */}
         {anuncios.map(a => {
           const imgs   = a.imagenes  ?? [];
           const adjs   = a.adjuntos  ?? [];
@@ -273,8 +268,6 @@ export default function MisAnuncios() {
           return (
             <div key={a.id} style={{ background:"#fff", borderRadius:"16px", overflow:"hidden",
                                       boxShadow:"0 2px 10px rgba(0,0,0,0.06)", border:"2px solid #e8e8e6" }}>
-
-              {/* Cabecera */}
               <div style={{ display:"flex", alignItems:"center", gap:"12px", padding:"14px" }}>
                 <div style={{ width:"64px", height:"64px", borderRadius:"12px", background:"#f4f4f2",
                                overflow:"hidden", flexShrink:0, position:"relative" }}>
@@ -311,7 +304,6 @@ export default function MisAnuncios() {
                 </span>
               </div>
 
-              {/* Acciones */}
               <div style={{ display:"flex", gap:"8px", padding:"0 14px 12px" }}>
                 <button onClick={() => router.push(`/anuncios/${a.id}`)} style={Btn("#f4f4f2","#1a2a3a","none")}>
                   👁️ Ver
@@ -365,7 +357,7 @@ export default function MisAnuncios() {
                 </button>
               </div>
 
-              {/* NOTIFICACIÓN WHATSAPP POR MENSAJE */}
+              {/* NOTIFICACIÓN WHATSAPP */}
               <div style={{ margin:"0 14px 12px", background:"rgba(37,211,102,0.04)", border:"1px solid rgba(37,211,102,0.2)", borderRadius:"12px", padding:"10px 14px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
                 <div>
                   <div style={{ fontSize:"12px", fontWeight:900, color:"#1a2a3a" }}>📲 Notificación WhatsApp</div>
@@ -388,7 +380,6 @@ export default function MisAnuncios() {
                 </button>
               </div>
 
-              {/* Extras */}
               <div style={{ borderTop:"1px solid #f0f0f0", padding:"12px 14px",
                              display:"flex", flexDirection:"column", gap:"14px" }}>
 
@@ -571,7 +562,6 @@ export default function MisAnuncios() {
           );
         })}
 
-        {/* Estado vacío */}
         {anuncios.length === 0 && (
           <div style={{ textAlign:"center", padding:"60px 20px" }}>
             <div style={{ fontSize:"48px", marginBottom:"16px" }}>📋</div>
@@ -581,7 +571,6 @@ export default function MisAnuncios() {
           </div>
         )}
 
-        {/* BOTÓN CREAR AL FINAL — para todos */}
         {puedeCrear ? (
           <button onClick={() => window.location.href="/nexo/crear/anuncio"}
             style={{ background:"#fff", borderRadius:"16px", padding:"20px", border:"2px dashed rgba(212,160,23,0.5)",
@@ -624,7 +613,6 @@ export default function MisAnuncios() {
                          width:"100%", maxHeight:"92vh", overflowY:"auto",
                          fontFamily:"'Nunito',sans-serif" }}
                onClick={e => e.stopPropagation()}>
-
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"20px" }}>
               <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"22px",
                              color:"#1a2a3a", letterSpacing:"1px" }}>
@@ -636,7 +624,6 @@ export default function MisAnuncios() {
                 ✕
               </button>
             </div>
-
             <div style={{ display:"flex", flexDirection:"column", gap:"14px", marginBottom:"20px" }}>
               <div>
                 <label style={LS}>Título *</label>
@@ -663,7 +650,6 @@ export default function MisAnuncios() {
                   </select>
                 </div>
               </div>
-
               <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between",
                              background:"rgba(142,68,173,0.06)", border:"2px solid rgba(142,68,173,0.2)",
                              borderRadius:"12px", padding:"12px 14px" }}>
@@ -684,7 +670,6 @@ export default function MisAnuncios() {
                 </button>
               </div>
             </div>
-
             <div style={{ marginBottom:"20px" }}>
               <label style={{ ...LS, marginBottom:"10px", display:"block" }}>
                 📷 Imágenes ({editImgs.length}/8) · La primera es la portada
@@ -732,7 +717,6 @@ export default function MisAnuncios() {
                 </button>
               )}
             </div>
-
             <button onClick={guardarEdicion} disabled={guardando}
               style={{ width:"100%", background:"linear-gradient(135deg,#d4a017,#f0c040)",
                        border:"none", borderRadius:"14px", padding:"16px",
@@ -753,7 +737,7 @@ export default function MisAnuncios() {
           onClose={() => setPopupBits(false)}
           onPagar={async () => { setPopupBits(false); alert("Próximamente"); }} />
       )}
-      {/* POPUP CREAR ANUNCIO / UPGRADE */}
+
       {popupPlan && (
         <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.7)", zIndex:500,
                        display:"flex", alignItems:"flex-end" }} onClick={() => setPopupPlan(false)}>
@@ -766,12 +750,9 @@ export default function MisAnuncios() {
             <div style={{ fontSize:"13px", color:"#9a9a9a", fontWeight:600, marginBottom:"20px" }}>
               Ya usaste tus 3 slots gratuitos. Elegí una opción:
             </div>
-
-            {/* OPCIÓN 1 — 1 anuncio extra */}
             <button onClick={async () => {
               const bitsTotal = Math.max(0,bitsNexo) + Math.max(0,bitsFree) + Math.max(0,bitsPromo);
-              if (bitsTotal < 500) { alert("Necesitás 500 BIT para agregar un anuncio extra. Cargá BIT en la tienda."); return; }
-              // Descontar 500 BIT y aumentar slotsMax
+              if (bitsTotal < 500) { alert("Necesitás 500 BIT para agregar un anuncio extra."); return; }
               const campoDescontar = bitsNexo >= 500 ? "bits" : bitsFree >= 500 ? "bits_free" : "bits_promo";
               const valorActual    = campoDescontar === "bits" ? bitsNexo : campoDescontar === "bits_free" ? bitsFree : bitsPromo;
               await supabase.from("usuarios").update({
@@ -787,56 +768,14 @@ export default function MisAnuncios() {
                        display:"flex", alignItems:"center", justifyContent:"space-between",
                        fontFamily:"'Nunito',sans-serif", textAlign:"left" }}>
               <div>
-                <div style={{ fontSize:"15px", fontWeight:900, color:"#fff", marginBottom:"4px" }}>
-                  📣 1 Anuncio extra
-                </div>
-                <div style={{ fontSize:"12px", color:"#8a9aaa", fontWeight:600 }}>
-                  Se descuenta de tu saldo BIT disponible
-                </div>
+                <div style={{ fontSize:"15px", fontWeight:900, color:"#fff", marginBottom:"4px" }}>📣 1 Anuncio extra</div>
+                <div style={{ fontSize:"12px", color:"#8a9aaa", fontWeight:600 }}>Se descuenta de tu saldo BIT disponible</div>
               </div>
               <div style={{ textAlign:"right", flexShrink:0 }}>
                 <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"28px", color:"#d4a017" }}>500</div>
                 <div style={{ fontSize:"10px", color:"#8a9aaa", fontWeight:700 }}>BIT</div>
               </div>
             </button>
-
-            {/* OPCIÓN 2 — Nexo Empresa */}
-            <button onClick={async () => {
-              const bitsTotal = Math.max(0,bitsNexo) + Math.max(0,bitsFree) + Math.max(0,bitsPromo);
-              if (bitsTotal < 10000) { alert("Necesitás 10.000 BIT para convertirte en Nexo Empresa. Cargá BIT en la tienda."); return; }
-              const campoDescontar = bitsNexo >= 10000 ? "bits" : bitsFree >= 10000 ? "bits_free" : "bits_promo";
-              const valorActual    = campoDescontar === "bits" ? bitsNexo : campoDescontar === "bits_free" ? bitsFree : bitsPromo;
-              await supabase.from("usuarios").update({
-                [campoDescontar]: valorActual - 10000,
-                plan: "nexoempresa",
-              }).eq("id", session?.user?.id);
-              setPerfil((p:any) => ({ ...p, [campoDescontar]: valorActual - 10000, plan: "nexoempresa" }));
-              setPopupPlan(false);
-              alert("🏢 ¡Felicitaciones! Ya sos Nexo Empresa con 50 slots de anuncios.");
-            }}
-              style={{ width:"100%", background:"linear-gradient(135deg,#2c1a1a,#4a2020)", border:"2px solid rgba(192,57,43,0.4)",
-                       borderRadius:"16px", padding:"18px 20px", cursor:"pointer",
-                       display:"flex", alignItems:"center", justifyContent:"space-between",
-                       fontFamily:"'Nunito',sans-serif", textAlign:"left", position:"relative", overflow:"hidden" }}>
-              <span style={{ position:"absolute", top:0, right:0, background:"#c0392b", color:"#fff",
-                              fontSize:"9px", fontWeight:900, padding:"4px 12px",
-                              borderRadius:"0 14px 0 12px", letterSpacing:"0.5px" }}>
-                EMPRESA
-              </span>
-              <div>
-                <div style={{ fontSize:"15px", fontWeight:900, color:"#fff", marginBottom:"4px" }}>
-                  🏢 Nexo Empresa · 50 anuncios
-                </div>
-                <div style={{ fontSize:"12px", color:"#e88a8a", fontWeight:600 }}>
-                  Perfil comercial completo con 50 slots
-                </div>
-              </div>
-              <div style={{ textAlign:"right", flexShrink:0 }}>
-                <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"28px", color:"#e74c3c" }}>10.000</div>
-                <div style={{ fontSize:"10px", color:"#e88a8a", fontWeight:700 }}>BIT</div>
-              </div>
-            </button>
-
             <button onClick={() => setPopupPlan(false)}
               style={{ width:"100%", background:"none", border:"none", padding:"14px",
                        fontSize:"13px", fontWeight:700, color:"#9a9a9a", cursor:"pointer",
@@ -846,6 +785,8 @@ export default function MisAnuncios() {
           </div>
         </div>
       )}
+
+      {/* ── FIX: popupLink ahora descuenta BIT correctamente ── */}
       {popupLink && (
         <PopupCompra titulo="Habilitar Link Multimedia" emoji="🔗" costo="500 BIT / $500"
           descripcion="YouTube · Instagram · Facebook · cualquier URL"
@@ -853,13 +794,25 @@ export default function MisAnuncios() {
           onClose={() => setPopupLink(null)}
           onPagar={async (metodo: MetodoPago) => {
             const id = popupLink;
-            if (metodo === "bit_free" || metodo === "bit_nexo") {
+            const paquete = 500;
+            if (metodo === "bit_free") {
+              if (bitsFree < paquete) { alert("No tenés suficientes BIT FREE."); return; }
               await supabase.from("anuncios").update({ link_habilitado: true }).eq("id", id);
+              await supabase.from("usuarios").update({ bits_free: bitsFree - paquete }).eq("id", session?.user?.id);
+              setPerfil((p:any) => ({ ...p, bits_free: bitsFree - paquete }));
+              setAnuncios(prev => prev.map(a => a.id === id ? ({ ...a, link_habilitado: true } as Anuncio) : a));
+            } else if (metodo === "bit_nexo") {
+              if (bitsNexo < paquete) { alert("No tenés suficientes BIT Nexo."); return; }
+              await supabase.from("anuncios").update({ link_habilitado: true }).eq("id", id);
+              await supabase.from("usuarios").update({ bits: bitsNexo - paquete }).eq("id", session?.user?.id);
+              setPerfil((p:any) => ({ ...p, bits: bitsNexo - paquete }));
               setAnuncios(prev => prev.map(a => a.id === id ? ({ ...a, link_habilitado: true } as Anuncio) : a));
             } else { alert("Próximamente"); }
             setPopupLink(null);
           }} />
       )}
+
+      {/* ── FIX: popupAdj ahora descuenta BIT correctamente ── */}
       {popupAdj && (
         <PopupCompra titulo="Habilitar Adjuntos" emoji="📎" costo="500 BIT / $500"
           descripcion="PDF, catálogo, ficha técnica · hasta 5 archivos"
@@ -867,13 +820,24 @@ export default function MisAnuncios() {
           onClose={() => setPopupAdj(null)}
           onPagar={async (metodo: MetodoPago) => {
             const id = popupAdj;
-            if (metodo === "bit_free" || metodo === "bit_nexo") {
+            const paquete = 500;
+            if (metodo === "bit_free") {
+              if (bitsFree < paquete) { alert("No tenés suficientes BIT FREE."); return; }
               await supabase.from("anuncios").update({ adjunto_habilitado: true }).eq("id", id);
+              await supabase.from("usuarios").update({ bits_free: bitsFree - paquete }).eq("id", session?.user?.id);
+              setPerfil((p:any) => ({ ...p, bits_free: bitsFree - paquete }));
+              setAnuncios(prev => prev.map(a => a.id === id ? ({ ...a, adjunto_habilitado: true } as Anuncio) : a));
+            } else if (metodo === "bit_nexo") {
+              if (bitsNexo < paquete) { alert("No tenés suficientes BIT Nexo."); return; }
+              await supabase.from("anuncios").update({ adjunto_habilitado: true }).eq("id", id);
+              await supabase.from("usuarios").update({ bits: bitsNexo - paquete }).eq("id", session?.user?.id);
+              setPerfil((p:any) => ({ ...p, bits: bitsNexo - paquete }));
               setAnuncios(prev => prev.map(a => a.id === id ? ({ ...a, adjunto_habilitado: true } as Anuncio) : a));
             } else { alert("Próximamente"); }
             setPopupAdj(null);
           }} />
       )}
+
       {popupBitsCx && (
         <PopupCompra titulo="Cargar BIT Conexión" emoji="🔗" costo="500 BIT / $500"
           descripcion="Cada buscador que vea tus datos consume 1 BIT"
@@ -885,17 +849,22 @@ export default function MisAnuncios() {
             const actual  = anuncio?.bits_conexion ?? 0;
             const paquete = 500;
             if (metodo === "bit_free") {
+              if (bitsFree < paquete) { alert("No tenés suficientes BIT FREE."); return; }
               await supabase.from("anuncios").update({ bits_conexion: actual + paquete }).eq("id", id);
               await supabase.from("usuarios").update({ bits_free: bitsFree - paquete }).eq("id", session?.user?.id);
+              setPerfil((p:any) => ({ ...p, bits_free: bitsFree - paquete }));
               setAnuncios(prev => prev.map(a => a.id === id ? { ...a, bits_conexion: actual + paquete } : a));
             } else if (metodo === "bit_nexo") {
+              if (bitsNexo < paquete) { alert("No tenés suficientes BIT Nexo."); return; }
               await supabase.from("anuncios").update({ bits_conexion: actual + paquete }).eq("id", id);
               await supabase.from("usuarios").update({ bits: bitsNexo - paquete }).eq("id", session?.user?.id);
+              setPerfil((p:any) => ({ ...p, bits: bitsNexo - paquete }));
               setAnuncios(prev => prev.map(a => a.id === id ? { ...a, bits_conexion: actual + paquete } : a));
             } else { alert("Próximamente"); }
             setPopupBitsCx(null);
           }} />
       )}
+
       {popupFlash && (
         <PopupCompra titulo="Promo Flash" emoji="⚡" costo="$500 / $2.000 / $5.000 / $10.000"
           descripcion="Destacá en barrio · ciudad · provincia · país"

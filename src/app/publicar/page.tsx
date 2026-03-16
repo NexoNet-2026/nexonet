@@ -35,7 +35,7 @@ export default function PublicarSelector() {
   };
 
   return (
-    <main style={{ paddingTop:"95px", paddingBottom:"100px", background:"#0f1923", minHeight:"100vh", fontFamily:"'Nunito',sans-serif" }}>
+    <main style={{ paddingTop:"95px", paddingBottom:"140px", background:"#0f1923", minHeight:"100vh", fontFamily:"'Nunito',sans-serif" }}>
       <Header />
 
       <div style={{ padding:"28px 16px 24px", textAlign:"center" }}>

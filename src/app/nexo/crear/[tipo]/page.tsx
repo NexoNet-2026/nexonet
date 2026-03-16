@@ -446,7 +446,7 @@ function NexoCrearInner() {
       {/* HERO */}
       <div style={{background:form.banner_url?`url(${form.banner_url}) center/cover no-repeat`:"linear-gradient(135deg,#1a2a3a,#243b55)",minHeight:"130px",position:"relative"}}>
         {form.banner_url && <div style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.5)"}}/>}
-        <div style={{position:"relative",zIndex:1,padding:"80px 16px 20px"}}>
+        <div style={{position:"relative",zIndex:1,padding:"140px 16px 20px"}}>
           <button onClick={()=>router.push("/publicar")} style={{background:"rgba(255,255,255,0.15)",border:"1px solid rgba(255,255,255,0.25)",borderRadius:"10px",padding:"7px 14px",color:"#fff",fontSize:"13px",fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',sans-serif",marginBottom:"14px"}}>
             ← Volver
           </button>

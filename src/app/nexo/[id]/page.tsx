@@ -185,7 +185,7 @@ export default function NexoPage() {
       <Header />
 
       {/* HERO CON BANNER */}
-      <div style={{ position:"relative", minHeight:"200px", background: nexo.banner_url ? `url(${nexo.banner_url}) center/cover no-repeat` : `linear-gradient(135deg,#1a2a3a,#243b55)`, paddingTop:"80px" }}>
+      <div style={{ position:"relative", minHeight:"200px", background: nexo.banner_url ? `url(${nexo.banner_url}) center/cover no-repeat` : `linear-gradient(135deg,#1a2a3a,#243b55)`, paddingTop:"95px" }}>
         {nexo.banner_url && <div style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.52)" }} />}
         <div style={{ position:"relative", zIndex:1, padding:"16px 16px 20px" }}>
           <div style={{ display:"flex", alignItems:"flex-end", gap:"14px" }}>

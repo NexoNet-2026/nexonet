@@ -648,7 +648,15 @@ function NexoCrearInner() {
 
             <div style={{display:"flex",gap:"10px"}}>
               <button onClick={()=>setPaso(2)} style={{flex:1,...BTN2}}>← Volver</button>
-              <button onClick={crear} disabled={guardando} style={{flex:2,...BTN(colorPage),opacity:guardando?0.7:1}}>
+              <button onClick={() => {
+                if (tipo === "empresa") { crear(); return; } // empresa ya pagó 10.000 BIT antes
+                const totalBits = (perfil?.bits_free||0) + (perfil?.bits||0) + (perfil?.bits_promo||0);
+                if (totalBits < 500) {
+                  alert(`Necesitás 500 BIT para crear este Nexo. Tenés ${totalBits} BIT.`);
+                  return;
+                }
+                setPopupConfirmar(true);
+              }} disabled={guardando} style={{flex:2,...BTN(colorPage),opacity:guardando?0.7:1}}>
                 {guardando?"⏳ Creando...":"✅ Crear Nexo"}
               </button>
             </div>
@@ -666,6 +674,31 @@ function NexoCrearInner() {
             setPopupSlider(false);
           }}
           yaExisten={sliders.map(s=>s.tipo)}
+        />
+      )}
+      {popupConfirmar && (
+        <PopupCompra
+          titulo={`Crear ${tituloPage.replace("Crear ","").replace("Ofrecer ","")}`}
+          emoji={emojiPage} costo="500 BIT"
+          descripcion={`Publicá tu ${tipo} en NexoNet`}
+          bits={{ free: Math.max(0,perfil?.bits_free||0), nexo: Math.max(0,perfil?.bits||0), promo: Math.max(0,perfil?.bits_promo||0) }}
+          onClose={() => setPopupConfirmar(false)}
+          onPagar={async (metodo: MetodoPago) => {
+            if (metodo === "bit_free") {
+              if ((perfil?.bits_free||0) < 500) { alert("No tenés suficientes BIT FREE."); return; }
+              await supabase.from("usuarios").update({ bits_free: perfil.bits_free - 500 }).eq("id", perfil.id);
+              setPerfil((p:any) => ({...p, bits_free: p.bits_free - 500}));
+            } else if (metodo === "bit_nexo") {
+              if ((perfil?.bits||0) < 500) { alert("No tenés suficientes BIT Nexo."); return; }
+              await supabase.from("usuarios").update({ bits: perfil.bits - 500 }).eq("id", perfil.id);
+              setPerfil((p:any) => ({...p, bits: p.bits - 500}));
+            } else {
+              alert("Próximamente — pagos con tarjeta/transferencia");
+              return;
+            }
+            setPopupConfirmar(false);
+            crear();
+          }}
         />
       )}
       <BottomNav/>

@@ -61,9 +61,8 @@ export default function AnuncioDetalle() {
   const [conectando,     setConectando]     = useState(false);
   const [misBits,        setMisBits]        = useState<any>(null);
 
-  // ── Popup mensaje de conexión ──────────────────────────────────────────
-  const [popupMensaje,   setPopupMensaje]   = useState(false);
-  const [mensajeConexion,setMensajeConexion]= useState(MENSAJES_PRESET[0]);
+  const [popupMensaje,    setPopupMensaje]    = useState(false);
+  const [mensajeConexion, setMensajeConexion] = useState(MENSAJES_PRESET[0]);
 
   useEffect(() => { cargar(); }, [params.id]);
 
@@ -113,37 +112,92 @@ export default function AnuncioDetalle() {
     setGuardando(false);
   };
 
-  // ── Conectar GRATIS con mensaje elegido ───────────────────────────────
+  // ── Conectar con descuento de BIT ─────────────────────────────────────
   const ejecutarConectar = async () => {
     if (!session || !anuncio) return;
     setConectando(true);
     setPopupMensaje(false);
 
-    // 1. Obtener datos del anuncio y número de WA del vendedor (sin mostrarlo)
+    // 1. Obtener datos frescos del anuncio
     const { data: anuData } = await supabase
-      .from("anuncios").select("id, usuario_id, conexiones").eq("id", anuncio.id).single();
+      .from("anuncios")
+      .select("id, usuario_id, conexiones, bits_conexion")
+      .eq("id", anuncio.id)
+      .single();
     if (!anuData) { setConectando(false); return; }
 
+    // 2. Verificar que el anuncio tiene BIT Conexión disponible
+    const bitsDisponibles = anuData.bits_conexion || 0;
+    if (bitsDisponibles <= 0) {
+      alert("Este anuncio no tiene BIT Conexión disponibles. El vendedor debe recargar.");
+      setConectando(false);
+      return;
+    }
+
     const { data: vendedor } = await supabase
-      .from("usuarios").select("whatsapp, whatsapp_empresa").eq("id", anuData.usuario_id).single();
+      .from("usuarios")
+      .select("whatsapp, whatsapp_empresa")
+      .eq("id", anuData.usuario_id)
+      .single();
 
-    // 2. Registrar conexión + notificación + mensaje en chat interno
-    await supabase.from("anuncios").update({ conexiones: (anuData.conexiones || 0) + 1 }).eq("id", anuncio.id);
+    // 3. Descontar 1 BIT Conexión del anuncio
+    const nuevosBits = bitsDisponibles - 1;
+    await supabase
+      .from("anuncios")
+      .update({
+        conexiones:    (anuData.conexiones || 0) + 1,
+        bits_conexion: nuevosBits,
+      })
+      .eq("id", anuncio.id);
+
+    // 4. Notificación al vendedor
     await supabase.from("notificaciones").insert({
-      usuario_id: anuData.usuario_id, emisor_id: session.user.id,
-      anuncio_id: anuncio.id, tipo: "conexion", mensaje: mensajeConexion,
-    });
-    await supabase.from("mensajes").insert({
-      anuncio_id: anuncio.id,
-      emisor_id:  session.user.id,
-      receptor_id: anuData.usuario_id,
-      texto: mensajeConexion,
+      usuario_id:  anuData.usuario_id,
+      emisor_id:   session.user.id,
+      anuncio_id:  anuncio.id,
+      tipo:        "conexion",
+      mensaje:     mensajeConexion,
+      leida:       false,
     });
 
-    setAnuncio((prev: any) => ({ ...prev, conexiones: (anuData.conexiones || 0) + 1 }));
+    // 5. Mensaje en chat interno
+    await supabase.from("mensajes").insert({
+      anuncio_id:  anuncio.id,
+      emisor_id:   session.user.id,
+      receptor_id: anuData.usuario_id,
+      texto:       mensajeConexion,
+    });
+
+    // 6. Actualizar estado local
+    setAnuncio((prev: any) => ({
+      ...prev,
+      conexiones:    (anuData.conexiones || 0) + 1,
+      bits_conexion: nuevosBits,
+    }));
+
+    // 7. Avisar al vendedor si quedan pocos BIT
+    if (nuevosBits <= 5 && nuevosBits > 0) {
+      await supabase.from("notificaciones").insert({
+        usuario_id: anuData.usuario_id,
+        tipo:       "sistema",
+        mensaje:    `⚠️ Tu anuncio "${anuncio.titulo}" tiene solo ${nuevosBits} BIT Conexión restantes. ¡Recargá para seguir recibiendo conexiones!`,
+        leida:      false,
+      });
+    }
+
+    // 8. Avisar al vendedor si se agotaron
+    if (nuevosBits === 0) {
+      await supabase.from("notificaciones").insert({
+        usuario_id: anuData.usuario_id,
+        tipo:       "sistema",
+        mensaje:    `🔴 Tu anuncio "${anuncio.titulo}" se quedó sin BIT Conexión. Los buscadores ya no podrán conectarse hasta que recargues.`,
+        leida:      false,
+      });
+    }
+
     setConectando(false);
 
-    // 3. Abrir WhatsApp directamente con el número (sin mostrarlo al usuario)
+    // 9. Abrir WhatsApp
     const numeroWA = vendedor?.whatsapp_empresa || vendedor?.whatsapp;
     if (numeroWA) {
       const texto = encodeURIComponent(
@@ -152,10 +206,9 @@ export default function AnuncioDetalle() {
       window.open(`https://wa.me/54${numeroWA}?text=${texto}`, "_blank");
     }
 
-    // 4. También abrir chat interno
+    // 10. Abrir chat interno
     router.push(`/chat/${anuncio.id}/${anuData.usuario_id}`);
   };
-
 
   const fmt = (precio: number, moneda: string) =>
     !precio ? "Consultar" : `${moneda === "USD" ? "U$D" : "$"} ${precio.toLocaleString("es-AR")}`;
@@ -221,6 +274,30 @@ export default function AnuncioDetalle() {
                 </div>
               );
             })()}
+          </div>
+        </div>
+      )}
+
+      {/* POPUP ELEGIR MENSAJE */}
+      {popupMensaje && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", zIndex:800, display:"flex", alignItems:"flex-end", justifyContent:"center" }}>
+          <div style={{ background:"#fff", borderRadius:"24px 24px 0 0", padding:"24px 20px 40px", width:"100%", maxWidth:"480px" }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"16px" }}>
+              <div style={{ fontSize:"16px", fontWeight:900, color:"#1a2a3a" }}>💬 Elegí tu mensaje</div>
+              <button onClick={() => setPopupMensaje(false)} style={{ background:"#f4f4f2", border:"none", borderRadius:"50%", width:"32px", height:"32px", fontSize:"16px", cursor:"pointer" }}>✕</button>
+            </div>
+            <div style={{ display:"flex", flexDirection:"column", gap:"8px", marginBottom:"16px" }}>
+              {MENSAJES_PRESET.map((m, i) => (
+                <div key={i} onClick={() => setMensajeConexion(m)}
+                  style={{ padding:"12px 14px", borderRadius:"12px", border:`2px solid ${mensajeConexion===m?"#27ae60":"#e8e8e6"}`, background:mensajeConexion===m?"rgba(39,174,96,0.06)":"#fff", cursor:"pointer", fontSize:"13px", fontWeight:700, color:"#1a2a3a" }}>
+                  {m}
+                </div>
+              ))}
+            </div>
+            <button onClick={ejecutarConectar} disabled={conectando}
+              style={{ width:"100%", background:"linear-gradient(135deg,#27ae60,#1e8449)", border:"none", borderRadius:"14px", padding:"16px", fontSize:"15px", fontWeight:900, color:"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif", opacity:conectando?0.7:1 }}>
+              {conectando ? "Conectando..." : "🔗 Conectar ahora"}
+            </button>
           </div>
         </div>
       )}
@@ -380,11 +457,9 @@ export default function AnuncioDetalle() {
         {!esPropio && (
           <div style={{ display:"flex", flexDirection:"column", gap:"10px" }}>
             {!session && (
-              <>
-                <button onClick={() => router.push("/login")} style={{ width:"100%", background:"linear-gradient(135deg,#d4a017,#f0c040)", border:"none", borderRadius:"14px", padding:"16px", fontSize:"15px", fontWeight:900, color:"#1a2a3a", cursor:"pointer", fontFamily:"'Nunito',sans-serif", boxShadow:"0 4px 0 #a07810" }}>
-                  🔐 Iniciá sesión para conectar
-                </button>
-              </>
+              <button onClick={() => router.push("/login")} style={{ width:"100%", background:"linear-gradient(135deg,#d4a017,#f0c040)", border:"none", borderRadius:"14px", padding:"16px", fontSize:"15px", fontWeight:900, color:"#1a2a3a", cursor:"pointer", fontFamily:"'Nunito',sans-serif", boxShadow:"0 4px 0 #a07810" }}>
+                🔐 Iniciá sesión para conectar
+              </button>
             )}
 
             {session && (() => {
@@ -393,7 +468,6 @@ export default function AnuncioDetalle() {
 
               return (
                 <>
-                  {/* SECCIÓN DATOS DE CONTACTO — solo si no es solo chat */}
                   {!soloChatInterno && (
                     <div style={{ background:"#fff", borderRadius:"16px", padding:"16px", boxShadow:"0 2px 10px rgba(0,0,0,0.06)" }}>
                       <div style={{ fontSize:"11px", fontWeight:800, color:"#1a2a3a", textTransform:"uppercase" as const, letterSpacing:"1px", marginBottom:"12px" }}>📋 Datos de contacto</div>
@@ -432,7 +506,6 @@ export default function AnuncioDetalle() {
                     </div>
                   )}
 
-                  {/* SOLO CHAT — aviso */}
                   {soloChatInterno && (
                     <div style={{ background:"rgba(58,123,213,0.06)", border:"2px solid rgba(58,123,213,0.2)", borderRadius:"14px", padding:"14px 16px", display:"flex", gap:"12px", alignItems:"center" }}>
                       <span style={{ fontSize:"24px" }}>💬</span>
@@ -443,7 +516,6 @@ export default function AnuncioDetalle() {
                     </div>
                   )}
 
-                  {/* BOTÓN CONECTAR POR WHATSAPP — solo si muestra datos */}
                   {!soloChatInterno && (anuncio.whatsapp || usuario?.whatsapp) && (
                     <button onClick={() => setPopupMensaje(true)} disabled={conectando}
                       style={{ width:"100%", background:"linear-gradient(135deg,#27ae60,#1e8449)", border:"none", borderRadius:"14px", padding:"16px", fontSize:"15px", fontWeight:900, color:"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif", boxShadow:"0 4px 0 #155a2e", display:"flex", alignItems:"center", justifyContent:"center", gap:"10px", opacity:conectando?0.7:1 }}>
@@ -452,7 +524,6 @@ export default function AnuncioDetalle() {
                     </button>
                   )}
 
-                  {/* BOTÓN CHAT INTERNO — siempre visible */}
                   <button onClick={() => {
                     if (!session?.user?.id) { router.push("/login"); return; }
                     router.push(`/chat/${anuncio.usuario_id}?anuncio=${anuncio.id}`);

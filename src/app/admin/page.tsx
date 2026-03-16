@@ -55,16 +55,13 @@ export default function AdminPanel() {
   const [pagos,      setPagos]      = useState<any[]>([]);
   const [alarmas,    setAlarmas]    = useState<any>({});
 
-  // Config: categorías de grupos
   const [grupoCats,    setGrupoCats]    = useState<any[]>([]);
   const [grupoSubcats, setGrupoSubcats] = useState<any[]>([]);
 
-  // Config: expansión
-  const [expandRubro,   setExpandRubro]   = useState<number|null>(null);
-  const [expandGrupoCat,setExpandGrupoCat]= useState<number|null>(null);
+  const [expandRubro,    setExpandRubro]    = useState<number|null>(null);
+  const [expandGrupoCat, setExpandGrupoCat] = useState<number|null>(null);
 
-  // Modales Config
-  const [modalRubro,       setModalRubro]       = useState<any>(null); // null=cerrado, {}=nuevo, {id,...}=editar
+  const [modalRubro,       setModalRubro]       = useState<any>(null);
   const [modalSubrubro,    setModalSubrubro]     = useState<any>(null);
   const [modalGrupoCat,    setModalGrupoCat]     = useState<any>(null);
   const [modalGrupoSubcat, setModalGrupoSubcat]  = useState<any>(null);
@@ -175,7 +172,6 @@ export default function AdminPanel() {
   const resetPassword = async () => {
     if (!modalPassword || !nuevaPass.trim()) return;
     if (nuevaPass.length < 6) { showToast("❌ Mínimo 6 caracteres"); return; }
-    // Enviar email de reset al usuario
     const { error } = await supabase.auth.resetPasswordForEmail(modalPassword.email, {
       redirectTo: `${window.location.origin}/nueva-contrasena`,
     });
@@ -187,6 +183,9 @@ export default function AdminPanel() {
       setNuevaPass("");
     }
   };
+
+  // ── Mensajes ──  ← FUNCIÓN RESTAURADA
+  const enviarMensaje = async () => {
     if (!msgTexto.trim()) return;
     if (msgDest==="todos") {
       const inserts = usuarios.map(u=>({usuario_id:u.id,tipo:msgTipo,mensaje:msgTexto,leida:false}));
@@ -386,14 +385,13 @@ export default function AdminPanel() {
     {id:"config",   e:"⚙️",l:"Config"},
   ];
 
-  // ── Sección de item editable para rubro/subrubro/cat/subcat ──
-  const ItemRow = ({label, onEdit, onDelete, onUp, onDown, badge, extra}:{label:string;onEdit:()=>void;onDelete:()=>void;onUp?:()=>void;onDown?:()=>void;badge?:React.ReactNode;extra?:React.ReactNode}) => (
+  const ItemRow = ({label,onEdit,onDelete,onUp,onDown,badge,extra}:{label:string;onEdit:()=>void;onDelete:()=>void;onUp?:()=>void;onDown?:()=>void;badge?:React.ReactNode;extra?:React.ReactNode}) => (
     <div style={{display:"flex",alignItems:"center",gap:"6px",padding:"6px 0",borderBottom:"1px solid #f4f4f2"}}>
       <div style={{flex:1,fontSize:"13px",fontWeight:700,color:"#1a2a3a",display:"flex",alignItems:"center",gap:"6px"}}>
         {label} {badge}
       </div>
       {extra}
-      {onUp  && <button onClick={onUp}   style={{...S.btn("#9a9a9a",true),padding:"4px 8px"}}>↑</button>}
+      {onUp   && <button onClick={onUp}   style={{...S.btn("#9a9a9a",true),padding:"4px 8px"}}>↑</button>}
       {onDown && <button onClick={onDown} style={{...S.btn("#9a9a9a",true),padding:"4px 8px"}}>↓</button>}
       <button onClick={onEdit}   style={{...S.btn("#3a7bd5",true),padding:"4px 8px"}}>✏️</button>
       <button onClick={onDelete} style={{...S.btn("#e74c3c",true),padding:"4px 8px"}}>🗑️</button>
@@ -720,7 +718,6 @@ export default function AdminPanel() {
         {/* ══ CONFIG ═══════════════════════════════════════════════════════════ */}
         {!loading && tab==="config" && (
           <>
-            {/* ── RUBROS Y SUBRUBROS ── */}
             <div style={S.card}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"12px"}}>
                 <div style={S.sect}>📁 Rubros de Anuncios</div>
@@ -758,7 +755,6 @@ export default function AdminPanel() {
               ))}
             </div>
 
-            {/* ── CATEGORÍAS DE GRUPOS ── */}
             <div style={S.card}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"12px"}}>
                 <div style={S.sect}>🏘️ Categorías de Grupos</div>
@@ -1007,9 +1003,10 @@ export default function AdminPanel() {
           <button onClick={()=>guardarGrupoSubcat(modalGrupoSubcat)} style={S.btn("#27ae60")} disabled={!modalGrupoSubcat.nombre}>💾 Guardar</button>
         </Modal>
       )}
+
       {/* ══ MODAL RESET CONTRASEÑA ══════════════════════════════════════════════ */}
       {modalPassword && (
-        <Modal titulo={`🔑 Restablecer contraseña`} onClose={()=>setModalPassword(null)}>
+        <Modal titulo="🔑 Restablecer contraseña" onClose={()=>setModalPassword(null)}>
           <div style={{fontSize:"13px",color:"#9a9a9a",fontWeight:600,marginBottom:"16px"}}>
             Se enviará un email de restablecimiento a:<br/>
             <strong style={{color:"#1a2a3a"}}>{modalPassword.email}</strong>

@@ -168,6 +168,7 @@ export default function AdminPanel() {
     if (bitNota) await supabase.from("notificaciones").insert({usuario_id:modalBit.id,tipo:"sistema",mensaje:`💰 Admin acreditó ${cant} ${bitTipo.toUpperCase()} — ${bitNota}`,leida:false});
     setModalBit(null); setBitCant(""); setBitNota("");
     showToast(`✅ ${cant} ${bitTipo} acreditados`);
+    await cargarTodo();
   };
   const resetPassword = async () => {
     if (!modalPassword || !nuevaPass.trim()) return;

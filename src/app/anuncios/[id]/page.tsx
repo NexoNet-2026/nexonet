@@ -60,6 +60,7 @@ export default function AnuncioDetalle() {
   const [session,        setSession]        = useState<any>(null);
   const [conectando,     setConectando]     = useState(false);
   const [misBits,        setMisBits]        = useState<any>(null);
+  const [cargandoBit,    setCargandoBit]    = useState(false);
 
   const [popupMensaje,    setPopupMensaje]    = useState(false);
   const [mensajeConexion, setMensajeConexion] = useState(MENSAJES_PRESET[0]);
@@ -76,24 +77,26 @@ export default function AnuncioDetalle() {
       const { data: sub } = await supabase.from("subrubros").select("nombre, rubros(nombre)").eq("id", data.subrubro_id).single();
       if (sub) setAnuncio((prev: any) => ({ ...prev, subrubro_nombre: sub.nombre, rubro_nombre: (sub.rubros as any)?.nombre || "" }));
     }
+
+    const { data: { session: sess } } = await supabase.auth.getSession();
+    setSession(sess);
+
     if (data.usuario_id) {
       const { data: u } = await supabase
         .from("usuarios")
         .select("nombre_usuario, codigo, plan, whatsapp, telefono, whatsapp_empresa, telefono_empresa, direccion, ciudad, provincia, barrio, direccion_empresa, ciudad_empresa, provincia_empresa, barrio_empresa, vis_personal, vis_empresa")
         .eq("id", data.usuario_id).single();
       if (u) setUsuario(u);
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user.id === data.usuario_id) setEsPropio(true);
+      if (sess?.user.id === data.usuario_id) setEsPropio(true);
     }
+
     await supabase.from("anuncios").update({ vistas: (data.vistas || 0) + 1 }).eq("id", params.id);
 
-    const { data: { session } } = await supabase.auth.getSession();
-    setSession(session);
-    if (session?.user?.id) {
+    if (sess?.user?.id) {
       const { data: ub } = await supabase
         .from("usuarios")
         .select("bits, bits_promo, bits_free, bits_gastados, bits_gastados_conexion")
-        .eq("id", session.user.id).single();
+        .eq("id", sess.user.id).single();
       if (ub) setMisBits(ub);
     }
     setLoading(false);
@@ -112,13 +115,66 @@ export default function AnuncioDetalle() {
     setGuardando(false);
   };
 
-  // ── Conectar con descuento de BIT ─────────────────────────────────────
+  const cargarBitConexion = async (metodo: MetodoPago) => {
+    if (!session?.user?.id || !anuncio?.id) return;
+    setCargandoBit(true);
+
+    const paquete = 500;
+    const actualBits = anuncio.bits_conexion ?? 0;
+
+    try {
+      if (metodo === "bit_free") {
+        const saldo = misBits?.bits_free ?? 0;
+        if (saldo < paquete) { alert(`No tenés suficientes BIT FREE. Tenés ${saldo}, necesitás ${paquete}.`); setCargandoBit(false); return; }
+
+        const { error: e1 } = await supabase.from("anuncios")
+          .update({ bits_conexion: actualBits + paquete })
+          .eq("id", anuncio.id);
+        if (e1) { alert("Error al actualizar anuncio: " + e1.message); setCargandoBit(false); return; }
+
+        const { error: e2 } = await supabase.from("usuarios")
+          .update({ bits_free: saldo - paquete })
+          .eq("id", session.user.id);
+        if (e2) { alert("Error al descontar BIT: " + e2.message); setCargandoBit(false); return; }
+
+        setAnuncio((prev: any) => ({ ...prev, bits_conexion: actualBits + paquete }));
+        setMisBits((prev: any) => ({ ...prev, bits_free: saldo - paquete }));
+
+      } else if (metodo === "bit_nexo") {
+        const saldo = misBits?.bits ?? 0;
+        if (saldo < paquete) { alert(`No tenés suficientes BIT Nexo. Tenés ${saldo}, necesitás ${paquete}.`); setCargandoBit(false); return; }
+
+        const { error: e1 } = await supabase.from("anuncios")
+          .update({ bits_conexion: actualBits + paquete })
+          .eq("id", anuncio.id);
+        if (e1) { alert("Error al actualizar anuncio: " + e1.message); setCargandoBit(false); return; }
+
+        const { error: e2 } = await supabase.from("usuarios")
+          .update({ bits: saldo - paquete })
+          .eq("id", session.user.id);
+        if (e2) { alert("Error al descontar BIT: " + e2.message); setCargandoBit(false); return; }
+
+        setAnuncio((prev: any) => ({ ...prev, bits_conexion: actualBits + paquete }));
+        setMisBits((prev: any) => ({ ...prev, bits: saldo - paquete }));
+
+      } else {
+        alert("Próximamente — pago con tarjeta/transferencia");
+        setCargandoBit(false);
+        return;
+      }
+
+      setPopupCompra(false);
+    } catch (err: any) {
+      alert("Error inesperado: " + err?.message);
+    }
+    setCargandoBit(false);
+  };
+
   const ejecutarConectar = async () => {
     if (!session || !anuncio) return;
     setConectando(true);
     setPopupMensaje(false);
 
-    // 1. Obtener datos frescos del anuncio
     const { data: anuData } = await supabase
       .from("anuncios")
       .select("id, usuario_id, conexiones, bits_conexion")
@@ -126,7 +182,6 @@ export default function AnuncioDetalle() {
       .single();
     if (!anuData) { setConectando(false); return; }
 
-    // 2. Verificar que el anuncio tiene BIT Conexión disponible
     const bitsDisponibles = anuData.bits_conexion || 0;
     if (bitsDisponibles <= 0) {
       alert("Este anuncio no tiene BIT Conexión disponibles. El vendedor debe recargar.");
@@ -140,17 +195,12 @@ export default function AnuncioDetalle() {
       .eq("id", anuData.usuario_id)
       .single();
 
-    // 3. Descontar 1 BIT Conexión del anuncio
     const nuevosBits = bitsDisponibles - 1;
-    await supabase
-      .from("anuncios")
-      .update({
-        conexiones:    (anuData.conexiones || 0) + 1,
-        bits_conexion: nuevosBits,
-      })
-      .eq("id", anuncio.id);
+    await supabase.from("anuncios").update({
+      conexiones:    (anuData.conexiones || 0) + 1,
+      bits_conexion: nuevosBits,
+    }).eq("id", anuncio.id);
 
-    // 4. Notificación al vendedor
     await supabase.from("notificaciones").insert({
       usuario_id:  anuData.usuario_id,
       emisor_id:   session.user.id,
@@ -160,7 +210,6 @@ export default function AnuncioDetalle() {
       leida:       false,
     });
 
-    // 5. Mensaje en chat interno
     await supabase.from("mensajes").insert({
       anuncio_id:  anuncio.id,
       emisor_id:   session.user.id,
@@ -168,14 +217,12 @@ export default function AnuncioDetalle() {
       texto:       mensajeConexion,
     });
 
-    // 6. Actualizar estado local
     setAnuncio((prev: any) => ({
       ...prev,
       conexiones:    (anuData.conexiones || 0) + 1,
       bits_conexion: nuevosBits,
     }));
 
-    // 7. Avisar al vendedor si quedan pocos BIT
     if (nuevosBits <= 5 && nuevosBits > 0) {
       await supabase.from("notificaciones").insert({
         usuario_id: anuData.usuario_id,
@@ -184,8 +231,6 @@ export default function AnuncioDetalle() {
         leida:      false,
       });
     }
-
-    // 8. Avisar al vendedor si se agotaron
     if (nuevosBits === 0) {
       await supabase.from("notificaciones").insert({
         usuario_id: anuData.usuario_id,
@@ -197,16 +242,12 @@ export default function AnuncioDetalle() {
 
     setConectando(false);
 
-    // 9. Abrir WhatsApp
     const numeroWA = vendedor?.whatsapp_empresa || vendedor?.whatsapp;
     if (numeroWA) {
-      const texto = encodeURIComponent(
-        `Hola! Te contacto por tu anuncio "${anuncio.titulo}" en NexoNet.\n\n${mensajeConexion}`
-      );
+      const texto = encodeURIComponent(`Hola! Te contacto por tu anuncio "${anuncio.titulo}" en NexoNet.\n\n${mensajeConexion}`);
       window.open(`https://wa.me/54${numeroWA}?text=${texto}`, "_blank");
     }
 
-    // 10. Abrir chat interno
     router.push(`/chat/${anuncio.id}/${anuData.usuario_id}`);
   };
 
@@ -232,15 +273,12 @@ export default function AnuncioDetalle() {
     </main>
   );
 
-  const fuente    = FUENTES[anuncio.fuente] || FUENTES.nexonet;
+  const fuente         = FUENTES[anuncio.fuente] || FUENTES.nexonet;
   const rawImagenes: string[] = anuncio.imagenes || [];
-  const imagenes: string[] = rawImagenes.length > 0
-    ? rawImagenes
-    : [anuncio.avatar_url, anuncio.banner_url].filter(Boolean);
-  const links:    string[] = (anuncio.links || []).filter((l: string) => l?.trim());
-  const tieneUbicacion = anuncio.lat && anuncio.lng;
-  const tieneBits      = (anuncio.bits_conexion ?? 0) > 0;
-  const saldoBuscador  = (misBits?.bits_free || 0) + (misBits?.bits_promo || 0) + (misBits?.bits || 0);
+  const imagenes: string[]    = rawImagenes.length > 0 ? rawImagenes : [anuncio.avatar_url, anuncio.banner_url].filter(Boolean);
+  const links: string[]       = (anuncio.links || []).filter((l: string) => l?.trim());
+  const tieneUbicacion        = anuncio.lat && anuncio.lng;
+  const tieneBits             = (anuncio.bits_conexion ?? 0) > 0;
 
   const badges = [
     anuncio.envio_gratis          && { label:"Envío gratis",    color:"#00a884", texto:"#fff" },
@@ -428,7 +466,7 @@ export default function AnuncioDetalle() {
           </div>
         )}
 
-        {/* PANEL DUEÑO */}
+        {/* PANEL DUEÑO — cargar BIT Conexión */}
         {esPropio && (
           <div style={{ background:"rgba(58,123,213,0.06)", border:"2px solid rgba(58,123,213,0.25)", borderRadius:"16px", padding:"16px" }}>
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"10px" }}>
@@ -446,9 +484,9 @@ export default function AnuncioDetalle() {
                 ⚠️ Sin BIT — los buscadores no pueden ver tus datos de contacto
               </div>
             )}
-            <button onClick={() => setPopupCompra(true)}
-              style={{ width:"100%", background:"linear-gradient(135deg,#3a7bd5,#2962b0)", border:"none", borderRadius:"12px", padding:"13px", fontSize:"14px", fontWeight:900, color:"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
-              ⚡ Cargar BIT Conexión
+            <button onClick={() => setPopupCompra(true)} disabled={cargandoBit}
+              style={{ width:"100%", background:"linear-gradient(135deg,#3a7bd5,#2962b0)", border:"none", borderRadius:"12px", padding:"13px", fontSize:"14px", fontWeight:900, color:"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif", opacity:cargandoBit?0.7:1 }}>
+              {cargandoBit ? "⏳ Cargando..." : "⚡ Cargar BIT Conexión"}
             </button>
           </div>
         )}
@@ -465,7 +503,6 @@ export default function AnuncioDetalle() {
             {session && (() => {
               const tipoContacto = anuncio.config?.tipo_contacto || "datos";
               const soloChatInterno = tipoContacto === "chat";
-
               return (
                 <>
                   {!soloChatInterno && (
@@ -505,7 +542,6 @@ export default function AnuncioDetalle() {
                       </div>
                     </div>
                   )}
-
                   {soloChatInterno && (
                     <div style={{ background:"rgba(58,123,213,0.06)", border:"2px solid rgba(58,123,213,0.2)", borderRadius:"14px", padding:"14px 16px", display:"flex", gap:"12px", alignItems:"center" }}>
                       <span style={{ fontSize:"24px" }}>💬</span>
@@ -515,7 +551,6 @@ export default function AnuncioDetalle() {
                       </div>
                     </div>
                   )}
-
                   {!soloChatInterno && (anuncio.whatsapp || usuario?.whatsapp) && (
                     <button onClick={() => setPopupMensaje(true)} disabled={conectando}
                       style={{ width:"100%", background:"linear-gradient(135deg,#27ae60,#1e8449)", border:"none", borderRadius:"14px", padding:"16px", fontSize:"15px", fontWeight:900, color:"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif", boxShadow:"0 4px 0 #155a2e", display:"flex", alignItems:"center", justifyContent:"center", gap:"10px", opacity:conectando?0.7:1 }}>
@@ -523,7 +558,6 @@ export default function AnuncioDetalle() {
                       <span>{conectando ? "Conectando..." : "Conectar por WhatsApp — gratis"}</span>
                     </button>
                   )}
-
                   <button onClick={() => {
                     if (!session?.user?.id) { router.push("/login"); return; }
                     router.push(`/chat/${anuncio.usuario_id}?anuncio=${anuncio.id}`);
@@ -550,11 +584,16 @@ export default function AnuncioDetalle() {
         )}
       </div>
 
+      {/* POPUP COMPRA BIT CONEXIÓN */}
       {popupCompra && (
-        <PopupCompra titulo="Cargar BIT Conexión" emoji="🔗" costo="500 BIT / $500" descripcion="Recargá BIT para que tu anuncio reciba conexiones"
+        <PopupCompra
+          titulo="Cargar BIT Conexión"
+          emoji="🔗"
+          costo="500 BIT"
+          descripcion="Recargá BIT para que tu anuncio reciba conexiones"
           bits={{ free: misBits?.bits_free || 0, nexo: misBits?.bits || 0, promo: misBits?.bits_promo || 0 }}
           onClose={() => setPopupCompra(false)}
-          onPagar={async (metodo) => { setPopupCompra(false); if (metodo === "bit_free" || metodo === "bit_nexo") { router.push("/mis-anuncios"); } else { alert("Próximamente"); } }}
+          onPagar={cargarBitConexion}
         />
       )}
 

@@ -64,7 +64,7 @@ export default function Home() {
           .order("created_at",{ascending:false}).limit(60),
         supabase.from("grupos")
           .select("id,nombre,descripcion,imagen,ciudad,provincia,creador_id,miembros_count,pago_ingreso_admin")
-          .eq("activo",true).order("created_at",{ascending:false}).limit(60),
+          .order("created_at",{ascending:false}).limit(60),
       ]);
 
       if (rData) setRubros(rData);

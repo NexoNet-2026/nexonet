@@ -6,7 +6,7 @@ import BottomNav from "@/components/BottomNav";
 import { supabase } from "@/lib/supabase";
 import PopupCompra, { MetodoPago } from "@/components/PopupCompra";
 
-const SLIDERS_PREDEFINIDOS: Record<string, { id:string; emoji:string; titulo:string; tipo:string; desc:string }[]> = {
+const PÄGINAS_PREDEFINIDOS: Record<string, { id:string; emoji:string; titulo:string; tipo:string; desc:string }[]> = {
   galeria:      [{ id:"galeria",      emoji:"📸", titulo:"Galería de fotos",    tipo:"galeria",      desc:"Fotos e imágenes" }],
   videos:       [{ id:"videos",       emoji:"🎬", titulo:"Videos",              tipo:"videos",       desc:"Clips y presentaciones" }],
   documentos:   [{ id:"documentos",   emoji:"📄", titulo:"Documentos",          tipo:"documentos",   desc:"PDFs y archivos" }],
@@ -24,23 +24,23 @@ const SLIDERS_PREDEFINIDOS: Record<string, { id:string; emoji:string; titulo:str
   certificados: [{ id:"certificados", emoji:"🏅", titulo:"Certificados",        tipo:"certificados", desc:"Títulos y credenciales" }],
 };
 
-const CONFIG_TIPO: Record<string, { titulo:string; color:string; emoji:string; sliders_default:string[]; usaSliders:boolean }> = {
-  anuncio: { titulo:"Crear Anuncio",   color:"#d4a017", emoji:"📣", sliders_default:[], usaSliders:false },
-  empresa: { titulo:"Crear Empresa",   color:"#c0392b", emoji:"🏢", sliders_default:["galeria","servicios","productos","videos","documentos"], usaSliders:true },
-  servicio:{ titulo:"Ofrecer Servicio",color:"#27ae60", emoji:"🛠️", sliders_default:["portfolio","videos","testimonios","certificados"], usaSliders:true },
-  trabajo: { titulo:"Buscar Trabajo",  color:"#8e44ad", emoji:"💼", sliders_default:[], usaSliders:false },
+const CONFIG_TIPO: Record<string, { titulo:string; color:string; emoji:string; páginas_default:string[]; usapáginas:boolean }> = {
+  anuncio: { titulo:"Crear Anuncio",   color:"#d4a017", emoji:"📣", páginas_default:[], usapáginas:false },
+  empresa: { titulo:"Crear Empresa",   color:"#c0392b", emoji:"🏢", páginas_default:["galeria","servicios","productos","videos","documentos"], usapáginas:true },
+  servicio:{ titulo:"Ofrecer Servicio",color:"#27ae60", emoji:"🛠️", páginas_default:["portfolio","videos","testimonios","certificados"], usapáginas:true },
+  trabajo: { titulo:"Buscar Trabajo",  color:"#8e44ad", emoji:"💼", páginas_default:[], usapáginas:false },
 };
 
-const CONFIG_SUBTIPO: Record<string, { titulo:string; sliders_default:string[] }> = {
-  emprendimiento:{ titulo:"Crear Emprendimiento",   sliders_default:["novedades","productos","galeria","videos","proveedores","facturas","documentos"] },
-  curso:         { titulo:"Crear Curso",            sliders_default:["novedades","videos","documentos","descargas","calendario","faq"] },
-  consorcio:     { titulo:"Crear Consorcio",        sliders_default:["novedades","facturas","documentos","proveedores","calendario","galeria"] },
-  deportivo:     { titulo:"Crear Club Deportivo",   sliders_default:["novedades","galeria","videos","equipo","calendario","documentos"] },
-  estudio:       { titulo:"Crear Grupo de Estudio", sliders_default:["novedades","documentos","descargas","videos","calendario","faq"] },
-  venta:         { titulo:"Crear Grupo de Venta",   sliders_default:["productos","novedades","galeria","videos","descargas"] },
-  artistas:      { titulo:"Crear Grupo Artistas",   sliders_default:["portfolio","galeria","videos","novedades","calendario"] },
-  vecinos:       { titulo:"Crear Grupo Vecinos",    sliders_default:["novedades","galeria","documentos","calendario","faq"] },
-  generico:      { titulo:"Crear Grupo Libre",      sliders_default:["novedades","galeria"] },
+const CONFIG_SUBTIPO: Record<string, { titulo:string; páginas_default:string[] }> = {
+  emprendimiento:{ titulo:"Crear Emprendimiento",   páginas_default:["novedades","productos","galeria","videos","proveedores","facturas","documentos"] },
+  curso:         { titulo:"Crear Curso",            páginas_default:["novedades","videos","documentos","descargas","calendario","faq"] },
+  consorcio:     { titulo:"Crear Consorcio",        páginas_default:["novedades","facturas","documentos","proveedores","calendario","galeria"] },
+  deportivo:     { titulo:"Crear Club Deportivo",   páginas_default:["novedades","galeria","videos","equipo","calendario","documentos"] },
+  estudio:       { titulo:"Crear Grupo de Estudio", páginas_default:["novedades","documentos","descargas","videos","calendario","faq"] },
+  venta:         { titulo:"Crear Grupo de Venta",   páginas_default:["productos","novedades","galeria","videos","descargas"] },
+  artistas:      { titulo:"Crear Grupo Artistas",   páginas_default:["portfolio","galeria","videos","novedades","calendario"] },
+  vecinos:       { titulo:"Crear Grupo Vecinos",    páginas_default:["novedades","galeria","documentos","calendario","faq"] },
+  generico:      { titulo:"Crear Grupo Libre",      páginas_default:["novedades","galeria"] },
 };
 
 type Prov   = { id:number; nombre:string };
@@ -63,18 +63,18 @@ function NexoCrearInner() {
 
   const cfg    = tipo === "grupo" ? null : CONFIG_TIPO[tipo];
   const cfgSub = subtipo ? CONFIG_SUBTIPO[subtipo] : null;
-  const usaSliders = tipo === "grupo" || cfg?.usaSliders;
+  const usapáginas = tipo === "grupo" || cfg?.usapáginas;
 
   const tituloPage = cfgSub?.titulo || cfg?.titulo || "Crear Nexo";
   const colorPage  = cfg?.color || "#3a7bd5";
   const emojiPage  = cfg?.emoji || "👥";
 
-  const slidersDefault = tipo === "grupo"
-    ? (cfgSub?.sliders_default || ["novedades","galeria"])
-    : (cfg?.sliders_default || []);
+  const páginasDefault = tipo === "grupo"
+    ? (cfgSub?.páginas_default || ["novedades","galeria"])
+    : (cfg?.páginas_default || []);
 
-  // Pasos: si usa sliders → 3 pasos, si no → 1 paso (todo junto)
-  const totalPasos = usaSliders ? 3 : 1;
+  // Pasos: si usa páginas → 3 pasos, si no → 1 paso (todo junto)
+  const totalPasos = usapáginas ? 3 : 1;
   const [paso,        setPaso]        = useState(1);
   const [perfil,      setPerfil]      = useState<any>(null);
   const [guardando,   setGuardando]   = useState(false);
@@ -100,7 +100,7 @@ function NexoCrearInner() {
   const [pagoBITEmpresa, setPagoBITEmpresa] = useState(false);
   const [popupPagarEmpresa, setPopupPagarEmpresa] = useState(false);
 
-  const [sliders, setSliders] = useState<{id:string;emoji:string;titulo:string;tipo:string;orden:number}[]>([]);
+  const [páginas, setpáginas] = useState<{id:string;emoji:string;titulo:string;tipo:string;orden:number}[]>([]);
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data:{ session } }) => {
@@ -121,12 +121,12 @@ function NexoCrearInner() {
       if (s) setSubrubros(s);
     });
 
-    // Sliders iniciales
-    const inicial = slidersDefault.map((s, i) => {
-      const cat = Object.values(SLIDERS_PREDEFINIDOS).flat().find(p => p.tipo === s);
+    // páginas iniciales
+    const inicial = páginasDefault.map((s, i) => {
+      const cat = Object.values(PÁGINAS_PREDEFINIDOS).flat().find(p => p.tipo === s);
       return { id:s, emoji:cat?.emoji||"📋", titulo:cat?.titulo||s, tipo:s, orden:i };
     });
-    setSliders(inicial);
+    setpáginas(inicial);
   }, []);
 
   const cambiarProv = async (nombre:string) => {
@@ -193,13 +193,13 @@ function NexoCrearInner() {
   };
 
   const agregarSlider = (cat:any) => {
-    if (sliders.find(s=>s.tipo===cat.tipo)) return;
-    setSliders(prev=>[...prev,{...cat,orden:prev.length}]);
+    if (páginas.find(s=>s.tipo===cat.tipo)) return;
+    setpáginas(prev=>[...prev,{...cat,orden:prev.length}]);
     setPopupSlider(false);
   };
 
   const moverSlider = (idx:number, dir:-1|1) => {
-    setSliders(prev => {
+    setpáginas(prev => {
       const arr=[...prev]; const dest=idx+dir;
       if (dest<0||dest>=arr.length) return arr;
       [arr[idx],arr[dest]]=[arr[dest],arr[idx]];
@@ -260,9 +260,9 @@ function NexoCrearInner() {
       const { data: nexo, error } = await supabase.from(tabla).insert(payload).select().single();
       if (error) { console.error(error); alert(`Error: ${error.message}`); setGuardando(false); return; }
 
-      if (sliders.length > 0) {
-        await supabase.from("nexo_sliders").insert(
-          sliders.map(s=>({ nexo_id:nexo.id, titulo:s.titulo, tipo:s.tipo, orden:s.orden, activo:true }))
+      if (páginas.length > 0) {
+        await supabase.from("nexo_páginas").insert(
+          páginas.map(s=>({ nexo_id:nexo.id, titulo:s.titulo, tipo:s.tipo, orden:s.orden, activo:true }))
         );
       }
       if (tipo==="grupo") {
@@ -287,8 +287,8 @@ function NexoCrearInner() {
 
   if (!perfil) return <main style={{paddingTop:"80px",textAlign:"center",color:"#9a9a9a",fontFamily:"'Nunito',sans-serif"}}>Cargando...</main>;
 
-  // ── FORMULARIO ANUNCIO / TRABAJO (sin sliders, todo en 1 paso) ────────────
-  if (!usaSliders) {
+  // ── FORMULARIO ANUNCIO / TRABAJO (sin páginas, todo en 1 paso) ────────────
+  if (!usapáginas) {
     return (
       <main style={{paddingTop:"105px",paddingBottom:"130px",background:"#f4f4f2",minHeight:"100vh",fontFamily:"'Nunito',sans-serif"}}>
         <Header/>
@@ -465,7 +465,7 @@ function NexoCrearInner() {
     );
   }
 
-  // ── FORMULARIO CON SLIDERS (grupo / empresa / servicio) ──────────────────
+  // ── FORMULARIO CON páginas (grupo / empresa / servicio) ──────────────────
   return (
     <main style={{paddingTop:"95px",paddingBottom:"100px",background:"#f4f4f2",minHeight:"100vh",fontFamily:"'Nunito',sans-serif"}}>
       <Header/>
@@ -502,7 +502,7 @@ function NexoCrearInner() {
 
       {/* TABS */}
       <div style={{background:"#fff",borderBottom:"2px solid #f0f0f0",padding:"0 16px",display:"flex"}}>
-        {[["1","Información"],["2","Sliders"],["3","Acceso"]].map(([n,l])=>(
+        {[["1","Información"],["2","páginas"],["3","Acceso"]].map(([n,l])=>(
           <button key={n} onClick={()=>setPaso(parseInt(n))}
             style={{flex:1,background:"none",border:"none",borderBottom:paso===parseInt(n)?`3px solid ${colorPage}`:"3px solid transparent",padding:"12px 4px",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>
             <div style={{fontSize:"10px",fontWeight:800,color:paso===parseInt(n)?colorPage:"#9a9a9a",textTransform:"uppercase" as const,letterSpacing:"0.5px"}}>{n}. {l}</div>
@@ -618,32 +618,32 @@ function NexoCrearInner() {
 
             <button onClick={()=>setPaso(2)} disabled={!form.titulo.trim()}
               style={{...BTN(colorPage),opacity:form.titulo.trim()?1:0.5}}>
-              Siguiente → Sliders
+              Siguiente → páginas
             </button>
           </div>
         )}
 
-        {/* PASO 2: SLIDERS */}
+        {/* PASO 2: PÁGINAS */}
         {paso===2 && (
           <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
             <div style={{background:"rgba(58,123,213,0.08)",border:"2px dashed rgba(58,123,213,0.3)",borderRadius:"14px",padding:"14px 16px"}}>
-              <div style={{fontSize:"12px",fontWeight:800,color:"#3a7bd5",marginBottom:"4px"}}>💡 Sliders de contenido</div>
+              <div style={{fontSize:"12px",fontWeight:800,color:"#3a7bd5",marginBottom:"4px"}}>💡 páginas de contenido</div>
               <div style={{fontSize:"12px",color:"#9a9a9a",fontWeight:600,lineHeight:1.6}}>
                 Cada slider es una sección de tu Nexo. Podés reordenarlos y agregarles contenido luego.
               </div>
             </div>
-            {sliders.map((s,i)=>(
+            {páginas.map((s,i)=>(
               <div key={s.id} style={{background:"#fff",borderRadius:"14px",padding:"14px 16px",display:"flex",alignItems:"center",gap:"12px",boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
                 <span style={{fontSize:"22px"}}>{s.emoji}</span>
                 <div style={{flex:1}}>
-                  <input type="text" value={s.titulo} onChange={e=>setSliders(prev=>prev.map((x,j)=>j===i?{...x,titulo:e.target.value}:x))}
+                  <input type="text" value={s.titulo} onChange={e=>setpáginas(prev=>prev.map((x,j)=>j===i?{...x,titulo:e.target.value}:x))}
                     style={{border:"none",outline:"none",fontSize:"14px",fontWeight:800,color:"#1a2a3a",fontFamily:"'Nunito',sans-serif",width:"100%",background:"none"}}/>
                   <div style={{fontSize:"10px",color:"#9a9a9a",fontWeight:600,textTransform:"uppercase" as const,letterSpacing:"0.5px"}}>{s.tipo}</div>
                 </div>
                 <div style={{display:"flex",gap:"4px"}}>
                   <MB emoji="↑" onClick={()=>moverSlider(i,-1)} disabled={i===0}/>
-                  <MB emoji="↓" onClick={()=>moverSlider(i,1)} disabled={i===sliders.length-1}/>
-                  <MB emoji="🗑️" onClick={()=>setSliders(prev=>prev.filter((_,j)=>j!==i))} color="#e74c3c"/>
+                  <MB emoji="↓" onClick={()=>moverSlider(i,1)} disabled={i===páginas.length-1}/>
+                  <MB emoji="🗑️" onClick={()=>setpáginas(prev=>prev.filter((_,j)=>j!==i))} color="#e74c3c"/>
                 </div>
               </div>
             ))}
@@ -685,7 +685,7 @@ function NexoCrearInner() {
               {[
                 {l:"Tipo",    v:`${emojiPage} ${tituloPage.replace("Crear ","").replace("Ofrecer ","")}`},
                 {l:"Título",  v:form.titulo},
-                {l:"Sliders", v:`${sliders.length} sección${sliders.length!==1?"es":""}`},
+                {l:"páginas", v:`${páginas.length} sección${páginas.length!==1?"es":""}`},
                 {l:"Acceso",  v:form.tipo_acceso==="libre"?"🟢 Libre":form.tipo_acceso==="aprobacion"?"⏳ Aprobación":"💰 Pago"},
                 {l:"Ciudad",  v:form.ciudad||"—"},
               ].map(r=>(
@@ -708,8 +708,8 @@ function NexoCrearInner() {
 
       {popupSlider && (
         <PopupSlider onClose={()=>setPopupSlider(false)} onAgregar={agregarSlider}
-          onCustom={(t:string)=>{if(!t.trim())return;setSliders(prev=>[...prev,{id:`c_${Date.now()}`,emoji:"✨",titulo:t,tipo:"personalizado",orden:prev.length}]);setPopupSlider(false);}}
-          yaExisten={sliders.map(s=>s.tipo)}/>
+          onCustom={(t:string)=>{if(!t.trim())return;setpáginas(prev=>[...prev,{id:`c_${Date.now()}`,emoji:"✨",titulo:t,tipo:"personalizado",orden:prev.length}]);setPopupSlider(false);}}
+          yaExisten={páginas.map(s=>s.tipo)}/>
       )}
       <BottomNav/>
     </main>
@@ -718,7 +718,7 @@ function NexoCrearInner() {
 
 function PopupSlider({onClose,onAgregar,onCustom,yaExisten}:{onClose:()=>void;onAgregar:(c:any)=>void;onCustom:(t:string)=>void;yaExisten:string[]}) {
   const [ct,setCt]=useState("");
-  const todas=Object.values(SLIDERS_PREDEFINIDOS).flat();
+  const todas=Object.values(páginas_PREDEFINIDOS).flat();
   return (
     <div style={{position:"fixed",inset:0,zIndex:500,background:"rgba(0,0,0,0.7)",display:"flex",alignItems:"flex-end"}} onClick={onClose}>
       <div style={{width:"100%",background:"#fff",borderRadius:"24px 24px 0 0",padding:"24px 20px 44px",maxHeight:"80vh",overflowY:"auto",fontFamily:"'Nunito',sans-serif"}} onClick={e=>e.stopPropagation()}>

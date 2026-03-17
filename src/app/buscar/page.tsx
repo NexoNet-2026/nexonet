@@ -123,6 +123,10 @@ function BuscarInner() {
 
   useEffect(() => {
     if (sp.get("q")) setQuery(sp.get("q")!);
+    if (sp.get("tipo")) {
+  const t = sp.get("tipo") as any;
+  if (["anuncios","grupos","empresas","servicios","trabajo"].includes(t)) setTipoActivo(t);
+}
     const rP = sp.get("rubro");
     const sP = sp.get("subrubro");
 

@@ -61,7 +61,7 @@ export default function Home() {
         `).eq("estado","activo").order("created_at",{ascending:false}).limit(80),
         supabase.from("nexos")
           .select("id,titulo,descripcion,tipo,ciudad,provincia,avatar_url,config,miembros_count")
-          .eq("estado","activo").order("created_at",{ascending:false}).limit(60),
+          .order("created_at",{ascending:false}).limit(60),
         supabase.from("grupos")
           .select("id,nombre,descripcion,imagen,ciudad,provincia,creador_id,miembros_count,pago_ingreso_admin")
           .eq("activo",true).order("created_at",{ascending:false}).limit(60),

@@ -69,7 +69,7 @@ function NexoCrearInner() {
   const colorPage  = cfg?.color || "#3a7bd5";
   const emojiPage  = cfg?.emoji || "👥";
 
-  const páginasDefault = tipo === "grupo"
+  const slidersDefault = tipo === "grupo"
     ? (cfgSub?.páginas_default || ["novedades","galeria"])
     : (cfg?.páginas_default || []);
 
@@ -100,7 +100,7 @@ function NexoCrearInner() {
   const [pagoBITEmpresa, setPagoBITEmpresa] = useState(false);
   const [popupPagarEmpresa, setPopupPagarEmpresa] = useState(false);
 
-  const [páginas, setpáginas] = useState<{id:string;emoji:string;titulo:string;tipo:string;orden:number}[]>([]);
+  const [páginas, setSliders] = useState<{id:string;emoji:string;titulo:string;tipo:string;orden:number}[]>([]);
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data:{ session } }) => {
@@ -122,11 +122,11 @@ function NexoCrearInner() {
     });
 
     // páginas iniciales
-    const inicial = páginasDefault.map((s, i) => {
-      const cat = Object.values(PÁGINAS_PREDEFINIDOS).flat().find(p => p.tipo === s);
+    const inicial = slidersDefault.map((s, i) => {
+      const cat = Object.values(SLIDERS_PREDEFINIDOS).flat().find(p => p.tipo === s);
       return { id:s, emoji:cat?.emoji||"📋", titulo:cat?.titulo||s, tipo:s, orden:i };
     });
-    setpáginas(inicial);
+    setSliders(inicial);
   }, []);
 
   const cambiarProv = async (nombre:string) => {
@@ -194,12 +194,12 @@ function NexoCrearInner() {
 
   const agregarSlider = (cat:any) => {
     if (páginas.find(s=>s.tipo===cat.tipo)) return;
-    setpáginas(prev=>[...prev,{...cat,orden:prev.length}]);
+    setSliders(prev=>[...prev,{...cat,orden:prev.length}]);
     setPopupSlider(false);
   };
 
   const moverSlider = (idx:number, dir:-1|1) => {
-    setpáginas(prev => {
+    setSliders(prev => {
       const arr=[...prev]; const dest=idx+dir;
       if (dest<0||dest>=arr.length) return arr;
       [arr[idx],arr[dest]]=[arr[dest],arr[idx]];
@@ -636,14 +636,14 @@ function NexoCrearInner() {
               <div key={s.id} style={{background:"#fff",borderRadius:"14px",padding:"14px 16px",display:"flex",alignItems:"center",gap:"12px",boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
                 <span style={{fontSize:"22px"}}>{s.emoji}</span>
                 <div style={{flex:1}}>
-                  <input type="text" value={s.titulo} onChange={e=>setpáginas(prev=>prev.map((x,j)=>j===i?{...x,titulo:e.target.value}:x))}
+                  <input type="text" value={s.titulo} onChange={e=>setSliders(prev=>prev.map((x,j)=>j===i?{...x,titulo:e.target.value}:x))}
                     style={{border:"none",outline:"none",fontSize:"14px",fontWeight:800,color:"#1a2a3a",fontFamily:"'Nunito',sans-serif",width:"100%",background:"none"}}/>
                   <div style={{fontSize:"10px",color:"#9a9a9a",fontWeight:600,textTransform:"uppercase" as const,letterSpacing:"0.5px"}}>{s.tipo}</div>
                 </div>
                 <div style={{display:"flex",gap:"4px"}}>
                   <MB emoji="↑" onClick={()=>moverSlider(i,-1)} disabled={i===0}/>
                   <MB emoji="↓" onClick={()=>moverSlider(i,1)} disabled={i===páginas.length-1}/>
-                  <MB emoji="🗑️" onClick={()=>setpáginas(prev=>prev.filter((_,j)=>j!==i))} color="#e74c3c"/>
+                  <MB emoji="🗑️" onClick={()=>setSliders(prev=>prev.filter((_,j)=>j!==i))} color="#e74c3c"/>
                 </div>
               </div>
             ))}
@@ -708,7 +708,7 @@ function NexoCrearInner() {
 
       {popupSlider && (
         <PopupSlider onClose={()=>setPopupSlider(false)} onAgregar={agregarSlider}
-          onCustom={(t:string)=>{if(!t.trim())return;setpáginas(prev=>[...prev,{id:`c_${Date.now()}`,emoji:"✨",titulo:t,tipo:"personalizado",orden:prev.length}]);setPopupSlider(false);}}
+          onCustom={(t:string)=>{if(!t.trim())return;setSliders(prev=>[...prev,{id:`c_${Date.now()}`,emoji:"✨",titulo:t,tipo:"personalizado",orden:prev.length}]);setPopupSlider(false);}}
           yaExisten={páginas.map(s=>s.tipo)}/>
       )}
       <BottomNav/>
@@ -718,7 +718,7 @@ function NexoCrearInner() {
 
 function PopupSlider({onClose,onAgregar,onCustom,yaExisten}:{onClose:()=>void;onAgregar:(c:any)=>void;onCustom:(t:string)=>void;yaExisten:string[]}) {
   const [ct,setCt]=useState("");
-  const todas=Object.values(páginas_PREDEFINIDOS).flat();
+  const todas=Object.values(SLIDERS_PREDEFINIDOS).flat();
   return (
     <div style={{position:"fixed",inset:0,zIndex:500,background:"rgba(0,0,0,0.7)",display:"flex",alignItems:"flex-end"}} onClick={onClose}>
       <div style={{width:"100%",background:"#fff",borderRadius:"24px 24px 0 0",padding:"24px 20px 44px",maxHeight:"80vh",overflowY:"auto",fontFamily:"'Nunito',sans-serif"}} onClick={e=>e.stopPropagation()}>

@@ -69,7 +69,7 @@ function NexoCrearInner() {
   const cfgSub     = subtipo ? CONFIG_SUBTIPO[subtipo] : null;
   const usaSliders = tipo === "grupo" || cfg?.usaSliders;
 
-  const tituloPage     = cfgSub?.titulo || cfg?.titulo || "Crear Nexo";
+  const tituloPage     = cfgSub?.titulo || cfg?.titulo || (tipo === "grupo" ? "Crear Grupo" : "Crear Nexo");
   const colorPage      = cfg?.color || "#3a7bd5";
   const emojiPage      = cfg?.emoji || "👥";
   const slidersDefault = tipo === "grupo"

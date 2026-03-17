@@ -6,7 +6,7 @@ import BottomNav from "@/components/BottomNav";
 import { supabase } from "@/lib/supabase";
 import PopupCompra, { MetodoPago } from "@/components/PopupCompra";
 
-const PÄGINAS_PREDEFINIDOS: Record<string, { id:string; emoji:string; titulo:string; tipo:string; desc:string }[]> = {
+const SLIDERS_PREDEFINIDOS: Record<string, { id:string; emoji:string; titulo:string; tipo:string; desc:string }[]> = {
   galeria:      [{ id:"galeria",      emoji:"📸", titulo:"Galería de fotos",    tipo:"galeria",      desc:"Fotos e imágenes" }],
   videos:       [{ id:"videos",       emoji:"🎬", titulo:"Videos",              tipo:"videos",       desc:"Clips y presentaciones" }],
   documentos:   [{ id:"documentos",   emoji:"📄", titulo:"Documentos",          tipo:"documentos",   desc:"PDFs y archivos" }],
@@ -761,3 +761,4 @@ const IS:React.CSSProperties={width:"100%",border:"2px solid #e8e8e6",borderRadi
 const CAJA:React.CSSProperties={background:"#fff",borderRadius:"16px",padding:"18px",boxShadow:"0 2px 10px rgba(0,0,0,0.06)"};
 const BTN=(c:string):React.CSSProperties=>({width:"100%",background:`linear-gradient(135deg,${c}cc,${c})`,border:"none",borderRadius:"12px",padding:"14px",fontSize:"15px",fontWeight:900,color:"#fff",cursor:"pointer",fontFamily:"'Nunito',sans-serif",boxShadow:`0 4px 0 ${c}88`});
 const BTN2:React.CSSProperties={flex:1,background:"#f4f4f2",border:"none",borderRadius:"12px",padding:"14px",fontSize:"14px",fontWeight:800,color:"#9a9a9a",cursor:"pointer",fontFamily:"'Nunito',sans-serif"} as const;
+

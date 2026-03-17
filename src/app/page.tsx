@@ -60,7 +60,7 @@ export default function Home() {
           subrubros(nombre,rubros(nombre))
         `).eq("estado","activo").order("created_at",{ascending:false}).limit(80),
         supabase.from("nexos")
-          .select("id,titulo,descripcion,tipo,ciudad,provincia,avatar_url,config,miembros_count")
+          .select("id,titulo,descripcion,tipo,ciudad,provincia,avatar_url,config")
           .order("created_at",{ascending:false}).limit(60),
         supabase.from("grupos")
           .select("id,nombre,descripcion,imagen,ciudad,provincia,creador_id,miembros_count,pago_ingreso_admin")
@@ -429,3 +429,4 @@ const DI = (activo:boolean): React.CSSProperties => ({
   cursor:"pointer", background:activo?"rgba(212,160,23,0.08)":"transparent",
   borderLeft:activo?"3px solid #d4a017":"3px solid transparent",
 });
+

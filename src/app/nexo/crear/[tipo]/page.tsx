@@ -468,7 +468,7 @@ function NexoCrearInner() {
 
       {/* TABS */}
       <div style={{background:"#fff",borderBottom:"2px solid #f0f0f0",padding:"0 16px",display:"flex"}}>
-        {[["1","Información"],["2","Sliders"],["3","Acceso"]].map(([n,l])=>(
+        {[["1","Información"],["2","Páginas"],["3","Acceso"]].map(([n,l])=>(
           <button key={n} onClick={()=>setPaso(parseInt(n))}
             style={{flex:1,background:"none",border:"none",borderBottom:paso===parseInt(n)?`3px solid ${colorPage}`:"3px solid transparent",padding:"12px 4px",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>
             <div style={{fontSize:"10px",fontWeight:800,color:paso===parseInt(n)?colorPage:"#9a9a9a",textTransform:"uppercase" as const,letterSpacing:"0.5px"}}>{n}. {l}</div>
@@ -571,7 +571,7 @@ function NexoCrearInner() {
             </div>
 
             <button onClick={()=>setPaso(2)} disabled={!form.titulo.trim()} style={{...BTN(colorPage),opacity:form.titulo.trim()?1:0.5}}>
-              Siguiente → Sliders
+              Siguiente → Páginas
             </button>
           </div>
         )}
@@ -580,8 +580,8 @@ function NexoCrearInner() {
         {paso===2 && (
           <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
             <div style={{background:"rgba(58,123,213,0.08)",border:"2px dashed rgba(58,123,213,0.3)",borderRadius:"14px",padding:"14px 16px"}}>
-              <div style={{fontSize:"12px",fontWeight:800,color:"#3a7bd5",marginBottom:"4px"}}>💡 Sliders de contenido</div>
-              <div style={{fontSize:"12px",color:"#9a9a9a",fontWeight:600,lineHeight:1.6}}>Cada slider es una sección de tu Nexo. Podés reordenarlos y agregarles contenido luego.</div>
+              <div style={{fontSize:"12px",fontWeight:800,color:"#3a7bd5",marginBottom:"4px"}}>💡 Página de contenido</div>
+              <div style={{fontSize:"12px",color:"#9a9a9a",fontWeight:600,lineHeight:1.6}}>Cada página es una sección de tu Nexo. Podés reordenarlos y agregarles contenido luego.</div>
             </div>
             {sliders.map((s,i)=>(
               <div key={s.id} style={{background:"#fff",borderRadius:"14px",padding:"14px 16px",display:"flex",alignItems:"center",gap:"12px",boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
@@ -599,7 +599,7 @@ function NexoCrearInner() {
               </div>
             ))}
             <button onClick={()=>setPopupSlider(true)} style={{background:"rgba(212,160,23,0.08)",border:"2px dashed rgba(212,160,23,0.4)",borderRadius:"14px",padding:"14px",fontSize:"13px",fontWeight:800,color:"#d4a017",cursor:"pointer",fontFamily:"'Nunito',sans-serif",display:"flex",alignItems:"center",justifyContent:"center",gap:"8px"}}>
-              ➕ Agregar slider
+              ➕ Agregar página
             </button>
             <div style={{display:"flex",gap:"10px"}}>
               <button onClick={()=>setPaso(1)} style={{flex:1,...BTN2}}>← Volver</button>
@@ -635,7 +635,7 @@ function NexoCrearInner() {
               {[
                 {l:"Tipo",   v:`${emojiPage} ${tituloPage.replace("Crear ","").replace("Ofrecer ","")}`},
                 {l:"Título", v:form.titulo||"—"},
-                {l:"Sliders",v:`${sliders.length} sección${sliders.length!==1?"es":""}`},
+                {l:"Páginas",v:`${sliders.length} sección${sliders.length!==1?"es":""}`},
                 {l:"Acceso", v:form.tipo_acceso==="libre"?"🟢 Libre":form.tipo_acceso==="aprobacion"?"⏳ Aprobación":"💰 Pago"},
                 {l:"Ciudad", v:form.ciudad||"—"},
               ].map(r=>(
@@ -712,7 +712,7 @@ function PopupSlider({onClose,onAgregar,onCustom,yaExisten}:{onClose:()=>void;on
   return (
     <div style={{position:"fixed",inset:0,zIndex:500,background:"rgba(0,0,0,0.7)",display:"flex",alignItems:"flex-end"}} onClick={onClose}>
       <div style={{width:"100%",background:"#fff",borderRadius:"24px 24px 0 0",padding:"24px 20px 44px",maxHeight:"80vh",overflowY:"auto",fontFamily:"'Nunito',sans-serif"}} onClick={e=>e.stopPropagation()}>
-        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"20px",color:"#1a2a3a",letterSpacing:"1px",marginBottom:"16px"}}>➕ Elegí un slider</div>
+        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"20px",color:"#1a2a3a",letterSpacing:"1px",marginBottom:"16px"}}>➕ Elegí una página</div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px",marginBottom:"16px"}}>
           {todas.map(c=>{
             const existe = yaExisten.includes(c.tipo);
@@ -731,7 +731,7 @@ function PopupSlider({onClose,onAgregar,onCustom,yaExisten}:{onClose:()=>void;on
         <div style={{borderTop:"2px solid #f0f0f0",paddingTop:"14px"}}>
           <div style={{fontSize:"11px",fontWeight:800,color:"#9a9a9a",textTransform:"uppercase" as const,letterSpacing:"1px",marginBottom:"8px"}}>✨ Personalizado</div>
           <div style={{display:"flex",gap:"8px"}}>
-            <input type="text" value={ct} onChange={e=>setCt(e.target.value)} placeholder="Nombre del slider..."
+            <input type="text" value={ct} onChange={e=>setCt(e.target.value)} placeholder="Nombre del página..."
               style={{flex:1,border:"2px solid #e8e8e6",borderRadius:"10px",padding:"10px 14px",fontSize:"13px",fontFamily:"'Nunito',sans-serif",outline:"none"}}/>
             <button onClick={()=>{onCustom(ct);setCt("");}} disabled={!ct.trim()}
               style={{background:"linear-gradient(135deg,#d4a017,#f0c040)",border:"none",borderRadius:"10px",padding:"10px 16px",fontSize:"13px",fontWeight:900,color:"#1a2a3a",cursor:"pointer",fontFamily:"'Nunito',sans-serif",opacity:ct.trim()?1:0.5}}>

@@ -244,7 +244,6 @@ function NexoCrearInner() {
         delete payload.banner_url;
       }
 
-      // anuncio/trabajo → tabla anuncios | grupo/empresa/servicio → tabla nexos
       const tabla = (tipo==="anuncio"||tipo==="trabajo") ? "anuncios" : "nexos";
       const { data: nexo, error } = await supabase.from(tabla).insert(payload).select().single();
       if (error) { console.error(error); alert(`Error al crear: ${error.message}`); setGuardando(false); return; }
@@ -281,8 +280,8 @@ function NexoCrearInner() {
     return (
       <main style={{paddingTop:"105px",paddingBottom:"130px",background:"#f4f4f2",minHeight:"100vh",fontFamily:"'Nunito',sans-serif"}}>
         <Header/>
-        <div style={{background:`linear-gradient(135deg,${colorPage}dd,${colorPage})`,padding:"16px",display:"flex",alignItems:"center"}}>
-          <button onClick={()=>router.push("/publicar")} style={{background:"rgba(255,255,255,0.2)",border:"1px solid rgba(255,255,255,0.3)",borderRadius:"10px",padding:"8px 14px",color:"#fff",fontSize:"13px",fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',sans-serif",flexShrink:0,whiteSpace:"nowrap"}}>← Volver</button>
+        <div style={{background:`linear-gradient(135deg,${colorPage}dd,${colorPage})`,padding:"12px 16px",display:"flex",alignItems:"center"}}>
+          <button onClick={()=>router.push("/publicar")} style={{background:"rgba(255,255,255,0.2)",border:"1px solid rgba(255,255,255,0.3)",borderRadius:"10px",padding:"8px 14px",color:"#fff",fontSize:"13px",fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',sans-serif",flexShrink:0,whiteSpace:"nowrap"}}>← Back</button>
           <div style={{flex:1,textAlign:"center",fontFamily:"'Bebas Neue',sans-serif",fontSize:"20px",color:"#fff",letterSpacing:"1px"}}>{emojiPage} {tituloPage}</div>
           <div style={{width:"68px",flexShrink:0}}/>
         </div>
@@ -394,14 +393,9 @@ function NexoCrearInner() {
             onClick={() => {
               if ((tipo==="anuncio"||tipo==="trabajo") && perfil?.plan !== "nexoempresa") {
                 const totalBits = (perfil?.bits_free||0) + (perfil?.bits||0);
-                if (totalBits < 500) {
-                  alert(`Necesitás 500 BIT para publicar. Tenés ${totalBits} BIT disponibles.`);
-                  return;
-                }
+                if (totalBits < 500) { alert(`Necesitás 500 BIT para publicar. Tenés ${totalBits} BIT disponibles.`); return; }
                 setPopupConfirmar(true);
-              } else {
-                crear();
-              }
+              } else { crear(); }
             }}
             disabled={guardando||!form.titulo.trim()}
             style={{width:"100%",background:guardando||!form.titulo.trim()?`${colorPage}50`:`linear-gradient(135deg,${colorPage}cc,${colorPage})`,border:"none",borderRadius:"14px",padding:"16px",fontSize:"16px",fontWeight:900,color:"#fff",cursor:guardando||!form.titulo.trim()?"not-allowed":"pointer",fontFamily:"'Nunito',sans-serif",boxShadow:guardando||!form.titulo.trim()?"none":`0 4px 0 ${colorPage}88`}}>
@@ -425,10 +419,7 @@ function NexoCrearInner() {
                 if ((perfil?.bits||0) < 500) { alert("No tenés suficientes BIT Nexo."); return; }
                 await supabase.from("usuarios").update({ bits: perfil.bits - 500 }).eq("id", perfil.id);
                 setPerfil((p:any) => ({...p, bits: p.bits - 500}));
-              } else {
-                alert("Próximamente — pagos con tarjeta/transferencia");
-                return;
-              }
+              } else { alert("Próximamente — pagos con tarjeta/transferencia"); return; }
               setPopupConfirmar(false);
               crear();
             }}
@@ -443,25 +434,25 @@ function NexoCrearInner() {
     <main style={{paddingTop:"0px",paddingBottom:"100px",background:"#f4f4f2",minHeight:"100vh",fontFamily:"'Nunito',sans-serif"}}>
       <Header/>
 
-      {/* HERO */}
-      <div style={{background:form.banner_url?`url(${form.banner_url}) center/cover no-repeat`:"linear-gradient(135deg,#1a2a3a,#243b55)",minHeight:"130px",position:"relative"}}>
-        {form.banner_url && <div style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.5)"}}/>}
-        <div style={{position:"relative",zIndex:1,padding:"140px 16px 20px"}}>
-          <button onClick={()=>router.push("/publicar")} style={{background:"rgba(255,255,255,0.15)",border:"1px solid rgba(255,255,255,0.25)",borderRadius:"10px",padding:"7px 14px",color:"#fff",fontSize:"13px",fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',sans-serif",marginBottom:"14px"}}>
-            ← Volver
-          </button>
-          <div style={{display:"flex",alignItems:"center",gap:"14px"}}>
-            <div style={{position:"relative"}}>
-              <div style={{width:"64px",height:"64px",borderRadius:"16px",background:`${colorPage}22`,border:`3px solid ${colorPage}60`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"28px",overflow:"hidden"}}>
-                {form.avatar_url?<img src={form.avatar_url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<span>{emojiPage}</span>}
-              </div>
+      {/* HEADER BAR — igual que anuncio/trabajo */}
+      <div style={{background:`linear-gradient(135deg,${colorPage}dd,${colorPage})`,padding:"12px 16px",display:"flex",alignItems:"center",marginTop:"95px"}}>
+        <button onClick={()=>router.push("/publicar")} style={{background:"rgba(255,255,255,0.2)",border:"1px solid rgba(255,255,255,0.3)",borderRadius:"10px",padding:"8px 14px",color:"#fff",fontSize:"13px",fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',sans-serif",flexShrink:0,whiteSpace:"nowrap"}}>← Back</button>
+        <div style={{flex:1,textAlign:"center",fontFamily:"'Bebas Neue',sans-serif",fontSize:"20px",color:"#fff",letterSpacing:"1px"}}>{emojiPage} {tituloPage}</div>
+        <div style={{width:"68px",flexShrink:0}}/>
+      </div>
 
+      {/* HERO — avatar + nombre */}
+      <div style={{background:form.banner_url?`url(${form.banner_url}) center/cover no-repeat`:"linear-gradient(135deg,#1a2a3a,#243b55)",minHeight:"120px",position:"relative"}}>
+        {form.banner_url && <div style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.5)"}}/>}
+        <div style={{position:"relative",zIndex:1,padding:"20px 16px 20px"}}>
+          <div style={{display:"flex",alignItems:"center",gap:"14px"}}>
+            <div style={{width:"64px",height:"64px",borderRadius:"16px",background:`${colorPage}22`,border:`3px solid ${colorPage}60`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"28px",overflow:"hidden"}}>
+              {form.avatar_url?<img src={form.avatar_url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<span>{emojiPage}</span>}
             </div>
             <div style={{flex:1}}>
               <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"22px",color:colorPage,letterSpacing:"1px"}}>{tituloPage}</div>
               <div style={{fontSize:"11px",color:"rgba(255,255,255,0.5)",fontWeight:600}}>{form.titulo||"Escribí el nombre..."}</div>
             </div>
-
           </div>
         </div>
       </div>
@@ -576,12 +567,12 @@ function NexoCrearInner() {
           </div>
         )}
 
-        {/* PASO 2: SLIDERS */}
+        {/* PASO 2: PÁGINAS */}
         {paso===2 && (
           <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
             <div style={{background:"rgba(58,123,213,0.08)",border:"2px dashed rgba(58,123,213,0.3)",borderRadius:"14px",padding:"14px 16px"}}>
-              <div style={{fontSize:"12px",fontWeight:800,color:"#3a7bd5",marginBottom:"4px"}}>💡 Página de contenido</div>
-              <div style={{fontSize:"12px",color:"#9a9a9a",fontWeight:600,lineHeight:1.6}}>Cada página es una sección de tu Nexo. Podés reordenarlos y agregarles contenido luego.</div>
+              <div style={{fontSize:"12px",fontWeight:800,color:"#3a7bd5",marginBottom:"4px"}}>💡 Páginas de contenido</div>
+              <div style={{fontSize:"12px",color:"#9a9a9a",fontWeight:600,lineHeight:1.6}}>Cada página es una sección de tu Nexo. Podés reordenarlas y agregarles contenido luego.</div>
             </div>
             {sliders.map((s,i)=>(
               <div key={s.id} style={{background:"#fff",borderRadius:"14px",padding:"14px 16px",display:"flex",alignItems:"center",gap:"12px",boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
@@ -649,12 +640,9 @@ function NexoCrearInner() {
             <div style={{display:"flex",gap:"10px"}}>
               <button onClick={()=>setPaso(2)} style={{flex:1,...BTN2}}>← Volver</button>
               <button onClick={() => {
-                if (tipo === "empresa") { crear(); return; } // empresa ya pagó 10.000 BIT antes
+                if (tipo === "empresa") { crear(); return; }
                 const totalBits = (perfil?.bits_free||0) + (perfil?.bits||0) + (perfil?.bits_promo||0);
-                if (totalBits < 500) {
-                  alert(`Necesitás 500 BIT para crear este Nexo. Tenés ${totalBits} BIT.`);
-                  return;
-                }
+                if (totalBits < 500) { alert(`Necesitás 500 BIT para crear este Nexo. Tenés ${totalBits} BIT.`); return; }
                 setPopupConfirmar(true);
               }} disabled={guardando} style={{flex:2,...BTN(colorPage),opacity:guardando?0.7:1}}>
                 {guardando?"⏳ Creando...":"✅ Crear Nexo"}
@@ -692,10 +680,7 @@ function NexoCrearInner() {
               if ((perfil?.bits||0) < 500) { alert("No tenés suficientes BIT Nexo."); return; }
               await supabase.from("usuarios").update({ bits: perfil.bits - 500 }).eq("id", perfil.id);
               setPerfil((p:any) => ({...p, bits: p.bits - 500}));
-            } else {
-              alert("Próximamente — pagos con tarjeta/transferencia");
-              return;
-            }
+            } else { alert("Próximamente — pagos con tarjeta/transferencia"); return; }
             setPopupConfirmar(false);
             crear();
           }}
@@ -731,7 +716,7 @@ function PopupSlider({onClose,onAgregar,onCustom,yaExisten}:{onClose:()=>void;on
         <div style={{borderTop:"2px solid #f0f0f0",paddingTop:"14px"}}>
           <div style={{fontSize:"11px",fontWeight:800,color:"#9a9a9a",textTransform:"uppercase" as const,letterSpacing:"1px",marginBottom:"8px"}}>✨ Personalizado</div>
           <div style={{display:"flex",gap:"8px"}}>
-            <input type="text" value={ct} onChange={e=>setCt(e.target.value)} placeholder="Nombre del página..."
+            <input type="text" value={ct} onChange={e=>setCt(e.target.value)} placeholder="Nombre de la página..."
               style={{flex:1,border:"2px solid #e8e8e6",borderRadius:"10px",padding:"10px 14px",fontSize:"13px",fontFamily:"'Nunito',sans-serif",outline:"none"}}/>
             <button onClick={()=>{onCustom(ct);setCt("");}} disabled={!ct.trim()}
               style={{background:"linear-gradient(135deg,#d4a017,#f0c040)",border:"none",borderRadius:"10px",padding:"10px 16px",fontSize:"13px",fontWeight:900,color:"#1a2a3a",cursor:"pointer",fontFamily:"'Nunito',sans-serif",opacity:ct.trim()?1:0.5}}>
@@ -760,7 +745,7 @@ function SL({children,style}:{children:React.ReactNode;style?:React.CSSPropertie
   return <div style={{fontSize:"11px",fontWeight:900,color:"#9a9a9a",textTransform:"uppercase" as const,letterSpacing:"1px",marginBottom:"14px",...style}}>{children}</div>;
 }
 
-const IS:React.CSSProperties  = {width:"100%",border:"2px solid #e8e8e6",borderRadius:"10px",padding:"11px 14px",fontSize:"14px",fontFamily:"'Nunito',sans-serif",color:"#2c2c2e",outline:"none",boxSizing:"border-box" as const,marginBottom:"12px"};
-const CAJA:React.CSSProperties = {background:"#fff",borderRadius:"16px",padding:"18px",boxShadow:"0 2px 10px rgba(0,0,0,0.06)"};
+const IS:React.CSSProperties   = {width:"100%",border:"2px solid #e8e8e6",borderRadius:"10px",padding:"11px 14px",fontSize:"14px",fontFamily:"'Nunito',sans-serif",color:"#2c2c2e",outline:"none",boxSizing:"border-box" as const,marginBottom:"12px"};
+const CAJA:React.CSSProperties  = {background:"#fff",borderRadius:"16px",padding:"18px",boxShadow:"0 2px 10px rgba(0,0,0,0.06)"};
 const BTN  = (c:string):React.CSSProperties => ({width:"100%",background:`linear-gradient(135deg,${c}cc,${c})`,border:"none",borderRadius:"12px",padding:"14px",fontSize:"15px",fontWeight:900,color:"#fff",cursor:"pointer",fontFamily:"'Nunito',sans-serif",boxShadow:`0 4px 0 ${c}88`});
-const BTN2:React.CSSProperties = {flex:1,background:"#f4f4f2",border:"none",borderRadius:"12px",padding:"14px",fontSize:"14px",fontWeight:800,color:"#9a9a9a",cursor:"pointer",fontFamily:"'Nunito',sans-serif"} as const;
+const BTN2:React.CSSProperties  = {flex:1,background:"#f4f4f2",border:"none",borderRadius:"12px",padding:"14px",fontSize:"14px",fontWeight:800,color:"#9a9a9a",cursor:"pointer",fontFamily:"'Nunito',sans-serif"} as const;

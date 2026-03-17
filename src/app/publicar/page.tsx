@@ -38,7 +38,12 @@ export default function PublicarSelector() {
     <main style={{ paddingTop:"95px", paddingBottom:"140px", background:"#0f1923", minHeight:"100vh", fontFamily:"'Nunito',sans-serif" }}>
       <Header />
 
-      <div style={{ padding:"28px 16px 24px", textAlign:"center" }}>
+      <div style={{ padding:"16px 16px 8px", display:"flex", alignItems:"center" }}>
+  <button onClick={()=>router.push("/")} style={{background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:"10px",padding:"8px 14px",color:"rgba(255,255,255,0.6)",fontSize:"13px",fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>← Back</button>
+  <div style={{flex:1,textAlign:"center",fontFamily:"'Bebas Neue',sans-serif",fontSize:"28px",color:"#fff",letterSpacing:"2px"}}>✨ CREÁ TU NEXO</div>
+  <div style={{width:"80px"}}/>
+</div>
+<div style={{textAlign:"center",fontSize:"13px",color:"rgba(255,255,255,0.45)",fontWeight:600,marginBottom:"20px"}}>¿Qué querés crear hoy?</div>
         <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"32px", color:"#fff", letterSpacing:"2px", lineHeight:1 }}>
           ✨ CREÁ TU NEXO
         </div>

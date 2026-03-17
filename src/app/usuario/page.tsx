@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import PopupCompra, { MetodoPago } from "@/components/PopupCompra";
 
-type Seccion = "cuenta" | "chat" | "datos" | "estadisticas" | "promotor" | "grupos" | "busquedas" | "anuncios" | "empresa";
+type Seccion = "cuenta" | "chat" | "datos" | "estadisticas" | "promotor" | "grupos" | "busquedas" | "anuncios" | "empresa" | "servicios" | "trabajo";
 
 const DIAS_SEMANA = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
 const FERIADOS_ARG: Record<string, string> = {
@@ -49,6 +49,7 @@ export default function Usuario() {
   const [bitsBusq,  setBitsBusq]  = useState(0);
   const [chats,         setChats]         = useState<any[]>([]);
   const [misGruposData, setMisGruposData] = useState<any[]>([]);
+  const [misNexos,      setMisNexos]      = useState<any[]>([]);
   const [noLeidos,      setNoLeidos]      = useState(0);
 
   const [personal, setPersonal] = useState({
@@ -109,6 +110,13 @@ export default function Usuario() {
       setAnunciosActivos(activos || 0);
       setGruposCreados(grupos || 0);
 
+      // Cargar nexos del usuario (empresa, servicio, trabajo)
+      const { data: nxData } = await supabase.from("nexos")
+        .select("id,titulo,tipo,ciudad,provincia,avatar_url,estado")
+        .eq("usuario_id", session.user.id)
+        .order("created_at", { ascending: false });
+      if (nxData) setMisNexos(nxData);
+
       const { data: msgs } = await supabase
         .from("mensajes")
         .select("id,texto,emisor_id,receptor_id,anuncio_id,leido,created_at")
@@ -150,7 +158,6 @@ export default function Usuario() {
         .eq("usuario_id", session.user.id)
         .in("estado", ["activo","pendiente"]);
 
-      // También traer grupos donde el usuario es creador (por si no están en grupo_miembros)
       const { data: creadosData } = await supabase
         .from("grupos")
         .select("id,nombre,imagen,tipo,miembros_count,categoria_id,grupo_categorias(nombre,emoji),grupo_subcategorias(nombre)")
@@ -273,6 +280,51 @@ export default function Usuario() {
     ? Math.min(100, ((totalConsum - insigniaActual.min) / (insigniaSig.min - insigniaActual.min)) * 100)
     : 100;
 
+  // Helper para secciones de nexos
+  const renderSeccionNexos = (tipo: string, color: string, emoji: string, label: string, labelCrear: string) => {
+    const items = misNexos.filter(n => n.tipo === tipo);
+    return (
+      <div style={{ display:"flex", flexDirection:"column", gap:"12px" }}>
+        <div style={{ fontSize:"13px", fontWeight:900, color:"#1a2a3a", textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:"4px" }}>
+          {emoji} Mis {label} ({items.length})
+        </div>
+        {items.length === 0 ? (
+          <div style={{ background:"#fff", borderRadius:"16px", padding:"40px 20px", textAlign:"center", boxShadow:"0 2px 8px rgba(0,0,0,0.06)" }}>
+            <div style={{ fontSize:"40px", marginBottom:"12px" }}>{emoji}</div>
+            <div style={{ fontSize:"15px", fontWeight:800, color:"#1a2a3a", marginBottom:"20px" }}>No tenés {label} creados</div>
+            <button onClick={()=>router.push(`/nexo/crear/${tipo}`)}
+              style={{ background:`linear-gradient(135deg,${color}cc,${color})`, border:"none", borderRadius:"12px", padding:"12px 24px", fontSize:"13px", fontWeight:900, color:"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
+              ➕ {labelCrear}
+            </button>
+          </div>
+        ) : (
+          items.map(n => (
+            <div key={n.id} onClick={()=>router.push(`/nexo/${n.id}`)}
+              style={{ background:"#fff", borderRadius:"16px", overflow:"hidden", boxShadow:"0 2px 8px rgba(0,0,0,0.06)", cursor:"pointer", display:"flex", alignItems:"stretch", border:`2px solid ${color}20` }}>
+              <div style={{ width:"72px", flexShrink:0, background:`linear-gradient(135deg,${color}33,${color}11)`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"28px", overflow:"hidden" }}>
+                {n.avatar_url ? <img src={n.avatar_url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : <span>{emoji}</span>}
+              </div>
+              <div style={{ flex:1, padding:"12px 14px" }}>
+                <div style={{ fontSize:"14px", fontWeight:900, color:"#1a2a3a", marginBottom:"4px" }}>{n.titulo}</div>
+                <div style={{ display:"flex", gap:"8px", alignItems:"center" }}>
+                  {n.ciudad && <span style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:600 }}>📍 {n.ciudad}</span>}
+                  <span style={{ fontSize:"10px", fontWeight:800, padding:"2px 8px", borderRadius:"20px", background: n.estado==="activo" ? "#e8f8ee" : "#f4f4f2", color: n.estado==="activo" ? "#27ae60" : "#9a9a9a" }}>
+                    {n.estado === "activo" ? "✓ Activo" : "⏸ Pausado"}
+                  </span>
+                </div>
+              </div>
+              <div style={{ display:"flex", alignItems:"center", paddingRight:"12px", color:`${color}80`, fontSize:"20px" }}>›</div>
+            </div>
+          ))
+        )}
+        <button onClick={()=>router.push(`/nexo/crear/${tipo}`)}
+          style={{ background:"rgba(212,160,23,0.08)", border:"2px dashed rgba(212,160,23,0.4)", borderRadius:"16px", padding:"16px", fontSize:"13px", fontWeight:800, color:"#d4a017", cursor:"pointer", fontFamily:"'Nunito',sans-serif", display:"flex", alignItems:"center", justifyContent:"center", gap:"8px" }}>
+          ➕ {labelCrear}
+        </button>
+      </div>
+    );
+  };
+
   return (
     <main style={{ paddingTop:"95px", paddingBottom:"130px", background:"#f4f4f2", minHeight:"100vh", fontFamily:"'Nunito', sans-serif" }}>
       <Header />
@@ -314,6 +366,8 @@ export default function Usuario() {
             ["cuenta",       "💳", "Cuenta",     "#d4a017"],
             ["anuncios",     "📋", "Anuncios",   "#d4a017"],
             ["empresa",      "🏢", "Empresa",    "#c0392b"],
+            ["servicios",    "🛠️", "Servicios",  "#27ae60"],
+            ["trabajo",      "💼", "Trabajo",    "#8e44ad"],
             ["promotor",     "⭐", "Promotor",   "#d4a017"],
             ["grupos",       "👥", "Grupos",     "#d4a017"],
             ["datos",        "👤", "Datos",      "#d4a017"],
@@ -321,7 +375,7 @@ export default function Usuario() {
             ["busquedas",    "🔍", "Búsquedas",  "#16a085"],
             ["estadisticas", "📊", "Stats",      "#d4a017"],
           ] as [Seccion,string,string,string][]).map(([id,e,l,color]) => (
-            <button key={id} onClick={()=> id === "anuncios" ? router.push("/mis-anuncios") : id === "empresa" ? router.push("/nexo/crear/empresa") : setSeccion(id)}
+            <button key={id} onClick={()=> id === "anuncios" ? router.push("/mis-anuncios") : setSeccion(id)}
               style={{ flexShrink:0, minWidth:"60px", background:"none", border:"none",
                        borderBottom: seccion===id ? `3px solid ${color}` : "3px solid transparent",
                        padding:"10px 6px", cursor:"pointer", display:"flex", flexDirection:"column",
@@ -345,8 +399,6 @@ export default function Usuario() {
         {/* ═══ CUENTA ═══ */}
         {seccion === "cuenta" && (
           <div style={{ display:"flex", flexDirection:"column", gap:"14px" }}>
-
-            {/* SALDO UNIFICADO */}
             <div style={{ background:"linear-gradient(135deg,#1a2a3a,#243b55)", borderRadius:"18px", padding:"20px", boxShadow:"0 6px 24px rgba(0,0,0,0.18)" }}>
               <div style={{ fontSize:"11px", fontWeight:800, color:"#8a9aaa", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"14px" }}>💳 Tu saldo BIT</div>
               <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"56px", color:"#f0c040", letterSpacing:"2px", lineHeight:1, marginBottom:"4px" }}>
@@ -365,7 +417,6 @@ export default function Usuario() {
               </button>
             </div>
 
-            {/* DESGLOSE DE CONSUMO */}
             <div style={{ background:"#fff", borderRadius:"16px", padding:"18px", boxShadow:"0 2px 10px rgba(0,0,0,0.06)" }}>
               <div style={{ fontSize:"11px", fontWeight:800, color:"#9a9a9a", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"4px" }}>📊 Cómo usaste tus BIT</div>
               <div style={{ fontSize:"11px", color:"#bbb", fontWeight:600, marginBottom:"16px" }}>Total consumido: <strong style={{ color:"#1a2a3a" }}>{totalConsum.toLocaleString()} BIT</strong></div>
@@ -401,7 +452,6 @@ export default function Usuario() {
               )}
             </div>
 
-            {/* FORMAS DE PAGO */}
             <div style={{ background:"#fff", borderRadius:"16px", padding:"16px", boxShadow:"0 2px 12px rgba(0,0,0,0.06)" }}>
               <div style={{ fontSize:"11px", fontWeight:800, color:"#9a9a9a", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"14px" }}>💳 Formas de pago</div>
               {[
@@ -436,6 +486,15 @@ export default function Usuario() {
             )}
           </div>
         )}
+
+        {/* ═══ EMPRESA ═══ */}
+        {seccion === "empresa" && renderSeccionNexos("empresa", "#c0392b", "🏢", "empresas", "Crear empresa")}
+
+        {/* ═══ SERVICIOS ═══ */}
+        {seccion === "servicios" && renderSeccionNexos("servicio", "#27ae60", "🛠️", "servicios", "Ofrecer servicio")}
+
+        {/* ═══ TRABAJO ═══ */}
+        {seccion === "trabajo" && renderSeccionNexos("trabajo", "#8e44ad", "💼", "búsquedas de trabajo", "Buscar trabajo")}
 
         {/* ═══ CHAT ═══ */}
         {seccion === "chat" && (
@@ -640,13 +699,9 @@ export default function Usuario() {
               <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"36px", color:"#f0c040", marginBottom:"4px" }}>
                 {(perfil?.bits_promotor||0).toLocaleString()} BIT
               </div>
-              <div style={{ fontSize:"12px", color:"#8a9aaa", fontWeight:600, marginBottom:"6px" }}>
-                saldo BIT promotor acumulado
-              </div>
+              <div style={{ fontSize:"12px", color:"#8a9aaa", fontWeight:600, marginBottom:"6px" }}>saldo BIT promotor acumulado</div>
               <div style={{ fontSize:"13px", color:(perfil?.bits_promotor||0)>=100000?"#27ae60":"#8a9aaa", fontWeight:700, marginBottom:"20px" }}>
-                {(perfil?.bits_promotor||0) >= 100000
-                  ? "✅ Ya podés solicitar reembolso en dinero"
-                  : "Necesitás 100.000 BIT para solicitar reembolso en dinero"}
+                {(perfil?.bits_promotor||0) >= 100000 ? "✅ Ya podés solicitar reembolso en dinero" : "Necesitás 100.000 BIT para solicitar reembolso en dinero"}
               </div>
               <button onClick={()=>router.push("/promotor")} style={BTN}>⭐ Ver página de Promotor</button>
             </div>
@@ -740,6 +795,7 @@ export default function Usuario() {
           </div>
         )}
 
+        {/* ═══ GRUPOS ═══ */}
         {seccion === "grupos" && (
           <div style={{ display:"flex", flexDirection:"column", gap:"12px" }}>
             <div style={{ fontSize:"13px", fontWeight:900, color:"#1a2a3a", textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:"4px" }}>👥 Mis grupos ({misGruposData.length})</div>
@@ -798,57 +854,6 @@ function SaldoPill({ label, valor, color }: { label:string; valor:number; color:
     <div style={{ flex:1, background:`${color}18`, borderRadius:"10px", padding:"8px 6px", border:`1px solid ${color}30`, textAlign:"center" }}>
       <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"18px", color, letterSpacing:"1px" }}>{valor.toLocaleString()}</div>
       <div style={{ fontSize:"9px", fontWeight:800, color:"rgba(255,255,255,0.5)", textTransform:"uppercase", letterSpacing:"0.5px" }}>{label}</div>
-    </div>
-  );
-}
-
-// ── Funciones eliminadas: DesglosePanel, BitCard (reemplazadas por desglose unificado) ──
-function _DesglosePanel_ELIMINADO({ bitsNexonet, bitsGastados, gastAnuncios, gastConexion, gastLink, gastFlash, bitsPromotor, promoGastados, promoGanados, promoReembolso, bitsFree, freeGastados, bitsBusquedas, gastBusquedas, bitsGrupo, gastGrupo }:{ bitsNexonet:number; bitsGastados:number; gastAnuncios:number; gastConexion:number; gastLink:number; gastFlash:number; bitsPromotor:number; promoGastados:number; promoGanados:number; promoReembolso:number; bitsFree:number; freeGastados:number; bitsBusquedas:number; gastBusquedas:number; bitsGrupo:number; gastGrupo:number; }) {
-  const [exp, setExp] = React.useState<string|null>(null);
-  const toggle = (k:string) => setExp(e => e===k ? null : k);
-  const filas = [
-    { key:"nexo", emoji:"💛", color:"#d4a017", label:"BIT NexoNet", desc:"Comprados", disp:bitsNexonet, cons:bitsGastados, detalle:[{ l:"Anuncios consumidos", v:gastAnuncios, c:"#d4a017" },{ l:"Conexión consumidos", v:gastConexion, c:"#3a7bd5" },{ l:"Links consumidos", v:gastLink, c:"#8e44ad" },{ l:"Promo Flash consumidos", v:gastFlash, c:"#e67e22" },{ l:"Total disponible", v:bitsNexonet, c:"#27ae60" }] },
-    { key:"promo", emoji:"💚", color:"#27ae60", label:"BIT NexoPromotor", desc:"Por referidos", disp:bitsPromotor, cons:promoGastados, badge:"Reembolsable", detalle:[{ l:"BIT ganados (total histórico)", v:promoGanados, c:"#27ae60" },{ l:"BIT consumidos", v:promoGastados, c:"#e74c3c" },{ l:"BIT disponible para reembolso", v:promoReembolso, c:"#27ae60" },{ l:"BIT disponible", v:bitsPromotor, c:"#27ae60" }] },
-    { key:"free", emoji:"💙", color:"#2980b9", label:"BIT NexoFree", desc:"Asignados — Respaldo garantizado", disp:bitsFree, cons:freeGastados, detalle:[{ l:"BIT activos disponibles", v:bitsFree, c:"#2980b9" },{ l:"BIT consumidos", v:freeGastados, c:"#e74c3c" }] },
-    { key:"busq", emoji:"🔍", color:"#16a085", label:"BIT Búsquedas Automáticas", desc:"Para recibir matches automáticos", disp:bitsBusquedas, cons:gastBusquedas, detalle:[{ l:"BIT disponibles", v:bitsBusquedas, c:"#16a085" },{ l:"BIT consumidos", v:gastBusquedas, c:"#e74c3c" }] },
-    { key:"grupo", emoji:"👥", color:"#8e44ad", label:"BIT Grupo", desc:"Para ingresar o invitar a grupos · $500 BIT c/u", disp:bitsGrupo, cons:gastGrupo, detalle:[{ l:"BIT disponibles", v:bitsGrupo, c:"#8e44ad" },{ l:"BIT consumidos", v:gastGrupo, c:"#e74c3c" }] },
-  ];
-  return (
-    <div style={{ background:"#fff", borderRadius:"16px", padding:"16px", boxShadow:"0 2px 12px rgba(0,0,0,0.06)" }}>
-      <div style={{ fontSize:"11px", fontWeight:800, color:"#9a9a9a", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"14px" }}>📦 Desglose de BIT</div>
-      {filas.map((b:any, idx:number) => (
-        <div key={b.key}>
-          <button onClick={()=>toggle(b.key)} style={{ width:"100%", background:"none", border:"none", padding:"10px 0", borderBottom: exp===b.key ? "none" : idx < filas.length-1 ? "1px solid #f0f0f0" : "none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"space-between", fontFamily:"'Nunito',sans-serif" }}>
-            <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
-              <div style={{ width:"36px", height:"36px", borderRadius:"10px", background:`${b.color}18`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"18px", flexShrink:0 }}>{b.emoji}</div>
-              <div style={{ textAlign:"left" }}>
-                <div style={{ display:"flex", alignItems:"center", gap:"6px" }}>
-                  <div style={{ fontSize:"13px", fontWeight:800, color:"#1a2a3a" }}>{b.label}</div>
-                  {b.badge && <span style={{ background:"#e8f8ee", color:"#27ae60", borderRadius:"6px", padding:"1px 6px", fontSize:"9px", fontWeight:800 }}>{b.badge}</span>}
-                </div>
-                <div style={{ fontSize:"10px", color:"#9a9a9a", fontWeight:600 }}>{b.desc}</div>
-              </div>
-            </div>
-            <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
-              <div style={{ textAlign:"right" }}>
-                <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"20px", color:b.color }}>{b.disp.toLocaleString()}</div>
-                <div style={{ fontSize:"10px", color:"#bbb", fontWeight:600 }}>{b.cons.toLocaleString()} usados</div>
-              </div>
-              <span style={{ fontSize:"16px", color:"#d4a017", transition:"transform .2s", transform: exp===b.key ? "rotate(180deg)" : "rotate(0deg)", display:"inline-block" }}>▾</span>
-            </div>
-          </button>
-          {exp === b.key && (
-            <div style={{ background:`${b.color}08`, borderRadius:"12px", padding:"12px 14px", marginBottom:"8px", borderLeft:`3px solid ${b.color}40` }}>
-              {b.detalle.map((d:any) => (
-                <div key={d.l} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"6px 0", borderBottom:"1px solid rgba(0,0,0,0.04)" }}>
-                  <span style={{ fontSize:"12px", fontWeight:700, color:"#555" }}>{d.l}</span>
-                  <span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"18px", color:d.c, letterSpacing:"1px" }}>{d.v.toLocaleString()}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      ))}
     </div>
   );
 }

@@ -13,10 +13,6 @@ const FUENTES: Record<string, { label: string; color: string; texto: string }> =
   otro:          { label: "Externo",        color: "#888",    texto: "#fff"    },
 };
 
-const TIPO_COLOR: Record<string,string> = {
-  grupo:"#3a7bd5", empresa:"#c0392b", servicio:"#27ae60", trabajo:"#8e44ad",
-};
-
 type Anuncio = {
   id: number; titulo: string; precio: number; moneda: string;
   ciudad: string; provincia: string; imagenes: string[];
@@ -102,7 +98,6 @@ export default function Home() {
         setAnuncios(mapped);
       }
 
-      // Combinar nexos + grupos
       const nexosArr: Nexo[] = nData ? nData.map((n:any) => ({ ...n, id: String(n.id) })) : [];
       const gruposArr: Nexo[] = gData ? gData.map((g:any) => ({
         id: String(g.id), titulo: g.nombre || "Sin nombre",
@@ -144,14 +139,11 @@ export default function Home() {
     return true;
   });
 
-  const destacados = anuFiltrados.filter(a => a.flash).slice(0, 10);
   const recientes  = anuFiltrados.slice(0, 12);
-
-  // Nexos por tipo
-  const grupos    = nexos.filter(n => n.tipo === "grupo").slice(0, 10);
-  const empresas  = nexos.filter(n => n.tipo === "empresa").slice(0, 10);
-  const servicios = nexos.filter(n => n.tipo === "servicio").slice(0, 10);
-  const trabajos  = nexos.filter(n => n.tipo === "trabajo").slice(0, 10);
+  const grupos     = nexos.filter(n => n.tipo === "grupo").slice(0, 10);
+  const empresas   = nexos.filter(n => n.tipo === "empresa").slice(0, 10);
+  const servicios  = nexos.filter(n => n.tipo === "servicio").slice(0, 10);
+  const trabajos   = nexos.filter(n => n.tipo === "trabajo").slice(0, 10);
 
   const limpiar = () => { setQuery(""); setRubroSel(null); setSubrubroSel(null); setDropOpen(false); };
   const selR = (r: Rubro) => { setRubroSel(r); setSubrubroSel(null); setQuery(r.nombre); setDropOpen(false); };
@@ -255,42 +247,35 @@ export default function Home() {
         <div style={{textAlign:"center",padding:"40px",color:"#9a9a9a",fontWeight:700}}>Cargando...</div>
       ) : (
         <>
-          {/* DESTACADOS (flash) */}
-          {destacados.length > 0 && (
-            <Slider titulo="⭐ Destacados" acento="#d4a017" verTodos="/buscar" autoplay>
-              {destacados.map(a => <TarjetaAnuncio key={a.id} a={a} fmt={fmt} />)}
-            </Slider>
-          )}
-
-          {/* RECIÉN PUBLICADOS */}
-          <Slider titulo="🕐 Recién publicados" acento="#3a7bd5" verTodos="/buscar">
+          {/* 1. RECIÉN PUBLICADOS */}
+          <Slider titulo="🕐 Recién publicados" acento="#d4a017" verTodos="/buscar" onTituloClick={()=>router.push("/buscar")}>
             {recientes.map(a => <TarjetaAnuncio key={a.id} a={a} fmt={fmt} />)}
           </Slider>
 
-          {/* GRUPOS */}
-          {grupos.length > 0 && (
-            <Slider titulo="👥 Grupos" acento="#3a7bd5" verTodos="/buscar?tipo=grupos">
-              {grupos.map(n => <TarjetaNexo key={n.id} nexo={n} color="#3a7bd5" onClick={()=>router.push(`/grupos/${n.id}`)} />)}
-            </Slider>
-          )}
-
-          {/* EMPRESAS */}
+          {/* 2. EMPRESAS */}
           {empresas.length > 0 && (
-            <Slider titulo="🏢 Empresas" acento="#c0392b" verTodos="/buscar?tipo=empresas">
+            <Slider titulo="🏢 Empresas" acento="#c0392b" verTodos="/buscar?tipo=empresas" onTituloClick={()=>router.push("/buscar?tipo=empresas")}>
               {empresas.map(n => <TarjetaNexo key={n.id} nexo={n} color="#c0392b" onClick={()=>router.push(`/nexo/${n.id}`)} />)}
             </Slider>
           )}
 
-          {/* SERVICIOS */}
+          {/* 3. GRUPOS */}
+          {grupos.length > 0 && (
+            <Slider titulo="👥 Grupos" acento="#3a7bd5" verTodos="/buscar?tipo=grupos" onTituloClick={()=>router.push("/buscar?tipo=grupos")}>
+              {grupos.map(n => <TarjetaNexo key={n.id} nexo={n} color="#3a7bd5" onClick={()=>router.push(`/grupos/${n.id}`)} />)}
+            </Slider>
+          )}
+
+          {/* 4. SERVICIOS */}
           {servicios.length > 0 && (
-            <Slider titulo="🛠️ Servicios" acento="#27ae60" verTodos="/buscar?tipo=servicios">
+            <Slider titulo="🛠️ Servicios" acento="#27ae60" verTodos="/buscar?tipo=servicios" onTituloClick={()=>router.push("/buscar?tipo=servicios")}>
               {servicios.map(n => <TarjetaNexo key={n.id} nexo={n} color="#27ae60" onClick={()=>router.push(`/nexo/${n.id}`)} />)}
             </Slider>
           )}
 
-          {/* TRABAJO */}
+          {/* 5. BUSCO TRABAJO */}
           {trabajos.length > 0 && (
-            <Slider titulo="💼 Trabajo" acento="#8e44ad" verTodos="/buscar?tipo=trabajo">
+            <Slider titulo="💼 Busco Trabajo" acento="#8e44ad" verTodos="/buscar?tipo=trabajo" onTituloClick={()=>router.push("/buscar?tipo=trabajo")}>
               {trabajos.map(n => <TarjetaNexo key={n.id} nexo={n} color="#8e44ad" onClick={()=>router.push(`/nexo/${n.id}`)} />)}
             </Slider>
           )}
@@ -311,8 +296,8 @@ export default function Home() {
 }
 
 // ── SLIDER ──────────────────────────────────────────────────────────────────
-function Slider({ titulo, acento, verTodos, autoplay, children }: {
-  titulo:string; acento:string; verTodos:string; autoplay?:boolean; children:React.ReactNode;
+function Slider({ titulo, acento, verTodos, onTituloClick, children }: {
+  titulo:string; acento:string; verTodos:string; onTituloClick?:()=>void; children:React.ReactNode;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const items = Array.isArray(children) ? children : [children];
@@ -328,20 +313,13 @@ function Slider({ titulo, acento, verTodos, autoplay, children }: {
   };
   const onScroll = () => { if (ref.current) setIdx(Math.round(ref.current.scrollLeft / CARD_W)); };
 
-  useEffect(() => {
-    if (!autoplay || total <= 1) return;
-    const t = setInterval(() => {
-      setIdx(p => { const n = p >= total-1 ? 0 : p+1; ref.current?.scrollTo({left:n*CARD_W,behavior:"smooth"}); return n; });
-    }, 3500);
-    return () => clearInterval(t);
-  }, [autoplay, total]);
-
   return (
     <div style={{marginBottom:"8px",background:"#fff",paddingBottom:"12px",borderBottom:"6px solid #f4f4f2"}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 16px 10px"}}>
-        <div style={{display:"flex",alignItems:"center",gap:"8px"}}>
+        <div onClick={onTituloClick} style={{display:"flex",alignItems:"center",gap:"8px",cursor:onTituloClick?"pointer":"default"}}>
           <div style={{width:"3px",height:"18px",background:acento,borderRadius:"2px"}}/>
           <span style={{fontSize:"16px",fontWeight:900,color:"#1a2a3a"}}>{titulo}</span>
+          {onTituloClick && <span style={{fontSize:"13px",color:acento}}>→</span>}
         </div>
         <div style={{display:"flex",alignItems:"center",gap:"8px"}}>
           <button onClick={()=>scrollTo(idx-1)} disabled={idx===0}

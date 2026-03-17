@@ -450,8 +450,7 @@ function NexoCrearInner() {
               {form.avatar_url?<img src={form.avatar_url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<span>{emojiPage}</span>}
             </div>
             <div style={{flex:1}}>
-              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"22px",color:colorPage,letterSpacing:"1px"}}>{tituloPage}</div>
-              <div style={{fontSize:"11px",color:"rgba(255,255,255,0.5)",fontWeight:600}}>{form.titulo||"Escribí el nombre..."}</div>
+              <div style={{fontSize:"13px",color:"rgba(255,255,255,0.5)",fontWeight:600}}>{form.titulo||"Escribí el nombre..."}</div>
             </div>
           </div>
         </div>

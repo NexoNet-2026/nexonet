@@ -253,32 +253,36 @@ export default function Home() {
           </Slider>
 
           {/* 2. EMPRESAS */}
-          {empresas.length > 0 && (
-            <Slider titulo="🏢 Empresas" acento="#c0392b" verTodos="/buscar?tipo=empresas" onTituloClick={()=>router.push("/buscar?tipo=empresas")}>
-              {empresas.map(n => <TarjetaNexo key={n.id} nexo={n} color="#c0392b" onClick={()=>router.push(`/nexo/${n.id}`)} />)}
-            </Slider>
-          )}
+          <Slider titulo="🏢 Empresas" acento="#c0392b" verTodos="/buscar?tipo=empresas" onTituloClick={()=>router.push("/buscar?tipo=empresas")}>
+            {empresas.length > 0
+              ? empresas.map(n => <TarjetaNexo key={n.id} nexo={n} color="#c0392b" onClick={()=>router.push(`/nexo/${n.id}`)} />)
+              : [<TarjetaVacia key="vacia" emoji="🏢" texto="Sé el primero en crear una empresa" color="#c0392b" onClick={()=>router.push("/nexo/crear/empresa")} />]
+            }
+          </Slider>
 
           {/* 3. GRUPOS */}
-          {grupos.length > 0 && (
-            <Slider titulo="👥 Grupos" acento="#3a7bd5" verTodos="/buscar?tipo=grupos" onTituloClick={()=>router.push("/buscar?tipo=grupos")}>
-              {grupos.map(n => <TarjetaNexo key={n.id} nexo={n} color="#3a7bd5" onClick={()=>router.push(`/grupos/${n.id}`)} />)}
-            </Slider>
-          )}
+          <Slider titulo="👥 Grupos" acento="#3a7bd5" verTodos="/buscar?tipo=grupos" onTituloClick={()=>router.push("/buscar?tipo=grupos")}>
+            {grupos.length > 0
+              ? grupos.map(n => <TarjetaNexo key={n.id} nexo={n} color="#3a7bd5" onClick={()=>router.push(`/grupos/${n.id}`)} />)
+              : [<TarjetaVacia key="vacia" emoji="👥" texto="Sé el primero en crear un grupo" color="#3a7bd5" onClick={()=>router.push("/publicar")} />]
+            }
+          </Slider>
 
           {/* 4. SERVICIOS */}
-          {servicios.length > 0 && (
-            <Slider titulo="🛠️ Servicios" acento="#27ae60" verTodos="/buscar?tipo=servicios" onTituloClick={()=>router.push("/buscar?tipo=servicios")}>
-              {servicios.map(n => <TarjetaNexo key={n.id} nexo={n} color="#27ae60" onClick={()=>router.push(`/nexo/${n.id}`)} />)}
-            </Slider>
-          )}
+          <Slider titulo="🛠️ Servicios" acento="#27ae60" verTodos="/buscar?tipo=servicios" onTituloClick={()=>router.push("/buscar?tipo=servicios")}>
+            {servicios.length > 0
+              ? servicios.map(n => <TarjetaNexo key={n.id} nexo={n} color="#27ae60" onClick={()=>router.push(`/nexo/${n.id}`)} />)
+              : [<TarjetaVacia key="vacia" emoji="🛠️" texto="Sé el primero en ofrecer un servicio" color="#27ae60" onClick={()=>router.push("/nexo/crear/servicio")} />]
+            }
+          </Slider>
 
           {/* 5. BUSCO TRABAJO */}
-          {trabajos.length > 0 && (
-            <Slider titulo="💼 Busco Trabajo" acento="#8e44ad" verTodos="/buscar?tipo=trabajo" onTituloClick={()=>router.push("/buscar?tipo=trabajo")}>
-              {trabajos.map(n => <TarjetaNexo key={n.id} nexo={n} color="#8e44ad" onClick={()=>router.push(`/nexo/${n.id}`)} />)}
-            </Slider>
-          )}
+          <Slider titulo="💼 Busco Trabajo" acento="#8e44ad" verTodos="/buscar?tipo=trabajo" onTituloClick={()=>router.push("/buscar?tipo=trabajo")}>
+            {trabajos.length > 0
+              ? trabajos.map(n => <TarjetaNexo key={n.id} nexo={n} color="#8e44ad" onClick={()=>router.push(`/nexo/${n.id}`)} />)
+              : [<TarjetaVacia key="vacia" emoji="💼" texto="Sé el primero en buscar trabajo" color="#8e44ad" onClick={()=>router.push("/nexo/crear/trabajo")} />]
+            }
+          </Slider>
 
           {anuFiltrados.length === 0 && (
             <div style={{textAlign:"center",padding:"40px 20px"}}>
@@ -402,6 +406,19 @@ function TarjetaNexo({ nexo, color, onClick }: { nexo:Nexo; color:string; onClic
             {nexo.ciudad && <span style={{fontSize:"10px",color:"#9a9a9a",fontWeight:600}}>📍 {nexo.ciudad}</span>}
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ── TARJETA VACÍA ────────────────────────────────────────────────────────────
+function TarjetaVacia({ emoji, texto, color, onClick }: { emoji:string; texto:string; color:string; onClick:()=>void }) {
+  return (
+    <div onClick={onClick} style={{flexShrink:0,width:"180px",cursor:"pointer"}}>
+      <div style={{background:"#fff",borderRadius:"14px",overflow:"hidden",boxShadow:"0 2px 10px rgba(0,0,0,0.06)",border:`2px dashed ${color}40`,height:"160px",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:"10px",padding:"16px",textAlign:"center"}}>
+        <span style={{fontSize:"36px",opacity:0.5}}>{emoji}</span>
+        <div style={{fontSize:"12px",fontWeight:700,color:"#9a9a9a",lineHeight:1.4}}>{texto}</div>
+        <div style={{background:`${color}18`,border:`1px solid ${color}40`,borderRadius:"20px",padding:"4px 12px",fontSize:"11px",fontWeight:800,color}}>➕ Crear</div>
       </div>
     </div>
   );

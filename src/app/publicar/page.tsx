@@ -44,7 +44,7 @@ export default function PublicarSelector() {
   };
 
   return (
-    <main style={{ paddingTop:"95px", paddingBottom:"100px", background:"#0f1923", minHeight:"100vh", fontFamily:"'Nunito',sans-serif" }}>
+    <main style={{ paddingTop:"95px", paddingBottom:"160px", background:"#0f1923", minHeight:"100vh", fontFamily:"'Nunito',sans-serif" }}>
       <Header />
 
       {/* FIX: padding:"28px 16px 24px" da espacio arriba y abajo del título */}

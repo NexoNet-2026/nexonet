@@ -353,7 +353,7 @@ function NexoCrearInner() {
               </label>
             </>)}
             <L>WhatsApp</L>
-            <input type="tel" inputMode="numeric" pattern="[0-9]*" value={form.whatsapp} onChange={e=>F("whatsapp",e.target.value.replace(/\D/g,""))} placeholder="Ej: 3412345678" style={{...IS,marginBottom:"12px"}}/>
+            <input value={form.whatsapp} onChange={e=>F("whatsapp",e.target.value)} placeholder="Ej: 3412345678" style={{...IS,marginBottom:"12px"}}/>
             <SL>📬 Tipo de contacto</SL>
             {[
               {v:"datos",e:"📋",l:"Mostrar mis datos",d:"El comprador ve tu WhatsApp y puede conectarse"},
@@ -434,11 +434,33 @@ function NexoCrearInner() {
     <main style={{paddingTop:"0px",paddingBottom:"100px",background:"#f4f4f2",minHeight:"100vh",fontFamily:"'Nunito',sans-serif"}}>
       <Header/>
 
-      {/* HEADER BAR — igual que anuncio/trabajo */}
-      <div style={{background:`linear-gradient(135deg,${colorPage}dd,${colorPage})`,padding:"12px 16px",display:"flex",alignItems:"center",marginTop:"95px"}}>
-        <button onClick={()=>router.push("/publicar")} style={{background:"rgba(255,255,255,0.2)",border:"1px solid rgba(255,255,255,0.3)",borderRadius:"10px",padding:"8px 14px",color:"#fff",fontSize:"13px",fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',sans-serif",flexShrink:0,whiteSpace:"nowrap"}}>← Volver</button>
-        <div style={{flex:1,textAlign:"center",fontFamily:"'Bebas Neue',sans-serif",fontSize:"20px",color:"#fff",letterSpacing:"1px"}}>{emojiPage} {tituloPage}</div>
-        <div style={{width:"68px",flexShrink:0}}/>
+      {/* HERO */}
+      <div style={{background:form.banner_url?`url(${form.banner_url}) center/cover no-repeat`:"linear-gradient(135deg,#1a2a3a,#243b55)",minHeight:"160px",position:"relative",marginTop:"95px"}}>
+        {form.banner_url && <div style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.5)"}}/>}
+        <div style={{position:"relative",zIndex:1,padding:"14px 16px 20px"}}>
+          <button onClick={()=>router.push("/publicar")} style={{background:"rgba(255,255,255,0.15)",border:"1px solid rgba(255,255,255,0.25)",borderRadius:"10px",padding:"7px 14px",color:"#fff",fontSize:"13px",fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',sans-serif",marginBottom:"14px"}}>
+            ← Volver
+          </button>
+          <div style={{display:"flex",alignItems:"center",gap:"14px"}}>
+            <div style={{position:"relative"}}>
+              <div style={{width:"64px",height:"64px",borderRadius:"16px",background:`${colorPage}22`,border:`3px solid ${colorPage}60`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"28px",overflow:"hidden"}}>
+                {form.avatar_url?<img src={form.avatar_url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<span>{emojiPage}</span>}
+              </div>
+              <label style={{position:"absolute",bottom:"-6px",right:"-6px",width:"24px",height:"24px",borderRadius:"50%",background:colorPage,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",border:"2px solid #1a2a3a",fontSize:"11px"}}>
+                {subiendoImg==="avatar"?"⏳":"📷"}
+                <input type="file" accept="image/*" onChange={e=>subirImagen(e,"avatar")} style={{display:"none"}}/>
+              </label>
+            </div>
+            <div style={{flex:1}}>
+              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"22px",color:colorPage,letterSpacing:"1px"}}>{tituloPage}</div>
+              <div style={{fontSize:"11px",color:"rgba(255,255,255,0.5)",fontWeight:600}}>{form.titulo||"Escribí el nombre..."}</div>
+            </div>
+            <label style={{background:"rgba(255,255,255,0.12)",border:"1px solid rgba(255,255,255,0.2)",borderRadius:"10px",padding:"8px 12px",color:"rgba(255,255,255,0.7)",fontSize:"11px",fontWeight:700,cursor:"pointer",textAlign:"center" as const}}>
+              {subiendoImg==="banner"?"⏳":"🖼️ Banner"}
+              <input type="file" accept="image/*" onChange={e=>subirImagen(e,"banner")} style={{display:"none"}}/>
+            </label>
+          </div>
+        </div>
       </div>
 
       {/* TABS */}
@@ -542,7 +564,7 @@ function NexoCrearInner() {
             <div style={{...CAJA, opacity:tipo==="empresa"&&!pagoBITEmpresa?0.4:1, pointerEvents:tipo==="empresa"&&!pagoBITEmpresa?"none" as any:"auto"}}>
               <SL>📱 Contacto</SL>
               <L>WhatsApp</L>
-              <input type="tel" inputMode="numeric" pattern="[0-9]*" value={form.whatsapp} onChange={e=>F("whatsapp",e.target.value.replace(/\D/g,""))} placeholder="Ej: 3412345678" style={IS}/>
+              <input value={form.whatsapp} onChange={e=>F("whatsapp",e.target.value)} placeholder="Ej: 3412345678" style={IS}/>
             </div>
 
             <button onClick={()=>setPaso(2)} disabled={!form.titulo.trim()} style={{...BTN(colorPage),opacity:form.titulo.trim()?1:0.5}}>

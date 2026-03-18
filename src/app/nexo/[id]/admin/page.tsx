@@ -151,7 +151,7 @@ export default function NexoAdminPage() {
     setSubiendoImg("item");
     const ext  = file.name.split(".").pop();
     const path = `nexos/${id}/items/${Date.now()}.${ext}`;
-    await supabase.storage.from("nexos").upload(path, file, { upsert:true });
+    await supabase.storage.from("anuncios").upload(path, file, { upsert:true });
     const { data } = supabase.storage.from("nexos").getPublicUrl(path);
     setFormItem(f => ({ ...f, url:data.publicUrl, tipo: detectarTipo(file.name) }));
     setSubiendoImg(null);
@@ -163,7 +163,7 @@ export default function NexoAdminPage() {
     setSubiendoImg("desc");
     const ext  = file.name.split(".").pop();
     const path = `nexos/${id}/descargas/${Date.now()}.${ext}`;
-    await supabase.storage.from("nexos").upload(path, file, { upsert:true });
+    await supabase.storage.from("anuncios").upload(path, file, { upsert:true });
     const { data } = supabase.storage.from("nexos").getPublicUrl(path);
     setFormDesc(f => ({ ...f, url:data.publicUrl, tipo_archivo:ext||"otro", titulo:f.titulo||file.name }));
     setSubiendoImg(null);
@@ -268,7 +268,7 @@ export default function NexoAdminPage() {
     if (!file) return;
     setSubiendoImg(campo);
     const path = `nexos/${id}/${campo}_${Date.now()}.${file.name.split(".").pop()}`;
-    await supabase.storage.from("nexos").upload(path, file, { upsert:true });
+    await supabase.storage.from("anuncios").upload(path, file, { upsert:true });
     const { data } = supabase.storage.from("nexos").getPublicUrl(path);
     const url = `${data.publicUrl}?t=${Date.now()}`;
     setFormInfo(f=>({...f,[campo]:url}));

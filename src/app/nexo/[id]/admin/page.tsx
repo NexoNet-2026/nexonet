@@ -4,7 +4,7 @@ import { useRouter, useParams } from "next/navigation";
 import Header from "@/components/Header";
 import { supabase } from "@/lib/supabase";
 
-type TabAdmin = "páginas" | "miembros" | "descargas" | "info" | "config";
+type TabAdmin = "sliders" | "miembros" | "descargas" | "info" | "config";
 
 const SLIDER_EMOJIS: Record<string,string> = {
   galeria:"📸", videos:"🎬", documentos:"📄", descargas:"📥", productos:"🛒",
@@ -17,7 +17,7 @@ const TIPO_COLORES: Record<string,string> = {
   anuncio:"#d4a017", empresa:"#c0392b", servicio:"#27ae60", trabajo:"#8e44ad", grupo:"#3a7bd5",
 };
 
-const PÁGINAS_CATALOGO = [
+const SLIDERS_CATALOGO = [
   { tipo:"galeria",      emoji:"📸", titulo:"Galería de fotos",    desc:"Imágenes" },
   { tipo:"videos",       emoji:"🎬", titulo:"Videos",              desc:"Clips" },
   { tipo:"documentos",   emoji:"📄", titulo:"Documentos",          desc:"PDFs y archivos" },
@@ -43,8 +43,8 @@ export default function NexoAdminPage() {
 
   const [nexo,         setNexo]         = useState<any>(null);
   const [perfil,       setPerfil]       = useState<any>(null);
-  const [tab,          setTab]          = useState<TabAdmin>("páginas");
-  const [páginas,      setpáginas]      = useState<any[]>([]);
+  const [tab,          setTab]          = useState<TabAdmin>("sliders");
+  const [sliders,      setSliders]      = useState<any[]>([]);
   const [miembros,     setMiembros]     = useState<any[]>([]);
   const [descargas,    setDescargas]    = useState<any[]>([]);
   const [cargando,     setCargando]     = useState(true);
@@ -78,11 +78,11 @@ export default function NexoAdminPage() {
       setFormInfo({ titulo:n.titulo||"", descripcion:n.descripcion||"", precio:n.precio||"", ciudad:n.ciudad||"", provincia:n.provincia||"", whatsapp:n.whatsapp||"", link_externo:n.link_externo||"", banner_url:n.banner_url||"", avatar_url:n.avatar_url||"" });
 
       const [{ data: sls }, { data: mbs }, { data: desc }] = await Promise.all([
-        supabase.from("nexo_páginas").select("*").eq("nexo_id",id).order("orden"),
+        supabase.from("nexo_sliders").select("*").eq("nexo_id",id).order("orden"),
         supabase.from("nexo_miembros").select("*, usuarios(id,nombre_usuario,codigo,avatar_url,plan)").eq("nexo_id",id).order("created_at"),
         supabase.from("nexo_descargas").select("*").eq("nexo_id",id).order("created_at",{ascending:false}),
       ]);
-      setpáginas(sls||[]);
+      setSliders(sls||[]);
       setMiembros(mbs||[]);
       setDescargas(desc||[]);
       setCargando(false);
@@ -92,7 +92,7 @@ export default function NexoAdminPage() {
 
   const colorNexo = TIPO_COLORES[nexo?.tipo] || "#d4a017";
 
-  // ── PÁGINAS ──
+  // ── SLIDERS ──
   const cargarItemsSlider = async (sliderId: string) => {
     if (sliderItems[sliderId]) return;
     const { data } = await supabase.from("nexo_slider_items").select("*").eq("slider_id",sliderId).order("orden");
@@ -106,40 +106,40 @@ export default function NexoAdminPage() {
   };
 
   const moverSlider = async (idx: number, dir: -1|1) => {
-    const arr = [...páginas];
+    const arr = [...sliders];
     const dest = idx + dir;
     if (dest < 0 || dest >= arr.length) return;
     [arr[idx], arr[dest]] = [arr[dest], arr[idx]];
     const updated = arr.map((s,i) => ({ ...s, orden:i }));
-    setpáginas(updated);
-    await Promise.all(updated.map(s => supabase.from("nexo_páginas").update({ orden:s.orden }).eq("id",s.id)));
+    setSliders(updated);
+    await Promise.all(updated.map(s => supabase.from("nexo_sliders").update({ orden:s.orden }).eq("id",s.id)));
   };
 
   const toggleActivoSlider = async (s: any) => {
     const nuevo = !s.activo;
-    await supabase.from("nexo_páginas").update({ activo:nuevo }).eq("id",s.id);
-    setpáginas(prev => prev.map(x => x.id===s.id ? {...x,activo:nuevo} : x));
+    await supabase.from("nexo_sliders").update({ activo:nuevo }).eq("id",s.id);
+    setSliders(prev => prev.map(x => x.id===s.id ? {...x,activo:nuevo} : x));
   };
 
   const renombrarSlider = async (s: any, titulo: string) => {
-    await supabase.from("nexo_páginas").update({ titulo }).eq("id",s.id);
-    setpáginas(prev => prev.map(x => x.id===s.id ? {...x,titulo} : x));
+    await supabase.from("nexo_sliders").update({ titulo }).eq("id",s.id);
+    setSliders(prev => prev.map(x => x.id===s.id ? {...x,titulo} : x));
   };
 
   const eliminarSlider = async (sliderId: string) => {
     if (!confirm("¿Eliminar este slider y todo su contenido?")) return;
     await supabase.from("nexo_slider_items").delete().eq("slider_id",sliderId);
-    await supabase.from("nexo_páginas").delete().eq("id",sliderId);
-    setpáginas(prev => prev.filter(s=>s.id!==sliderId));
+    await supabase.from("nexo_sliders").delete().eq("id",sliderId);
+    setSliders(prev => prev.filter(s=>s.id!==sliderId));
   };
 
   const agregarSlider = async (tipo: string, tituloCustom?: string) => {
-    const cat = PÁGINAS_CATALOGO.find(c=>c.tipo===tipo);
+    const cat = SLIDERS_CATALOGO.find(c=>c.tipo===tipo);
     const titulo = tituloCustom || cat?.titulo || tipo;
-    const { data } = await supabase.from("nexo_páginas").insert({
-      nexo_id:id, titulo, tipo, orden:páginas.length, activo:true
+    const { data } = await supabase.from("nexo_sliders").insert({
+      nexo_id:id, titulo, tipo, orden:sliders.length, activo:true
     }).select().single();
-    if (data) setpáginas(prev=>[...prev,data]);
+    if (data) setSliders(prev=>[...prev,data]);
     setPopupSlider(false);
     setCustomTitulo("");
   };
@@ -269,18 +269,18 @@ export default function NexoAdminPage() {
     setSubiendoImg(campo);
     const path = `nexos/${id}/${campo}_${Date.now()}.${file.name.split(".").pop()}`;
     await supabase.storage.from("nexos").upload(path, file, { upsert:true });
-    const { data } = supabase.storage.from("imagenes").getPublicUrl(path);
+    const { data } = supabase.storage.from("nexos").getPublicUrl(path);
     const url = `${data.publicUrl}?t=${Date.now()}`;
     setFormInfo(f=>({...f,[campo]:url}));
     setSubiendoImg(null);
   };
 
-  if (cargando) return <main style={{ paddingTop:"95px", textAlign:"center", color:"#9a9a9a", fontFamily:"'Nunito',sans-serif" }}>Cargando panel...</main>;
+  if (cargando) return <main style={{ paddingTop:"80px", textAlign:"center", color:"#9a9a9a", fontFamily:"'Nunito',sans-serif" }}>Cargando panel...</main>;
 
   const pendientes = miembros.filter(m=>m.estado==="pendiente");
   const activos    = miembros.filter(m=>m.estado==="activo");
   const TABS: {key:TabAdmin;emoji:string;label:string;badge?:number}[] = [
-    { key:"páginas",   emoji:"📋", label:"páginas"  },
+    { key:"sliders",   emoji:"📋", label:"Sliders"  },
     { key:"descargas", emoji:"📥", label:"Descargas" },
     { key:"miembros",  emoji:"👥", label:"Miembros", badge:pendientes.length||undefined },
     { key:"info",      emoji:"✏️", label:"Info"     },
@@ -292,7 +292,7 @@ export default function NexoAdminPage() {
       <Header />
 
       {/* HERO */}
-      <div style={{ position:"relative", background: formInfo.banner_url?`url(${formInfo.banner_url}) center/cover no-repeat`:`linear-gradient(135deg,#1a2a3a,#2d4a6a)`, paddingTop:"95px", minHeight:"170px" }}>
+      <div style={{ position:"relative", background: formInfo.banner_url?`url(${formInfo.banner_url}) center/cover no-repeat`:`linear-gradient(135deg,#1a2a3a,#2d4a6a)`, paddingTop:"80px", minHeight:"170px" }}>
         {formInfo.banner_url && <div style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.55)" }} />}
         <div style={{ position:"relative", zIndex:1, padding:"12px 16px 16px" }}>
           <div style={{ display:"flex", alignItems:"center", gap:"10px", marginBottom:"12px" }}>
@@ -314,7 +314,7 @@ export default function NexoAdminPage() {
             <div style={{ flex:1 }}>
               <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"22px", color:"#fff", letterSpacing:"1px", lineHeight:1 }}>{nexo?.titulo}</div>
               <div style={{ fontSize:"11px", color:"rgba(255,255,255,0.5)", fontWeight:600, marginTop:"3px" }}>
-                {activos.length} miembros · {páginas.length} páginas · {descargas.length} descargas
+                {activos.length} miembros · {sliders.length} sliders · {descargas.length} descargas
               </div>
             </div>
             <label style={{ background:"rgba(255,255,255,0.12)", border:"1px solid rgba(255,255,255,0.2)", borderRadius:"10px", padding:"8px 11px", color:"rgba(255,255,255,0.7)", fontSize:"11px", fontWeight:700, cursor:"pointer", flexShrink:0, textAlign:"center" }}>
@@ -339,31 +339,31 @@ export default function NexoAdminPage() {
 
       <div style={{ padding:"14px", maxWidth:"600px", margin:"0 auto" }}>
 
-        {/* ══ PÁGINAS ══ */}
-        {tab==="páginas" && (
+        {/* ══ SLIDERS ══ */}
+        {tab==="sliders" && (
           <div style={{ display:"flex", flexDirection:"column", gap:"10px" }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"4px" }}>
-              <div style={{ fontSize:"11px", fontWeight:800, color:"#9a9a9a", textTransform:"uppercase", letterSpacing:"1px" }}>{páginas.length} páginas</div>
+              <div style={{ fontSize:"11px", fontWeight:800, color:"#9a9a9a", textTransform:"uppercase", letterSpacing:"1px" }}>{sliders.length} sliders</div>
               <button onClick={()=>setPopupSlider(true)}
                 style={{ background:`${colorNexo}18`, border:`2px solid ${colorNexo}40`, borderRadius:"10px", padding:"7px 14px", fontSize:"12px", fontWeight:900, color:colorNexo, cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
-                ➕ Agregar página
+                ➕ Agregar slider
               </button>
             </div>
 
-            {páginas.map((s, i) => (
+            {sliders.map((s, i) => (
               <div key={s.id} style={{ background:"#fff", borderRadius:"16px", overflow:"hidden", boxShadow:"0 2px 8px rgba(0,0,0,0.06)", border:`2px solid ${s.activo?"transparent":"#f0f0f0"}`, opacity:s.activo?1:0.6 }}>
                 <div style={{ padding:"14px 16px" }}>
                   <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
                     <span style={{ fontSize:"22px", flexShrink:0 }}>{SLIDER_EMOJIS[s.tipo]||"📋"}</span>
                     <input type="text" value={s.titulo}
-                      onChange={e=>setpáginas(prev=>prev.map(x=>x.id===s.id?{...x,titulo:e.target.value}:x))}
+                      onChange={e=>setSliders(prev=>prev.map(x=>x.id===s.id?{...x,titulo:e.target.value}:x))}
                       onBlur={e=>renombrarSlider(s,e.target.value)}
                       style={{ flex:1, border:"none", outline:"none", fontSize:"14px", fontWeight:800, color:"#1a2a3a", fontFamily:"'Nunito',sans-serif", background:"none" }} />
                     <span style={{ fontSize:"10px", color:"#9a9a9a", fontWeight:600, textTransform:"uppercase", flexShrink:0 }}>{s.tipo}</span>
                   </div>
                   <div style={{ display:"flex", gap:"6px", marginTop:"10px", flexWrap:"wrap" }}>
                     <MiniBtn emoji="↑"  onClick={()=>moverSlider(i,-1)} disabled={i===0} />
-                    <MiniBtn emoji="↓"  onClick={()=>moverSlider(i,1)}  disabled={i===páginas.length-1} />
+                    <MiniBtn emoji="↓"  onClick={()=>moverSlider(i,1)}  disabled={i===sliders.length-1} />
                     <MiniBtn emoji={s.activo?"👁️":"🙈"} onClick={()=>toggleActivoSlider(s)} color="#8e44ad" label={s.activo?"Visible":"Oculto"} />
                     <button onClick={()=>{ setPopupItem({slider:s}); toggleSlider(s.id); }}
                       style={{ background:`${colorNexo}18`, border:`1px solid ${colorNexo}40`, borderRadius:"8px", padding:"5px 12px", fontSize:"11px", fontWeight:800, color:colorNexo, cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
@@ -402,17 +402,17 @@ export default function NexoAdminPage() {
                     )}
                     <button onClick={()=>setPopupItem({slider:s})}
                       style={{ width:"100%", marginTop:"10px", background:"rgba(212,160,23,0.08)", border:"2px dashed rgba(212,160,23,0.4)", borderRadius:"10px", padding:"10px", fontSize:"12px", fontWeight:800, color:"#d4a017", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
-                      ➕ Agregar al página
+                      ➕ Agregar al slider
                     </button>
                   </div>
                 )}
               </div>
             ))}
 
-            {páginas.length===0 && (
+            {sliders.length===0 && (
               <div style={{ textAlign:"center", padding:"40px", background:"#fff", borderRadius:"16px" }}>
                 <div style={{ fontSize:"40px", marginBottom:"12px" }}>📋</div>
-                <div style={{ fontSize:"15px", fontWeight:900, color:"#1a2a3a" }}>Sin páginas todavía</div>
+                <div style={{ fontSize:"15px", fontWeight:900, color:"#1a2a3a" }}>Sin sliders todavía</div>
                 <div style={{ fontSize:"12px", color:"#9a9a9a", fontWeight:600, marginTop:"4px" }}>Agregá el primero con el botón de arriba</div>
               </div>
             )}
@@ -539,13 +539,13 @@ export default function NexoAdminPage() {
 
             <div style={{ background:"linear-gradient(135deg,#2c1a1a,#4a2020)", borderRadius:"16px", padding:"18px", border:"2px solid rgba(231,76,60,0.3)" }}>
               <div style={{ fontSize:"13px", fontWeight:900, color:"#e74c3c", marginBottom:"6px" }}>⚠️ Zona peligrosa</div>
-              <div style={{ fontSize:"12px", color:"#e88a8a", fontWeight:600, marginBottom:"16px" }}>Esta acción elimina el nexo, sus páginas, miembros y mensajes permanentemente.</div>
+              <div style={{ fontSize:"12px", color:"#e88a8a", fontWeight:600, marginBottom:"16px" }}>Esta acción elimina el nexo, sus sliders, miembros y mensajes permanentemente.</div>
               <button onClick={async()=>{
                 if (!confirm("¿Eliminar este Nexo definitivamente?")) return;
                 await supabase.from("nexo_mensajes").delete().eq("nexo_id",id);
                 await supabase.from("nexo_miembros").delete().eq("nexo_id",id);
                 await supabase.from("nexo_slider_items").delete().eq("nexo_id",id);
-                await supabase.from("nexo_páginas").delete().eq("nexo_id",id);
+                await supabase.from("nexo_sliders").delete().eq("nexo_id",id);
                 await supabase.from("nexo_descargas_pagos").delete().eq("nexo_id",id);
                 await supabase.from("nexo_descargas").delete().eq("nexo_id",id);
                 await supabase.from("nexos").delete().eq("id",id);
@@ -564,8 +564,8 @@ export default function NexoAdminPage() {
           <div style={{ width:"100%", background:"#fff", borderRadius:"24px 24px 0 0", padding:"22px 18px 44px", maxHeight:"80vh", overflowY:"auto", fontFamily:"'Nunito',sans-serif" }} onClick={e=>e.stopPropagation()}>
             <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"20px", color:"#1a2a3a", letterSpacing:"1px", marginBottom:"14px" }}>➕ Tipo de slider</div>
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"8px", marginBottom:"14px" }}>
-              {PÁGINAS_CATALOGO.map(c=>{
-                const existe = páginas.some(s=>s.tipo===c.tipo);
+              {SLIDERS_CATALOGO.map(c=>{
+                const existe = sliders.some(s=>s.tipo===c.tipo);
                 return (
                   <button key={c.tipo} onClick={()=>!existe&&agregarSlider(c.tipo)} disabled={existe}
                     style={{ background:existe?"#f9f9f9":"#fff", border:`2px solid ${existe?"#e8e8e6":`${colorNexo}40`}`, borderRadius:"12px", padding:"11px 10px", cursor:existe?"default":"pointer", display:"flex", gap:"8px", alignItems:"center", opacity:existe?0.4:1, fontFamily:"'Nunito',sans-serif" }}>

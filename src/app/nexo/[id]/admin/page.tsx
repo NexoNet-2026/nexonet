@@ -275,7 +275,7 @@ export default function NexoAdminPage() {
     setSubiendoImg(null);
   };
 
-  if (cargando) return <main style={{ paddingTop:"80px", textAlign:"center", color:"#9a9a9a", fontFamily:"'Nunito',sans-serif" }}>Cargando panel...</main>;
+  if (cargando) return <main style={{ paddingTop:"95px", textAlign:"center", color:"#9a9a9a", fontFamily:"'Nunito',sans-serif" }}>Cargando panel...</main>;
 
   const pendientes = miembros.filter(m=>m.estado==="pendiente");
   const activos    = miembros.filter(m=>m.estado==="activo");
@@ -346,7 +346,7 @@ export default function NexoAdminPage() {
               <div style={{ fontSize:"11px", fontWeight:800, color:"#9a9a9a", textTransform:"uppercase", letterSpacing:"1px" }}>{páginas.length} páginas</div>
               <button onClick={()=>setPopupSlider(true)}
                 style={{ background:`${colorNexo}18`, border:`2px solid ${colorNexo}40`, borderRadius:"10px", padding:"7px 14px", fontSize:"12px", fontWeight:900, color:colorNexo, cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
-                ➕ Agregar slider
+                ➕ Agregar página
               </button>
             </div>
 
@@ -402,7 +402,7 @@ export default function NexoAdminPage() {
                     )}
                     <button onClick={()=>setPopupItem({slider:s})}
                       style={{ width:"100%", marginTop:"10px", background:"rgba(212,160,23,0.08)", border:"2px dashed rgba(212,160,23,0.4)", borderRadius:"10px", padding:"10px", fontSize:"12px", fontWeight:800, color:"#d4a017", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
-                      ➕ Agregar al slider
+                      ➕ Agregar al página
                     </button>
                   </div>
                 )}

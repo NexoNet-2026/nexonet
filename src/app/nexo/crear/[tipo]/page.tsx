@@ -441,21 +441,6 @@ function NexoCrearInner() {
         <div style={{width:"68px",flexShrink:0}}/>
       </div>
 
-      {/* HERO — avatar + nombre */}
-      <div style={{background:form.banner_url?`url(${form.banner_url}) center/cover no-repeat`:"linear-gradient(135deg,#1a2a3a,#243b55)",minHeight:"120px",position:"relative"}}>
-        {form.banner_url && <div style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.5)"}}/>}
-        <div style={{position:"relative",zIndex:1,padding:"20px 16px 20px"}}>
-          <div style={{display:"flex",alignItems:"center",gap:"14px"}}>
-            <div style={{width:"64px",height:"64px",borderRadius:"16px",background:`${colorPage}22`,border:`3px solid ${colorPage}60`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"28px",overflow:"hidden"}}>
-              {form.avatar_url?<img src={form.avatar_url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<span>{emojiPage}</span>}
-            </div>
-            <div style={{flex:1}}>
-              <div style={{fontSize:"13px",color:"rgba(255,255,255,0.5)",fontWeight:600}}>{form.titulo||"Escribí el nombre..."}</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* TABS */}
       <div style={{background:"#fff",borderBottom:"2px solid #f0f0f0",padding:"0 16px",display:"flex"}}>
         {[["1","Información"],["2","Páginas"],["3","Acceso"]].map(([n,l])=>(

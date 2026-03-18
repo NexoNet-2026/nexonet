@@ -269,7 +269,7 @@ export default function NexoAdminPage() {
     setSubiendoImg(campo);
     const path = `nexos/${id}/${campo}_${Date.now()}.${file.name.split(".").pop()}`;
     await supabase.storage.from("nexos").upload(path, file, { upsert:true });
-    const { data } = supabase.storage.from("nexos").getPublicUrl(path);
+    const { data } = supabase.storage.from("imagenes").getPublicUrl(path);
     const url = `${data.publicUrl}?t=${Date.now()}`;
     setFormInfo(f=>({...f,[campo]:url}));
     setSubiendoImg(null);
@@ -292,7 +292,7 @@ export default function NexoAdminPage() {
       <Header />
 
       {/* HERO */}
-      <div style={{ position:"relative", background: formInfo.banner_url?`url(${formInfo.banner_url}) center/cover no-repeat`:`linear-gradient(135deg,#1a2a3a,#2d4a6a)`, paddingTop:"80px", minHeight:"170px" }}>
+      <div style={{ position:"relative", background: formInfo.banner_url?`url(${formInfo.banner_url}) center/cover no-repeat`:`linear-gradient(135deg,#1a2a3a,#2d4a6a)`, paddingTop:"95px", minHeight:"170px" }}>
         {formInfo.banner_url && <div style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.55)" }} />}
         <div style={{ position:"relative", zIndex:1, padding:"12px 16px 16px" }}>
           <div style={{ display:"flex", alignItems:"center", gap:"10px", marginBottom:"12px" }}>

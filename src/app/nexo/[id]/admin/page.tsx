@@ -275,7 +275,7 @@ export default function NexoAdminPage() {
     setSubiendoImg(null);
   };
 
-  if (cargando) return <main style={{ paddingTop:"80px", textAlign:"center", color:"#9a9a9a", fontFamily:"'Nunito',sans-serif" }}>Cargando panel...</main>;
+  if (cargando) return <main style={{ paddingTop:"95px", textAlign:"center", color:"#9a9a9a", fontFamily:"'Nunito',sans-serif" }}>Cargando panel...</main>;
 
   const pendientes = miembros.filter(m=>m.estado==="pendiente");
   const activos    = miembros.filter(m=>m.estado==="activo");
@@ -292,7 +292,7 @@ export default function NexoAdminPage() {
       <Header />
 
       {/* HERO */}
-      <div style={{ position:"relative", background: formInfo.banner_url?`url(${formInfo.banner_url}) center/cover no-repeat`:`linear-gradient(135deg,#1a2a3a,#2d4a6a)`, paddingTop:"80px", minHeight:"170px" }}>
+      <div style={{ position:"relative", background: formInfo.banner_url?`url(${formInfo.banner_url}) center/cover no-repeat`:`linear-gradient(135deg,#1a2a3a,#2d4a6a)`, paddingTop:"95px", minHeight:"170px" }}>
         {formInfo.banner_url && <div style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.55)" }} />}
         <div style={{ position:"relative", zIndex:1, padding:"12px 16px 16px" }}>
           <div style={{ display:"flex", alignItems:"center", gap:"10px", marginBottom:"12px" }}>

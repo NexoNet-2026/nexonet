@@ -27,7 +27,7 @@ const SLIDERS_CATALOGO = [
   { tipo:"proveedores",  emoji:"🏭", titulo:"Proveedores",         desc:"Nexos proveedor" },
   { tipo:"faq",          emoji:"❓", titulo:"Preguntas frecuentes",desc:"FAQ" },
   { tipo:"facturas",     emoji:"🧾", titulo:"Facturas",            desc:"Comprobantes" },
-  { tipo:"calendario",   emoji:"📅", titulo:"Calendario",         desc:"Eventos" },
+  { tipo:"calendario",   emoji:"📅", titulo:"Calendario",          desc:"Eventos" },
   { tipo:"equipo",       emoji:"👤", titulo:"Equipo / Miembros",   desc:"Perfiles" },
   { tipo:"servicios",    emoji:"🛠️", titulo:"Servicios",           desc:"Oferta" },
   { tipo:"portfolio",    emoji:"🎨", titulo:"Portfolio",           desc:"Trabajos" },
@@ -41,29 +41,29 @@ export default function NexoAdminPage() {
   const params = useParams();
   const id     = params?.id as string;
 
-  const [nexo,         setNexo]         = useState<any>(null);
-  const [perfil,       setPerfil]       = useState<any>(null);
-  const [tab,          setTab]          = useState<TabAdmin>("sliders");
-  const [sliders,      setSliders]      = useState<any[]>([]);
-  const [miembros,     setMiembros]     = useState<any[]>([]);
-  const [descargas,    setDescargas]    = useState<any[]>([]);
-  const [cargando,     setCargando]     = useState(true);
-  const [guardando,    setGuardando]    = useState(false);
-  const [subiendoImg,  setSubiendoImg]  = useState<string|null>(null);
-  const [popupSlider,  setPopupSlider]  = useState(false);
-  const [popupItem,    setPopupItem]    = useState<{slider:any}|null>(null);
-  const [popupDescarga,setPopupDescarga]= useState(false);
-  const [sliderItems,  setSliderItems]  = useState<Record<string,any[]>>({});
-  const [sliderAbierto,setSliderAbierto]= useState<string|null>(null);
-  const [customTitulo, setCustomTitulo] = useState("");
+  const [nexo,          setNexo]          = useState<any>(null);
+  const [perfil,        setPerfil]        = useState<any>(null);
+  const [tab,           setTab]           = useState<TabAdmin>("sliders");
+  const [sliders,       setSliders]       = useState<any[]>([]);
+  const [miembros,      setMiembros]      = useState<any[]>([]);
+  const [descargas,     setDescargas]     = useState<any[]>([]);
+  const [cargando,      setCargando]      = useState(true);
+  const [guardando,     setGuardando]     = useState(false);
+  const [subiendoImg,   setSubiendoImg]   = useState<string|null>(null);
+  const [popupSlider,   setPopupSlider]   = useState(false);
+  const [popupItem,     setPopupItem]     = useState<{slider:any}|null>(null);
+  const [popupDescarga, setPopupDescarga] = useState(false);
+  const [sliderItems,   setSliderItems]   = useState<Record<string,any[]>>({});
+  const [sliderAbierto, setSliderAbierto] = useState<string|null>(null);
+  const [customTitulo,  setCustomTitulo]  = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [formInfo, setFormInfo] = useState({
     titulo:"", descripcion:"", precio:"", ciudad:"", provincia:"",
     whatsapp:"", link_externo:"", banner_url:"", avatar_url:"",
   });
-  const [formItem, setFormItem]   = useState({ titulo:"", descripcion:"", url:"", tipo:"imagen", precio_bits:"0" });
-  const [formDesc, setFormDesc]   = useState({ titulo:"", descripcion:"", url:"", tipo_archivo:"pdf", precio_bits:"10" });
+  const [formItem, setFormItem] = useState({ titulo:"", descripcion:"", url:"", tipo:"imagen", precio_bits:"0" });
+  const [formDesc, setFormDesc] = useState({ titulo:"", descripcion:"", url:"", tipo_archivo:"pdf", precio_bits:"10" });
 
   useEffect(() => {
     const cargar = async () => {
@@ -92,7 +92,6 @@ export default function NexoAdminPage() {
 
   const colorNexo = TIPO_COLORES[nexo?.tipo] || "#d4a017";
 
-  // ── SLIDERS ──
   const cargarItemsSlider = async (sliderId: string) => {
     if (sliderItems[sliderId]) return;
     const { data } = await supabase.from("nexo_slider_items").select("*").eq("slider_id",sliderId).order("orden");
@@ -144,14 +143,14 @@ export default function NexoAdminPage() {
     setCustomTitulo("");
   };
 
-  // ── ITEMS ──
-  const subirArchivoItem = async (e: React.ChangeEvent<HTMLInputElement>, campo="url") => {
+  const subirArchivoItem = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !perfil) return;
     setSubiendoImg("item");
     const ext  = file.name.split(".").pop();
     const path = `nexos/${id}/items/${Date.now()}.${ext}`;
-    await supabase.storage.from("anuncios").upload(path, file, { upsert:true });
+    const { error } = await supabase.storage.from("nexos").upload(path, file, { upsert:true });
+    if (error) { alert("Error: " + error.message); setSubiendoImg(null); return; }
     const { data } = supabase.storage.from("nexos").getPublicUrl(path);
     setFormItem(f => ({ ...f, url:data.publicUrl, tipo: detectarTipo(file.name) }));
     setSubiendoImg(null);
@@ -163,7 +162,8 @@ export default function NexoAdminPage() {
     setSubiendoImg("desc");
     const ext  = file.name.split(".").pop();
     const path = `nexos/${id}/descargas/${Date.now()}.${ext}`;
-    await supabase.storage.from("anuncios").upload(path, file, { upsert:true });
+    const { error } = await supabase.storage.from("nexos").upload(path, file, { upsert:true });
+    if (error) { alert("Error: " + error.message); setSubiendoImg(null); return; }
     const { data } = supabase.storage.from("nexos").getPublicUrl(path);
     setFormDesc(f => ({ ...f, url:data.publicUrl, tipo_archivo:ext||"otro", titulo:f.titulo||file.name }));
     setSubiendoImg(null);
@@ -201,7 +201,6 @@ export default function NexoAdminPage() {
     setSliderItems(prev => ({ ...prev, [sliderId]: (prev[sliderId]||[]).filter(i=>i.id!==itemId) }));
   };
 
-  // ── DESCARGAS ──
   const agregarDescarga = async () => {
     if (!formDesc.url || !formDesc.titulo) return;
     const { data } = await supabase.from("nexo_descargas").insert({
@@ -220,7 +219,6 @@ export default function NexoAdminPage() {
     setDescargas(prev=>prev.filter(d=>d.id!==descId));
   };
 
-  // ── MIEMBROS ──
   const accionMiembro = async (mId: string, accion: string) => {
     const updates: Record<string,any> = {
       aprobar:    { estado:"activo" },
@@ -245,7 +243,6 @@ export default function NexoAdminPage() {
     }
   };
 
-  // ── INFO ──
   const guardarInfo = async () => {
     setGuardando(true);
     await supabase.from("nexos").update({
@@ -263,16 +260,20 @@ export default function NexoAdminPage() {
     alert("✅ Guardado");
   };
 
+  // ── SUBE IMAGEN Y GUARDA EN DB INMEDIATAMENTE ──
   const subirImagenInfo = async (e: React.ChangeEvent<HTMLInputElement>, campo:"banner_url"|"avatar_url") => {
     const file = e.target.files?.[0];
     if (!file) return;
     setSubiendoImg(campo);
     const path = `nexos/${id}/${campo}_${Date.now()}.${file.name.split(".").pop()}`;
-    await supabase.storage.from("anuncios").upload(path, file, { upsert:true });
+    const { error } = await supabase.storage.from("nexos").upload(path, file, { upsert:true });
+    if (error) { alert("Error: " + error.message); setSubiendoImg(null); return; }
     const { data } = supabase.storage.from("nexos").getPublicUrl(path);
     const url = `${data.publicUrl}?t=${Date.now()}`;
     setFormInfo(f=>({...f,[campo]:url}));
+    await supabase.from("nexos").update({[campo]:url}).eq("id",id);
     setSubiendoImg(null);
+    alert("✅ Imagen guardada");
   };
 
   if (cargando) return <main style={{ paddingTop:"95px", textAlign:"center", color:"#9a9a9a", fontFamily:"'Nunito',sans-serif" }}>Cargando panel...</main>;
@@ -280,11 +281,11 @@ export default function NexoAdminPage() {
   const pendientes = miembros.filter(m=>m.estado==="pendiente");
   const activos    = miembros.filter(m=>m.estado==="activo");
   const TABS: {key:TabAdmin;emoji:string;label:string;badge?:number}[] = [
-    { key:"sliders",   emoji:"📋", label:"Sliders"  },
+    { key:"sliders",   emoji:"📋", label:"Sliders"   },
     { key:"descargas", emoji:"📥", label:"Descargas" },
-    { key:"miembros",  emoji:"👥", label:"Miembros", badge:pendientes.length||undefined },
-    { key:"info",      emoji:"✏️", label:"Info"     },
-    { key:"config",    emoji:"⚙️", label:"Config"   },
+    { key:"miembros",  emoji:"👥", label:"Miembros",  badge:pendientes.length||undefined },
+    { key:"info",      emoji:"✏️", label:"Info"      },
+    { key:"config",    emoji:"⚙️", label:"Config"    },
   ];
 
   return (
@@ -297,7 +298,9 @@ export default function NexoAdminPage() {
         <div style={{ position:"relative", zIndex:1, padding:"12px 16px 16px" }}>
           <div style={{ display:"flex", alignItems:"center", gap:"10px", marginBottom:"12px" }}>
             <button onClick={()=>router.push(`/nexo/${id}`)}
-              style={{ background:"rgba(255,255,255,0.15)", border:"1px solid rgba(255,255,255,0.25)", borderRadius:"10px", padding:"7px 13px", color:"#fff", fontSize:"13px", fontWeight:700, cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>← Volver</button>
+              style={{ background:"rgba(255,255,255,0.15)", border:"1px solid rgba(255,255,255,0.25)", borderRadius:"10px", padding:"7px 13px", color:"#fff", fontSize:"13px", fontWeight:700, cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
+              ← Volver
+            </button>
             <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"20px", color:colorNexo, letterSpacing:"1px" }}>Panel Admin</div>
             <div style={{ marginLeft:"auto", background:`${colorNexo}cc`, borderRadius:"20px", padding:"4px 12px", fontSize:"11px", fontWeight:900, color:"#fff" }}>👑 Creador</div>
           </div>
@@ -362,8 +365,8 @@ export default function NexoAdminPage() {
                     <span style={{ fontSize:"10px", color:"#9a9a9a", fontWeight:600, textTransform:"uppercase", flexShrink:0 }}>{s.tipo}</span>
                   </div>
                   <div style={{ display:"flex", gap:"6px", marginTop:"10px", flexWrap:"wrap" }}>
-                    <MiniBtn emoji="↑"  onClick={()=>moverSlider(i,-1)} disabled={i===0} />
-                    <MiniBtn emoji="↓"  onClick={()=>moverSlider(i,1)}  disabled={i===sliders.length-1} />
+                    <MiniBtn emoji="↑" onClick={()=>moverSlider(i,-1)} disabled={i===0} />
+                    <MiniBtn emoji="↓" onClick={()=>moverSlider(i,1)} disabled={i===sliders.length-1} />
                     <MiniBtn emoji={s.activo?"👁️":"🙈"} onClick={()=>toggleActivoSlider(s)} color="#8e44ad" label={s.activo?"Visible":"Oculto"} />
                     <button onClick={()=>{ setPopupItem({slider:s}); toggleSlider(s.id); }}
                       style={{ background:`${colorNexo}18`, border:`1px solid ${colorNexo}40`, borderRadius:"8px", padding:"5px 12px", fontSize:"11px", fontWeight:800, color:colorNexo, cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
@@ -377,7 +380,6 @@ export default function NexoAdminPage() {
                   </div>
                 </div>
 
-                {/* ITEMS DEL SLIDER */}
                 {sliderAbierto===s.id && (
                   <div style={{ borderTop:"1px solid #f4f4f2", background:"#fafafa", padding:"12px 14px" }}>
                     {!(sliderItems[s.id]?.length) ? (
@@ -429,14 +431,12 @@ export default function NexoAdminPage() {
                 ➕ Agregar descarga
               </button>
             </div>
-
             <div style={{ background:"rgba(22,160,133,0.08)", border:"2px dashed rgba(22,160,133,0.3)", borderRadius:"14px", padding:"12px 14px" }}>
               <div style={{ fontSize:"11px", fontWeight:800, color:"#16a085", marginBottom:"3px" }}>💡 BIT Descarga</div>
               <div style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:600, lineHeight:1.6 }}>
                 Cuando un miembro paga para descargar: vos recibís el <strong style={{ color:"#16a085" }}>80%</strong> y NexoNet retiene el <strong>20%</strong>.
               </div>
             </div>
-
             {descargas.map((d:any) => (
               <div key={d.id} style={{ background:"#fff", borderRadius:"16px", overflow:"hidden", boxShadow:"0 2px 8px rgba(0,0,0,0.06)" }}>
                 <div style={{ height:"100px", background:"linear-gradient(135deg,#1a2a3a,#243b55)", display:"flex", alignItems:"center", justifyContent:"center", position:"relative" }}>
@@ -490,13 +490,13 @@ export default function NexoAdminPage() {
         {tab==="info" && (
           <div style={{ display:"flex", flexDirection:"column", gap:"14px" }}>
             <Caja titulo="✏️ Información">
-              <Campo label="Título"      valor={formInfo.titulo}      onChange={v=>setFormInfo(f=>({...f,titulo:v}))} />
+              <Campo label="Título"       valor={formInfo.titulo}       onChange={v=>setFormInfo(f=>({...f,titulo:v}))} />
               <CampoTA label="Descripción" valor={formInfo.descripcion} onChange={v=>setFormInfo(f=>({...f,descripcion:v}))} />
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10px" }}>
                 <Campo label="Ciudad"    valor={formInfo.ciudad}    onChange={v=>setFormInfo(f=>({...f,ciudad:v}))} />
                 <Campo label="Provincia" valor={formInfo.provincia} onChange={v=>setFormInfo(f=>({...f,provincia:v}))} />
               </div>
-              <Campo label="WhatsApp"    valor={formInfo.whatsapp}    onChange={v=>setFormInfo(f=>({...f,whatsapp:v}))} />
+              <Campo label="WhatsApp"     valor={formInfo.whatsapp}     onChange={v=>setFormInfo(f=>({...f,whatsapp:v}))} />
               <Campo label="Link externo" valor={formInfo.link_externo} onChange={v=>setFormInfo(f=>({...f,link_externo:v}))} />
               {nexo?.tipo!=="grupo" && <Campo label="Precio" valor={String(formInfo.precio)} onChange={v=>setFormInfo(f=>({...f,precio:v}))} tipo="number" />}
             </Caja>
@@ -512,10 +512,10 @@ export default function NexoAdminPage() {
           <div style={{ display:"flex", flexDirection:"column", gap:"14px" }}>
             <Caja titulo="⚙️ Permisos">
               {[
-                { k:"permitir_mensajes", l:"💬 Chat activo",         d:"Los miembros pueden escribir" },
-                { k:"permitir_adjuntos", l:"📎 Adjuntos en chat",    d:"Miembros pueden enviar archivos" },
-                { k:"permitir_links",    l:"🔗 Links en chat",       d:"Miembros pueden compartir URLs" },
-                { k:"solo_admins",       l:"🛡️ Solo admins publican",d:"Solo admins pueden escribir" },
+                { k:"permitir_mensajes", l:"💬 Chat activo",          d:"Los miembros pueden escribir" },
+                { k:"permitir_adjuntos", l:"📎 Adjuntos en chat",     d:"Miembros pueden enviar archivos" },
+                { k:"permitir_links",    l:"🔗 Links en chat",        d:"Miembros pueden compartir URLs" },
+                { k:"solo_admins",       l:"🛡️ Solo admins publican", d:"Solo admins pueden escribir" },
               ].map(op=>{
                 const val = nexo?.config?.[op.k] ?? true;
                 return (
@@ -536,7 +536,6 @@ export default function NexoAdminPage() {
                 );
               })}
             </Caja>
-
             <div style={{ background:"linear-gradient(135deg,#2c1a1a,#4a2020)", borderRadius:"16px", padding:"18px", border:"2px solid rgba(231,76,60,0.3)" }}>
               <div style={{ fontSize:"13px", fontWeight:900, color:"#e74c3c", marginBottom:"6px" }}>⚠️ Zona peligrosa</div>
               <div style={{ fontSize:"12px", color:"#e88a8a", fontWeight:600, marginBottom:"16px" }}>Esta acción elimina el nexo, sus sliders, miembros y mensajes permanentemente.</div>
@@ -581,7 +580,8 @@ export default function NexoAdminPage() {
             <div style={{ borderTop:"2px solid #f0f0f0", paddingTop:"12px" }}>
               <div style={{ fontSize:"11px", fontWeight:800, color:"#9a9a9a", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"8px" }}>✨ Personalizado</div>
               <div style={{ display:"flex", gap:"8px" }}>
-                <input type="text" value={customTitulo} onChange={e=>setCustomTitulo(e.target.value)} placeholder="Nombre libre..." style={{ flex:1, border:"2px solid #e8e8e6", borderRadius:"10px", padding:"10px 14px", fontSize:"13px", fontFamily:"'Nunito',sans-serif", outline:"none" }} />
+                <input type="text" value={customTitulo} onChange={e=>setCustomTitulo(e.target.value)} placeholder="Nombre libre..."
+                  style={{ flex:1, border:"2px solid #e8e8e6", borderRadius:"10px", padding:"10px 14px", fontSize:"13px", fontFamily:"'Nunito',sans-serif", outline:"none" }} />
                 <button onClick={()=>agregarSlider("personalizado",customTitulo)} disabled={!customTitulo.trim()}
                   style={{ background:`linear-gradient(135deg,${colorNexo}cc,${colorNexo})`, border:"none", borderRadius:"10px", padding:"10px 16px", fontSize:"13px", fontWeight:900, color:"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif", opacity:customTitulo.trim()?1:0.5 }}>
                   ➕
@@ -606,7 +606,9 @@ export default function NexoAdminPage() {
               <input type="file" onChange={subirArchivoItem} style={{ display:"none" }} />
             </label>
             {formItem.url && (
-              <div style={{ background:"#f4f4f2", borderRadius:"10px", padding:"10px 12px", fontSize:"12px", fontWeight:700, color:"#27ae60", marginBottom:"12px", wordBreak:"break-all" }}>✅ {formItem.url.split("/").pop()?.split("?")[0]}</div>
+              <div style={{ background:"#f4f4f2", borderRadius:"10px", padding:"10px 12px", fontSize:"12px", fontWeight:700, color:"#27ae60", marginBottom:"12px", wordBreak:"break-all" }}>
+                ✅ {formItem.url.split("/").pop()?.split("?")[0]}
+              </div>
             )}
             <Campo label="Título (opcional)" valor={formItem.titulo} onChange={v=>setFormItem(f=>({...f,titulo:v}))} />
             <CampoTA label="Descripción (opcional)" valor={formItem.descripcion} onChange={v=>setFormItem(f=>({...f,descripcion:v}))} />
@@ -675,11 +677,11 @@ function TarjetaMiembro({ m, onAccion, showAprobar }: { m:any; onAccion:(id:stri
       </div>
       {exp && (
         <div style={{ borderTop:"1px solid #f4f4f2", padding:"10px 14px", background:"#fafafa", display:"flex", flexWrap:"wrap", gap:"6px" }}>
-          {showAprobar    && <AccBtn label="✅ Aprobar"     color="#27ae60" onClick={()=>onAccion(m.id,"aprobar")} />}
-          {m.rol==="miembro" && <AccBtn label="🛡️ Hacer mod" color="#3a7bd5" onClick={()=>onAccion(m.id,"hacer_mod")} />}
-          {m.rol==="moderador"&&<AccBtn label="⬇️ Quitar mod" color="#7f8c8d" onClick={()=>onAccion(m.id,"quitar_mod")} />}
+          {showAprobar       && <AccBtn label="✅ Aprobar"      color="#27ae60" onClick={()=>onAccion(m.id,"aprobar")} />}
+          {m.rol==="miembro" && <AccBtn label="🛡️ Hacer mod"   color="#3a7bd5" onClick={()=>onAccion(m.id,"hacer_mod")} />}
+          {m.rol==="moderador"&&<AccBtn label="⬇️ Quitar mod"  color="#7f8c8d" onClick={()=>onAccion(m.id,"quitar_mod")} />}
           <AccBtn label={m.silenciado?"🔊 Activar":"🔇 Silenciar"} color="#e67e22" onClick={()=>onAccion(m.id,"silenciar")} />
-          {m.estado==="activo"&&<AccBtn label="🚫 Expulsar" color="#e74c3c" onClick={()=>onAccion(m.id,"expulsar")} />}
+          {m.estado==="activo"&&<AccBtn label="🚫 Expulsar"    color="#e74c3c" onClick={()=>onAccion(m.id,"expulsar")} />}
           <AccBtn label="⛔ Bloquear" color="#c0392b" onClick={()=>onAccion(m.id,"bloquear")} />
         </div>
       )}
@@ -699,7 +701,12 @@ function MiniBtn({ emoji, onClick, disabled, color="#9a9a9a", label }: { emoji:s
   );
 }
 function Caja({ titulo, children }: { titulo:string; children:React.ReactNode }) {
-  return <div style={{ background:"#fff", borderRadius:"16px", padding:"18px", boxShadow:"0 2px 10px rgba(0,0,0,0.06)" }}><div style={{ fontSize:"11px", fontWeight:900, color:"#9a9a9a", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"14px" }}>{titulo}</div>{children}</div>;
+  return (
+    <div style={{ background:"#fff", borderRadius:"16px", padding:"18px", boxShadow:"0 2px 10px rgba(0,0,0,0.06)" }}>
+      <div style={{ fontSize:"11px", fontWeight:900, color:"#9a9a9a", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"14px" }}>{titulo}</div>
+      {children}
+    </div>
+  );
 }
 function Campo({ label, valor, onChange, tipo="text" }: { label:string; valor:string; onChange:(v:string)=>void; tipo?:string }) {
   return <div style={{ marginBottom:"12px" }}><label style={LS}>{label}</label><input type={tipo} value={valor} onChange={e=>onChange(e.target.value)} style={IS} /></div>;
@@ -711,7 +718,13 @@ function SecHeader({ label, color }: { label:string; color:string }) {
   return <div style={{ fontSize:"11px", fontWeight:800, color, textTransform:"uppercase", letterSpacing:"1px", marginBottom:"8px", paddingLeft:"4px" }}>{label}</div>;
 }
 function EmptyCard({ emoji, texto, sub }: { emoji:string; texto:string; sub:string }) {
-  return <div style={{ textAlign:"center", padding:"40px 20px", background:"#fff", borderRadius:"16px" }}><div style={{ fontSize:"40px", marginBottom:"10px" }}>{emoji}</div><div style={{ fontSize:"15px", fontWeight:900, color:"#1a2a3a", marginBottom:"4px" }}>{texto}</div><div style={{ fontSize:"12px", color:"#9a9a9a", fontWeight:600 }}>{sub}</div></div>;
+  return (
+    <div style={{ textAlign:"center", padding:"40px 20px", background:"#fff", borderRadius:"16px" }}>
+      <div style={{ fontSize:"40px", marginBottom:"10px" }}>{emoji}</div>
+      <div style={{ fontSize:"15px", fontWeight:900, color:"#1a2a3a", marginBottom:"4px" }}>{texto}</div>
+      <div style={{ fontSize:"12px", color:"#9a9a9a", fontWeight:600 }}>{sub}</div>
+    </div>
+  );
 }
 const LS: React.CSSProperties = { display:"block", fontSize:"11px", fontWeight:800, color:"#666", textTransform:"uppercase" as const, letterSpacing:"1px", marginBottom:"6px" };
 const IS: React.CSSProperties = { width:"100%", border:"2px solid #e8e8e6", borderRadius:"10px", padding:"11px 14px", fontSize:"14px", fontFamily:"'Nunito',sans-serif", color:"#2c2c2e", outline:"none", boxSizing:"border-box" as const };

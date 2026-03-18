@@ -353,7 +353,7 @@ function NexoCrearInner() {
               </label>
             </>)}
             <L>WhatsApp</L>
-            <input value={form.whatsapp} onChange={e=>F("whatsapp",e.target.value)} placeholder="Ej: 3412345678" style={{...IS,marginBottom:"12px"}}/>
+            <input type="tel" inputMode="numeric" pattern="[0-9]*" value={form.whatsapp} onChange={e=>F("whatsapp",e.target.value.replace(/\D/g,""))} placeholder="Ej: 3412345678" style={{...IS,marginBottom:"12px"}}/>
             <SL>📬 Tipo de contacto</SL>
             {[
               {v:"datos",e:"📋",l:"Mostrar mis datos",d:"El comprador ve tu WhatsApp y puede conectarse"},
@@ -542,7 +542,7 @@ function NexoCrearInner() {
             <div style={{...CAJA, opacity:tipo==="empresa"&&!pagoBITEmpresa?0.4:1, pointerEvents:tipo==="empresa"&&!pagoBITEmpresa?"none" as any:"auto"}}>
               <SL>📱 Contacto</SL>
               <L>WhatsApp</L>
-              <input value={form.whatsapp} onChange={e=>F("whatsapp",e.target.value)} placeholder="Ej: 3412345678" style={IS}/>
+              <input type="tel" inputMode="numeric" pattern="[0-9]*" value={form.whatsapp} onChange={e=>F("whatsapp",e.target.value.replace(/\D/g,""))} placeholder="Ej: 3412345678" style={IS}/>
             </div>
 
             <button onClick={()=>setPaso(2)} disabled={!form.titulo.trim()} style={{...BTN(colorPage),opacity:form.titulo.trim()?1:0.5}}>

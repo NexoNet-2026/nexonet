@@ -5,9 +5,9 @@
 
 export const PRODUCTOS = {
   anuncio: [
-    { id:"anu3",   label:"3 Anuncios",     emoji:"📋", precio:1000,  duracion:"30 días", desc:"Publicá hasta 3 anuncios activos", badge:null },
-    { id:"anu10",  label:"10 Anuncios",    emoji:"📋", precio:3000,  duracion:"30 días", desc:"Ideal para vendedores frecuentes",  badge:"AHORRÁS $1000" },
-    { id:"anu50",  label:"50 Anuncios",    emoji:"🏢", precio:10000, duracion:"30 días", desc:"Plan Empresa — volumen profesional", badge:"EMPRESA" },
+    { id:"anu1",   label:"1 Anuncio",      emoji:"📋", precio:500,   duracion:"30 días", desc:"Publicá un anuncio por 30 días",    badge:null },
+    { id:"anu3",   label:"3 Anuncios",     emoji:"📋", precio:1500,  duracion:"30 días", desc:"Publicá 3 anuncios activos",        badge:null },
+    { id:"anu10",  label:"10 Anuncios",    emoji:"📋", precio:5000,  duracion:"30 días", desc:"Ideal para vendedores frecuentes",  badge:"AHORRÁS" },
   ],
   conexion: [
     { id:"con500",  label:"500 BIT",       emoji:"🔗", precio:500,   duracion:null,      desc:"500 conexiones a anuncios",         badge:null },

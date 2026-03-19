@@ -536,6 +536,66 @@ export default function NexoAdminPage() {
                 );
               })}
             </Caja>
+
+            {/* VISIBILIDAD */}
+            <Caja titulo="👁️ Visibilidad">
+              <div style={{ fontSize:"12px", color:"#9a9a9a", fontWeight:600, marginBottom:"12px" }}>
+                ¿Quién puede ver este nexo?
+              </div>
+              {[
+                { k:"todos",     l:"🌐 Todos los usuarios",       d:"Visible para cualquiera" },
+                { k:"codigos",   l:"🔑 Solo usuarios específicos",d:"Por código NXN" },
+                { k:"provincia", l:"📍 Filtrar por provincia",     d:"Solo usuarios de una provincia" },
+                { k:"ciudad",    l:"🏙️ Filtrar por ciudad",        d:"Solo usuarios de una ciudad" },
+                { k:"rubro",     l:"🏷️ Filtrar por rubro",         d:"Solo usuarios de un rubro" },
+              ].map(op => {
+                const visibilidad = nexo?.config?.visibilidad || "todos";
+                const activo = visibilidad === op.k;
+                return (
+                  <div key={op.k} onClick={async () => {
+                    const config = { ...(nexo.config || {}), visibilidad: op.k };
+                    // Limpiar valores de filtro al cambiar modo
+                    if (op.k === "todos") { delete config.visibilidad_valor; }
+                    await supabase.from("nexos").update({ config }).eq("id", id);
+                    setNexo((n: any) => ({ ...n, config }));
+                  }} style={{ display:"flex", alignItems:"center", gap:"12px", padding:"12px 0", borderBottom:"1px solid #f4f4f2", cursor:"pointer" }}>
+                    <div style={{ width:"20px", height:"20px", borderRadius:"50%", border:`2px solid ${activo ? colorNexo : "#d0d0d0"}`, background: activo ? colorNexo : "transparent", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                      {activo && <div style={{ width:"8px", height:"8px", borderRadius:"50%", background:"#fff" }} />}
+                    </div>
+                    <div style={{ flex:1 }}>
+                      <div style={{ fontSize:"13px", fontWeight:900, color: activo ? "#1a2a3a" : "#666" }}>{op.l}</div>
+                      <div style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:600 }}>{op.d}</div>
+                    </div>
+                  </div>
+                );
+              })}
+
+              {/* Campo de valor para filtros que lo requieren */}
+              {["codigos","provincia","ciudad","rubro"].includes(nexo?.config?.visibilidad) && (
+                <div style={{ marginTop:"12px" }}>
+                  <div style={{ fontSize:"11px", fontWeight:800, color:"#9a9a9a", textTransform:"uppercase" as const, letterSpacing:"1px", marginBottom:"6px" }}>
+                    {nexo?.config?.visibilidad === "codigos" ? "Códigos NXN (separados por coma)"
+                      : nexo?.config?.visibilidad === "provincia" ? "Nombre de la provincia"
+                      : nexo?.config?.visibilidad === "ciudad" ? "Nombre de la ciudad"
+                      : "Nombre del rubro"}
+                  </div>
+                  <div style={{ display:"flex", gap:"8px" }}>
+                    <input
+                      type="text"
+                      defaultValue={nexo?.config?.visibilidad_valor || ""}
+                      placeholder={nexo?.config?.visibilidad === "codigos" ? "NXN001, NXN002, NXN003" : "Ej: Santa Fe"}
+                      onBlur={async (e) => {
+                        const config = { ...(nexo.config || {}), visibilidad_valor: e.target.value.trim() };
+                        await supabase.from("nexos").update({ config }).eq("id", id);
+                        setNexo((n: any) => ({ ...n, config }));
+                      }}
+                      style={{ flex:1, border:"2px solid #e8e8e6", borderRadius:"10px", padding:"11px 14px", fontSize:"13px", fontFamily:"'Nunito',sans-serif", color:"#1a2a3a", outline:"none", boxSizing:"border-box" as const }}
+                    />
+                  </div>
+                </div>
+              )}
+            </Caja>
+
             <div style={{ background:"linear-gradient(135deg,#2c1a1a,#4a2020)", borderRadius:"16px", padding:"18px", border:"2px solid rgba(231,76,60,0.3)" }}>
               <div style={{ fontSize:"13px", fontWeight:900, color:"#e74c3c", marginBottom:"6px" }}>⚠️ Zona peligrosa</div>
               <div style={{ fontSize:"12px", color:"#e88a8a", fontWeight:600, marginBottom:"16px" }}>Esta acción elimina el nexo, sus sliders, miembros y mensajes permanentemente.</div>

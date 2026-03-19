@@ -47,7 +47,7 @@ export default function NexoPage() {
       setPerfil(u);
 
       const { data: n } = await supabase.from("nexos")
-        .select("*, usuarios(id,nombre_usuario,codigo,avatar_url,plan)")
+        .select("*, usuarios(id,nombre_usuario,codigo,avatar_url,plan,bits)")
         .eq("id", id).single();
       setNexo(n);
 
@@ -71,6 +71,33 @@ export default function NexoPage() {
         .select("*, usuarios(id,nombre_usuario,codigo,avatar_url,plan)")
         .eq("nexo_id",id).eq("estado","activo").order("created_at");
       setMiembros(mbs||[]);
+
+      // Cobrar 1 BIT al dueño por visita de tipo empresa (1 vez por usuario por día)
+      if (n && n.tipo === "empresa" && userId && n.usuario_id !== userId) {
+        const hoy = new Date().toISOString().slice(0, 10);
+        const { data: yaVisito } = await supabase.from("nexo_visitas")
+          .select("id")
+          .eq("nexo_id", id)
+          .eq("visitante_id", userId)
+          .eq("fecha", hoy)
+          .maybeSingle();
+
+        if (!yaVisito) {
+          const duenoBits = (n.usuarios as any)?.bits ?? 0;
+          if (typeof duenoBits === "number" && duenoBits >= 1) {
+            // Registrar visita
+            await supabase.from("nexo_visitas").insert({
+              nexo_id: id,
+              visitante_id: userId,
+              fecha: hoy,
+            });
+            // Descontar 1 BIT al dueño
+            await supabase.from("usuarios")
+              .update({ bits: duenoBits - 1 })
+              .eq("id", n.usuario_id);
+          }
+        }
+      }
 
       setCargando(false);
     };

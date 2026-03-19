@@ -201,10 +201,9 @@ export default function MisAnuncios() {
     setAnuncios(prev => prev.map(a => a.id === anuncioId ? ({ ...a, adjuntos } as Anuncio) : a));
   };
 
-  const esEmpresa   = perfil?.plan === "nexoempresa";
-  const slots       = anuncios.length;
-  const bitsFreeDisp = Math.max(0, perfil?.bits_free ?? 0);
-  const puedeCrear  = esEmpresa ? slots < 50 : bitsFreeDisp > 0 || slots < 3;
+  const totalAnuncios = anuncios.length;
+  const bitsDisponibles = Math.max(0, bitsFree) + Math.max(0, bitsNexo) + Math.max(0, bitsPromo);
+  const puedeCrear  = bitsDisponibles >= 500;
 
   const fmt = (p: number | null, m: string | null) =>
     p == null ? "Consultar" : `${m === "USD" ? "U$D" : "$"} ${p.toLocaleString("es-AR")}`;
@@ -237,24 +236,16 @@ export default function MisAnuncios() {
             📋 Mis Anuncios
           </div>
           <div style={{ fontSize:"12px", color:"#8a9aaa", fontWeight:600, marginTop:"2px" }}>
-            {slots} publicados · {esEmpresa ? `${Math.max(0,50-slots)} slots libres` : `${bitsFreeDisp} BIT FREE disponibles`}
+            {totalAnuncios} publicados · {bitsDisponibles.toLocaleString()} BIT disponibles
           </div>
         </div>
         <div style={{ background:"rgba(255,255,255,0.06)", borderRadius:"10px", padding:"10px 14px",
                        display:"flex", alignItems:"center", justifyContent:"space-between" }}>
           <div style={{ fontSize:"12px", fontWeight:700, color:"#d4a017" }}>
-            Plan {esEmpresa ? "Empresa · 50 slots" : "Free"}
-          </div>
-          <div style={{ display:"flex", gap:"4px" }}>
-            {esEmpresa && Array.from({ length: 10 }).map((_, i) => (
-              <div key={i} style={{ width:"16px", height:"8px", borderRadius:"4px",
-                                     background: i < Math.round(slots/5) ? "#d4a017" : "rgba(255,255,255,0.2)" }} />
-            ))}
+            500 BIT por anuncio
           </div>
           <div style={{ fontSize:"11px", fontWeight:700, color: puedeCrear ? "#27ae60" : "#e74c3c" }}>
-            {esEmpresa
-              ? (slots < 50 ? `${slots} de 50` : "🔒 Lleno")
-              : (puedeCrear ? "✓ Podés crear más" : "Sin BIT FREE")}
+            {puedeCrear ? "✓ Podés crear más" : "Sin BIT disponibles"}
           </div>
         </div>
       </div>
@@ -583,7 +574,7 @@ export default function MisAnuncios() {
             <div style={{ textAlign:"left" }}>
               <div style={{ fontWeight:900, fontSize:"14px", color:"#1a2a3a" }}>Crear anuncio</div>
               <div style={{ fontSize:"12px", fontWeight:600, marginTop:"2px", color:"#9a9a9a" }}>
-                {esEmpresa ? `${Math.max(0,50-slots)} slots disponibles` : `Gratis con tus BIT FREE`}
+                500 BIT · {bitsDisponibles.toLocaleString()} BIT disponibles
               </div>
             </div>
             <span style={{ marginLeft:"auto", fontSize:"18px", color:"#d4a017", flexShrink:0 }}>›</span>
@@ -594,10 +585,10 @@ export default function MisAnuncios() {
             <span style={{ fontSize:"32px" }}>🔒</span>
             <div>
               <div style={{ fontWeight:900, fontSize:"14px", color:"#1a2a3a" }}>
-                {esEmpresa ? "Límite de 50 anuncios alcanzado" : "Sin BIT FREE disponibles"}
+                Sin BIT disponibles
               </div>
               <div style={{ fontSize:"12px", color:"#e74c3c", fontWeight:600, marginTop:"2px" }}>
-                {esEmpresa ? "El plan Empresa tiene un máximo de 50 anuncios" : "Cargá BIT FREE desde la tienda para seguir publicando"}
+                Necesitás 500 BIT para crear un anuncio. Cargá BIT desde la tienda.
               </div>
             </div>
           </div>
@@ -748,18 +739,16 @@ export default function MisAnuncios() {
               ➕ Crear otro anuncio
             </div>
             <div style={{ fontSize:"13px", color:"#9a9a9a", fontWeight:600, marginBottom:"20px" }}>
-              Ya usaste tus 3 slots gratuitos. Elegí una opción:
+              Cada anuncio cuesta 500 BIT. Se descuenta de tu saldo disponible.
             </div>
             <button onClick={async () => {
-              const bitsTotal = Math.max(0,bitsNexo) + Math.max(0,bitsFree) + Math.max(0,bitsPromo);
-              if (bitsTotal < 500) { alert("Necesitás 500 BIT para agregar un anuncio extra."); return; }
-              const campoDescontar = bitsNexo >= 500 ? "bits" : bitsFree >= 500 ? "bits_free" : "bits_promo";
+              if (bitsDisponibles < 500) { alert("Necesitás 500 BIT para crear un anuncio."); return; }
+              const campoDescontar = bitsNexo >= 500 ? "bits" : bitsFree >= 500 ? "bits_free" : "bits_promotor";
               const valorActual    = campoDescontar === "bits" ? bitsNexo : campoDescontar === "bits_free" ? bitsFree : bitsPromo;
               await supabase.from("usuarios").update({
                 [campoDescontar]: valorActual - 500,
-                slots_extra: (perfil?.slots_extra || 0) + 1,
               }).eq("id", session?.user?.id);
-              setPerfil((p:any) => ({ ...p, [campoDescontar]: valorActual - 500, slots_extra: (p?.slots_extra||0)+1 }));
+              setPerfil((p:any) => ({ ...p, [campoDescontar]: valorActual - 500 }));
               setPopupPlan(false);
               window.location.href = "/nexo/crear/anuncio";
             }}
@@ -768,7 +757,7 @@ export default function MisAnuncios() {
                        display:"flex", alignItems:"center", justifyContent:"space-between",
                        fontFamily:"'Nunito',sans-serif", textAlign:"left" }}>
               <div>
-                <div style={{ fontSize:"15px", fontWeight:900, color:"#fff", marginBottom:"4px" }}>📣 1 Anuncio extra</div>
+                <div style={{ fontSize:"15px", fontWeight:900, color:"#fff", marginBottom:"4px" }}>📣 Crear anuncio</div>
                 <div style={{ fontSize:"12px", color:"#8a9aaa", fontWeight:600 }}>Se descuenta de tu saldo BIT disponible</div>
               </div>
               <div style={{ textAlign:"right", flexShrink:0 }}>

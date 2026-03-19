@@ -466,7 +466,7 @@ function NexoCrearInner() {
               <div style={{background:"linear-gradient(135deg,#2c1a1a,#4a2020)",borderRadius:"16px",padding:"20px",border:"2px solid rgba(192,57,43,0.4)"}}>
                 <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"20px",color:"#e74c3c",letterSpacing:"1px",marginBottom:"8px"}}>🏢 Nexo Empresa</div>
                 <div style={{fontSize:"13px",color:"#e88a8a",fontWeight:600,lineHeight:1.6,marginBottom:"16px"}}>
-                  Para crear tu perfil empresarial con <strong style={{color:"#fff"}}>50 slots de anuncios</strong> necesitás abonar el plan Empresa.
+                  Para crear tu perfil empresarial necesitás abonar el plan Empresa.
                 </div>
                 <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",background:"rgba(0,0,0,0.2)",borderRadius:"12px",padding:"12px 16px",marginBottom:"16px"}}>
                   <span style={{fontSize:"13px",fontWeight:700,color:"#e88a8a"}}>Costo del plan</span>
@@ -492,7 +492,7 @@ function NexoCrearInner() {
             {tipo==="empresa" && pagoBITEmpresa && (
               <div style={{background:"rgba(39,174,96,0.1)",border:"2px solid rgba(39,174,96,0.3)",borderRadius:"12px",padding:"12px 16px",display:"flex",alignItems:"center",gap:"10px"}}>
                 <span style={{fontSize:"20px"}}>✅</span>
-                <div style={{fontSize:"13px",fontWeight:800,color:"#27ae60"}}>Plan Empresa activado · 50 slots disponibles</div>
+                <div style={{fontSize:"13px",fontWeight:800,color:"#27ae60"}}>Plan Empresa activado</div>
               </div>
             )}
 

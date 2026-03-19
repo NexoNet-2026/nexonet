@@ -126,9 +126,8 @@ export default function PromoterPage() {
                 ¿Cómo funciona?
               </div>
               {[
-                { n: "1", t: "Compartí tu link", d: "Cualquiera que se registre con tu código te convierte en su Promotor." },
-                { n: "2", t: "Ganás 1.000 BIT", d: "Por cada usuario que se registre con tu código, recibís 1.000 BIT Promotor automáticamente." },
-                { n: "3", t: "Acumulá y crecé", d: "Cuantos más referidos sumás, más BIT Promotor acumulás en tu cuenta." },
+                { n: "1", t: "Compartí tu link", d: "Compartí tu código y link de registro" },
+                { n: "2", t: "Ganás 1.000 BIT", d: "Por cada usuario que se registre con tu código recibís 1.000 BIT Promotor automáticamente" },
               ].map(item => (
                 <div key={item.n} style={{ display: "flex", gap: "12px", marginBottom: "12px" }}>
                   <div style={{ width: "30px", height: "30px", borderRadius: "50%", background: "#d4a017",

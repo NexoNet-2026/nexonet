@@ -133,6 +133,15 @@ export default function NexoAdminPage() {
   };
 
   const agregarSlider = async (tipo: string, tituloCustom?: string) => {
+    if (sliders.length >= 5) { alert("Máximo 5 sliders por nexo. Eliminá uno para agregar otro."); setPopupSlider(false); return; }
+    // Cobrar 500 BIT
+    const bitsTotal = Math.max(0,perfil?.bits||0) + Math.max(0,perfil?.bits_free||0) + Math.max(0,perfil?.bits_promotor||0);
+    if (bitsTotal < 500) { alert("Necesitás 500 BIT para agregar un slider."); return; }
+    const campo = (perfil?.bits||0) >= 500 ? "bits" : (perfil?.bits_free||0) >= 500 ? "bits_free" : "bits_promotor";
+    const valor = perfil[campo] || 0;
+    await supabase.from("usuarios").update({ [campo]: valor - 500 }).eq("id", perfil.id);
+    setPerfil((p:any) => ({ ...p, [campo]: valor - 500 }));
+
     const cat = SLIDERS_CATALOGO.find(c=>c.tipo===tipo);
     const titulo = tituloCustom || cat?.titulo || tipo;
     const { data } = await supabase.from("nexo_sliders").insert({
@@ -180,6 +189,14 @@ export default function NexoAdminPage() {
 
   const agregarItem = async () => {
     if (!formItem.url || !popupItem) return;
+    // Cobrar 500 BIT por cada ítem
+    const bitsTotal = Math.max(0,perfil?.bits||0) + Math.max(0,perfil?.bits_free||0) + Math.max(0,perfil?.bits_promotor||0);
+    if (bitsTotal < 500) { alert("Necesitás 500 BIT para agregar un ítem."); return; }
+    const campo = (perfil?.bits||0) >= 500 ? "bits" : (perfil?.bits_free||0) >= 500 ? "bits_free" : "bits_promotor";
+    const valor = perfil[campo] || 0;
+    await supabase.from("usuarios").update({ [campo]: valor - 500 }).eq("id", perfil.id);
+    setPerfil((p:any) => ({ ...p, [campo]: valor - 500 }));
+
     const { data } = await supabase.from("nexo_slider_items").insert({
       slider_id: popupItem.slider.id, nexo_id:id,
       titulo: formItem.titulo||null, descripcion:formItem.descripcion||null,
@@ -621,7 +638,10 @@ export default function NexoAdminPage() {
       {popupSlider && (
         <div style={{ position:"fixed", inset:0, zIndex:500, background:"rgba(0,0,0,0.7)", display:"flex", alignItems:"flex-end" }} onClick={()=>setPopupSlider(false)}>
           <div style={{ width:"100%", background:"#fff", borderRadius:"24px 24px 0 0", padding:"22px 18px 44px", maxHeight:"80vh", overflowY:"auto", fontFamily:"'Nunito',sans-serif" }} onClick={e=>e.stopPropagation()}>
-            <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"20px", color:"#1a2a3a", letterSpacing:"1px", marginBottom:"14px" }}>➕ Tipo de slider</div>
+            <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"20px", color:"#1a2a3a", letterSpacing:"1px", marginBottom:"6px" }}>➕ Tipo de slider</div>
+            <div style={{ fontSize:"12px", color:"#9a9a9a", fontWeight:600, marginBottom:"14px" }}>
+              {sliders.length}/5 sliders · 500 BIT por slider
+            </div>
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"8px", marginBottom:"14px" }}>
               {SLIDERS_CATALOGO.map(c=>{
                 const existe = sliders.some(s=>s.tipo===c.tipo);
@@ -656,8 +676,11 @@ export default function NexoAdminPage() {
       {popupItem && (
         <div style={{ position:"fixed", inset:0, zIndex:500, background:"rgba(0,0,0,0.7)", display:"flex", alignItems:"flex-end" }} onClick={()=>setPopupItem(null)}>
           <div style={{ width:"100%", background:"#fff", borderRadius:"24px 24px 0 0", padding:"22px 18px 44px", maxHeight:"85vh", overflowY:"auto", fontFamily:"'Nunito',sans-serif" }} onClick={e=>e.stopPropagation()}>
-            <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"20px", color:"#1a2a3a", letterSpacing:"1px", marginBottom:"16px" }}>
+            <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"20px", color:"#1a2a3a", letterSpacing:"1px", marginBottom:"4px" }}>
               ➕ Agregar a "{popupItem.slider.titulo}"
+            </div>
+            <div style={{ fontSize:"12px", color:"#9a9a9a", fontWeight:600, marginBottom:"14px" }}>
+              500 BIT por ítem
             </div>
             <label style={{ display:"block", width:"100%", background:`${colorNexo}10`, border:`2px dashed ${colorNexo}50`, borderRadius:"14px", padding:"20px", textAlign:"center", cursor:"pointer", marginBottom:"14px" }}>
               <div style={{ fontSize:"36px", marginBottom:"8px" }}>{subiendoImg==="item"?"⏳":"📁"}</div>
@@ -666,8 +689,19 @@ export default function NexoAdminPage() {
               <input type="file" onChange={subirArchivoItem} style={{ display:"none" }} />
             </label>
             {formItem.url && (
-              <div style={{ background:"#f4f4f2", borderRadius:"10px", padding:"10px 12px", fontSize:"12px", fontWeight:700, color:"#27ae60", marginBottom:"12px", wordBreak:"break-all" }}>
-                ✅ {formItem.url.split("/").pop()?.split("?")[0]}
+              <div style={{ marginBottom:"12px" }}>
+                {formItem.tipo === "video" && (
+                  <video src={formItem.url} controls style={{ width:"100%", borderRadius:"10px", marginBottom:"8px", maxHeight:"200px" }} />
+                )}
+                {formItem.tipo === "pdf" && (
+                  <iframe src={formItem.url} style={{ width:"100%", height:"200px", borderRadius:"10px", border:"2px solid #e8e8e6", marginBottom:"8px" }} />
+                )}
+                {formItem.tipo === "imagen" && (
+                  <img src={formItem.url} alt="preview" style={{ width:"100%", borderRadius:"10px", marginBottom:"8px", maxHeight:"200px", objectFit:"cover" }} />
+                )}
+                <div style={{ background:"#f4f4f2", borderRadius:"10px", padding:"10px 12px", fontSize:"12px", fontWeight:700, color:"#27ae60", wordBreak:"break-all" }}>
+                  ✅ {formItem.url.split("/").pop()?.split("?")[0]}
+                </div>
               </div>
             )}
             <Campo label="Título (opcional)" valor={formItem.titulo} onChange={v=>setFormItem(f=>({...f,titulo:v}))} />

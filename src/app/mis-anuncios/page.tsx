@@ -231,6 +231,10 @@ export default function MisAnuncios() {
       <Header />
 
       <div style={{ background:"linear-gradient(135deg,#1a2a3a,#243b55)", padding:"16px" }}>
+        <button onClick={() => router.back()}
+          style={{ background:"rgba(255,255,255,0.1)", border:"1px solid rgba(255,255,255,0.2)", borderRadius:"10px", padding:"6px 14px", fontSize:"12px", fontWeight:800, color:"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif", marginBottom:"10px" }}>
+          ← Volver
+        </button>
         <div style={{ marginBottom:"10px" }}>
           <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"22px", color:"#fff", letterSpacing:"1px" }}>
             📋 Mis Anuncios

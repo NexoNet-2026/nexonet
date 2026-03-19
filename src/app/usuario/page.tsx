@@ -234,7 +234,7 @@ export default function Usuario() {
     const { data:{ session } } = await supabase.auth.getSession();
     if (!session) return;
     setGuardando(true);
-    await supabase.from("usuarios").update({
+    const { error } = await supabase.from("usuarios").update({
       nombre_usuario:personal.nombre_usuario, nombre:personal.nombre, apellido:personal.apellido,
       whatsapp:personal.whatsapp, provincia:personal.provincia, ciudad:personal.ciudad,
       barrio:personal.barrio, direccion:personal.direccion,
@@ -246,7 +246,12 @@ export default function Usuario() {
       horarios, feriados,
     }).eq("id", session.user.id);
     setGuardando(false);
-    alert("¡Cambios guardados!");
+    if (error) {
+      alert("Error al guardar: " + error.message);
+    } else {
+      setPerfil((p: any) => ({ ...p, ...personal, ...emp, vis_personal:visP, vis_empresa:visE, horarios, feriados }));
+      alert("¡Cambios guardados!");
+    }
   };
 
   const cerrarSesion = async () => { await supabase.auth.signOut(); router.push("/"); };
@@ -395,6 +400,13 @@ export default function Usuario() {
       </div>
 
       <div style={{ padding:"16px", maxWidth:"480px", margin:"0 auto" }}>
+
+        {seccion !== "cuenta" && (
+          <button onClick={() => setSeccion("cuenta")}
+            style={{ background:"rgba(26,42,58,0.08)", border:"1px solid rgba(26,42,58,0.15)", borderRadius:"10px", padding:"6px 14px", fontSize:"12px", fontWeight:800, color:"#1a2a3a", cursor:"pointer", fontFamily:"'Nunito',sans-serif", marginBottom:"12px" }}>
+            ← Volver
+          </button>
+        )}
 
         {/* ═══ CUENTA ═══ */}
         {seccion === "cuenta" && (

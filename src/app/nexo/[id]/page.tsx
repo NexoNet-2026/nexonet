@@ -22,7 +22,7 @@ export default function NexoPage() {
   const id     = params?.id as string;
 
   const [nexo,      setNexo]      = useState<any>(null);
-  const [sliders,   setSliders]   = useState<any[]>([]);
+  const [páginas,   setpáginas]   = useState<any[]>([]);
   const [items,     setItems]     = useState<Record<string,any[]>>({});
   const [miembros,  setMiembros]  = useState<any[]>([]);
   const [mensajes,  setMensajes]  = useState<any[]>([]);
@@ -53,7 +53,7 @@ export default function NexoPage() {
 
       const { data: sls } = await supabase.from("nexo_sliders")
         .select("*").eq("nexo_id", id).eq("activo",true).order("orden");
-      setSliders(sls || []);
+      setpáginas(sls || []);
       if (sls?.length) setTabActiva(sls[0].id);
 
       if (userId) {
@@ -80,7 +80,7 @@ export default function NexoPage() {
   // Cargar items al cambiar de tab
   useEffect(() => {
     if (!tabActiva) return;
-    const slider = sliders.find(s => s.id === tabActiva);
+    const slider = páginas.find(s => s.id === tabActiva);
     if (!slider) return;
     if (items[tabActiva]) return; // ya cargados
 
@@ -100,7 +100,7 @@ export default function NexoPage() {
   }, [tabActiva]);
 
   useEffect(() => {
-    if (sliders.find(s=>s.id===tabActiva)?.tipo === "mensajes") {
+    if (páginas.find(s=>s.id===tabActiva)?.tipo === "mensajes") {
       setTimeout(()=>bottomRef.current?.scrollIntoView({behavior:"smooth"}),100);
     }
   }, [mensajes.length, tabActiva]);
@@ -177,7 +177,7 @@ export default function NexoPage() {
   if (cargando) return <main style={{ paddingTop:"80px", textAlign:"center", color:"#9a9a9a", fontFamily:"'Nunito',sans-serif" }}>Cargando...</main>;
   if (!nexo)    return <main style={{ paddingTop:"80px", textAlign:"center", color:"#9a9a9a", fontFamily:"'Nunito',sans-serif" }}>Nexo no encontrado</main>;
 
-  const sliderActual = sliders.find(s=>s.id===tabActiva);
+  const sliderActual = páginas.find(s=>s.id===tabActiva);
   const esChat       = sliderActual?.tipo === "mensajes" || sliderActual?.tipo === "chat";
 
   return (
@@ -224,7 +224,7 @@ export default function NexoPage() {
 
       {/* TAB BAR SLIDER */}
       <div ref={tabBarRef} style={{ position:"sticky", top:"60px", zIndex:100, background:"#1a2a3a", boxShadow:"0 3px 14px rgba(0,0,0,0.28)", overflowX:"auto", scrollbarWidth:"none", display:"flex" }}>
-        {sliders.map(s => (
+        {páginas.map(s => (
           <button key={s.id} onClick={()=>setTabActiva(s.id)}
             style={{ flex:"0 0 auto", minWidth:"72px", background:"none", border:"none", cursor:"pointer",
                      padding:"10px 8px 6px", display:"flex", flexDirection:"column", alignItems:"center", gap:"3px",

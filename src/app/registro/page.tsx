@@ -92,6 +92,22 @@ function RegistroInner() {
 
     if (insertError) { setError("Error guardando perfil: " + insertError.message); setLoading(false); return; }
 
+    // Acreditar 1000 BIT Promotor al promotor que refirió
+    if (referidoPor) {
+      const { data: promotor } = await supabase
+        .from("usuarios")
+        .select("bits_promotor, bits_promotor_total")
+        .eq("id", referidoPor)
+        .single();
+      if (promotor) {
+        await supabase.from("usuarios").update({
+          bits_promotor:       (promotor.bits_promotor || 0) + 1000,
+          bits_promotor_total: (promotor.bits_promotor_total || 0) + 1000,
+          es_promotor:         true,
+        }).eq("id", referidoPor);
+      }
+    }
+
     setLoading(false);
     setPaso(2);
   };

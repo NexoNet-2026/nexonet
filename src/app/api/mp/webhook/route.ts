@@ -112,15 +112,6 @@ export async function POST(req: NextRequest) {
       leida:   false,
     });
 
-    // Si es BIT Nexo → acreditar comisiones a promotores
-    if (pkg.col === "bits" && !pkg.ilimitado) {
-      await supabase.rpc("acreditar_comisiones_promotor", {
-        p_usuario_id: usuario_id,
-        p_monto:      pkg.cantidad,
-        p_concepto:   `Compra ${paquete}`,
-      });
-    }
-
     console.log(`✅ Acreditados ${pkg.cantidad} en ${pkg.col} para usuario ${usuario_id}`);
     return NextResponse.json({ ok: true });
 

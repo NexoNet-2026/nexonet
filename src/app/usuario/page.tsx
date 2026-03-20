@@ -52,6 +52,17 @@ export default function Usuario() {
   const [misNexos,      setMisNexos]      = useState<any[]>([]);
   const [noLeidos,      setNoLeidos]      = useState(0);
 
+  // Contactar NexoNet
+  const [popupContacto,  setPopupContacto]  = useState(false);
+  const [contactoTipo,   setContactoTipo]   = useState<string|null>(null);
+  const [contactoTexto,  setContactoTexto]  = useState("");
+  const [enviandoContacto, setEnviandoContacto] = useState(false);
+
+  // Darme de baja
+  const [popupBaja,   setPopupBaja]   = useState(false);
+  const [notaBaja,    setNotaBaja]    = useState("");
+  const [confirmBaja, setConfirmBaja] = useState(false);
+
   const [personal, setPersonal] = useState({
     nombre_usuario: "", nombre: "", apellido: "",
     whatsapp: "", provincia: "", ciudad: "", barrio: "", direccion: "",
@@ -255,6 +266,40 @@ export default function Usuario() {
   };
 
   const cerrarSesion = async () => { await supabase.auth.signOut(); router.push("/"); };
+
+  const enviarContacto = async () => {
+    if (!contactoTipo || !contactoTexto.trim() || !perfil) return;
+    setEnviandoContacto(true);
+    await supabase.from("contactos_nexonet").insert({
+      usuario_id: perfil.id, tipo: contactoTipo, mensaje: contactoTexto.trim(),
+    });
+    await supabase.from("notificaciones").insert({
+      usuario_id: perfil.id, tipo: "sistema",
+      mensaje: `✅ Tu ${contactoTipo} fue recibida. Te responderemos pronto.`, leida: false,
+    });
+    setEnviandoContacto(false);
+    setPopupContacto(false); setContactoTipo(null); setContactoTexto("");
+    alert("✅ Enviado correctamente. Te responderemos pronto.");
+  };
+
+  const solicitarBaja = async () => {
+    if (!perfil) return;
+    setConfirmBaja(true);
+    await supabase.from("usuarios").update({
+      estado_cuenta: "baja_solicitada", nota_baja: notaBaja || null,
+    }).eq("id", perfil.id);
+    await supabase.from("notificaciones").insert({
+      usuario_id: "ab56253d-b92e-4b73-a19a-3cd0cd95c458", tipo: "sistema",
+      mensaje: `🚨 Baja solicitada por ${perfil.nombre_usuario} (${perfil.codigo})${notaBaja ? ": " + notaBaja.slice(0, 80) : ""}`, leida: false,
+    });
+    await supabase.from("notificaciones").insert({
+      usuario_id: perfil.id, tipo: "sistema",
+      mensaje: "Tu solicitud de baja fue recibida. Nos pondremos en contacto.", leida: false,
+    });
+    setConfirmBaja(false); setPopupBaja(false); setNotaBaja("");
+    alert("Tu solicitud de baja fue enviada. Nos pondremos en contacto.");
+  };
+
   const toggleP = (k:string) => setVisP(v=>({...v,[k]:!v[k]}));
   const toggleE = (k:string) => setVisE(v=>({...v,[k]:!v[k]}));
 
@@ -496,6 +541,12 @@ export default function Usuario() {
                 </button>
               </div>
             )}
+
+            {/* Darme de baja */}
+            <button onClick={()=>setPopupBaja(true)}
+              style={{ background:"none", border:"none", padding:"16px 0 0", cursor:"pointer", fontFamily:"'Nunito',sans-serif", fontSize:"12px", fontWeight:600, color:"#cc6666", textAlign:"center", width:"100%" }}>
+              Solicitar baja de cuenta
+            </button>
           </div>
         )}
 
@@ -511,6 +562,15 @@ export default function Usuario() {
         {/* ═══ CHAT ═══ */}
         {seccion === "chat" && (
           <div style={{ display:"flex", flexDirection:"column", gap:"10px" }}>
+            <button onClick={()=>setPopupContacto(true)}
+              style={{ background:"linear-gradient(135deg,#1a2a3a,#243b55)", border:"2px solid rgba(212,160,23,0.4)", borderRadius:"16px", padding:"16px", cursor:"pointer", display:"flex", alignItems:"center", gap:"14px", fontFamily:"'Nunito',sans-serif" }}>
+              <div style={{ width:"44px", height:"44px", borderRadius:"50%", background:"rgba(212,160,23,0.2)", border:"2px solid #d4a017", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"22px", flexShrink:0 }}>📩</div>
+              <div style={{ textAlign:"left" }}>
+                <div style={{ fontSize:"14px", fontWeight:900, color:"#d4a017" }}>Contactar a NexoNet</div>
+                <div style={{ fontSize:"11px", fontWeight:600, color:"#8a9aaa" }}>Sugerencias, reclamos o denuncias</div>
+              </div>
+              <span style={{ marginLeft:"auto", fontSize:"18px", color:"#d4a017", flexShrink:0 }}>›</span>
+            </button>
             {chats.length === 0 ? (
               <div style={{ textAlign:"center", padding:"60px 20px", color:"#9a9a9a" }}>
                 <div style={{ fontSize:"48px", marginBottom:"16px" }}>💬</div>
@@ -851,6 +911,76 @@ export default function Usuario() {
 
       {popupEmpresa && (
         <PopupCompra titulo="BIT Anuncios — Ampliar plan" emoji="📋" costo="$1.000 / $3.000 / $10.000" descripcion="Ampliá la cantidad de anuncios publicados" bits={{ free: bitsFree, nexo: bitsNexonet, promo: bitsPromotor }} onClose={() => setPopupEmpresa(false)} onPagar={async (metodo: MetodoPago) => { setPopupEmpresa(false); alert("Próximamente — contactanos para ampliar tu plan"); }} />
+      )}
+
+      {/* MODAL CONTACTAR NEXONET */}
+      {popupContacto && (
+        <div style={{ position:"fixed", inset:0, zIndex:500, background:"rgba(0,0,0,0.65)", display:"flex", alignItems:"flex-end" }} onClick={()=>{setPopupContacto(false);setContactoTipo(null);setContactoTexto("");}}>
+          <div style={{ width:"100%", background:"#fff", borderRadius:"24px 24px 0 0", padding:"28px 20px 44px", fontFamily:"'Nunito',sans-serif" }} onClick={e=>e.stopPropagation()}>
+            <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"22px", color:"#1a2a3a", letterSpacing:"1px", marginBottom:"6px" }}>📩 Contactar a NexoNet</div>
+            {!contactoTipo ? (
+              <div style={{ display:"flex", flexDirection:"column", gap:"10px", marginTop:"16px" }}>
+                {[
+                  { tipo:"sugerencia", emoji:"💡", label:"Sugerencia", desc:"Tengo una idea para mejorar", color:"#3a7bd5" },
+                  { tipo:"reclamo",    emoji:"⚠️",  label:"Reclamo",    desc:"Algo no funciona bien",      color:"#e67e22" },
+                  { tipo:"denuncia",   emoji:"🚨", label:"Denuncia",   desc:"Quiero reportar un problema", color:"#e74c3c" },
+                ].map(op=>(
+                  <button key={op.tipo} onClick={()=>setContactoTipo(op.tipo)}
+                    style={{ display:"flex", alignItems:"center", gap:"14px", background:`${op.color}08`, border:`2px solid ${op.color}30`, borderRadius:"14px", padding:"16px", cursor:"pointer", fontFamily:"'Nunito',sans-serif", textAlign:"left" }}>
+                    <span style={{ fontSize:"28px" }}>{op.emoji}</span>
+                    <div>
+                      <div style={{ fontSize:"14px", fontWeight:900, color:"#1a2a3a" }}>{op.label}</div>
+                      <div style={{ fontSize:"12px", fontWeight:600, color:"#9a9a9a" }}>{op.desc}</div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div style={{ marginTop:"16px" }}>
+                <div style={{ fontSize:"13px", fontWeight:800, color:"#1a2a3a", marginBottom:"10px" }}>
+                  {contactoTipo === "sugerencia" ? "💡 Sugerencia" : contactoTipo === "reclamo" ? "⚠️ Reclamo" : "🚨 Denuncia"}
+                </div>
+                <textarea value={contactoTexto} onChange={e=>setContactoTexto(e.target.value)} placeholder="Escribí tu mensaje..."
+                  style={{ width:"100%", border:"2px solid #e8e8e6", borderRadius:"12px", padding:"12px 14px", fontSize:"14px", fontFamily:"'Nunito',sans-serif", minHeight:"100px", resize:"vertical", outline:"none", boxSizing:"border-box" }} />
+                <div style={{ display:"flex", gap:"8px", marginTop:"14px" }}>
+                  <button onClick={()=>{setContactoTipo(null);setContactoTexto("");}}
+                    style={{ flex:1, background:"#f4f4f2", border:"none", borderRadius:"12px", padding:"13px", fontSize:"13px", fontWeight:800, color:"#666", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
+                    ← Volver
+                  </button>
+                  <button onClick={enviarContacto} disabled={!contactoTexto.trim()||enviandoContacto}
+                    style={{ flex:2, background:contactoTexto.trim()?"linear-gradient(135deg,#d4a017,#f0c040)":"#e8e8e6", border:"none", borderRadius:"12px", padding:"13px", fontSize:"13px", fontWeight:900, color:contactoTexto.trim()?"#1a2a3a":"#bbb", cursor:contactoTexto.trim()?"pointer":"default", fontFamily:"'Nunito',sans-serif", boxShadow:contactoTexto.trim()?"0 3px 0 #a07810":"none" }}>
+                    {enviandoContacto ? "Enviando..." : "📨 Enviar"}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* MODAL BAJA */}
+      {popupBaja && (
+        <div style={{ position:"fixed", inset:0, zIndex:500, background:"rgba(0,0,0,0.65)", display:"flex", alignItems:"flex-end" }} onClick={()=>{setPopupBaja(false);setNotaBaja("");}}>
+          <div style={{ width:"100%", background:"#fff", borderRadius:"24px 24px 0 0", padding:"28px 20px 44px", fontFamily:"'Nunito',sans-serif" }} onClick={e=>e.stopPropagation()}>
+            <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"22px", color:"#e74c3c", letterSpacing:"1px", marginBottom:"6px" }}>🚨 Solicitar baja</div>
+            <div style={{ background:"rgba(231,76,60,0.08)", border:"2px solid rgba(231,76,60,0.2)", borderRadius:"12px", padding:"14px", marginBottom:"16px" }}>
+              <div style={{ fontSize:"13px", fontWeight:700, color:"#e74c3c", lineHeight:1.6 }}>
+                Al solicitar la baja se perderán todos tus datos, BIT acumulados, anuncios y conexiones. Esta acción no se puede deshacer una vez procesada.
+              </div>
+            </div>
+            <div style={{ fontSize:"11px", fontWeight:800, color:"#666", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"6px" }}>¿Por qué te vas? (opcional)</div>
+            <textarea value={notaBaja} onChange={e=>setNotaBaja(e.target.value)} placeholder="Contanos el motivo..."
+              style={{ width:"100%", border:"2px solid #e8e8e6", borderRadius:"12px", padding:"12px 14px", fontSize:"13px", fontFamily:"'Nunito',sans-serif", minHeight:"70px", resize:"vertical", outline:"none", boxSizing:"border-box", marginBottom:"16px" }} />
+            <button onClick={solicitarBaja} disabled={confirmBaja}
+              style={{ width:"100%", background:"linear-gradient(135deg,#c0392b,#e74c3c)", border:"none", borderRadius:"12px", padding:"14px", fontSize:"14px", fontWeight:900, color:"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif", boxShadow:"0 3px 0 #8a2a1f", marginBottom:"10px" }}>
+              {confirmBaja ? "Procesando..." : "Confirmar baja"}
+            </button>
+            <button onClick={()=>{setPopupBaja(false);setNotaBaja("");}}
+              style={{ width:"100%", background:"none", border:"none", padding:"10px", fontSize:"13px", fontWeight:700, color:"#9a9a9a", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
+              Cancelar
+            </button>
+          </div>
+        </div>
       )}
 
       <BottomNav />

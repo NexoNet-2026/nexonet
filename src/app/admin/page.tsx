@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabase";
 
 const ADMIN_UUID = "ab56253d-b92e-4b73-a19a-3cd0cd95c458";
 
-type Tab = "dashboard"|"usuarios"|"anuncios"|"grupos"|"mensajes"|"promotores"|"pagos"|"alarmas"|"config"|"filtros_ia";
+type Tab = "dashboard"|"usuarios"|"anuncios"|"grupos"|"mensajes"|"promotores"|"pagos"|"alarmas"|"config"|"filtros_ia"|"contactos";
 
 const S = {
   card:  { background:"#fff", borderRadius:"16px", padding:"20px", boxShadow:"0 2px 12px rgba(0,0,0,0.07)", marginBottom:"14px" } as React.CSSProperties,
@@ -108,6 +108,10 @@ export default function AdminPanel() {
   // Respuesta admin en mensajes
   const [respAdmin, setRespAdmin] = useState<{msg:any;texto:string}|null>(null);
 
+  // Contactos NexoNet
+  const [contactos, setContactos] = useState<any[]>([]);
+  const [respContacto, setRespContacto] = useState<{c:any;texto:string}|null>(null);
+
   const showToast = (msg:string) => { setToast(msg); setTimeout(()=>setToast(""),3000); };
 
   useEffect(() => {
@@ -158,6 +162,12 @@ export default function AdminPanel() {
 
     const {data:cfg} = await supabase.from("config").select("*").eq("clave","alarmas").single();
     if (cfg) setAlarmas(JSON.parse(cfg.valor||"{}"));
+
+    // Contactos NexoNet
+    const {data:contData} = await supabase.from("contactos_nexonet")
+      .select("*,usuarios(nombre_usuario,codigo,email)")
+      .order("created_at",{ascending:false}).limit(100);
+    setContactos(contData||[]);
 
     // Visitas stats
     const hoy = new Date().toISOString().slice(0,10);
@@ -431,6 +441,16 @@ export default function AdminPanel() {
     await cargarTodo();
   };
 
+  // ── Responder contacto ──
+  const responderContacto = async () => {
+    if (!respContacto||!respContacto.texto.trim()) return;
+    await supabase.from("contactos_nexonet").update({ respuesta:respContacto.texto, estado:"respondido" }).eq("id",respContacto.c.id);
+    await supabase.from("notificaciones").insert({ usuario_id:respContacto.c.usuario_id, tipo:"sistema", mensaje:`📩 Respuesta de NexoNet a tu ${respContacto.c.tipo}: ${respContacto.texto.slice(0,80)}...`, leida:false });
+    setContactos(prev=>prev.map(x=>x.id===respContacto.c.id?{...x,respuesta:respContacto.texto,estado:"respondido"}:x));
+    setRespContacto(null);
+    showToast("✅ Respuesta enviada");
+  };
+
   // ── Filtros IA ──
   const cargarFiltros = async (subId:number) => {
     setFiltroSubSel(subId);
@@ -487,6 +507,7 @@ export default function AdminPanel() {
     {id:"promotores",e:"⭐",l:"Promotores"},
     {id:"pagos",    e:"💰",l:"Pagos"},
     {id:"alarmas",  e:"🔔",l:"Alarmas"},
+    {id:"contactos",e:"📩",l:"Contactos"},
     {id:"config",   e:"⚙️",l:"Config"},
     {id:"filtros_ia",e:"🤖",l:"Filtros IA"},
   ];
@@ -636,6 +657,31 @@ export default function AdminPanel() {
         {/* ══ USUARIOS ════════════════════════════════════════════════════════ */}
         {!loading && tab==="usuarios" && (
           <>
+            {usuarios.filter(u=>u.estado_cuenta==="baja_solicitada").length > 0 && (
+              <div style={{...S.card,borderLeft:"4px solid #e74c3c",marginBottom:"14px"}}>
+                <div style={S.sect}>🚨 Bajas solicitadas</div>
+                {usuarios.filter(u=>u.estado_cuenta==="baja_solicitada").map(u=>(
+                  <div key={u.id} style={{...S.row,gap:"10px"}}>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontSize:"13px",fontWeight:900,color:"#e74c3c"}}>{u.nombre_usuario} ({u.codigo})</div>
+                      <div style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600}}>{u.email}</div>
+                      {u.nota_baja && <div style={{fontSize:"11px",color:"#666",fontWeight:600,fontStyle:"italic",marginTop:"2px"}}>"{u.nota_baja}"</div>}
+                    </div>
+                    <button onClick={async()=>{
+                      await supabase.from("usuarios").update({estado_cuenta:null,nota_baja:null}).eq("id",u.id);
+                      setUsuarios(prev=>prev.map(x=>x.id===u.id?{...x,estado_cuenta:null,nota_baja:null}:x));
+                      showToast("Baja cancelada");
+                    }} style={S.btn("#27ae60",true)}>✅ Cancelar baja</button>
+                    <button onClick={async()=>{
+                      if (!confirm(`¿Eliminar definitivamente a ${u.nombre_usuario}?`)) return;
+                      await supabase.from("usuarios").delete().eq("id",u.id);
+                      setUsuarios(prev=>prev.filter(x=>x.id!==u.id));
+                      showToast("Usuario eliminado");
+                    }} style={S.btn("#e74c3c",true)}>🗑️ Eliminar</button>
+                  </div>
+                ))}
+              </div>
+            )}
             <div style={{display:"flex",gap:"8px",marginBottom:"14px"}}>
               <input style={{...S.input,flex:1}} placeholder="🔍 Buscar por nombre, email o código..." value={busqUser} onChange={e=>setBusqUser(e.target.value)} />
               <button onClick={()=>setModalCrearUser(true)} style={S.btn("#27ae60")}>+ Crear</button>
@@ -807,6 +853,41 @@ export default function AdminPanel() {
               })}
               {usuarios.filter(u=>u.es_promotor).length===0 && <div style={{fontSize:"13px",color:"#9a9a9a",fontWeight:600}}>No hay promotores activos todavía.</div>}
             </div>
+          </>
+        )}
+
+        {/* ══ CONTACTOS ════════════════════════════════════════════════════════ */}
+        {!loading && tab==="contactos" && (
+          <>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"10px",marginBottom:"14px"}}>
+              <StatBox n={String(contactos.filter(c=>c.estado==="pendiente").length)} l="Pendientes" e="⏳" c="#e67e22" />
+              <StatBox n={String(contactos.filter(c=>c.estado==="respondido").length)} l="Respondidos" e="✅" c="#27ae60" />
+              <StatBox n={String(contactos.length)} l="Total" e="📩" c="#3a7bd5" />
+            </div>
+            {contactos.length===0 && <div style={{...S.card,textAlign:"center",color:"#9a9a9a",fontWeight:600}}>No hay contactos todavía.</div>}
+            {contactos.map(c=>(
+              <div key={c.id} style={{...S.card,borderLeft:`4px solid ${c.tipo==="denuncia"?"#e74c3c":c.tipo==="reclamo"?"#e67e22":"#3a7bd5"}`}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"8px"}}>
+                  <div>
+                    <div style={{display:"flex",gap:"6px",alignItems:"center",marginBottom:"2px"}}>
+                      <span style={{fontSize:"14px"}}>{c.tipo==="sugerencia"?"💡":c.tipo==="reclamo"?"⚠️":"🚨"}</span>
+                      <span style={{fontSize:"13px",fontWeight:900,color:"#1a2a3a",textTransform:"capitalize"}}>{c.tipo}</span>
+                      <span style={S.badge("#fff",c.estado==="respondido"?"#27ae60":"#e67e22")}>{c.estado}</span>
+                    </div>
+                    <div style={{fontSize:"12px",color:"#9a9a9a",fontWeight:600}}>{c.usuarios?.nombre_usuario} ({c.usuarios?.codigo}) · {new Date(c.created_at).toLocaleDateString("es-AR")}</div>
+                  </div>
+                </div>
+                <div style={{fontSize:"13px",fontWeight:600,color:"#1a2a3a",lineHeight:1.5,marginBottom:"8px",background:"#f9f9f7",borderRadius:"10px",padding:"10px 12px"}}>{c.mensaje}</div>
+                {c.respuesta && (
+                  <div style={{fontSize:"12px",fontWeight:600,color:"#27ae60",background:"rgba(39,174,96,0.06)",borderRadius:"10px",padding:"8px 12px",marginBottom:"8px"}}>
+                    <strong>Respuesta:</strong> {c.respuesta}
+                  </div>
+                )}
+                {c.estado!=="respondido" && (
+                  <button onClick={()=>setRespContacto({c,texto:""})} style={S.btn("#3a7bd5",true)}>💬 Responder</button>
+                )}
+              </div>
+            ))}
           </>
         )}
 
@@ -1203,6 +1284,19 @@ export default function AdminPanel() {
             Subcategoría activa
           </label>
           <button onClick={()=>guardarGrupoSubcat(modalGrupoSubcat)} style={S.btn("#27ae60")} disabled={!modalGrupoSubcat.nombre}>💾 Guardar</button>
+        </Modal>
+      )}
+
+      {/* ══ MODAL RESPONDER CONTACTO ════════════════════════════════════════════ */}
+      {respContacto && (
+        <Modal titulo={`📩 Responder ${respContacto.c.tipo}`} onClose={()=>setRespContacto(null)}>
+          <div style={{background:"#f4f4f2",borderRadius:"10px",padding:"10px 14px",marginBottom:"14px"}}>
+            <div style={{fontSize:"11px",fontWeight:700,color:"#9a9a9a",marginBottom:"4px"}}>{respContacto.c.usuarios?.nombre_usuario} — {respContacto.c.tipo}</div>
+            <div style={{fontSize:"13px",fontWeight:600,color:"#1a2a3a"}}>{respContacto.c.mensaje}</div>
+          </div>
+          <label style={S.label}>Tu respuesta</label>
+          <textarea style={{...S.input,minHeight:"90px",resize:"vertical",marginBottom:"16px"}} placeholder="Escribí tu respuesta..." value={respContacto.texto} onChange={e=>setRespContacto({...respContacto,texto:e.target.value})} />
+          <button onClick={responderContacto} style={S.btn("#27ae60")} disabled={!respContacto.texto.trim()}>📨 Enviar respuesta</button>
         </Modal>
       )}
 

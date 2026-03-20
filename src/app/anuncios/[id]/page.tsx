@@ -90,7 +90,18 @@ export default function AnuncioDetalle() {
       if (sess?.user.id === data.usuario_id) setEsPropio(true);
     }
 
-    await supabase.from("anuncios").update({ vistas: (data.vistas || 0) + 1 }).eq("id", params.id);
+    // Registrar visita (1 por usuario por día) + incrementar contador
+    if (sess?.user?.id) {
+      const hoy = new Date().toISOString().slice(0, 10);
+      const { data: yaVisito } = await supabase.from("anuncio_visitas")
+        .select("id").eq("anuncio_id", params.id).eq("visitante_id", sess.user.id).eq("fecha", hoy).maybeSingle();
+      if (!yaVisito) {
+        await supabase.from("anuncio_visitas").insert({ anuncio_id: params.id, visitante_id: sess.user.id, fecha: hoy });
+        await supabase.from("anuncios").update({ vistas: (data.vistas || 0) + 1 }).eq("id", params.id);
+      }
+    } else {
+      await supabase.from("anuncios").update({ vistas: (data.vistas || 0) + 1 }).eq("id", params.id);
+    }
 
     if (sess?.user?.id) {
       const { data: ub } = await supabase

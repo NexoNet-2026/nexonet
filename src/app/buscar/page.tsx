@@ -10,13 +10,13 @@ type Anuncio = {
   permuto?: boolean; id:number; titulo:string; precio:number; moneda:string;
   ciudad:string; provincia:string; imagenes:string[]; flash:boolean; fuente:string;
   usuario_id:string; subrubro_nombre:string; rubro_nombre:string;
-  owner_whatsapp?: string; tipo?: string;
+  owner_whatsapp?: string; tipo?: string; visitas_semana?: number;
 };
 type Nexo = {
   id:string; titulo:string; descripcion:string; tipo:string; subtipo:string;
   ciudad:string; provincia:string; avatar_url:string; banner_url:string;
   precio:number; moneda:string; usuario_id:string; miembros_count?:number;
-  config?:any;
+  config?:any; visitas_semana?: number;
 };
 type Rubro = { id:number; nombre:string; subrubros:{id:number; nombre:string}[] };
 type RubroFlat = { id:number; nombre:string };
@@ -193,6 +193,20 @@ function BuscarInner() {
             });
           }
         }
+        // Obtener visitas semanales de anuncios
+        const hace7dias = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+        const anuIds = mapped.map(a => a.id);
+        if (anuIds.length > 0) {
+          const { data: vData } = await supabase
+            .from("anuncio_visitas").select("anuncio_id")
+            .in("anuncio_id", anuIds).gte("fecha", hace7dias);
+          if (vData) {
+            const conteo: Record<number, number> = {};
+            vData.forEach((v: any) => { conteo[v.anuncio_id] = (conteo[v.anuncio_id] || 0) + 1; });
+            mapped = mapped.map(a => ({ ...a, visitas_semana: conteo[a.id] || 0 }));
+          }
+        }
+        mapped.sort((a, b) => (b.visitas_semana || 0) - (a.visitas_semana || 0));
         setAnuncios(mapped);
       }
 
@@ -215,7 +229,23 @@ function BuscarInner() {
         miembros_count: g.miembros_count || 0,
         config:        { tipo_acceso: g.pago_ingreso_admin ? "pago" : (g.config?.tipo_acceso || "libre") },
       })) : [];
-      setNexos([...nexosArr, ...gruposArr]);
+      let allNexos = [...nexosArr, ...gruposArr];
+
+      // Obtener visitas semanales de nexos
+      const hace7dias2 = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+      const nxIds = allNexos.map(n => n.id);
+      if (nxIds.length > 0) {
+        const { data: nvData } = await supabase
+          .from("nexo_visitas").select("nexo_id")
+          .in("nexo_id", nxIds).gte("fecha", hace7dias2);
+        if (nvData) {
+          const conteo: Record<string, number> = {};
+          nvData.forEach((v: any) => { conteo[v.nexo_id] = (conteo[v.nexo_id] || 0) + 1; });
+          allNexos = allNexos.map(n => ({ ...n, visitas_semana: conteo[n.id] || 0 }));
+        }
+      }
+      allNexos.sort((a, b) => (b.visitas_semana || 0) - (a.visitas_semana || 0));
+      setNexos(allNexos);
       setLoading(false);
     });
   }, []);
@@ -534,7 +564,7 @@ function BuscarInner() {
                   </div>
                 ) : (
                   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"12px",padding:"8px 16px 16px"}}>
-                    {resTxt.map(a=><TarjetaAnuncio key={a.id} a={a} fmt={fmt} qLow={qLow} query={query} modoConexion={modoConexion} seleccionado={seleccionados.has(a.id)} onToggle={()=>toggleSeleccion(a.id)} />)}
+                    {resTxt.map((a,i)=><TarjetaAnuncio key={a.id} a={a} fmt={fmt} qLow={qLow} query={query} modoConexion={modoConexion} seleccionado={seleccionados.has(a.id)} onToggle={()=>toggleSeleccion(a.id)} esPrimero={i===0&&(a.visitas_semana||0)>0} />)}
                   </div>
                 )}
               </div>
@@ -573,7 +603,7 @@ function BuscarInner() {
                         <div style={{padding:"12px 16px",color:"#9a9a9a",fontSize:"13px",fontWeight:600}}>Sin anuncios{ubiActiva?` en ${barrSel||ciudSel||provSel}`:""}</div>
                       ) : (
                         <div style={{display:"flex",gap:"12px",padding:"0 16px",overflowX:"auto",scrollbarWidth:"none"}}>
-                          {items.map(a=><TarjetaAnuncio key={a.id} a={a} fmt={fmt} horizontal modoConexion={modoConexion} seleccionado={seleccionados.has(a.id)} onToggle={()=>toggleSeleccion(a.id)} />)}
+                          {items.map((a,i)=><TarjetaAnuncio key={a.id} a={a} fmt={fmt} horizontal modoConexion={modoConexion} seleccionado={seleccionados.has(a.id)} onToggle={()=>toggleSeleccion(a.id)} esPrimero={i===0&&(a.visitas_semana||0)>0} />)}
                         </div>
                       )}
                     </div>
@@ -649,8 +679,8 @@ function BuscarInner() {
                   </button>
                 </div>
               ) : (
-                (nexosPorTipo[tipoActivo]||[]).map(n => (
-                  <TarjetaNexo key={n.id} nexo={n} color={colorActivo} onNavigate={()=>router.push(`/nexo/${n.id}`)} />
+                (nexosPorTipo[tipoActivo]||[]).map((n, i) => (
+                  <TarjetaNexo key={n.id} nexo={n} color={colorActivo} onNavigate={()=>router.push(`/nexo/${n.id}`)} esPrimero={i === 0 && (n.visitas_semana || 0) > 0} />
                 ))
               )}
             </div>
@@ -737,14 +767,17 @@ function BuscarInner() {
   );
 }
 
-function TarjetaAnuncio({ a, fmt, qLow, query, horizontal, modoConexion, seleccionado, onToggle }: {
+function TarjetaAnuncio({ a, fmt, qLow, query, horizontal, modoConexion, seleccionado, onToggle, esPrimero }: {
   a:Anuncio; fmt:(p:number,m:string)=>string; qLow?:string; query?:string;
-  horizontal?:boolean; modoConexion:boolean; seleccionado:boolean; onToggle:()=>void;
+  horizontal?:boolean; modoConexion:boolean; seleccionado:boolean; onToggle:()=>void; esPrimero?:boolean;
 }) {
   const f = F[a.fuente]||F.nexonet;
   const tieneWA = !!a.owner_whatsapp;
   return (
     <div onClick={modoConexion ? onToggle : undefined} style={{flexShrink:horizontal?0:undefined,width:horizontal?"160px":undefined,position:"relative",cursor:modoConexion?"pointer":undefined}}>
+      {esPrimero && (
+        <div style={{position:"absolute",top:"-6px",right:"-4px",zIndex:12,background:"linear-gradient(135deg,#ff6b00,#ff4500)",borderRadius:"8px",padding:"2px 7px",fontSize:"10px",fontWeight:900,color:"#fff",boxShadow:"0 2px 6px rgba(255,69,0,0.4)"}}>🔥</div>
+      )}
       {modoConexion && <div style={{position:"absolute",inset:0,zIndex:10,borderRadius:"14px",border:`3px solid ${seleccionado?"#d4a017":"rgba(212,160,23,0.4)"}`,background:seleccionado?"rgba(212,160,23,0.15)":"transparent",transition:"all .15s",pointerEvents:"none"}} />}
       {modoConexion && (
         <div style={{position:"absolute",top:"8px",right:"8px",zIndex:11,width:"24px",height:"24px",borderRadius:"50%",background:seleccionado?"#d4a017":"rgba(255,255,255,0.9)",border:`2px solid ${seleccionado?"#d4a017":"#ccc"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"14px",boxShadow:"0 2px 6px rgba(0,0,0,0.2)"}}>
@@ -752,7 +785,7 @@ function TarjetaAnuncio({ a, fmt, qLow, query, horizontal, modoConexion, selecci
         </div>
       )}
       <a href={modoConexion ? undefined : `/anuncios/${a.id}`} style={{textDecoration:"none",display:"block"}} onClick={e=>modoConexion&&e.preventDefault()}>
-        <div style={{background:"#fff",borderRadius:"14px",overflow:"hidden",boxShadow:"0 2px 10px rgba(0,0,0,0.08)",border:"1px solid #f0f0f0"}}>
+        <div style={{background:"#fff",borderRadius:"14px",overflow:"hidden",boxShadow:"0 2px 10px rgba(0,0,0,0.08)",border:esPrimero?"2px solid #ff6b00":"1px solid #f0f0f0"}}>
           <div style={{background:f.color,padding:"3px 8px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
             <span style={{fontSize:"9px",fontWeight:900,color:f.texto,textTransform:"uppercase"}}>{f.label}</span>
             <div style={{display:"flex",alignItems:"center",gap:"4px"}}>
@@ -808,7 +841,7 @@ function TarjetaGrupoSlider({ nexo, onNavigate }: { nexo:Nexo; onNavigate:()=>vo
   );
 }
 
-function TarjetaNexo({ nexo, color, onNavigate }: { nexo:Nexo; color:string; onNavigate:()=>void }) {
+function TarjetaNexo({ nexo, color, onNavigate, esPrimero }: { nexo:Nexo; color:string; onNavigate:()=>void; esPrimero?:boolean }) {
   const SUBTIPO_EMOJIS: Record<string,string> = {
     emprendimiento:"🚀", curso:"🎓", consorcio:"🏢", deportivo:"⚽",
     estudio:"📚", venta:"🛒", artistas:"🎨", vecinos:"🏘️", generico:"✨",
@@ -818,7 +851,10 @@ function TarjetaNexo({ nexo, color, onNavigate }: { nexo:Nexo; color:string; onN
   };
   const emoji = nexo.subtipo ? (SUBTIPO_EMOJIS[nexo.subtipo]||"✨") : (TIPO_EMOJIS[nexo.tipo]||"✨");
   return (
-    <div onClick={onNavigate} style={{background:"#fff",borderRadius:"16px",overflow:"hidden",boxShadow:"0 2px 10px rgba(0,0,0,0.07)",cursor:"pointer",display:"flex",alignItems:"stretch",border:`2px solid ${color}20`}}>
+    <div onClick={onNavigate} style={{background:"#fff",borderRadius:"16px",overflow:"hidden",boxShadow:"0 2px 10px rgba(0,0,0,0.07)",cursor:"pointer",display:"flex",alignItems:"stretch",border:esPrimero?`2px solid #ff6b00`:`2px solid ${color}20`,position:"relative"}}>
+      {esPrimero && (
+        <div style={{position:"absolute",top:"-6px",right:"-4px",zIndex:2,background:"linear-gradient(135deg,#ff6b00,#ff4500)",borderRadius:"8px",padding:"2px 7px",fontSize:"10px",fontWeight:900,color:"#fff",boxShadow:"0 2px 6px rgba(255,69,0,0.4)"}}>🔥</div>
+      )}
       <div style={{width:"80px",flexShrink:0,background:`linear-gradient(135deg,${color}33,${color}11)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"32px",position:"relative",overflow:"hidden"}}>
         {nexo.avatar_url
           ? <img src={nexo.avatar_url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}} />

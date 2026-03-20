@@ -22,12 +22,12 @@ const FERIADOS_ARG: Record<string, string> = {
 };
 
 const INSIGNIAS = [
-  { min: 0,     max: 99,       nombre: "Nexo Nuevo",     emoji: "🌱", color: "#6a8aaa" },
-  { min: 100,   max: 499,      nombre: "Nexo Activo",    emoji: "⚡", color: "#27ae60" },
-  { min: 500,   max: 1499,     nombre: "Nexo Conectado", emoji: "🔗", color: "#2980b9" },
-  { min: 1500,  max: 4999,     nombre: "Nexo Pro",       emoji: "🏆", color: "#d4a017" },
-  { min: 5000,  max: 14999,    nombre: "Nexo Élite",     emoji: "💎", color: "#8e44ad" },
-  { min: 15000, max: Infinity, nombre: "Nexo Leyenda",   emoji: "🌟", color: "#c0392b" },
+  { min: 0,     max: 99,       nombre: "Nuevo",    emoji: "🌱", color: "#6a8aaa" },
+  { min: 100,   max: 499,      nombre: "Bronce",   emoji: "🥉", color: "#cd7f32" },
+  { min: 500,   max: 999,      nombre: "Plata",    emoji: "🥈", color: "#a0a0a0" },
+  { min: 1000,  max: 4999,     nombre: "Oro",      emoji: "🥇", color: "#d4a017" },
+  { min: 5000,  max: 9999,     nombre: "Platino",  emoji: "💎", color: "#8e44ad" },
+  { min: 10000, max: Infinity, nombre: "Diamante", emoji: "👑", color: "#e74c3c" },
 ];
 
 type Horario = { desde: string; hasta: string; activo: boolean };
@@ -339,11 +339,12 @@ export default function Usuario() {
   const totalConex    = perfil?.total_conexiones     || 0;
   const gruposUnidos  = perfil?.grupos_unidos        || 0;
 
-  const insigniaActual = INSIGNIAS.find(i => totalConsum >= i.min && totalConsum <= i.max) || INSIGNIAS[0];
+  const bitsAcumulados = perfil?.bits_totales_acumulados || 0;
+  const insigniaActual = INSIGNIAS.find(i => bitsAcumulados >= i.min && bitsAcumulados <= i.max) || INSIGNIAS[0];
   const idxActual      = INSIGNIAS.findIndex(i => i === insigniaActual);
   const insigniaSig    = INSIGNIAS[idxActual + 1];
   const progreso       = insigniaSig
-    ? Math.min(100, ((totalConsum - insigniaActual.min) / (insigniaSig.min - insigniaActual.min)) * 100)
+    ? Math.min(100, ((bitsAcumulados - insigniaActual.min) / (insigniaSig.min - insigniaActual.min)) * 100)
     : 100;
 
   // Helper para secciones de nexos
@@ -737,19 +738,6 @@ export default function Usuario() {
                 </div>
               ))}
             </div>
-            {/* INSIGNIA DE LOGRO (por BIT acumulados) */}
-            {perfil?.insignia_logro && perfil.insignia_logro !== "ninguna" && (
-              <div style={{ ...C, background:"linear-gradient(135deg,rgba(212,160,23,0.08),rgba(212,160,23,0.02))", border:"2px solid rgba(212,160,23,0.25)" }}>
-                <div style={{ fontSize:"11px", fontWeight:800, color:"#9a9a9a", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"10px" }}>⭐ Insignia de logro</div>
-                <div style={{ display:"flex", alignItems:"center", gap:"12px" }}>
-                  <InsigniaLogro nivel={perfil.insignia_logro} size="md" />
-                  <div style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:600 }}>
-                    {(perfil.bits_totales_acumulados || 0).toLocaleString()} BIT acumulados
-                  </div>
-                </div>
-              </div>
-            )}
-
             {/* INSIGNIAS DE REPUTACIÓN (dadas por otros usuarios) */}
             {Object.values(repContadores).reduce((a: number, b: number) => a + b, 0) > 0 && (
               <div style={{ ...C, background:"linear-gradient(135deg,rgba(39,174,96,0.08),rgba(39,174,96,0.02))", border:"2px solid rgba(39,174,96,0.25)" }}>
@@ -762,15 +750,15 @@ export default function Usuario() {
             )}
 
             <div style={{ ...C, background:`linear-gradient(135deg, ${insigniaActual.color}15, ${insigniaActual.color}05)`, border:`2px solid ${insigniaActual.color}30` }}>
-              <div style={{ fontSize:"11px", fontWeight:800, color:"#9a9a9a", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"14px" }}>📊 Nivel de actividad</div>
+              <div style={{ fontSize:"11px", fontWeight:800, color:"#9a9a9a", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"14px" }}>⭐ Insignia de logro</div>
               <div style={{ display:"flex", alignItems:"center", gap:"16px", marginBottom:"14px" }}>
                 <div style={{ width:"64px", height:"64px", borderRadius:"50%", background:`${insigniaActual.color}20`, border:`3px solid ${insigniaActual.color}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"32px", flexShrink:0 }}>
                   {insigniaActual.emoji}
                 </div>
                 <div style={{ flex:1 }}>
                   <div style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:"24px", color:insigniaActual.color, letterSpacing:"1px" }}>{insigniaActual.nombre}</div>
-                  <div style={{ fontSize:"11px", fontWeight:700, color:"#9a9a9a" }}>{totalConsum.toLocaleString()} BIT consumidos en total</div>
-                  {insigniaSig && <div style={{ fontSize:"10px", color:"#9a9a9a", marginTop:"2px" }}>Próxima: <span style={{ color:insigniaSig.color, fontWeight:800 }}>{insigniaSig.emoji} {insigniaSig.nombre}</span> en {(insigniaSig.min - totalConsum).toLocaleString()} BIT</div>}
+                  <div style={{ fontSize:"11px", fontWeight:700, color:"#9a9a9a" }}>{bitsAcumulados.toLocaleString()} BIT acumulados</div>
+                  {insigniaSig && <div style={{ fontSize:"10px", color:"#9a9a9a", marginTop:"2px" }}>Próxima: <span style={{ color:insigniaSig.color, fontWeight:800 }}>{insigniaSig.emoji} {insigniaSig.nombre}</span> en {(insigniaSig.min - bitsAcumulados).toLocaleString()} BIT</div>}
                 </div>
               </div>
               {insigniaSig && (
@@ -784,12 +772,12 @@ export default function Usuario() {
                 </>
               )}
               <div style={{ display:"flex", gap:"4px", justifyContent:"space-between" }}>
-                {INSIGNIAS.map(ins => {
-                  const ok = totalConsum >= ins.min;
+                {INSIGNIAS.filter(ins => ins.min > 0).map(ins => {
+                  const ok = bitsAcumulados >= ins.min;
                   return (
                     <div key={ins.nombre} style={{ flex:1, textAlign:"center", opacity:ok?1:0.25 }}>
                       <div style={{ fontSize:"18px" }}>{ins.emoji}</div>
-                      <div style={{ fontSize:"8px", fontWeight:700, color:ok?ins.color:"#9a9a9a", textTransform:"uppercase", lineHeight:1.2, marginTop:"2px" }}>{ins.nombre.split(" ")[1]||ins.nombre}</div>
+                      <div style={{ fontSize:"8px", fontWeight:700, color:ok?ins.color:"#9a9a9a", textTransform:"uppercase", lineHeight:1.2, marginTop:"2px" }}>{ins.nombre}</div>
                     </div>
                   );
                 })}

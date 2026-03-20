@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabase";
 
 const ADMIN_UUID = "ab56253d-b92e-4b73-a19a-3cd0cd95c458";
 
-type Tab = "dashboard"|"usuarios"|"anuncios"|"grupos"|"mensajes"|"promotores"|"pagos"|"alarmas"|"config";
+type Tab = "dashboard"|"usuarios"|"anuncios"|"grupos"|"mensajes"|"promotores"|"pagos"|"alarmas"|"config"|"filtros_ia";
 
 const S = {
   card:  { background:"#fff", borderRadius:"16px", padding:"20px", boxShadow:"0 2px 12px rgba(0,0,0,0.07)", marginBottom:"14px" } as React.CSSProperties,
@@ -91,6 +91,23 @@ export default function AdminPanel() {
   const [nuevaAn, setNuevaAn] = useState<any>({ titulo:"", descripcion:"", precio:"", provincia:"", ciudad:"", tipo:"conexion", flash:false, permuto:false });
   const [nuevoGr, setNuevoGr] = useState({ nombre:"", descripcion:"", categoria_id:"" });
 
+  // Filtros IA
+  const [filtrosIA, setFiltrosIA] = useState<any[]>([]);
+  const [filtroSubSel, setFiltroSubSel] = useState<number|null>(null);
+  const [modalFiltro, setModalFiltro] = useState<any>(null);
+
+  // Crear usuario
+  const [modalCrearUser, setModalCrearUser] = useState(false);
+  const [nuevoUser, setNuevoUser] = useState({ email:"", password:"", nombre_usuario:"", nombre:"" });
+
+  // Dashboard stats extra
+  const [visitStats, setVisitStats] = useState<any>({ hoy:0, semana:0, mes:0, anio:0 });
+  const [registrosMes, setRegistrosMes] = useState<{mes:string;cant:number}[]>([]);
+  const [dineroStats, setDineroStats] = useState<any>({ total:0, esteMes:0 });
+
+  // Respuesta admin en mensajes
+  const [respAdmin, setRespAdmin] = useState<{msg:any;texto:string}|null>(null);
+
   const showToast = (msg:string) => { setToast(msg); setTimeout(()=>setToast(""),3000); };
 
   useEffect(() => {
@@ -141,6 +158,43 @@ export default function AdminPanel() {
 
     const {data:cfg} = await supabase.from("config").select("*").eq("clave","alarmas").single();
     if (cfg) setAlarmas(JSON.parse(cfg.valor||"{}"));
+
+    // Visitas stats
+    const hoy = new Date().toISOString().slice(0,10);
+    const hace7 = new Date(Date.now()-7*24*60*60*1000).toISOString().slice(0,10);
+    const hace30 = new Date(Date.now()-30*24*60*60*1000).toISOString().slice(0,10);
+    const hace365 = new Date(Date.now()-365*24*60*60*1000).toISOString().slice(0,10);
+    const [
+      {count:vHoy1},{count:vSem1},{count:vMes1},{count:vAnio1},
+      {count:vHoy2},{count:vSem2},{count:vMes2},{count:vAnio2},
+    ] = await Promise.all([
+      supabase.from("anuncio_visitas").select("*",{count:"exact",head:true}).gte("fecha",hoy),
+      supabase.from("anuncio_visitas").select("*",{count:"exact",head:true}).gte("fecha",hace7),
+      supabase.from("anuncio_visitas").select("*",{count:"exact",head:true}).gte("fecha",hace30),
+      supabase.from("anuncio_visitas").select("*",{count:"exact",head:true}).gte("fecha",hace365),
+      supabase.from("nexo_visitas").select("*",{count:"exact",head:true}).gte("fecha",hoy),
+      supabase.from("nexo_visitas").select("*",{count:"exact",head:true}).gte("fecha",hace7),
+      supabase.from("nexo_visitas").select("*",{count:"exact",head:true}).gte("fecha",hace30),
+      supabase.from("nexo_visitas").select("*",{count:"exact",head:true}).gte("fecha",hace365),
+    ]);
+    setVisitStats({ hoy:(vHoy1||0)+(vHoy2||0), semana:(vSem1||0)+(vSem2||0), mes:(vMes1||0)+(vMes2||0), anio:(vAnio1||0)+(vAnio2||0) });
+
+    // Registros por mes (últimos 12)
+    const meses: {mes:string;cant:number}[] = [];
+    for (let i=11;i>=0;i--) {
+      const d = new Date(); d.setMonth(d.getMonth()-i);
+      const desde = new Date(d.getFullYear(),d.getMonth(),1).toISOString();
+      const hasta = new Date(d.getFullYear(),d.getMonth()+1,0,23,59,59).toISOString();
+      const cant = (usrs||[]).filter((u:any)=>u.created_at>=desde&&u.created_at<=hasta).length;
+      meses.push({ mes:`${d.getMonth()+1}/${String(d.getFullYear()).slice(2)}`, cant });
+    }
+    setRegistrosMes(meses);
+
+    // Dinero
+    const mesActual = new Date().toISOString().slice(0,7);
+    const totalDinero = (pgs||[]).reduce((a:number,p:any)=>a+(p.monto||0),0);
+    const esteMesDinero = (pgs||[]).filter((p:any)=>(p.created_at||"").startsWith(mesActual)).reduce((a:number,p:any)=>a+(p.monto||0),0);
+    setDineroStats({ total:totalDinero, esteMes:esteMesDinero });
 
     setLoading(false);
   }, []);
@@ -352,6 +406,56 @@ export default function AdminPanel() {
     showToast("Subcategoría eliminada");
   };
 
+  // ── Crear usuario ──
+  const crearUsuario = async () => {
+    if (!nuevoUser.email||!nuevoUser.password||!nuevoUser.nombre_usuario) { showToast("Completá email, contraseña y nombre de usuario"); return; }
+    if (nuevoUser.password.length<6) { showToast("Contraseña mínimo 6 caracteres"); return; }
+    const { data, error } = await supabase.auth.signUp({ email:nuevoUser.email, password:nuevoUser.password });
+    if (error||!data.user) { showToast("Error: "+(error?.message||"No se pudo crear")); return; }
+    const { data:cod } = await supabase.rpc("generar_codigo_usuario");
+    await supabase.from("usuarios").insert({ id:data.user.id, email:nuevoUser.email, nombre_usuario:nuevoUser.nombre_usuario, nombre:nuevoUser.nombre||null, codigo:cod, bits_free:3000, bits_free_fecha:new Date().toISOString() });
+    showToast("✅ Usuario creado");
+    setModalCrearUser(false); setNuevoUser({email:"",password:"",nombre_usuario:"",nombre:""});
+    await cargarTodo();
+  };
+
+  // ── Responder mensaje como admin ──
+  const responderComoAdmin = async () => {
+    if (!respAdmin||!respAdmin.texto.trim()) return;
+    const m = respAdmin.msg;
+    const destId = m.emisor_id === ADMIN_UUID ? m.receptor_id : m.emisor_id;
+    await supabase.from("mensajes").insert({ emisor_id:ADMIN_UUID, receptor_id:destId, anuncio_id:m.anuncio_id||null, texto:respAdmin.texto, leido:false });
+    await supabase.from("notificaciones").insert({ usuario_id:destId, tipo:"sistema", mensaje:`💬 Admin te envió un mensaje: ${respAdmin.texto.slice(0,50)}...`, leida:false });
+    showToast("✅ Respuesta enviada");
+    setRespAdmin(null);
+    await cargarTodo();
+  };
+
+  // ── Filtros IA ──
+  const cargarFiltros = async (subId:number) => {
+    setFiltroSubSel(subId);
+    const {data} = await supabase.from("subrubro_filtros").select("*").eq("subrubro_id",subId).order("orden");
+    setFiltrosIA(data||[]);
+  };
+  const guardarFiltro = async (f:any) => {
+    if (!f.nombre||!filtroSubSel) return;
+    const payload = { subrubro_id:filtroSubSel, nombre:f.nombre, tipo:f.tipo||"rango", opciones:f.opciones?JSON.parse(f.opciones):null, orden:parseInt(f.orden)||0 };
+    if (f.id) {
+      await supabase.from("subrubro_filtros").update(payload).eq("id",f.id);
+    } else {
+      await supabase.from("subrubro_filtros").insert(payload);
+    }
+    setModalFiltro(null);
+    showToast("✅ Filtro guardado");
+    await cargarFiltros(filtroSubSel);
+  };
+  const eliminarFiltro = async (id:number) => {
+    if (!confirm("¿Eliminar este filtro?")) return;
+    await supabase.from("subrubro_filtros").delete().eq("id",id);
+    if (filtroSubSel) await cargarFiltros(filtroSubSel);
+    showToast("Filtro eliminado");
+  };
+
   // ── Alarmas ──
   const guardarAlarmas = async (nuevas:any) => {
     setAlarmas(nuevas);
@@ -384,6 +488,7 @@ export default function AdminPanel() {
     {id:"pagos",    e:"💰",l:"Pagos"},
     {id:"alarmas",  e:"🔔",l:"Alarmas"},
     {id:"config",   e:"⚙️",l:"Config"},
+    {id:"filtros_ia",e:"🤖",l:"Filtros IA"},
   ];
 
   const ItemRow = ({label,onEdit,onDelete,onUp,onDown,badge,extra}:{label:string;onEdit:()=>void;onDelete:()=>void;onUp?:()=>void;onDown?:()=>void;badge?:React.ReactNode;extra?:React.ReactNode}) => (
@@ -444,6 +549,60 @@ export default function AdminPanel() {
               <StatBox n={`$${((stats.pagos||0)/1000).toFixed(0)}K`} l="Recaudado" e="💰" c="#e67e22" />
               <StatBox n={String(stats.bits||0)}     l="BIT circulando" e="🪙" c="#d4a017" />
             </div>
+
+            <div style={S.card}>
+              <div style={S.sect}>👁️ Visitas (anuncios + nexos)</div>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"8px"}}>
+                <div style={{background:"#f4f4f2",borderRadius:"10px",padding:"10px",textAlign:"center"}}>
+                  <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"22px",color:"#d4a017"}}>{visitStats.hoy}</div>
+                  <div style={{fontSize:"9px",fontWeight:700,color:"#9a9a9a",textTransform:"uppercase"}}>Hoy</div>
+                </div>
+                <div style={{background:"#f4f4f2",borderRadius:"10px",padding:"10px",textAlign:"center"}}>
+                  <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"22px",color:"#3a7bd5"}}>{visitStats.semana}</div>
+                  <div style={{fontSize:"9px",fontWeight:700,color:"#9a9a9a",textTransform:"uppercase"}}>7 días</div>
+                </div>
+                <div style={{background:"#f4f4f2",borderRadius:"10px",padding:"10px",textAlign:"center"}}>
+                  <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"22px",color:"#27ae60"}}>{visitStats.mes}</div>
+                  <div style={{fontSize:"9px",fontWeight:700,color:"#9a9a9a",textTransform:"uppercase"}}>30 días</div>
+                </div>
+                <div style={{background:"#f4f4f2",borderRadius:"10px",padding:"10px",textAlign:"center"}}>
+                  <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"22px",color:"#8e44ad"}}>{visitStats.anio}</div>
+                  <div style={{fontSize:"9px",fontWeight:700,color:"#9a9a9a",textTransform:"uppercase"}}>12 meses</div>
+                </div>
+              </div>
+            </div>
+
+            <div style={S.card}>
+              <div style={S.sect}>💰 Dinero (Mercado Pago)</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px"}}>
+                <div style={{background:"rgba(39,174,96,0.08)",borderRadius:"10px",padding:"14px",textAlign:"center"}}>
+                  <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"26px",color:"#27ae60"}}>${dineroStats.esteMes.toLocaleString("es-AR")}</div>
+                  <div style={{fontSize:"10px",fontWeight:700,color:"#9a9a9a",textTransform:"uppercase"}}>Este mes</div>
+                </div>
+                <div style={{background:"rgba(212,160,23,0.08)",borderRadius:"10px",padding:"14px",textAlign:"center"}}>
+                  <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"26px",color:"#d4a017"}}>${dineroStats.total.toLocaleString("es-AR")}</div>
+                  <div style={{fontSize:"10px",fontWeight:700,color:"#9a9a9a",textTransform:"uppercase"}}>Acumulado histórico</div>
+                </div>
+              </div>
+            </div>
+
+            <div style={S.card}>
+              <div style={S.sect}>📈 Registros por mes (últimos 12)</div>
+              <div style={{display:"flex",alignItems:"flex-end",gap:"4px",height:"120px"}}>
+                {registrosMes.map((m,i)=>{
+                  const max = Math.max(...registrosMes.map(x=>x.cant),1);
+                  const h = Math.max((m.cant/max)*100,4);
+                  return (
+                    <div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:"2px"}}>
+                      <div style={{fontSize:"10px",fontWeight:800,color:"#1a2a3a"}}>{m.cant||""}</div>
+                      <div style={{width:"100%",height:`${h}px`,background:"linear-gradient(180deg,#d4a017,#f0c040)",borderRadius:"4px 4px 0 0"}} />
+                      <div style={{fontSize:"8px",fontWeight:700,color:"#9a9a9a",whiteSpace:"nowrap"}}>{m.mes}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
             <div style={S.card}>
               <div style={S.sect}>💰 Últimos pagos</div>
               {pagos.slice(0,5).map(p=>(
@@ -477,9 +636,12 @@ export default function AdminPanel() {
         {/* ══ USUARIOS ════════════════════════════════════════════════════════ */}
         {!loading && tab==="usuarios" && (
           <>
+            <div style={{display:"flex",gap:"8px",marginBottom:"14px"}}>
+              <input style={{...S.input,flex:1}} placeholder="🔍 Buscar por nombre, email o código..." value={busqUser} onChange={e=>setBusqUser(e.target.value)} />
+              <button onClick={()=>setModalCrearUser(true)} style={S.btn("#27ae60")}>+ Crear</button>
+            </div>
             <div style={S.card}>
-              <input style={S.input} placeholder="🔍 Buscar por nombre, email o código..." value={busqUser} onChange={e=>setBusqUser(e.target.value)} />
-              <div style={{display:"flex",gap:"6px",marginTop:"10px",flexWrap:"wrap"}}>
+              <div style={{display:"flex",gap:"6px",flexWrap:"wrap"}}>
                 {["todos","promotores","bloqueados","sin_bits"].map(f=>(
                   <button key={f} onClick={()=>setFiltroUser(f)} style={S.btn(filtroUser===f?"#d4a017":"#9a9a9a",filtroUser!==f)}>
                     {f==="todos"?"Todos":f==="promotores"?"⭐ Promotores":f==="bloqueados"?"🔒 Bloqueados":"💸 Sin BIT"}
@@ -596,12 +758,15 @@ export default function AdminPanel() {
             <div style={S.card}>
               <div style={S.sect}>💬 Conversaciones recientes</div>
               {mensajes.slice(0,30).map(m=>(
-                <div key={m.id} style={S.row}>
+                <div key={m.id} style={{...S.row,flexWrap:"wrap"}}>
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{fontSize:"12px",fontWeight:800,color:"#1a2a3a"}}>{m.emisor?.nombre_usuario||"Sistema"} → {m.receptor?.nombre_usuario||"?"}</div>
                     <div style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{m.mensaje||m.texto||"..."}</div>
                   </div>
-                  <div style={{fontSize:"10px",color:"#bbb",flexShrink:0}}>{new Date(m.created_at).toLocaleDateString("es-AR")}</div>
+                  <div style={{display:"flex",gap:"6px",alignItems:"center",flexShrink:0}}>
+                    <div style={{fontSize:"10px",color:"#bbb"}}>{new Date(m.created_at).toLocaleDateString("es-AR")}</div>
+                    <button onClick={()=>setRespAdmin({msg:m,texto:""})} style={{...S.btn("#3a7bd5",true),padding:"3px 8px",fontSize:"10px"}}>💬 Responder</button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -611,47 +776,36 @@ export default function AdminPanel() {
         {/* ══ PROMOTORES ══════════════════════════════════════════════════════ */}
         {!loading && tab==="promotores" && (
           <>
-            <div style={S.card}>
-              <div style={S.sect}>💳 Liquidaciones pendientes</div>
-              {liqs.filter((l:any)=>l.estado==="pendiente").length===0 && <div style={{fontSize:"13px",color:"#9a9a9a",fontWeight:600}}>No hay liquidaciones pendientes.</div>}
-              {liqs.filter((l:any)=>l.estado==="pendiente").map((l:any)=>(
-                <div key={l.id} style={S.row}>
-                  <div style={{flex:1}}>
-                    <div style={{fontSize:"13px",fontWeight:800}}>{l.usuarios?.nombre_usuario} ({l.usuarios?.codigo})</div>
-                    <div style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600}}>{l.usuarios?.email}</div>
-                  </div>
-                  <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"18px",color:"#27ae60"}}>${l.monto?.toLocaleString("es-AR")}</div>
-                  <div style={{display:"flex",gap:"6px"}}>
-                    <button onClick={async()=>{await supabase.from("liquidaciones_promotor").update({estado:"aprobada"}).eq("id",l.id);setLiqs(p=>p.map(x=>x.id===l.id?{...x,estado:"aprobada"}:x));showToast("✅ Aprobada");}} style={S.btn("#27ae60")}>✅</button>
-                    <button onClick={async()=>{await supabase.from("liquidaciones_promotor").update({estado:"rechazada"}).eq("id",l.id);setLiqs(p=>p.map(x=>x.id===l.id?{...x,estado:"rechazada"}:x));showToast("Rechazada");}} style={S.btn("#e74c3c")}>✕</button>
-                  </div>
-                </div>
-              ))}
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px",marginBottom:"14px"}}>
+              <StatBox n={String(usuarios.filter(u=>u.es_promotor).length)} l="Promotores activos" e="⭐" c="#d4a017" />
+              <StatBox n={usuarios.filter(u=>u.es_promotor).reduce((a:number,u:any)=>a+(u.bits_promotor_total||0),0).toLocaleString()} l="BIT totales generados" e="🪙" c="#27ae60" />
             </div>
             <div style={S.card}>
-              <div style={S.sect}>🏆 Ranking promotores</div>
-              {usuarios.filter(u=>u.es_promotor).sort((a:any,b:any)=>(b.bits_promotor||0)-(a.bits_promotor||0)).slice(0,10).map((u:any,i:number)=>(
-                <div key={u.id} style={S.row}>
-                  <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"22px",color:"#d4a017",width:"30px"}}>{i+1}</span>
-                  <div style={{flex:1}}>
-                    <div style={{fontSize:"13px",fontWeight:800}}>{u.nombre_usuario}</div>
-                    <div style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600}}>{u.codigo}</div>
+              <div style={S.sect}>⭐ Promotores activos</div>
+              {usuarios.filter(u=>u.es_promotor).sort((a:any,b:any)=>(b.bits_promotor_total||0)-(a.bits_promotor_total||0)).map((u:any,i:number)=>{
+                const referidos = usuarios.filter(x=>x.referido_por===u.id).length;
+                return (
+                  <div key={u.id} style={{...S.row,gap:"10px"}}>
+                    <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"22px",color:i===0?"#d4a017":"#9a9a9a",width:"28px",textAlign:"center"}}>{i+1}</span>
+                    <div style={{width:"36px",height:"36px",borderRadius:"50%",background:"linear-gradient(135deg,#1a2a3a,#d4a017)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"14px",flexShrink:0,overflow:"hidden"}}>
+                      {u.avatar_url?<img src={u.avatar_url} style={{width:"100%",height:"100%",objectFit:"cover"}} alt=""/>:"⭐"}
+                    </div>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontSize:"13px",fontWeight:900,color:"#1a2a3a"}}>{u.nombre_usuario}</div>
+                      <div style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600}}>{u.codigo} · {u.email}</div>
+                      <div style={{display:"flex",gap:"8px",marginTop:"3px"}}>
+                        <span style={{fontSize:"10px",fontWeight:700,color:"#3a7bd5",background:"rgba(58,123,213,0.08)",borderRadius:"8px",padding:"2px 7px"}}>👥 {referidos} referidos</span>
+                        <span style={{fontSize:"10px",fontWeight:700,color:"#d4a017",background:"rgba(212,160,23,0.08)",borderRadius:"8px",padding:"2px 7px"}}>🪙 {(u.bits_promotor||0).toLocaleString()} BIT actual</span>
+                      </div>
+                    </div>
+                    <div style={{textAlign:"right",flexShrink:0}}>
+                      <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"20px",color:"#27ae60"}}>{(u.bits_promotor_total||0).toLocaleString()}</div>
+                      <div style={{fontSize:"9px",fontWeight:700,color:"#9a9a9a",textTransform:"uppercase"}}>BIT total</div>
+                    </div>
                   </div>
-                  <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"18px",color:"#d4a017"}}>{(u.bits_promotor||0).toLocaleString()} BIT</div>
-                </div>
-              ))}
-            </div>
-            <div style={S.card}>
-              <div style={S.sect}>💰 Últimas comisiones</div>
-              {comisiones.slice(0,20).map((c:any)=>(
-                <div key={c.id} style={S.row}>
-                  <div style={{flex:1}}>
-                    <div style={{fontSize:"12px",fontWeight:800}}>{c.promotor?.nombre_usuario} ← {c.origen?.nombre_usuario}</div>
-                    <div style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600}}>{c.concepto}</div>
-                  </div>
-                  <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"16px",color:"#27ae60"}}>+{c.monto} BIT</div>
-                </div>
-              ))}
+                );
+              })}
+              {usuarios.filter(u=>u.es_promotor).length===0 && <div style={{fontSize:"13px",color:"#9a9a9a",fontWeight:600}}>No hay promotores activos todavía.</div>}
             </div>
           </>
         )}
@@ -807,6 +961,53 @@ export default function AdminPanel() {
                 <button onClick={async()=>{await supabase.auth.signOut();router.push("/admin/login");}} style={S.btn("#e74c3c")}>🚪 Cerrar sesión</button>
               </div>
             </div>
+          </>
+        )}
+
+        {/* ══ FILTROS IA ═════════════════════════════════════════════════════ */}
+        {!loading && tab==="filtros_ia" && (
+          <>
+            <div style={S.card}>
+              <div style={S.sect}>🤖 Filtros por subrubro</div>
+              <div style={{fontSize:"12px",color:"#9a9a9a",fontWeight:600,marginBottom:"14px"}}>
+                Seleccioná un subrubro para ver y configurar sus filtros de búsqueda
+              </div>
+              {rubros.map((r:any)=>(
+                <div key={r.id} style={{marginBottom:"10px"}}>
+                  <div style={{fontSize:"13px",fontWeight:900,color:"#1a2a3a",marginBottom:"6px"}}>{r.emoji||"📁"} {r.nombre}</div>
+                  <div style={{display:"flex",gap:"6px",flexWrap:"wrap",marginBottom:"4px"}}>
+                    {(r.subrubros||[]).map((s:any)=>(
+                      <button key={s.id} onClick={()=>cargarFiltros(s.id)}
+                        style={{...S.btn(filtroSubSel===s.id?"#d4a017":"#9a9a9a",filtroSubSel!==s.id),padding:"5px 12px",fontSize:"11px"}}>
+                        {s.nombre}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+            {filtroSubSel && (
+              <div style={S.card}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"12px"}}>
+                  <div style={S.sect}>🔧 Filtros configurados</div>
+                  <button onClick={()=>setModalFiltro({nombre:"",tipo:"rango",opciones:"",orden:filtrosIA.length})} style={S.btn("#27ae60")}>+ Agregar filtro</button>
+                </div>
+                {filtrosIA.length===0 && <div style={{fontSize:"13px",color:"#9a9a9a",fontWeight:600}}>Sin filtros todavía. Agregá uno.</div>}
+                {filtrosIA.map((f:any)=>(
+                  <div key={f.id} style={{display:"flex",alignItems:"center",gap:"8px",padding:"8px 0",borderBottom:"1px solid #f4f4f2"}}>
+                    <div style={{flex:1}}>
+                      <div style={{fontSize:"13px",fontWeight:800,color:"#1a2a3a"}}>{f.nombre}</div>
+                      <div style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600}}>
+                        Tipo: <strong>{f.tipo}</strong>
+                        {f.opciones && ` · Opciones: ${JSON.stringify(f.opciones)}`}
+                      </div>
+                    </div>
+                    <button onClick={()=>setModalFiltro({...f,opciones:f.opciones?JSON.stringify(f.opciones):""})} style={{...S.btn("#3a7bd5",true),padding:"4px 8px"}}>✏️</button>
+                    <button onClick={()=>eliminarFiltro(f.id)} style={{...S.btn("#e74c3c",true),padding:"4px 8px"}}>🗑️</button>
+                  </div>
+                ))}
+              </div>
+            )}
           </>
         )}
       </div>
@@ -1002,6 +1203,56 @@ export default function AdminPanel() {
             Subcategoría activa
           </label>
           <button onClick={()=>guardarGrupoSubcat(modalGrupoSubcat)} style={S.btn("#27ae60")} disabled={!modalGrupoSubcat.nombre}>💾 Guardar</button>
+        </Modal>
+      )}
+
+      {/* ══ MODAL CREAR USUARIO ═══════════════════════════════════════════════ */}
+      {modalCrearUser && (
+        <Modal titulo="👤 Crear usuario" onClose={()=>setModalCrearUser(false)}>
+          <label style={S.label}>Email *</label>
+          <input style={{...S.input,marginBottom:"10px"}} type="email" placeholder="email@ejemplo.com" value={nuevoUser.email} onChange={e=>setNuevoUser({...nuevoUser,email:e.target.value})} />
+          <label style={S.label}>Contraseña * (mín. 6)</label>
+          <input style={{...S.input,marginBottom:"10px"}} type="text" placeholder="••••••" value={nuevoUser.password} onChange={e=>setNuevoUser({...nuevoUser,password:e.target.value})} />
+          <label style={S.label}>Nombre de usuario *</label>
+          <input style={{...S.input,marginBottom:"10px"}} placeholder="nombre_usuario" value={nuevoUser.nombre_usuario} onChange={e=>setNuevoUser({...nuevoUser,nombre_usuario:e.target.value})} />
+          <label style={S.label}>Nombre real (opcional)</label>
+          <input style={{...S.input,marginBottom:"16px"}} placeholder="Juan Pérez" value={nuevoUser.nombre} onChange={e=>setNuevoUser({...nuevoUser,nombre:e.target.value})} />
+          <button onClick={crearUsuario} style={S.btn("#27ae60")} disabled={!nuevoUser.email||!nuevoUser.password||!nuevoUser.nombre_usuario}>👤 Crear usuario</button>
+        </Modal>
+      )}
+
+      {/* ══ MODAL RESPONDER COMO ADMIN ══════════════════════════════════════════ */}
+      {respAdmin && (
+        <Modal titulo={`💬 Responder a ${respAdmin.msg.emisor?.nombre_usuario||respAdmin.msg.receptor?.nombre_usuario||"usuario"}`} onClose={()=>setRespAdmin(null)}>
+          <div style={{background:"#f4f4f2",borderRadius:"10px",padding:"10px 14px",marginBottom:"14px"}}>
+            <div style={{fontSize:"11px",fontWeight:700,color:"#9a9a9a",marginBottom:"4px"}}>Mensaje original:</div>
+            <div style={{fontSize:"13px",fontWeight:600,color:"#1a2a3a"}}>{respAdmin.msg.mensaje||respAdmin.msg.texto||"..."}</div>
+          </div>
+          <label style={S.label}>Tu respuesta</label>
+          <textarea style={{...S.input,minHeight:"90px",resize:"vertical",marginBottom:"16px"}} placeholder="Escribí tu respuesta..." value={respAdmin.texto} onChange={e=>setRespAdmin({...respAdmin,texto:e.target.value})} />
+          <button onClick={responderComoAdmin} style={S.btn("#3a7bd5")} disabled={!respAdmin.texto.trim()}>📨 Enviar respuesta</button>
+        </Modal>
+      )}
+
+      {/* ══ MODAL FILTRO IA ════════════════════════════════════════════════════ */}
+      {modalFiltro && (
+        <Modal titulo={modalFiltro.id?"✏️ Editar filtro":"➕ Nuevo filtro"} onClose={()=>setModalFiltro(null)}>
+          <label style={S.label}>Nombre del campo *</label>
+          <input style={{...S.input,marginBottom:"10px"}} placeholder="Ej: Año, Precio, Km, Superficie..." value={modalFiltro.nombre||""} onChange={e=>setModalFiltro({...modalFiltro,nombre:e.target.value})} />
+          <label style={S.label}>Tipo</label>
+          <select style={{...S.input,marginBottom:"10px"}} value={modalFiltro.tipo||"rango"} onChange={e=>setModalFiltro({...modalFiltro,tipo:e.target.value})}>
+            <option value="rango">📊 Rango (desde/hasta)</option>
+            <option value="lista">📋 Lista (opciones fijas)</option>
+          </select>
+          {modalFiltro.tipo==="lista" && (
+            <>
+              <label style={S.label}>Opciones (JSON array)</label>
+              <textarea style={{...S.input,minHeight:"60px",resize:"vertical",marginBottom:"10px"}} placeholder={'["Opción 1","Opción 2","Opción 3"]'} value={modalFiltro.opciones||""} onChange={e=>setModalFiltro({...modalFiltro,opciones:e.target.value})} />
+            </>
+          )}
+          <label style={S.label}>Orden</label>
+          <input style={{...S.input,marginBottom:"16px"}} type="number" placeholder="0" value={modalFiltro.orden||""} onChange={e=>setModalFiltro({...modalFiltro,orden:e.target.value})} />
+          <button onClick={()=>guardarFiltro(modalFiltro)} style={S.btn("#27ae60")} disabled={!modalFiltro.nombre}>💾 Guardar filtro</button>
         </Modal>
       )}
 

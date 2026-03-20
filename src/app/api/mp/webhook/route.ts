@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
     // Obtener usuario actual
     const { data: usuario } = await supabase
       .from("usuarios")
-      .select("id, bits, bits_anuncio, bits_conexion, bits_grupo, bits_link, bits_adjunto, bits_busquedas")
+      .select("id, bits, bits_anuncio, bits_conexion, bits_grupo, bits_link, bits_adjunto, bits_busquedas, bits_totales_acumulados")
       .eq("id", usuario_id)
       .single();
 
@@ -90,8 +90,16 @@ export async function POST(req: NextRequest) {
     const actual = (usuario as any)[pkg.col] || 0;
     const nuevo  = pkg.ilimitado ? 99999 : actual + pkg.cantidad;
 
-    // Acreditar BIT
-    await supabase.from("usuarios").update({ [pkg.col]: nuevo }).eq("id", usuario_id);
+    // Acreditar BIT + recalcular insignia de logro
+    const acumuladoActual = (usuario as any).bits_totales_acumulados || 0;
+    const nuevoAcumulado  = acumuladoActual + (pkg.ilimitado ? 99999 : pkg.cantidad);
+    const NIVELES_LOGRO: [string, number][] = [["diamante",10000],["platino",5000],["oro",1000],["plata",500],["bronce",100],["ninguna",0]];
+    const insignia = NIVELES_LOGRO.find(([, min]) => nuevoAcumulado >= min)?.[0] || "ninguna";
+    await supabase.from("usuarios").update({
+      [pkg.col]: nuevo,
+      bits_totales_acumulados: nuevoAcumulado,
+      insignia_logro: insignia,
+    }).eq("id", usuario_id);
 
     // Registrar pago para idempotencia
     await supabase.from("pagos_mp").insert({

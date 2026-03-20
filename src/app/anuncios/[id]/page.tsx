@@ -5,6 +5,9 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import PopupCompra, { MetodoPago } from "@/components/PopupCompra";
+import InsigniaLogro from "@/app/_components/InsigniaLogro";
+import InsigniaReputacion from "@/app/_components/InsigniaReputacion";
+import BotonDarInsignia from "@/app/_components/BotonDarInsignia";
 
 const MENSAJES_PRESET = [
   "Hola, estoy interesado/a en tu anuncio. ¿Podemos hablar?",
@@ -64,6 +67,8 @@ export default function AnuncioDetalle() {
 
   const [popupMensaje,    setPopupMensaje]    = useState(false);
   const [mensajeConexion, setMensajeConexion] = useState(MENSAJES_PRESET[0]);
+  const [ownerInsignia,   setOwnerInsignia]   = useState<string>("ninguna");
+  const [repContadores,   setRepContadores]   = useState<Record<string,number>>({});
 
   useEffect(() => { cargar(); }, [params.id]);
 
@@ -84,10 +89,21 @@ export default function AnuncioDetalle() {
     if (data.usuario_id) {
       const { data: u } = await supabase
         .from("usuarios")
-        .select("nombre_usuario, codigo, plan, whatsapp, telefono, whatsapp_empresa, telefono_empresa, direccion, ciudad, provincia, barrio, direccion_empresa, ciudad_empresa, provincia_empresa, barrio_empresa, vis_personal, vis_empresa")
+        .select("nombre_usuario, codigo, plan, whatsapp, telefono, whatsapp_empresa, telefono_empresa, direccion, ciudad, provincia, barrio, direccion_empresa, ciudad_empresa, provincia_empresa, barrio_empresa, vis_personal, vis_empresa, insignia_logro")
         .eq("id", data.usuario_id).single();
-      if (u) setUsuario(u);
+      if (u) { setUsuario(u); setOwnerInsignia(u.insignia_logro || "ninguna"); }
       if (sess?.user.id === data.usuario_id) setEsPropio(true);
+
+      // Fetch reputation badges for this user
+      const { data: repData } = await supabase
+        .from("insignias_reputacion")
+        .select("tipo")
+        .eq("receptor_id", data.usuario_id);
+      if (repData) {
+        const cont: Record<string,number> = {};
+        repData.forEach((r: any) => { cont[r.tipo] = (cont[r.tipo] || 0) + 1; });
+        setRepContadores(cont);
+      }
     }
 
     // Registrar visita (1 por usuario por día) + incrementar contador
@@ -469,11 +485,20 @@ export default function AnuncioDetalle() {
                 {usuario.plan === "nexoempresa" ? "🏢" : "👤"}
               </div>
               <div style={{ flex:1 }}>
-                <div style={{ fontSize:"15px", fontWeight:800, color:"#1a2a3a" }}>{usuario.nombre_usuario}</div>
+                <div style={{ display:"flex", alignItems:"center", gap:"8px", flexWrap:"wrap" }}>
+                  <span style={{ fontSize:"15px", fontWeight:800, color:"#1a2a3a" }}>{usuario.nombre_usuario}</span>
+                  <InsigniaLogro nivel={ownerInsignia} size="xs" />
+                </div>
                 <div style={{ fontSize:"12px", color:"#d4a017", fontWeight:700 }}>{usuario.codigo}</div>
                 {usuario.plan === "nexoempresa" && <div style={{ fontSize:"11px", color:"#c0392b", fontWeight:800, marginTop:"2px" }}>🏢 Empresa verificada</div>}
+                <InsigniaReputacion contadores={repContadores} size="xs" />
               </div>
             </div>
+            {!esPropio && session && anuncio && (
+              <div style={{ marginTop:"12px", display:"flex", justifyContent:"flex-end" }}>
+                <BotonDarInsignia receptorId={anuncio.usuario_id} anuncioId={anuncio.id} sessionUserId={session.user.id} />
+              </div>
+            )}
           </div>
         )}
 

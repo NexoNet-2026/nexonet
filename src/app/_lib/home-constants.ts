@@ -12,6 +12,7 @@ export type Anuncio = {
   flash: boolean; fuente: string; permuto: boolean;
   subrubro: string; rubro: string; usuario_id: string;
   owner_whatsapp?: string;
+  owner_insignia_logro?: string;
   visitas_semana?: number;
 };
 
@@ -20,6 +21,7 @@ export type Nexo = {
   ciudad: string; provincia: string; avatar_url: string;
   miembros_count?: number; config?: any;
   visitas_semana?: number;
+  owner_insignia_logro?: string;
 };
 
 export type Rubro = { id: number; nombre: string };

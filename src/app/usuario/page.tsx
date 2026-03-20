@@ -6,6 +6,8 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import PopupCompra, { MetodoPago } from "@/components/PopupCompra";
+import InsigniaLogro from "@/app/_components/InsigniaLogro";
+import InsigniaReputacion from "@/app/_components/InsigniaReputacion";
 
 type Seccion = "cuenta" | "chat" | "datos" | "estadisticas" | "promotor" | "grupos" | "busquedas" | "anuncios" | "empresa" | "servicios" | "trabajo";
 
@@ -62,6 +64,9 @@ export default function Usuario() {
   const [popupBaja,   setPopupBaja]   = useState(false);
   const [notaBaja,    setNotaBaja]    = useState("");
   const [confirmBaja, setConfirmBaja] = useState(false);
+
+  // Insignias de reputación
+  const [repContadores, setRepContadores] = useState<Record<string,number>>({});
 
   const [personal, setPersonal] = useState({
     nombre_usuario: "", nombre: "", apellido: "",
@@ -127,6 +132,17 @@ export default function Usuario() {
         .eq("usuario_id", session.user.id)
         .order("created_at", { ascending: false });
       if (nxData) setMisNexos(nxData);
+
+      // Cargar insignias de reputación recibidas
+      const { data: repData } = await supabase
+        .from("insignias_reputacion")
+        .select("tipo")
+        .eq("receptor_id", session.user.id);
+      if (repData) {
+        const cont: Record<string,number> = {};
+        repData.forEach((r: any) => { cont[r.tipo] = (cont[r.tipo] || 0) + 1; });
+        setRepContadores(cont);
+      }
 
       const { data: msgs } = await supabase
         .from("mensajes")
@@ -400,10 +416,11 @@ export default function Usuario() {
             <div style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:"14px", color:"#d4a017", letterSpacing:"2px", lineHeight:1.2 }}>
               {perfil?.codigo||"---"}
             </div>
-            <div style={{ marginTop:"4px" }}>
+            <div style={{ marginTop:"4px", display:"flex", gap:"4px", flexWrap:"wrap", alignItems:"center" }}>
               <span style={{ background:insigniaActual.color, borderRadius:"20px", padding:"3px 10px", fontSize:"10px", fontWeight:900, color:"#fff", letterSpacing:"0.5px" }}>
                 {insigniaActual.emoji} {insigniaActual.nombre.toUpperCase()}
               </span>
+              <InsigniaLogro nivel={perfil?.insignia_logro} size="xs" />
             </div>
           </div>
           <button onClick={cerrarSesion} style={{ background:"rgba(255,80,80,0.15)", border:"1px solid rgba(255,80,80,0.4)", borderRadius:"10px", padding:"6px 12px", color:"#ff6b6b", fontSize:"12px", fontWeight:800, cursor:"pointer", fontFamily:"'Nunito', sans-serif", flexShrink:0 }}>
@@ -720,8 +737,32 @@ export default function Usuario() {
                 </div>
               ))}
             </div>
+            {/* INSIGNIA DE LOGRO (por BIT acumulados) */}
+            {perfil?.insignia_logro && perfil.insignia_logro !== "ninguna" && (
+              <div style={{ ...C, background:"linear-gradient(135deg,rgba(212,160,23,0.08),rgba(212,160,23,0.02))", border:"2px solid rgba(212,160,23,0.25)" }}>
+                <div style={{ fontSize:"11px", fontWeight:800, color:"#9a9a9a", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"10px" }}>⭐ Insignia de logro</div>
+                <div style={{ display:"flex", alignItems:"center", gap:"12px" }}>
+                  <InsigniaLogro nivel={perfil.insignia_logro} size="md" />
+                  <div style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:600 }}>
+                    {(perfil.bits_totales_acumulados || 0).toLocaleString()} BIT acumulados
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* INSIGNIAS DE REPUTACIÓN (dadas por otros usuarios) */}
+            {Object.values(repContadores).reduce((a: number, b: number) => a + b, 0) > 0 && (
+              <div style={{ ...C, background:"linear-gradient(135deg,rgba(39,174,96,0.08),rgba(39,174,96,0.02))", border:"2px solid rgba(39,174,96,0.25)" }}>
+                <div style={{ fontSize:"11px", fontWeight:800, color:"#9a9a9a", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"10px" }}>🏅 Insignias de reputación</div>
+                <InsigniaReputacion contadores={repContadores} size="md" />
+                <div style={{ fontSize:"10px", color:"#9a9a9a", fontWeight:600, marginTop:"8px" }}>
+                  {Object.values(repContadores).reduce((a: number, b: number) => a + b, 0)} insignia{Object.values(repContadores).reduce((a: number, b: number) => a + b, 0) !== 1 ? "s" : ""} recibida{Object.values(repContadores).reduce((a: number, b: number) => a + b, 0) !== 1 ? "s" : ""}
+                </div>
+              </div>
+            )}
+
             <div style={{ ...C, background:`linear-gradient(135deg, ${insigniaActual.color}15, ${insigniaActual.color}05)`, border:`2px solid ${insigniaActual.color}30` }}>
-              <div style={{ fontSize:"11px", fontWeight:800, color:"#9a9a9a", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"14px" }}>🏅 Insignia de reputación</div>
+              <div style={{ fontSize:"11px", fontWeight:800, color:"#9a9a9a", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"14px" }}>📊 Nivel de actividad</div>
               <div style={{ display:"flex", alignItems:"center", gap:"16px", marginBottom:"14px" }}>
                 <div style={{ width:"64px", height:"64px", borderRadius:"50%", background:`${insigniaActual.color}20`, border:`3px solid ${insigniaActual.color}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"32px", flexShrink:0 }}>
                   {insigniaActual.emoji}

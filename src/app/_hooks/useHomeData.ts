@@ -24,7 +24,7 @@ export function useHomeData() {
           subrubros(nombre,rubros(nombre))
         `).eq("estado", "activo").order("created_at", { ascending: false }).limit(80),
         supabase.from("nexos")
-          .select("id,titulo,descripcion,tipo,ciudad,provincia,avatar_url,config")
+          .select("id,titulo,descripcion,tipo,ciudad,provincia,avatar_url,config,usuario_id,usuarios(insignia_logro)")
           .order("created_at", { ascending: false }).limit(60),
         supabase.from("grupos")
           .select("id,nombre,descripcion,imagen,ciudad,provincia,creador_id,miembros_count,pago_ingreso_admin")
@@ -49,14 +49,14 @@ export function useHomeData() {
         const uids = [...new Set(mapped.map(a => a.usuario_id).filter(Boolean))];
         if (uids.length > 0) {
           const { data: owners } = await supabase
-            .from("usuarios").select("id,bits,bits_promo,bits_free,whatsapp,vis_personal").in("id", uids);
+            .from("usuarios").select("id,bits,bits_promo,bits_free,whatsapp,vis_personal,insignia_logro").in("id", uids);
           if (owners) {
             const ownerMap: Record<string, any> = Object.fromEntries(owners.map((o: any) => [o.id, o]));
             mapped = mapped.map(a => {
               const o = ownerMap[a.usuario_id];
               const totalBits = (o?.bits || 0) + (o?.bits_promo || 0) + (o?.bits_free || 0);
               const waVisible = o?.vis_personal?.whatsapp === true;
-              return { ...a, owner_whatsapp: (o?.whatsapp && waVisible && totalBits > 0) ? o.whatsapp : undefined };
+              return { ...a, owner_whatsapp: (o?.whatsapp && waVisible && totalBits > 0) ? o.whatsapp : undefined, owner_insignia_logro: o?.insignia_logro || "ninguna" };
             });
           }
         }
@@ -80,7 +80,7 @@ export function useHomeData() {
         setAnuncios(mapped);
       }
 
-      let nexosArr: Nexo[] = nData ? nData.map((n: any) => ({ ...n, id: String(n.id) })) : [];
+      let nexosArr: Nexo[] = nData ? nData.map((n: any) => ({ ...n, id: String(n.id), owner_insignia_logro: n.usuarios?.insignia_logro || "ninguna" })) : [];
       const gruposArr: Nexo[] = gData ? gData.map((g: any) => ({
         id: String(g.id), titulo: g.nombre || "Sin nombre",
         descripcion: g.descripcion || "", tipo: "grupo",

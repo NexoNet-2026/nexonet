@@ -4,6 +4,9 @@ import { useRouter, useParams } from "next/navigation";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
 import { supabase } from "@/lib/supabase";
+import InsigniaLogro from "@/app/_components/InsigniaLogro";
+import InsigniaReputacion from "@/app/_components/InsigniaReputacion";
+import BotonDarInsignia from "@/app/_components/BotonDarInsignia";
 
 const TIPO_COLORES: Record<string,string> = {
   anuncio:"#d4a017", empresa:"#c0392b", servicio:"#27ae60", trabajo:"#8e44ad", grupo:"#3a7bd5",
@@ -35,6 +38,8 @@ export default function NexoPage() {
   const [visor,     setVisor]     = useState<any>(null);
   const [pagandoDescarga, setPagandoDescarga] = useState<string|null>(null);
   const [descargasPagadas, setDescargasPagadas] = useState<Set<string>>(new Set());
+  const [ownerInsignia, setOwnerInsignia] = useState<string>("ninguna");
+  const [repContadores, setRepContadores] = useState<Record<string,number>>({});
   const bottomRef = useRef<HTMLDivElement>(null);
   const tabBarRef = useRef<HTMLDivElement>(null);
 
@@ -47,9 +52,23 @@ export default function NexoPage() {
       setPerfil(u);
 
       const { data: n } = await supabase.from("nexos")
-        .select("*, usuarios(id,nombre_usuario,codigo,avatar_url,plan,bits)")
+        .select("*, usuarios(id,nombre_usuario,codigo,avatar_url,plan,bits,insignia_logro)")
         .eq("id", id).single();
       setNexo(n);
+      if (n?.usuarios?.insignia_logro) setOwnerInsignia(n.usuarios.insignia_logro);
+
+      // Fetch reputation badges for nexo owner
+      if (n?.usuario_id) {
+        const { data: repData } = await supabase
+          .from("insignias_reputacion")
+          .select("tipo")
+          .eq("receptor_id", n.usuario_id);
+        if (repData) {
+          const cont: Record<string,number> = {};
+          repData.forEach((r: any) => { cont[r.tipo] = (cont[r.tipo] || 0) + 1; });
+          setRepContadores(cont);
+        }
+      }
 
       const { data: sls } = await supabase.from("nexo_sliders")
         .select("*").eq("nexo_id", id).eq("activo",true).order("orden");
@@ -224,6 +243,10 @@ export default function NexoPage() {
                 {TIPO_EMOJIS[nexo.tipo]} {nexo.tipo}{nexo.subtipo?` · ${nexo.subtipo}`:""}
               </div>
               <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"26px", color:"#fff", letterSpacing:"1px", lineHeight:1.1 }}>{nexo.titulo}</div>
+              <div style={{ display:"flex", alignItems:"center", gap:"6px", flexWrap:"wrap", marginTop:"4px" }}>
+                <InsigniaLogro nivel={ownerInsignia} size="xs" />
+                <InsigniaReputacion contadores={repContadores} size="xs" />
+              </div>
               <div style={{ fontSize:"12px", color:"rgba(255,255,255,0.65)", fontWeight:600, marginTop:"4px", display:"flex", gap:"12px", flexWrap:"wrap" }}>
                 {nexo.ciudad && <span>📍 {nexo.ciudad}</span>}
                 {nexo.precio && <span style={{ color:colorNexo, fontWeight:800 }}>$ {parseFloat(nexo.precio).toLocaleString("es-AR")} {nexo.moneda}</span>}
@@ -244,6 +267,9 @@ export default function NexoPage() {
                 </button>
               )}
               {miMiembro?.estado==="pendiente" && <div style={{ background:"rgba(230,126,34,0.2)", border:"1px solid rgba(230,126,34,0.4)", borderRadius:"10px", padding:"7px 12px", fontSize:"11px", fontWeight:800, color:"#e67e22" }}>⏳ Pendiente</div>}
+              {perfil && nexo?.usuario_id !== perfil?.id && (
+                <BotonDarInsignia receptorId={nexo.usuario_id} nexoId={nexo.id} sessionUserId={perfil.id} />
+              )}
             </div>
           </div>
         </div>

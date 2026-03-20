@@ -227,8 +227,12 @@ export default function AdminPanel() {
     const cant = parseInt(bitCant);
     if (isNaN(cant)) return;
     const actual = modalBit[bitTipo]||0;
-    await supabase.from("usuarios").update({[bitTipo]:actual+cant}).eq("id",modalBit.id);
-    setUsuarios(prev=>prev.map(x=>x.id===modalBit.id?{...x,[bitTipo]:actual+cant}:x));
+    // Recalcular insignia de logro
+    const acumulado = (modalBit.bits_totales_acumulados||0) + cant;
+    const NIVELES_LOGRO: [string,number][] = [["diamante",10000],["platino",5000],["oro",1000],["plata",500],["bronce",100],["ninguna",0]];
+    const insignia = NIVELES_LOGRO.find(([,min]) => acumulado >= min)?.[0] || "ninguna";
+    await supabase.from("usuarios").update({[bitTipo]:actual+cant, bits_totales_acumulados:acumulado, insignia_logro:insignia}).eq("id",modalBit.id);
+    setUsuarios(prev=>prev.map(x=>x.id===modalBit.id?{...x,[bitTipo]:actual+cant,bits_totales_acumulados:acumulado,insignia_logro:insignia}:x));
     if (bitNota) await supabase.from("notificaciones").insert({usuario_id:modalBit.id,tipo:"sistema",mensaje:`💰 Admin acreditó ${cant} ${bitTipo.toUpperCase()} — ${bitNota}`,leida:false});
     setModalBit(null); setBitCant(""); setBitNota("");
     showToast(`✅ ${cant} ${bitTipo} acreditados`);
@@ -449,6 +453,22 @@ export default function AdminPanel() {
     setContactos(prev=>prev.map(x=>x.id===respContacto.c.id?{...x,respuesta:respContacto.texto,estado:"respondido"}:x));
     setRespContacto(null);
     showToast("✅ Respuesta enviada");
+  };
+
+  // ── Aprobar sugerencia (credita 50 BIT al usuario) ──
+  const aprobarSugerencia = async (contacto: any) => {
+    const uid = contacto.usuario_id;
+    const { data: u } = await supabase.from("usuarios").select("bits_free,bits_totales_acumulados").eq("id",uid).single();
+    if (!u) return;
+    const nuevoFree = (u.bits_free||0) + 50;
+    const acumulado = (u.bits_totales_acumulados||0) + 50;
+    const NIVELES_LOGRO: [string,number][] = [["diamante",10000],["platino",5000],["oro",1000],["plata",500],["bronce",100],["ninguna",0]];
+    const insignia = NIVELES_LOGRO.find(([,min]) => acumulado >= min)?.[0] || "ninguna";
+    await supabase.from("usuarios").update({ bits_free:nuevoFree, bits_totales_acumulados:acumulado, insignia_logro:insignia }).eq("id",uid);
+    await supabase.from("contactos_nexonet").update({ aprobado:true }).eq("id",contacto.id);
+    await supabase.from("notificaciones").insert({ usuario_id:uid, tipo:"sistema", mensaje:"🎉 ¡Tu sugerencia fue aprobada! Recibiste 50 BIT Free como agradecimiento.", leida:false });
+    setContactos(prev=>prev.map(x=>x.id===contacto.id?{...x,aprobado:true}:x));
+    showToast("✅ Sugerencia aprobada — 50 BIT Free acreditados");
   };
 
   // ── Filtros IA ──
@@ -883,9 +903,17 @@ export default function AdminPanel() {
                     <strong>Respuesta:</strong> {c.respuesta}
                   </div>
                 )}
-                {c.estado!=="respondido" && (
-                  <button onClick={()=>setRespContacto({c,texto:""})} style={S.btn("#3a7bd5",true)}>💬 Responder</button>
-                )}
+                <div style={{display:"flex",gap:"8px",flexWrap:"wrap"}}>
+                  {c.estado!=="respondido" && (
+                    <button onClick={()=>setRespContacto({c,texto:""})} style={S.btn("#3a7bd5",true)}>💬 Responder</button>
+                  )}
+                  {c.tipo==="sugerencia" && !c.aprobado && (
+                    <button onClick={()=>aprobarSugerencia(c)} style={S.btn("#27ae60",true)}>✅ Aprobar (+50 BIT)</button>
+                  )}
+                  {c.aprobado && (
+                    <span style={S.badge("#fff","#27ae60")}>✅ Aprobada</span>
+                  )}
+                </div>
               </div>
             ))}
           </>

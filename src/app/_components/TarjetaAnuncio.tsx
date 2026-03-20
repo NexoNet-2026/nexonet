@@ -1,5 +1,6 @@
 "use client";
 import { FUENTES, formatPrecio, type Anuncio } from "@/app/_lib/home-constants";
+import InsigniaLogro from "./InsigniaLogro";
 
 export default function TarjetaAnuncio({ a, esPrimero }: { a: Anuncio; esPrimero?: boolean }) {
   const fuente = FUENTES[a.fuente] || FUENTES.nexonet;
@@ -30,6 +31,9 @@ export default function TarjetaAnuncio({ a, esPrimero }: { a: Anuncio; esPrimero
           <div style={{ fontSize: "13px", fontWeight: 800, color: "#2c2c2e", marginBottom: "3px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{a.titulo}</div>
           <div style={{ fontSize: "15px", fontWeight: 900, color: "#d4a017" }}>{formatPrecio(a.precio, a.moneda)}</div>
           <div style={{ fontSize: "11px", color: "#9a9a9a", fontWeight: 600, marginTop: "2px" }}>📍 {a.ciudad}</div>
+          {a.owner_insignia_logro && a.owner_insignia_logro !== "ninguna" && (
+            <div style={{ marginTop: "4px" }}><InsigniaLogro nivel={a.owner_insignia_logro} size="xs" /></div>
+          )}
         </div>
       </div>
     </a>

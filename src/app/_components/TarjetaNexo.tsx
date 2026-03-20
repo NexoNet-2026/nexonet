@@ -1,5 +1,6 @@
 "use client";
 import { TIPO_EMOJI, type Nexo } from "@/app/_lib/home-constants";
+import InsigniaLogro from "./InsigniaLogro";
 
 export default function TarjetaNexo({ nexo, color, onClick, esPrimero }: { nexo: Nexo; color: string; onClick: () => void; esPrimero?: boolean }) {
   return (
@@ -26,9 +27,12 @@ export default function TarjetaNexo({ nexo, color, onClick, esPrimero }: { nexo:
           <div style={{ fontSize: "12px", fontWeight: 800, color: "#1a2a3a", overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" as any, marginBottom: "4px" }}>
             {nexo.titulo}
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "4px", flexWrap: "wrap" }}>
             {nexo.tipo === "grupo" && <span style={{ fontSize: "10px", color: "#9a9a9a", fontWeight: 600 }}>👥 {nexo.miembros_count || 0}</span>}
             {nexo.ciudad && <span style={{ fontSize: "10px", color: "#9a9a9a", fontWeight: 600 }}>📍 {nexo.ciudad}</span>}
+            {nexo.owner_insignia_logro && nexo.owner_insignia_logro !== "ninguna" && (
+              <InsigniaLogro nivel={nexo.owner_insignia_logro} size="xs" />
+            )}
           </div>
         </div>
       </div>

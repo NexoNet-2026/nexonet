@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef } from "react";
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -111,11 +111,6 @@ export default function MapaLeaflet({
   onSeleccionar: (a: Anuncio) => void;
   centrarEn?: [number, number] | null;
 }) {
-  const formatPrecio = (precio: number, moneda: string) => {
-    if (!precio) return "Consultar";
-    return `${moneda === "USD" ? "U$D" : "$"} ${precio.toLocaleString("es-AR")}`;
-  };
-
   return (
     <MapContainer
       center={[-31.2532, -61.4875]}
@@ -139,22 +134,7 @@ export default function MapaLeaflet({
           position={[a.lat, a.lng]}
           icon={crearIcono(a.flash, a.tipo, a.avatar_url)}
           eventHandlers={{ click: () => onSeleccionar(a) }}
-        >
-          <Popup>
-            <div style={{ fontFamily: "'Nunito', sans-serif", minWidth: "150px" }}>
-              <div style={{ display:"flex", alignItems:"center", gap:"6px", marginBottom:"4px" }}>
-                <span style={{ background: TIPO_COLOR[a.tipo||"anuncio"]||"#d4a017", color:"#fff", fontSize:"9px", fontWeight:900, padding:"2px 7px", borderRadius:"20px", textTransform:"uppercase" }}>
-                  {a.tipo || "anuncio"}
-                </span>
-              </div>
-              <div style={{ fontWeight: 800, fontSize: "13px", color: "#1a2a3a" }}>{a.titulo}</div>
-              <div style={{ fontWeight: 900, fontSize: "15px", color: TIPO_COLOR[a.tipo||"anuncio"]||"#d4a017" }}>
-                {formatPrecio(a.precio, a.moneda)}
-              </div>
-              <div style={{ fontSize: "11px", color: "#9a9a9a" }}>📍 {a.ciudad}{a.provincia ? `, ${a.provincia}` : ""}</div>
-            </div>
-          </Popup>
-        </Marker>
+        />
       ))}
     </MapContainer>
   );

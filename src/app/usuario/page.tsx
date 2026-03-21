@@ -228,17 +228,21 @@ export default function Usuario() {
     setSubiendoAvatar(false);
   };
 
+  const [gpsLoad, setGpsLoad] = useState(false);
+  const [gpsOk, setGpsOk] = useState(false);
   const geolocPersonal = () => {
     if (!navigator.geolocation) return alert("GPS no disponible");
+    setGpsLoad(true);
     navigator.geolocation.getCurrentPosition(async pos => {
       const {latitude:lat, longitude:lng} = pos.coords;
       try {
-        const r = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`);
+        const r = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=es`);
         const d = await r.json();
-        setPersonal(p => ({ ...p, lat:String(lat), lng:String(lng), ciudad:d.address?.city||d.address?.town||d.address?.village||p.ciudad, provincia:d.address?.state||p.provincia, barrio:d.address?.suburb||d.address?.neighbourhood||p.barrio, direccion:(`${d.address?.road||""} ${d.address?.house_number||""}`).trim()||p.direccion }));
-        alert("✅ Ubicación personal detectada");
+        setPersonal(p => ({ ...p, ciudad:d.address?.city||d.address?.town||d.address?.village||p.ciudad, provincia:d.address?.state||p.provincia }));
+        setGpsOk(true);
       } catch { alert("Error al obtener dirección"); }
-    }, () => alert("No se pudo acceder al GPS"));
+      setGpsLoad(false);
+    }, () => { alert("No se pudo acceder al GPS"); setGpsLoad(false); });
   };
 
   const geolocEmpresa = () => {
@@ -657,6 +661,11 @@ export default function Usuario() {
               )}
               <Campo label="Provincia" valor={personal.provincia} onChange={v=>setPersonal(p=>({...p,provincia:v}))} visible={visP.provincia} onToggle={()=>toggleP("provincia")} placeholder="Ej: Santa Fe" icono="🗺️" />
               <Campo label="Ciudad" valor={personal.ciudad} onChange={v=>setPersonal(p=>({...p,ciudad:v}))} visible={visP.ciudad} onToggle={()=>toggleP("ciudad")} placeholder="Ej: Rosario" icono="🏙️" />
+              <button onClick={geolocPersonal} disabled={gpsLoad}
+                style={{ display:"flex", alignItems:"center", gap:"8px", background:"rgba(58,123,213,0.08)", border:"2px solid rgba(58,123,213,0.25)", borderRadius:"12px", padding:"10px 14px", cursor:gpsLoad?"wait":"pointer", fontFamily:"'Nunito',sans-serif", fontSize:"13px", fontWeight:800, color:"#3a7bd5", width:"100%", marginTop:"4px", opacity:gpsLoad?0.6:1 }}>
+                {gpsLoad ? "⏳ Buscando..." : "📍 Usar mi ubicación"}
+              </button>
+              {gpsOk && <div style={{ fontSize:"11px", fontWeight:700, color:"#27ae60", marginTop:"4px" }}>✅ Ubicación detectada</div>}
             </div>
 
             <div style={{ background:"rgba(58,123,213,0.06)", border:"2px solid rgba(58,123,213,0.2)", borderRadius:"14px", padding:"14px 16px", display:"flex", gap:"12px", alignItems:"center" }}>

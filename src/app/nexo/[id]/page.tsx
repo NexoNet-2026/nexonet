@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
@@ -168,9 +168,11 @@ export default function NexoPage() {
     }
   }, [mensajes.length, tabActiva]);
 
-  const esAdmin   = useMemo(() =>
-    nexo?.usuario_id === perfil?.id || miMiembro?.rol === "creador" || miMiembro?.rol === "moderador"
-  , [nexo?.usuario_id, perfil?.id, miMiembro?.rol]);
+  const esAdmin = !!(
+    (perfil?.id && nexo?.usuario_id && perfil.id === nexo.usuario_id) ||
+    miMiembro?.rol === "creador" ||
+    miMiembro?.rol === "moderador"
+  );
   const esMiembro = miMiembro?.estado === "activo";
   const colorNexo = TIPO_COLORES[nexo?.tipo] || "#d4a017";
   const emojiNexo = nexo?.subtipo ? SUBTIPO_EMOJIS[nexo.subtipo] : TIPO_EMOJIS[nexo?.tipo] || "✨";

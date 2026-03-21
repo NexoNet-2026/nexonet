@@ -47,3 +47,12 @@ ALTER TABLE trabajo_filtros ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "trabajo_filtros_select" ON trabajo_filtros;
 DROP POLICY IF EXISTS "trabajo_filtros_public" ON trabajo_filtros;
 CREATE POLICY "pub_select" ON trabajo_filtros FOR SELECT USING (true);
+
+-- GRUPO CATEGORÍAS
+ALTER TABLE grupo_categorias ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "grupo_categorias_pub" ON grupo_categorias;
+CREATE POLICY "pub_select" ON grupo_categorias FOR SELECT USING (true);
+
+ALTER TABLE grupo_subcategorias ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "grupo_subcategorias_pub" ON grupo_subcategorias;
+CREATE POLICY "pub_select" ON grupo_subcategorias FOR SELECT USING (true);

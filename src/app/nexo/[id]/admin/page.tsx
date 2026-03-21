@@ -235,15 +235,29 @@ export default function NexoAdminPage() {
     setDescargas(prev=>prev.filter(d=>d.id!==descId));
   };
 
-  const [popupAprobar, setPopupAprobar] = useState<string|null>(null);
-
   const accionMiembro = async (mId: string, accion: string) => {
-    if (accion === "aprobar" && nexo?.config?.tipo_acceso === "solicitud") {
-      setPopupAprobar(mId);
+    if (accion === "aprobar") {
+      // Al aprobar: cobrar 500 BIT al miembro, acreditar 150 BIT Promotor al dueño
+      const m = miembros.find(x=>x.id===mId);
+      const uid = m?.usuario_id;
+      if (!uid) return;
+      const { data: mu } = await supabase.from("usuarios").select("bits,bits_free,bits_promo").eq("id",uid).single();
+      if (!mu) return;
+      const total = (mu.bits||0) + (mu.bits_free||0) + (mu.bits_promo||0);
+      if (total < 500) { alert("El miembro no tiene 500 BIT suficientes para ingresar."); return; }
+      const campo = (mu.bits_free||0) >= 500 ? "bits_free" : (mu.bits_promo||0) >= 500 ? "bits_promo" : "bits";
+      await supabase.from("usuarios").update({ [campo]: (mu[campo]||0) - 500 }).eq("id", uid);
+      // Acreditar 150 BIT Promotor al dueño
+      await supabase.from("usuarios").update({
+        bits_promo: (perfil.bits_promo||0) + 150,
+        bits_promotor_total: (perfil.bits_promotor_total||0) + 150,
+      }).eq("id", perfil.id);
+      setPerfil((p:any)=>({...p, bits_promo:(p.bits_promo||0)+150}));
+      await supabase.from("nexo_miembros").update({ estado:"activo", bits_pagados:500 }).eq("id",mId);
+      setMiembros(prev=>prev.map(x=>x.id===mId?{...x,estado:"activo",bits_pagados:500}:x));
       return;
     }
     const updates: Record<string,any> = {
-      aprobar:    { estado:"activo" },
       expulsar:   { estado:"expulsado" },
       bloquear:   { estado:"bloqueado" },
       hacer_mod:  { rol:"moderador" },
@@ -263,39 +277,6 @@ export default function NexoAdminPage() {
     } else {
       setMiembros(prev=>prev.map(x=>x.id===mId?{...x,...updates[accion]}:x));
     }
-  };
-
-  const aprobarConPago = async (mId: string, quienPaga: "creador"|"miembro") => {
-    const m = miembros.find(x=>x.id===mId);
-    if (quienPaga === "creador") {
-      // Dueño paga 500 BIT, recibe 150 BIT Promotor
-      if ((perfil?.bits||0) < 500) { alert("No tenés 500 BIT suficientes."); return; }
-      await supabase.from("usuarios").update({
-        bits: (perfil.bits||0) - 500,
-        bits_promo: (perfil.bits_promo||0) + 150,
-        bits_promotor_total: (perfil.bits_promotor_total||0) + 150,
-      }).eq("id", perfil.id);
-      setPerfil((p:any)=>({...p, bits:(p.bits||0)-500, bits_promo:(p.bits_promo||0)+150}));
-    } else {
-      // Miembro paga 500 BIT, dueño recibe 150 BIT Promotor
-      const uid = m?.usuario_id;
-      if (!uid) return;
-      const { data: mu } = await supabase.from("usuarios").select("bits,bits_free,bits_promo").eq("id",uid).single();
-      if (!mu) return;
-      const total = (mu.bits||0) + (mu.bits_free||0) + (mu.bits_promo||0);
-      if (total < 500) { alert("El miembro no tiene 500 BIT suficientes."); return; }
-      const campo = (mu.bits_free||0) >= 500 ? "bits_free" : (mu.bits_promo||0) >= 500 ? "bits_promo" : "bits";
-      await supabase.from("usuarios").update({ [campo]: (mu[campo]||0) - 500 }).eq("id", uid);
-      // Acreditar 150 BIT Promotor al dueño
-      await supabase.from("usuarios").update({
-        bits_promo: (perfil.bits_promo||0) + 150,
-        bits_promotor_total: (perfil.bits_promotor_total||0) + 150,
-      }).eq("id", perfil.id);
-      setPerfil((p:any)=>({...p, bits_promo:(p.bits_promo||0)+150}));
-    }
-    await supabase.from("nexo_miembros").update({ estado:"activo", bits_pagados:500 }).eq("id",mId);
-    setMiembros(prev=>prev.map(x=>x.id===mId?{...x,estado:"activo",bits_pagados:500}:x));
-    setPopupAprobar(null);
   };
 
   const guardarInfo = async () => {
@@ -571,10 +552,9 @@ export default function NexoAdminPage() {
                 ¿Cómo ingresan nuevos miembros?
               </div>
               {[
-                { k:"libre",         l:"👥 Acceso libre",          d:"Cualquiera se une sin costo" },
-                { k:"creador_paga",  l:"🎁 Creador paga",          d:"Vos pagás 500 BIT por cada miembro. Recibís 150 BIT Promotor." },
-                { k:"usuario_paga",  l:"💰 Usuario paga",          d:"Cada miembro paga 500 BIT. Vos recibís 150 BIT Promotor (30%)." },
-                { k:"solicitud",     l:"⏳ Solicitud con decisión", d:"Revisás cada solicitud. Decidís si paga el usuario o ingresa gratis (vos pagás)." },
+                { k:"libre",       l:"👥 Acceso libre",       d:"Cualquiera se une pagando 500 BIT. Recibís 150 BIT Promotor." },
+                { k:"pago",        l:"💰 Acceso pago",        d:"Igual que libre pero se muestra el costo claramente. 500 BIT, recibís 150 BIT Promotor." },
+                { k:"aprobacion",  l:"⏳ Con aprobación",      d:"El usuario solicita, vos aprobás. Al aprobar se le cobran 500 BIT y recibís 150 BIT Promotor." },
               ].map(op => {
                 const actual = nexo?.config?.tipo_acceso || "libre";
                 const activo = actual === op.k;
@@ -809,33 +789,6 @@ export default function NexoAdminPage() {
               style={{ width:"100%", background:"linear-gradient(135deg,#16a085,#1abc9c)", border:"none", borderRadius:"12px", padding:"14px", fontSize:"15px", fontWeight:900, color:"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif", opacity:formDesc.url&&formDesc.titulo?1:0.5, boxShadow:"0 4px 0 #0e6b59" }}>
               ✅ Publicar descarga
             </button>
-          </div>
-        </div>
-      )}
-      {/* POPUP APROBAR CON PAGO */}
-      {popupAprobar && (
-        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", zIndex:800, display:"flex", alignItems:"flex-end", justifyContent:"center" }}>
-          <div style={{ background:"#fff", borderRadius:"24px 24px 0 0", padding:"24px 20px 40px", width:"100%", maxWidth:"480px" }}>
-            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"16px" }}>
-              <div style={{ fontSize:"16px", fontWeight:900, color:"#1a2a3a" }}>✅ Aprobar miembro</div>
-              <button onClick={()=>setPopupAprobar(null)} style={{ background:"#f4f4f2", border:"none", borderRadius:"50%", width:"32px", height:"32px", fontSize:"16px", cursor:"pointer" }}>✕</button>
-            </div>
-            <div style={{ fontSize:"13px", color:"#9a9a9a", fontWeight:600, marginBottom:"16px", lineHeight:1.6 }}>
-              ¿Quién paga los 500 BIT de ingreso?
-            </div>
-            <div style={{ display:"flex", flexDirection:"column", gap:"10px" }}>
-              <button onClick={()=>aprobarConPago(popupAprobar,"creador")}
-                style={{ width:"100%", background:"linear-gradient(135deg,#27ae60,#1e8449)", border:"none", borderRadius:"14px", padding:"16px", fontSize:"14px", fontWeight:900, color:"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
-                🎁 Ingreso gratuito (yo pago 500 BIT)
-              </button>
-              <button onClick={()=>aprobarConPago(popupAprobar,"miembro")}
-                style={{ width:"100%", background:"linear-gradient(135deg,#d4a017,#f0c040)", border:"none", borderRadius:"14px", padding:"16px", fontSize:"14px", fontWeight:900, color:"#1a2a3a", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
-                💰 El miembro paga (500 BIT)
-              </button>
-            </div>
-            <div style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:600, marginTop:"12px", textAlign:"center" }}>
-              En ambos casos recibís 150 BIT Promotor
-            </div>
           </div>
         </div>
       )}

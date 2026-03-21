@@ -183,38 +183,34 @@ export default function NexoPage() {
     if (!perfil) { router.push("/login"); return; }
     const acceso = nexo?.config?.tipo_acceso || "libre";
 
-    if (acceso === "creador_paga") {
-      // El dueño paga 500 BIT, recibe 150 BIT Promotor
-      const { data: dueno } = await supabase.from("usuarios").select("bits,bits_promo,bits_promotor_total").eq("id", nexo.usuario_id).single();
-      if (!dueno || (dueno.bits || 0) < 500) { alert("El creador del grupo no tiene BIT suficientes para cubrir tu ingreso."); return; }
-      await supabase.from("usuarios").update({
-        bits: (dueno.bits || 0) - 500,
-        bits_promo: (dueno.bits_promo || 0) + 150,
-        bits_promotor_total: (dueno.bits_promotor_total || 0) + 150,
-      }).eq("id", nexo.usuario_id);
-    } else if (acceso === "usuario_paga") {
-      // El usuario paga 500 BIT, dueño recibe 150 BIT Promotor
-      const bitsTotal = Math.max(0,(perfil.bits||0)) + Math.max(0,(perfil.bits_free||0)) + Math.max(0,(perfil.bits_promo||0));
-      if (bitsTotal < 500) { alert("Necesitás 500 BIT para unirte a este grupo"); return; }
-      const campo = (perfil.bits_free||0) >= 500 ? "bits_free" : (perfil.bits_promo||0) >= 500 ? "bits_promo" : "bits";
-      await supabase.from("usuarios").update({ [campo]: (perfil[campo]||0) - 500 }).eq("id", perfil.id);
-      setPerfil((p:any) => ({...p, [campo]: (p[campo]||0) - 500}));
-      // Acreditar 150 BIT Promotor al dueño
-      const { data: dueno } = await supabase.from("usuarios").select("bits_promo,bits_promotor_total").eq("id", nexo.usuario_id).single();
-      if (dueno) await supabase.from("usuarios").update({
-        bits_promo: (dueno.bits_promo || 0) + 150,
-        bits_promotor_total: (dueno.bits_promotor_total || 0) + 150,
-      }).eq("id", nexo.usuario_id);
+    if (acceso === "aprobacion") {
+      // Solo solicitar, sin cobrar BIT todavía
+      const { data: mm } = await supabase.from("nexo_miembros")
+        .insert({ nexo_id:id, usuario_id:perfil.id, rol:"miembro", estado:"pendiente", bits_pagados:0 })
+        .select().single();
+      setMiMiembro(mm);
+      alert("Tu solicitud fue enviada. El administrador la revisará.");
+      return;
     }
 
-    const estado = acceso === "solicitud" ? "pendiente" : "activo";
-    const bitsPagados = acceso === "usuario_paga" ? 500 : acceso === "creador_paga" ? 500 : 0;
+    // Para "libre" y "pago": usuario paga 500 BIT, dueño recibe 150 BIT Promotor
+    const bitsTotal = Math.max(0,(perfil.bits||0)) + Math.max(0,(perfil.bits_free||0)) + Math.max(0,(perfil.bits_promo||0));
+    if (bitsTotal < 500) { alert("Necesitás 500 BIT para unirte a este grupo"); return; }
+    const campo = (perfil.bits_free||0) >= 500 ? "bits_free" : (perfil.bits_promo||0) >= 500 ? "bits_promo" : "bits";
+    await supabase.from("usuarios").update({ [campo]: (perfil[campo]||0) - 500 }).eq("id", perfil.id);
+    setPerfil((p:any) => ({...p, [campo]: (p[campo]||0) - 500}));
+    // Acreditar 150 BIT Promotor al dueño
+    const { data: dueno } = await supabase.from("usuarios").select("bits_promo,bits_promotor_total").eq("id", nexo.usuario_id).single();
+    if (dueno) await supabase.from("usuarios").update({
+      bits_promo: (dueno.bits_promo || 0) + 150,
+      bits_promotor_total: (dueno.bits_promotor_total || 0) + 150,
+    }).eq("id", nexo.usuario_id);
+
     const { data: mm } = await supabase.from("nexo_miembros")
-      .insert({ nexo_id:id, usuario_id:perfil.id, rol:"miembro", estado, bits_pagados: bitsPagados })
+      .insert({ nexo_id:id, usuario_id:perfil.id, rol:"miembro", estado:"activo", bits_pagados:500 })
       .select().single();
     setMiMiembro(mm);
-    if (estado === "activo") setMiembros(prev => [...prev, {...mm, usuarios:perfil}]);
-    if (estado === "pendiente") alert("Tu solicitud fue enviada. El administrador la revisará.");
+    setMiembros(prev => [...prev, {...mm, usuarios:perfil}]);
   };
 
   const enviarMensaje = async () => {
@@ -309,7 +305,7 @@ export default function NexoPage() {
               {!esAdmin && !miMiembro && nexo.tipo==="grupo" && (
                 <button onClick={unirse}
                   style={{ background:`${colorNexo}cc`, border:"none", borderRadius:"10px", padding:"8px 12px", fontSize:"12px", fontWeight:900, color:"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
-                  {nexo.config?.tipo_acceso==="creador_paga"?"🎁 Unirse gratis":nexo.config?.tipo_acceso==="usuario_paga"?"💰 Unirse (500 BIT)":nexo.config?.tipo_acceso==="solicitud"?"⏳ Solicitar ingreso":"👥 Unirse"}
+                  {nexo.config?.tipo_acceso==="aprobacion"?"⏳ Solicitar ingreso":"👥 Unirse (500 BIT)"}
                 </button>
               )}
               {miMiembro?.estado==="pendiente" && <div style={{ background:"rgba(230,126,34,0.2)", border:"1px solid rgba(230,126,34,0.4)", borderRadius:"10px", padding:"7px 12px", fontSize:"11px", fontWeight:800, color:"#e67e22" }}>⏳ Pendiente</div>}

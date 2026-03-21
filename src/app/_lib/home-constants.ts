@@ -13,6 +13,7 @@ export type Anuncio = {
   subrubro: string; rubro: string; usuario_id: string;
   owner_whatsapp?: string;
   owner_insignia_logro?: string;
+  owner_nombre?: string;
   visitas_semana?: number;
 };
 

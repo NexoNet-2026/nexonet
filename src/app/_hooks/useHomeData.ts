@@ -46,14 +46,14 @@ export function useHomeData() {
         const uids = [...new Set(mapped.map(a => a.usuario_id).filter(Boolean))];
         if (uids.length > 0) {
           const { data: owners } = await supabase
-            .from("usuarios").select("id,bits,bits_promo,bits_free,whatsapp,vis_personal,insignia_logro").in("id", uids);
+            .from("usuarios").select("id,bits,bits_promo,bits_free,whatsapp,vis_personal,insignia_logro,nombre_usuario,nombre").in("id", uids);
           if (owners) {
             const ownerMap: Record<string, any> = Object.fromEntries(owners.map((o: any) => [o.id, o]));
             mapped = mapped.map(a => {
               const o = ownerMap[a.usuario_id];
               const totalBits = (o?.bits || 0) + (o?.bits_promo || 0) + (o?.bits_free || 0);
               const waVisible = o?.vis_personal?.whatsapp === true;
-              return { ...a, owner_whatsapp: (o?.whatsapp && waVisible && totalBits > 0) ? o.whatsapp : undefined, owner_insignia_logro: o?.insignia_logro || "ninguna" };
+              return { ...a, owner_whatsapp: (o?.whatsapp && waVisible && totalBits > 0) ? o.whatsapp : undefined, owner_insignia_logro: o?.insignia_logro || "ninguna", owner_nombre: o?.nombre_usuario || o?.nombre || undefined };
             });
           }
         }

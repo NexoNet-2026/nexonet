@@ -14,7 +14,7 @@ export default function TarjetaAnuncio({ a, esPrimero }: { a: Anuncio; esPrimero
       )}
       <div style={{ background: "#fff", borderRadius: "16px", overflow: "hidden", boxShadow: "0 2px 10px rgba(0,0,0,0.08)", border: esPrimero ? "2px solid #ff6b00" : "1px solid #f0f0f0" }}>
         <div style={{ background: fuente.color, padding: "4px 10px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <span style={{ fontSize: "10px", fontWeight: 900, color: fuente.texto, textTransform: "uppercase", letterSpacing: "0.5px" }}>{fuente.label}</span>
+          <span style={{ fontSize: "10px", fontWeight: 900, color: fuente.texto, textTransform: "uppercase", letterSpacing: "0.5px" }}>{a.owner_nombre || fuente.label}</span>
           <div style={{ display: "flex", gap: "4px", alignItems: "center" }}>
             {a.flash && <span style={{ background: "#1a2a3a", color: "#d4a017", fontSize: "9px", fontWeight: 900, padding: "1px 6px", borderRadius: "6px" }}>⚡</span>}
             {a.permuto && <span style={{ background: "#8e44ad", color: "#fff", fontSize: "9px", fontWeight: 900, padding: "1px 6px", borderRadius: "6px" }}>🔄</span>}

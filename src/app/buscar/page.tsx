@@ -11,7 +11,7 @@ type Anuncio = {
   permuto?: boolean; id:number; titulo:string; precio:number; moneda:string;
   ciudad:string; provincia:string; imagenes:string[]; flash:boolean; fuente:string;
   usuario_id:string; subrubro_nombre:string; rubro_nombre:string;
-  owner_whatsapp?: string; owner_insignia_logro?: string; tipo?: string; visitas_semana?: number;
+  owner_whatsapp?: string; owner_insignia_logro?: string; owner_nombre?: string; tipo?: string; visitas_semana?: number;
 };
 type Nexo = {
   id:string; titulo:string; descripcion:string; tipo:string; subtipo:string;
@@ -176,14 +176,14 @@ function BuscarInner() {
         const uids = [...new Set(mapped.map(a => a.usuario_id).filter(Boolean))];
         if (uids.length > 0) {
           const { data: owners } = await supabase.from("usuarios")
-            .select("id,bits,bits_promo,bits_free,whatsapp,vis_personal,insignia_logro").in("id", uids);
+            .select("id,bits,bits_promo,bits_free,whatsapp,vis_personal,insignia_logro,nombre_usuario,nombre").in("id", uids);
           if (owners) {
             const ownerMap: Record<string,any> = Object.fromEntries(owners.map((o:any) => [o.id, o]));
             mapped = mapped.map(a => {
               const o = ownerMap[a.usuario_id];
               const totalBits = (o?.bits||0) + (o?.bits_promo||0) + (o?.bits_free||0);
               const waVisible = o?.vis_personal?.whatsapp === true;
-              return { ...a, owner_whatsapp: (o?.whatsapp && waVisible && totalBits > 0) ? o.whatsapp : undefined, owner_insignia_logro: o?.insignia_logro || "ninguna" };
+              return { ...a, owner_whatsapp: (o?.whatsapp && waVisible && totalBits > 0) ? o.whatsapp : undefined, owner_insignia_logro: o?.insignia_logro || "ninguna", owner_nombre: o?.nombre_usuario || o?.nombre || undefined };
             });
           }
         }
@@ -781,7 +781,7 @@ function TarjetaAnuncio({ a, fmt, qLow, query, horizontal, modoConexion, selecci
       <a href={modoConexion ? undefined : `/anuncios/${a.id}`} style={{textDecoration:"none",display:"block"}} onClick={e=>modoConexion&&e.preventDefault()}>
         <div style={{background:"#fff",borderRadius:"14px",overflow:"hidden",boxShadow:"0 2px 10px rgba(0,0,0,0.08)",border:esPrimero?"2px solid #ff6b00":"1px solid #f0f0f0"}}>
           <div style={{background:f.color,padding:"3px 8px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-            <span style={{fontSize:"9px",fontWeight:900,color:f.texto,textTransform:"uppercase"}}>{f.label}</span>
+            <span style={{fontSize:"9px",fontWeight:900,color:f.texto,textTransform:"uppercase"}}>{a.owner_nombre||f.label}</span>
             <div style={{display:"flex",alignItems:"center",gap:"4px"}}>
               {a.flash&&<span style={{background:"#1a2a3a",color:"#d4a017",fontSize:"8px",fontWeight:900,padding:"1px 5px",borderRadius:"5px"}}>⚡Flash</span>}
               <div style={{width:"16px",height:"16px",borderRadius:"50%",background:tieneWA?"#25d366":"rgba(0,0,0,0.18)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"9px",opacity:tieneWA?1:0.35,flexShrink:0}}>📱</div>

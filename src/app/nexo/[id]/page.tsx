@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
@@ -53,15 +53,17 @@ export default function NexoPage() {
       setPerfil(u);
 
       const { data: n } = await supabase.from("nexos")
-        .select("*, usuarios!nexos_usuario_id_fkey(id,nombre_usuario,codigo,avatar_url,plan,bits,insignia_logro)")
+        .select("*")
         .eq("id", id).single();
-      setNexo(n);
-      if (n?.usuarios?.insignia_logro) setOwnerInsignia(n.usuarios.insignia_logro);
-      // Fallback: if join didn't resolve owner data, fetch separately
-      if (n && !n.usuarios?.nombre_usuario && n.usuario_id) {
-        const { data: ownerData } = await supabase.from("usuarios").select("id,nombre_usuario,codigo,avatar_url,plan,bits,insignia_logro").eq("id", n.usuario_id).single();
-        if (ownerData) { setNexo((prev:any) => ({...prev, usuarios: ownerData})); if (ownerData.insignia_logro) setOwnerInsignia(ownerData.insignia_logro); }
+      // Always fetch owner data separately to avoid FK join issues
+      let ownerData: any = null;
+      if (n?.usuario_id) {
+        const { data: od } = await supabase.from("usuarios").select("id,nombre,nombre_usuario,codigo,avatar_url,plan,bits,insignia_logro").eq("id", n.usuario_id).single();
+        ownerData = od;
       }
+      const nexoConOwner = n ? { ...n, usuarios: ownerData } : n;
+      setNexo(nexoConOwner);
+      if (ownerData?.insignia_logro) setOwnerInsignia(ownerData.insignia_logro);
 
       // Fetch reputation badges for nexo owner
       if (n?.usuario_id) {
@@ -93,20 +95,15 @@ export default function NexoPage() {
       }
 
       const { data: mbs } = await supabase.from("nexo_miembros")
-        .select("*, usuarios!nexo_miembros_usuario_id_fkey(id,nombre_usuario,codigo,avatar_url,plan)")
+        .select("*")
         .eq("nexo_id",id).eq("estado","activo").order("created_at");
-      if (mbs) {
-        // Fallback: if join didn't resolve, fetch users separately
-        const sinNombre = mbs.filter((m:any) => !m.usuarios?.nombre_usuario);
-        if (sinNombre.length > 0) {
-          const uids = sinNombre.map((m:any) => m.usuario_id).filter(Boolean);
-          if (uids.length > 0) {
-            const { data: usrs } = await supabase.from("usuarios").select("id,nombre_usuario,codigo,avatar_url,plan").in("id", uids);
-            if (usrs) {
-              const uMap: Record<string,any> = Object.fromEntries(usrs.map((u:any) => [u.id, u]));
-              mbs.forEach((m:any) => { if (!m.usuarios?.nombre_usuario && uMap[m.usuario_id]) m.usuarios = uMap[m.usuario_id]; });
-            }
-          }
+      if (mbs && mbs.length > 0) {
+        // Fetch user data separately (avoids FK join issues with auth.users)
+        const uids = mbs.map((m:any) => m.usuario_id).filter(Boolean);
+        const { data: usrs } = await supabase.from("usuarios").select("id,nombre,nombre_usuario,codigo,avatar_url,plan").in("id", uids);
+        if (usrs) {
+          const uMap: Record<string,any> = Object.fromEntries(usrs.map((u:any) => [u.id, u]));
+          mbs.forEach((m:any) => { m.usuarios = uMap[m.usuario_id] || null; });
         }
       }
       setMiembros(mbs||[]);
@@ -171,8 +168,9 @@ export default function NexoPage() {
     }
   }, [mensajes.length, tabActiva]);
 
-  const esAdmin   = nexo?.usuario_id === perfil?.id ||
-                    miMiembro?.rol === "moderador" || miMiembro?.rol === "creador";
+  const esAdmin   = useMemo(() =>
+    nexo?.usuario_id === perfil?.id || miMiembro?.rol === "creador" || miMiembro?.rol === "moderador"
+  , [nexo?.usuario_id, perfil?.id, miMiembro?.rol]);
   const esMiembro = miMiembro?.estado === "activo";
   const colorNexo = TIPO_COLORES[nexo?.tipo] || "#d4a017";
   const emojiNexo = nexo?.subtipo ? SUBTIPO_EMOJIS[nexo.subtipo] : TIPO_EMOJIS[nexo?.tipo] || "✨";
@@ -251,7 +249,7 @@ export default function NexoPage() {
       <Header />
 
       {/* HERO CON BANNER */}
-      <div style={{ position:"relative", minHeight:"220px", background: nexo.banner_url ? `url(${nexo.banner_url}) center/cover no-repeat` : `linear-gradient(135deg,#1a2a3a,#243b55)`, paddingTop:"100px" }}>
+      <div style={{ position:"relative", minHeight:"240px", background: nexo.banner_url ? `url(${nexo.banner_url}) center/cover no-repeat` : `linear-gradient(135deg,#1a2a3a,#243b55)`, paddingTop:"105px" }}>
         {nexo.banner_url && <div style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.52)" }} />}
         <div style={{ position:"relative", zIndex:1, padding:"16px 16px 20px" }}>
           <div style={{ display:"flex", alignItems:"flex-end", gap:"14px" }}>

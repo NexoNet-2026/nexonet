@@ -223,12 +223,26 @@ export default function NexoAdminPage() {
 
   const agregarDescarga = async () => {
     if (!formDesc.url || !formDesc.titulo) return;
+    const precioBits = parseInt(formDesc.precio_bits)||0;
     const { data } = await supabase.from("nexo_descargas").insert({
       nexo_id:id, titulo:formDesc.titulo, descripcion:formDesc.descripcion||null,
-      url:formDesc.url, precio_bits:parseInt(formDesc.precio_bits)||0,
+      url:formDesc.url, precio_bits:precioBits,
       tipo_archivo:formDesc.tipo_archivo,
     }).select().single();
     if (data) setDescargas(prev=>[data,...prev]);
+    // También insertar en nexo_slider_items si existe slider tipo "descargas"
+    const sliderDesc = sliders.find(s=>s.tipo==="descargas");
+    if (sliderDesc) {
+      const { data: si } = await supabase.from("nexo_slider_items").insert({
+        slider_id:sliderDesc.id, nexo_id:id,
+        titulo:formDesc.titulo, descripcion:formDesc.descripcion||null,
+        url:formDesc.url, tipo:formDesc.tipo_archivo==="pdf"?"pdf":"archivo",
+        precio_bits:precioBits,
+        orden:(sliderItems[sliderDesc.id]||[]).length,
+        publicado_por:perfil.id,
+      }).select().single();
+      if (si) setSliderItems(prev=>({...prev,[sliderDesc.id]:[...(prev[sliderDesc.id]||[]),si]}));
+    }
     setFormDesc({ titulo:"", descripcion:"", url:"", tipo_archivo:"pdf", precio_bits:"10" });
     setPopupDescarga(false);
   };
@@ -801,6 +815,23 @@ export default function NexoAdminPage() {
             )}
             <Campo label="Título (opcional)" valor={formItem.titulo} onChange={v=>setFormItem(f=>({...f,titulo:v}))} />
             <CampoTA label="Descripción (opcional)" valor={formItem.descripcion} onChange={v=>setFormItem(f=>({...f,descripcion:v}))} />
+            {popupItem.slider.tipo === "descargas" && (
+              <>
+                <div style={{ marginBottom:"12px" }}>
+                  <label style={LS}>Precio en BIT (0 = gratis)</label>
+                  <input type="number" min="0" value={formItem.precio_bits} onChange={e=>setFormItem(f=>({...f,precio_bits:e.target.value}))} style={IS} />
+                </div>
+                {parseInt(formItem.precio_bits)>0 ? (
+                  <div style={{ background:"rgba(22,160,133,0.08)", borderRadius:"10px", padding:"10px 14px", marginBottom:"12px", fontSize:"12px", fontWeight:700, color:"#16a085" }}>
+                    El usuario paga {formItem.precio_bits} BIT — recibís <strong>{Math.floor(parseInt(formItem.precio_bits)*0.6)} BIT Promotor</strong> (60%)
+                  </div>
+                ) : (
+                  <div style={{ background:"rgba(39,174,96,0.08)", borderRadius:"10px", padding:"10px 14px", marginBottom:"12px", fontSize:"12px", fontWeight:800, color:"#27ae60" }}>
+                    🎁 GRATIS
+                  </div>
+                )}
+              </>
+            )}
             {(() => {
               const esTexto = popupItem && TIPOS_TEXTO.includes(popupItem.slider.tipo);
               const habilitado = subiendoImg!=="item" && (esTexto ? (!!formItem.titulo || !!formItem.descripcion) : !!formItem.url);

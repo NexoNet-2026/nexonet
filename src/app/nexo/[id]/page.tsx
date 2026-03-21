@@ -174,6 +174,7 @@ export default function NexoPage() {
     miMiembro?.rol === "creador" ||
     miMiembro?.rol === "moderador"
   );
+  console.log("esAdmin:", esAdmin, "perfil.id:", perfil?.id, "nexo.usuario_id:", nexo?.usuario_id, "miMiembro:", miMiembro);
   const esMiembro = miMiembro?.estado === "activo";
   const colorNexo = TIPO_COLORES[nexo?.tipo] || "#d4a017";
   const emojiNexo = nexo?.subtipo ? SUBTIPO_EMOJIS[nexo.subtipo] : TIPO_EMOJIS[nexo?.tipo] || "✨";
@@ -252,9 +253,9 @@ export default function NexoPage() {
       <Header />
 
       {/* HERO CON BANNER */}
-      <div style={{ position:"relative", minHeight:"240px", background: nexo.banner_url ? `url(${nexo.banner_url}) center/cover no-repeat` : `linear-gradient(135deg,#1a2a3a,#243b55)`, paddingTop:"95px" }}>
+      <div style={{ position:"relative", minHeight:"200px", background: nexo.banner_url ? `url(${nexo.banner_url}) center/cover no-repeat` : `linear-gradient(135deg,#1a2a3a,#243b55)`, paddingTop:"0" }}>
         {nexo.banner_url && <div style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.52)" }} />}
-        <div style={{ position:"relative", zIndex:1, padding:"16px 16px 20px" }}>
+        <div style={{ position:"relative", zIndex:1, paddingTop:"100px", padding:"100px 16px 20px 16px" }}>
           <div style={{ display:"flex", alignItems:"flex-end", gap:"14px" }}>
             <div style={{ width:"72px", height:"72px", borderRadius:"18px", overflow:"hidden", flexShrink:0, border:`3px solid ${colorNexo}60`, background:"#1a2a3a", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"30px" }}>
               {nexo.avatar_url ? <img src={nexo.avatar_url} alt={nexo.titulo} style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : emojiNexo}

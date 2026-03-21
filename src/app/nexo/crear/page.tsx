@@ -80,6 +80,7 @@ function NexoCrearInner() {
   const [popupConfirmar, setPopupConfirmar] = useState(false);
   const [gpsLoad,        setGpsLoad]        = useState(false);
   const [pagoBITEmpresa, setPagoBITEmpresa] = useState(false);
+  const [esPrimeraEmpresa, setEsPrimeraEmpresa] = useState<boolean|null>(null);
 
   const [provs,     setProvs]     = useState<Prov[]>([]);
   const [ciudades,  setCiudades]  = useState<Ciudad[]>([]);
@@ -104,6 +105,9 @@ function NexoCrearInner() {
       const { data: u } = await supabase.from("usuarios").select("*").eq("id", session.user.id).single();
       setPerfil(u);
       if (u?.whatsapp) setForm(f => ({ ...f, whatsapp: u.whatsapp }));
+      const { count } = await supabase.from("nexos").select("id", { count: "exact", head: true })
+        .eq("usuario_id", session.user.id).eq("tipo", "empresa");
+      setEsPrimeraEmpresa((count || 0) === 0);
     });
 
     Promise.all([
@@ -233,6 +237,13 @@ function NexoCrearInner() {
       if (form.lat)         payload.lat         = parseFloat(form.lat);
       if (form.lng)         payload.lng         = parseFloat(form.lng);
       if (form.subrubro_id) payload.subrubro_id = parseInt(form.subrubro_id);
+
+      if (tipo==="empresa") {
+        const en30dias = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+        payload.trial_hasta = esPrimeraEmpresa ? en30dias : null;
+        payload.siguiente_pago = en30dias;
+        payload.plan_mensual_bits = 10000;
+      }
 
       if (tipo==="anuncio"||tipo==="trabajo") {
         const imgs = [form.foto1_url, form.foto2_url, form.foto3_url].filter(Boolean);
@@ -462,7 +473,19 @@ function NexoCrearInner() {
         {paso===1 && (
           <div style={{display:"flex",flexDirection:"column",gap:"14px"}}>
 
-            {tipo==="empresa" && !pagoBITEmpresa && (
+            {tipo==="empresa" && !pagoBITEmpresa && esPrimeraEmpresa === true && (
+              <div style={{background:"linear-gradient(135deg,#1a3a2a,#204a30)",borderRadius:"16px",padding:"20px",border:"2px solid rgba(39,174,96,0.4)"}}>
+                <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"20px",color:"#27ae60",letterSpacing:"1px",marginBottom:"8px"}}>🏢 ¡Tu primera empresa es GRATIS!</div>
+                <div style={{fontSize:"13px",color:"#8abba0",fontWeight:600,lineHeight:1.6,marginBottom:"16px"}}>
+                  Tenés <strong style={{color:"#27ae60"}}>30 días gratis</strong> para probar tu perfil empresarial. Después del trial, el plan cuesta 10.000 BIT/mes.
+                </div>
+                <button onClick={() => setPagoBITEmpresa(true)} style={{width:"100%",background:"linear-gradient(135deg,#27ae60,#1e8449)",border:"none",borderRadius:"12px",padding:"14px",fontSize:"15px",fontWeight:900,color:"#fff",cursor:"pointer",fontFamily:"'Nunito',sans-serif",boxShadow:"0 4px 0 rgba(0,0,0,0.3)"}}>
+                  🎉 Activar 30 días gratis
+                </button>
+              </div>
+            )}
+
+            {tipo==="empresa" && !pagoBITEmpresa && esPrimeraEmpresa === false && (
               <div style={{background:"linear-gradient(135deg,#2c1a1a,#4a2020)",borderRadius:"16px",padding:"20px",border:"2px solid rgba(192,57,43,0.4)"}}>
                 <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"20px",color:"#e74c3c",letterSpacing:"1px",marginBottom:"8px"}}>🏢 Nexo Empresa</div>
                 <div style={{fontSize:"13px",color:"#e88a8a",fontWeight:600,lineHeight:1.6,marginBottom:"16px"}}>
@@ -472,7 +495,7 @@ function NexoCrearInner() {
                   <span style={{fontSize:"13px",fontWeight:700,color:"#e88a8a"}}>Costo del plan</span>
                   <div style={{textAlign:"right"}}>
                     <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"28px",color:"#e74c3c"}}>10.000</div>
-                    <div style={{fontSize:"10px",color:"#e88a8a",fontWeight:700}}>BIT</div>
+                    <div style={{fontSize:"10px",color:"#e88a8a",fontWeight:700}}>BIT / mes</div>
                   </div>
                 </div>
                 <button onClick={async () => {
@@ -492,7 +515,7 @@ function NexoCrearInner() {
             {tipo==="empresa" && pagoBITEmpresa && (
               <div style={{background:"rgba(39,174,96,0.1)",border:"2px solid rgba(39,174,96,0.3)",borderRadius:"12px",padding:"12px 16px",display:"flex",alignItems:"center",gap:"10px"}}>
                 <span style={{fontSize:"20px"}}>✅</span>
-                <div style={{fontSize:"13px",fontWeight:800,color:"#27ae60"}}>Plan Empresa activado</div>
+                <div style={{fontSize:"13px",fontWeight:800,color:"#27ae60"}}>{esPrimeraEmpresa ? "Trial 30 días activado — ¡creá tu empresa!" : "Plan Empresa activado"}</div>
               </div>
             )}
 

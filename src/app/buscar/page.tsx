@@ -785,7 +785,7 @@ function BuscarInner() {
                   );
                 })
               ) : (
-                <div style={{padding:"12px 16px",display:"flex",flexDirection:"column",gap:"12px"}}>
+                <div>
                   {(nexosPorTipo[tipoActivo]||[]).length === 0 ? (
                     <div style={{textAlign:"center",padding:"50px 20px"}}>
                       <div style={{fontSize:"48px",marginBottom:"12px"}}>{TIPOS.find(t=>t.key===tipoActivo)?.emoji}</div>
@@ -799,9 +799,16 @@ function BuscarInner() {
                       </button>
                     </div>
                   ) : (
-                    (nexosPorTipo[tipoActivo]||[]).map((n, i) => (
-                      <TarjetaNexo key={n.id} nexo={n} color={colorActivo} onNavigate={()=>router.push(`/nexo/${n.id}`)} esPrimero={i === 0 && (n.visitas_semana || 0) > 0} />
-                    ))
+                    <div style={{marginBottom:"8px",background:"#fff",paddingBottom:"12px",borderBottom:"6px solid #f4f4f2"}}>
+                      <div style={{padding:"14px 16px 8px"}}>
+                        <span style={{fontSize:"16px",fontWeight:900,color:"#1a2a3a"}}>{TIPOS.find(t=>t.key===tipoActivo)?.emoji} {TIPOS.find(t=>t.key===tipoActivo)?.label} →</span>
+                      </div>
+                      <div style={{display:"flex",gap:"12px",padding:"0 16px",overflowX:"auto",scrollbarWidth:"none"}}>
+                        {(nexosPorTipo[tipoActivo]||[]).map((n, i) => (
+                          <TarjetaNexo key={n.id} nexo={n} color={colorActivo} onNavigate={()=>router.push(`/nexo/${n.id}`)} esPrimero={i === 0 && (n.visitas_semana || 0) > 0} />
+                        ))}
+                      </div>
+                    </div>
                   )}
                 </div>
               )}

@@ -53,10 +53,15 @@ export default function NexoPage() {
       setPerfil(u);
 
       const { data: n } = await supabase.from("nexos")
-        .select("*, usuarios(id,nombre_usuario,codigo,avatar_url,plan,bits,insignia_logro)")
+        .select("*, usuarios!nexos_usuario_id_fkey(id,nombre_usuario,codigo,avatar_url,plan,bits,insignia_logro)")
         .eq("id", id).single();
       setNexo(n);
       if (n?.usuarios?.insignia_logro) setOwnerInsignia(n.usuarios.insignia_logro);
+      // Fallback: if join didn't resolve owner data, fetch separately
+      if (n && !n.usuarios?.nombre_usuario && n.usuario_id) {
+        const { data: ownerData } = await supabase.from("usuarios").select("id,nombre_usuario,codigo,avatar_url,plan,bits,insignia_logro").eq("id", n.usuario_id).single();
+        if (ownerData) { setNexo((prev:any) => ({...prev, usuarios: ownerData})); if (ownerData.insignia_logro) setOwnerInsignia(ownerData.insignia_logro); }
+      }
 
       // Fetch reputation badges for nexo owner
       if (n?.usuario_id) {
@@ -78,7 +83,7 @@ export default function NexoPage() {
 
       if (userId) {
         const { data: mm } = await supabase.from("nexo_miembros")
-          .select("*").eq("nexo_id",id).eq("usuario_id",userId).single();
+          .select("*").eq("nexo_id",id).eq("usuario_id",userId).maybeSingle();
         setMiMiembro(mm);
 
         // Descargas pagadas por este usuario
@@ -88,8 +93,22 @@ export default function NexoPage() {
       }
 
       const { data: mbs } = await supabase.from("nexo_miembros")
-        .select("*, usuarios(id,nombre_usuario,codigo,avatar_url,plan)")
+        .select("*, usuarios!nexo_miembros_usuario_id_fkey(id,nombre_usuario,codigo,avatar_url,plan)")
         .eq("nexo_id",id).eq("estado","activo").order("created_at");
+      if (mbs) {
+        // Fallback: if join didn't resolve, fetch users separately
+        const sinNombre = mbs.filter((m:any) => !m.usuarios?.nombre_usuario);
+        if (sinNombre.length > 0) {
+          const uids = sinNombre.map((m:any) => m.usuario_id).filter(Boolean);
+          if (uids.length > 0) {
+            const { data: usrs } = await supabase.from("usuarios").select("id,nombre_usuario,codigo,avatar_url,plan").in("id", uids);
+            if (usrs) {
+              const uMap: Record<string,any> = Object.fromEntries(usrs.map((u:any) => [u.id, u]));
+              mbs.forEach((m:any) => { if (!m.usuarios?.nombre_usuario && uMap[m.usuario_id]) m.usuarios = uMap[m.usuario_id]; });
+            }
+          }
+        }
+      }
       setMiembros(mbs||[]);
 
       // Cobrar 1 BIT al dueño por visita de tipo empresa (1 vez por usuario por día)
@@ -232,7 +251,7 @@ export default function NexoPage() {
       <Header />
 
       {/* HERO CON BANNER */}
-      <div style={{ position:"relative", minHeight:"200px", background: nexo.banner_url ? `url(${nexo.banner_url}) center/cover no-repeat` : `linear-gradient(135deg,#1a2a3a,#243b55)`, paddingTop:"95px" }}>
+      <div style={{ position:"relative", minHeight:"220px", background: nexo.banner_url ? `url(${nexo.banner_url}) center/cover no-repeat` : `linear-gradient(135deg,#1a2a3a,#243b55)`, paddingTop:"100px" }}>
         {nexo.banner_url && <div style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.52)" }} />}
         <div style={{ position:"relative", zIndex:1, padding:"16px 16px 20px" }}>
           <div style={{ display:"flex", alignItems:"flex-end", gap:"14px" }}>

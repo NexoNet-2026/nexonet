@@ -261,12 +261,10 @@ export default function Usuario() {
     const { error } = await supabase.from("usuarios").update({
       nombre_usuario:personal.nombre_usuario, nombre:personal.nombre, apellido:personal.apellido,
       whatsapp:personal.whatsapp, provincia:personal.provincia, ciudad:personal.ciudad,
-      barrio:personal.barrio, direccion:personal.direccion,
-      lat:personal.lat||null, lng:personal.lng||null, vis_personal:visP,
+      barrio:personal.barrio, direccion:personal.direccion, vis_personal:visP,
       nombre_empresa:emp.nombre_empresa, telefono:emp.telefono, whatsapp_empresa:emp.whatsapp_empresa,
       provincia_empresa:emp.provincia_empresa, ciudad_empresa:emp.ciudad_empresa,
-      barrio_empresa:emp.barrio_empresa, direccion_empresa:emp.direccion_empresa,
-      lat_empresa:emp.lat_empresa||null, lng_empresa:emp.lng_empresa||null, vis_empresa:visE,
+      barrio_empresa:emp.barrio_empresa, direccion_empresa:emp.direccion_empresa, vis_empresa:visE,
       horarios, feriados,
     }).eq("id", session.user.id);
     setGuardando(false);

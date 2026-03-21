@@ -90,6 +90,8 @@ function NexoCrearInner() {
   const [ciudades,  setCiudades]  = useState<Ciudad[]>([]);
   const [rubros,    setRubros]    = useState<{id:number;nombre:string}[]>([]);
   const [subrubros, setSubrubros] = useState<{id:number;nombre:string;rubro_id:number}[]>([]);
+  const [entRubros,    setEntRubros]    = useState<{id:number;nombre:string}[]>([]);
+  const [entSubrubros, setEntSubrubros] = useState<{id:number;nombre:string;rubro_id:number}[]>([]);
   const [sliders,   setSliders]   = useState<{id:string;emoji:string;titulo:string;tipo:string;orden:number}[]>([]);
 
   const [form, setForm] = useState({
@@ -124,6 +126,23 @@ function NexoCrearInner() {
       if (r) setRubros(r);
       if (s) setSubrubros(s);
     });
+
+    // Cargar rubros/subrubros específicos por tipo
+    const ENT_TABLES: Record<string,{rubros:string;subrubros:string}> = {
+      empresa:  {rubros:"empresa_rubros",subrubros:"empresa_subrubros"},
+      servicio: {rubros:"servicio_rubros",subrubros:"servicio_subrubros"},
+      trabajo:  {rubros:"trabajo_rubros",subrubros:"trabajo_subrubros"},
+    };
+    const ent = ENT_TABLES[tipo];
+    if (ent) {
+      Promise.all([
+        supabase.from(ent.rubros).select("id,nombre").order("orden",{ascending:true}),
+        supabase.from(ent.subrubros).select("id,nombre,rubro_id").order("orden",{ascending:true}),
+      ]).then(([{data:er},{data:es}]) => {
+        if (er) setEntRubros(er);
+        if (es) setEntSubrubros(es);
+      });
+    }
 
     const inicial = slidersDefault.map((s, i) => {
       const cat = Object.values(SLIDERS_PREDEFINIDOS).flat().find(p => p.tipo === s);
@@ -543,6 +562,25 @@ function NexoCrearInner() {
               <L>Descripción</L>
               <textarea value={form.descripcion} onChange={e=>F("descripcion",e.target.value)}
                 placeholder="Describí en detalle..." rows={3} style={{...IS,resize:"vertical" as any,marginBottom:"12px"}}/>
+              {entRubros.length > 0 && (
+                <>
+                  <SL>📂 Categoría</SL>
+                  <L>Rubro</L>
+                  <select value={form.rubro_id} onChange={e=>{F("rubro_id",e.target.value);F("subrubro_id","");}} style={{...IS,marginBottom:"12px"}}>
+                    <option value="">— Elegí un rubro —</option>
+                    {entRubros.map(r=><option key={r.id} value={r.id}>{r.nombre}</option>)}
+                  </select>
+                  {form.rubro_id && entSubrubros.filter(s=>s.rubro_id===parseInt(form.rubro_id)).length > 0 && (
+                    <>
+                      <L>Subrubro</L>
+                      <select value={form.subrubro_id} onChange={e=>F("subrubro_id",e.target.value)} style={{...IS,marginBottom:"12px"}}>
+                        <option value="">— Todos —</option>
+                        {entSubrubros.filter(s=>s.rubro_id===parseInt(form.rubro_id)).map(s=><option key={s.id} value={s.id}>{s.nombre}</option>)}
+                      </select>
+                    </>
+                  )}
+                </>
+              )}
               {(tipo==="empresa"||tipo==="servicio") && (<>
                 <div style={{display:"grid",gridTemplateColumns:"2fr 1fr",gap:"10px",marginBottom:"12px"}}>
                   <div><L>Precio</L><input type="number" value={form.precio} onChange={e=>F("precio",e.target.value)} placeholder="0" style={IS}/></div>

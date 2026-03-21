@@ -884,10 +884,15 @@ export default function NexoAdminPage() {
           const mId = popupAdminAccion.mId;
           const msg = popupAdminAccion.mensaje.trim();
           if (quienPaga === "solicitante") {
-            if (!m?.usuario_id) return;
-            const { data: mu } = await supabase.from("usuarios").select("bits").eq("id",m.usuario_id).single();
-            if (!mu || (mu.bits||0) < 500) { alert("El solicitante no tiene 500 BIT suficientes."); return; }
-            await supabase.from("usuarios").update({ bits:(mu.bits||0)-500 }).eq("id",m.usuario_id);
+            // No cobrar ahora — dejar en admin_pago_pendiente para que el solicitante pague
+            await supabase.from("nexo_miembros").update({ rol:"admin_pago_pendiente", aprobado_por:perfil.id }).eq("id",mId);
+            setMiembros(prev=>prev.map(x=>x.id===mId?{...x,rol:"admin_pago_pendiente",aprobado_por:perfil.id}:x));
+            if (m?.usuario_id) await supabase.from("notificaciones").insert({
+              usuario_id:m.usuario_id, tipo:"sistema", nexo_id:id,
+              mensaje:`⭐ Fuiste aprobado como admin en "${nexo.titulo}". Pagá 500 BIT para confirmar.${msg?` — ${msg}`:""}`, leida:false,
+            });
+            setPopupAdminAccion(null);
+            return;
           } else if (quienPaga === "admin") {
             if ((perfil?.bits||0) < 500) { alert("No tenés 500 BIT suficientes."); return; }
             await supabase.from("usuarios").update({ bits:(perfil.bits||0)-500 }).eq("id",perfil.id);
@@ -974,9 +979,9 @@ export default function NexoAdminPage() {
 
 function TarjetaMiembro({ m, onAccion, showAprobar, showAdminSolicitud, showHacerAdmin }: { m:any; onAccion:(id:string,acc:string)=>void; showAprobar?:boolean; showAdminSolicitud?:boolean; showHacerAdmin?:boolean }) {
   const [exp, setExp] = useState(false);
-  const rolColors: Record<string,string> = { creador:"#d4a017", moderador:"#3a7bd5", miembro:"#27ae60", admin:"#8e44ad", admin_solicitado:"#e67e22" };
+  const rolColors: Record<string,string> = { creador:"#d4a017", moderador:"#3a7bd5", miembro:"#27ae60", admin:"#8e44ad", admin_solicitado:"#e67e22", admin_pago_pendiente:"#e67e22" };
   const c = rolColors[m.rol]||"#27ae60";
-  const rolLabel: Record<string,string> = { creador:"👑 Creador", moderador:"🛡️ Mod", admin:"⭐ Admin", admin_solicitado:"⏳ Solicita admin", miembro:"✅ Miembro" };
+  const rolLabel: Record<string,string> = { creador:"👑 Creador", moderador:"🛡️ Mod", admin:"⭐ Admin", admin_solicitado:"⏳ Solicita admin", admin_pago_pendiente:"💳 Pago pendiente", miembro:"✅ Miembro" };
   return (
     <div style={{ background:"#fff", borderRadius:"14px", marginBottom:"8px", overflow:"hidden", boxShadow:"0 2px 6px rgba(0,0,0,0.05)" }}>
       <div style={{ padding:"12px 14px", display:"flex", alignItems:"center", gap:"10px", cursor:"pointer" }} onClick={()=>setExp(e=>!e)}>

@@ -180,6 +180,7 @@ export default function NexoPage() {
   const esMiembro = miMiembro?.estado === "activo";
   const [solicitandoAdmin, setSolicitandoAdmin] = useState(false);
   const [popupUnirse, setPopupUnirse] = useState(false);
+  const [popupPagoAdmin, setPopupPagoAdmin] = useState(false);
   const colorNexo = TIPO_COLORES[nexo?.tipo] || "#d4a017";
   const emojiNexo = nexo?.subtipo ? SUBTIPO_EMOJIS[nexo.subtipo] : TIPO_EMOJIS[nexo?.tipo] || "✨";
 
@@ -224,6 +225,31 @@ export default function NexoPage() {
       .select().single();
     setMiMiembro(mm);
     setMiembros(prev => [...prev, {...mm, usuarios:perfil}]);
+  };
+
+  const confirmarPagoAdmin = async (metodo: MetodoPago) => {
+    if (!perfil || !miMiembro) return;
+    if (metodo === "bit_free") { alert("No se puede pagar con BIT Free"); return; }
+    const saldo = perfil.bits || 0;
+    if (saldo < 500) { alert(`No tenés suficientes BIT Nexo. Tenés ${saldo}, necesitás 500.`); return; }
+    const { error: e1 } = await supabase.from("usuarios").update({ bits: saldo - 500 }).eq("id", perfil.id);
+    if (e1) { console.error("Error descontando BIT:", e1); alert("Error: " + e1.message); return; }
+    setPerfil((p: any) => ({ ...p, bits: saldo - 500 }));
+    // Acreditar 150 BIT Promo al admin que aprobó
+    const aprobadorId = miMiembro.aprobado_por || nexo.usuario_id;
+    const { data: aprobador } = await supabase.from("usuarios").select("bits_promo,bits_promotor_total").eq("id", aprobadorId).single();
+    if (aprobador) {
+      await supabase.from("usuarios").update({
+        bits_promo: (aprobador.bits_promo || 0) + 150,
+        bits_promotor_total: (aprobador.bits_promotor_total || 0) + 150,
+      }).eq("id", aprobadorId);
+    }
+    await supabase.from("nexo_miembros").update({ rol: "admin" }).eq("id", miMiembro.id);
+    setMiMiembro((m: any) => ({ ...m, rol: "admin" }));
+    await supabase.from("notificaciones").insert({
+      usuario_id: aprobadorId, tipo: "sistema", nexo_id: nexo.id,
+      mensaje: `✅ ${perfil.nombre_usuario} completó el pago y es admin en "${nexo.titulo}"`, leida: false,
+    });
   };
 
   const enviarMensaje = async () => {
@@ -344,6 +370,11 @@ export default function NexoPage() {
               )}
               {miMiembro?.estado==="pendiente" && <div style={{ background:"rgba(230,126,34,0.2)", border:"1px solid rgba(230,126,34,0.4)", borderRadius:"10px", padding:"7px 12px", fontSize:"11px", fontWeight:800, color:"#e67e22" }}>⏳ Pendiente</div>}
               {miMiembro?.rol === "admin_solicitado" && <div style={{ background:"rgba(212,160,23,0.15)", border:"1px solid rgba(212,160,23,0.4)", borderRadius:"10px", padding:"7px 12px", fontSize:"11px", fontWeight:800, color:"#d4a017" }}>⭐ Admin solicitado</div>}
+              {miMiembro?.rol === "admin_pago_pendiente" && (
+                <button onClick={()=>setPopupPagoAdmin(true)} style={{ background:"linear-gradient(135deg,#f0c040,#d4a017)", border:"none", borderRadius:"10px", padding:"8px 12px", fontSize:"11px", fontWeight:900, color:"#1a2a3a", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
+                  💳 Pagar admin (500 BIT)
+                </button>
+              )}
               {esMiembro && !esAdmin && miMiembro?.rol === "miembro" && nexo?.tipo === "grupo" && (
                 <button disabled={solicitandoAdmin} onClick={async () => {
                   const bitsTotal = Math.max(0,(perfil.bits||0)) + Math.max(0,(perfil.bits_free||0)) + Math.max(0,(perfil.bits_promo||0));
@@ -372,6 +403,22 @@ export default function NexoPage() {
           </div>
         </div>
       </div>
+
+      {/* BANNER PAGO ADMIN PENDIENTE */}
+      {miMiembro?.rol === "admin_pago_pendiente" && (
+        <div style={{ padding:"10px 16px", background:"rgba(212,160,23,0.1)", borderBottom:"2px solid rgba(212,160,23,0.3)" }}>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:"10px" }}>
+            <div>
+              <div style={{ fontSize:"12px", fontWeight:800, color:"#d4a017" }}>⭐ Fuiste aprobado como admin</div>
+              <div style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:600 }}>Pagá 500 BIT para confirmar tu rol</div>
+            </div>
+            <button onClick={()=>setPopupPagoAdmin(true)}
+              style={{ background:"linear-gradient(135deg,#f0c040,#d4a017)", border:"none", borderRadius:"10px", padding:"8px 14px", fontSize:"12px", fontWeight:900, color:"#1a2a3a", cursor:"pointer", fontFamily:"'Nunito',sans-serif", whiteSpace:"nowrap" }}>
+              💳 Pagar 500 BIT
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* BANNER RENOVACIÓN EMPRESA */}
       {nexo?.tipo==="empresa" && nexo?.usuario_id===perfil?.id && nexo?.siguiente_pago && (() => {
@@ -467,6 +514,22 @@ export default function NexoPage() {
             )}
           </div>
         </div>
+      )}
+
+      {/* POPUP PAGO ADMIN */}
+      {popupPagoAdmin && (
+        <PopupCompra
+          titulo="⭐ Confirmar admin"
+          emoji="⭐"
+          costo="500 BIT"
+          descripcion={`Pago para ser admin de "${nexo?.titulo}"`}
+          bits={{ free: 0, nexo: Math.max(0, perfil?.bits||0), promo: Math.max(0, perfil?.bits_promo||0) }}
+          onClose={() => setPopupPagoAdmin(false)}
+          onPagar={async (metodo: MetodoPago) => {
+            setPopupPagoAdmin(false);
+            await confirmarPagoAdmin(metodo);
+          }}
+        />
       )}
 
       {/* POPUP UNIRSE AL GRUPO */}

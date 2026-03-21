@@ -245,11 +245,11 @@ export default function NexoPage() {
       // Acreditar 60% BIT Promotor al creador del nexo
       const bitsCreador = Math.floor(costo * 0.6);
       const bitsNexonet = costo - bitsCreador;
-      const { data: duenio, error: e2 } = await supabase.from("usuarios").select("bits_promotor,bits_promotor_total").eq("id", nexo.usuario_id).single();
+      const { data: duenio, error: e2 } = await supabase.from("usuarios").select("bits_promo,bits_promotor_total").eq("id", nexo.usuario_id).single();
       if (e2) console.error("Error leyendo dueño:", e2);
       if (duenio) {
         const { error: e3 } = await supabase.from("usuarios").update({
-          bits_promotor: (duenio.bits_promotor || 0) + bitsCreador,
+          bits_promo: (duenio.bits_promo || 0) + bitsCreador,
           bits_promotor_total: (duenio.bits_promotor_total || 0) + bitsCreador,
         }).eq("id", nexo.usuario_id);
         if (e3) console.error("Error acreditando promotor:", e3);

@@ -339,7 +339,7 @@ function BuscarInner() {
       supabase.from(t.subrubros).select("id,nombre,rubro_id,orden").order("orden",{ascending:true}),
     ]).then(([{data:rData},{data:sData}])=>{
       const rubrosConSubs = (rData||[]).map((r:any)=>({
-        ...r, subrubros: (sData||[]).filter((s:any)=>s.rubro_id===r.id),
+        ...r, subrubros: (sData||[]).filter((s:any)=>Number(s.rubro_id)===Number(r.id)),
       }));
       setEntRubros(rubrosConSubs);
       setEntRubroSel(null); setEntSubSel(null);

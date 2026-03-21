@@ -265,6 +265,12 @@ export default function NexoPage() {
         if (e3) console.error("Error acreditando promotor:", e3);
       }
 
+      // Registrar BIT Promo por descarga
+      await supabase.from("bits_promo_descargas").insert({
+        usuario_id: nexo.usuario_id, nexo_id: id, descarga_id: descarga.id,
+        bits_recibidos: bitsCreador, comprador_id: perfil.id,
+      });
+
       // Registrar pago (40% queda en sistema)
       const { error: e4 } = await supabase.from("nexo_descargas_pagos").insert({
         descarga_id: descarga.id, nexo_id: id, comprador_id: perfil.id,
@@ -350,7 +356,10 @@ export default function NexoPage() {
                   if (dueno) await supabase.from("usuarios").update({ bits_promo: (dueno.bits_promo||0)+150, bits_promotor_total: (dueno.bits_promotor_total||0)+150 }).eq("id", nexo.usuario_id);
                   await supabase.from("nexo_miembros").update({ rol: "admin_solicitado" }).eq("id", miMiembro.id);
                   setMiMiembro((m:any) => ({...m, rol:"admin_solicitado"}));
-                  await supabase.from("notificaciones").insert({ usuario_id: nexo.usuario_id, tipo: "solicitud_admin", mensaje: `⭐ ${perfil.nombre_usuario} solicita ser admin en "${nexo.titulo}"`, leida: false, nexo_id: nexo.id });
+                  // Notificar a todos los admins del nexo
+                  const { data: adminsNexo } = await supabase.from("nexo_miembros").select("usuario_id").eq("nexo_id",id).in("rol",["creador","admin"]).eq("estado","activo");
+                  const adminIds = [...new Set([nexo.usuario_id, ...(adminsNexo||[]).map((a:any)=>a.usuario_id)])];
+                  await supabase.from("notificaciones").insert(adminIds.map(uid=>({ usuario_id:uid, tipo:"solicitud_admin", mensaje:`⭐ ${perfil.nombre_usuario} solicita ser admin en "${nexo.titulo}"`, leida:false, nexo_id:nexo.id })));
                   setSolicitandoAdmin(false);
                 }} style={{ background:"linear-gradient(135deg,#f0c040,#d4a017)", border:"none", borderRadius:"10px", padding:"8px 12px", fontSize:"11px", fontWeight:900, color:"#1a2a3a", cursor:"pointer", fontFamily:"'Nunito',sans-serif", opacity:solicitandoAdmin?0.5:1 }}>
                   ⭐ Ser admin (500 BIT)

@@ -53,6 +53,7 @@ export default function Usuario() {
   const [misGruposData, setMisGruposData] = useState<any[]>([]);
   const [misNexos,      setMisNexos]      = useState<any[]>([]);
   const [noLeidos,      setNoLeidos]      = useState(0);
+  const [promoDescargas, setPromoDescargas] = useState<any[]>([]);
 
   // Contactar NexoNet
   const [popupContacto,  setPopupContacto]  = useState(false);
@@ -143,6 +144,11 @@ export default function Usuario() {
         repData.forEach((r: any) => { cont[r.tipo] = (cont[r.tipo] || 0) + 1; });
         setRepContadores(cont);
       }
+
+      // BIT Promo por descargas
+      const { data: pdData } = await supabase.from("bits_promo_descargas")
+        .select("*").eq("usuario_id", session.user.id).order("created_at", { ascending: false }).limit(10);
+      if (pdData) setPromoDescargas(pdData);
 
       const { data: msgs } = await supabase
         .from("mensajes")
@@ -749,6 +755,22 @@ export default function Usuario() {
                 })}
               </div>
             </div>
+
+            {/* BIT PROMO POR DESCARGAS */}
+            {promoDescargas.length > 0 && (
+              <div style={{ ...C, background:"linear-gradient(135deg,rgba(22,160,133,0.08),rgba(22,160,133,0.02))", border:"2px solid rgba(22,160,133,0.25)" }}>
+                <div style={{ fontSize:"11px", fontWeight:800, color:"#9a9a9a", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"10px" }}>💰 BIT Promo por descargas</div>
+                <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"28px", color:"#16a085", marginBottom:"12px" }}>
+                  {promoDescargas.reduce((a:number, d:any) => a + (d.bits_recibidos||0), 0).toLocaleString()} BIT
+                </div>
+                {promoDescargas.map((d:any) => (
+                  <div key={d.id} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"8px 0", borderBottom:"1px solid rgba(22,160,133,0.15)", fontSize:"12px" }}>
+                    <div style={{ color:"#1a2a3a", fontWeight:700 }}>+{d.bits_recibidos} BIT</div>
+                    <div style={{ color:"#9a9a9a", fontWeight:600 }}>{new Date(d.created_at).toLocaleDateString("es-AR")}</div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 

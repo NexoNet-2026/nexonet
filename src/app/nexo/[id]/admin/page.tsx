@@ -879,51 +879,91 @@ export default function NexoAdminPage() {
         const m = miembros.find(x=>x.id===popupAdminAccion.mId);
         const nombre = m?.usuarios?.nombre_usuario || "usuario";
         const esAprobar = popupAdminAccion.accion === "aprobar_admin";
-        const ejecutar = async () => {
+
+        const aprobarConPago = async (quienPaga: "solicitante"|"admin"|"grupo") => {
           const mId = popupAdminAccion.mId;
           const msg = popupAdminAccion.mensaje.trim();
-          if (esAprobar) {
-            await supabase.from("nexo_miembros").update({ rol:"admin" }).eq("id",mId);
-            setMiembros(prev=>prev.map(x=>x.id===mId?{...x,rol:"admin"}:x));
-            if (m?.usuario_id) await supabase.from("notificaciones").insert({
-              usuario_id:m.usuario_id, tipo:"sistema", nexo_id:id,
-              mensaje:`✅ ¡Fuiste aprobado como admin en "${nexo.titulo}"!${msg?` — ${msg}`:""}`, leida:false,
-            });
+          if (quienPaga === "solicitante") {
+            if (!m?.usuario_id) return;
+            const { data: mu } = await supabase.from("usuarios").select("bits").eq("id",m.usuario_id).single();
+            if (!mu || (mu.bits||0) < 500) { alert("El solicitante no tiene 500 BIT suficientes."); return; }
+            await supabase.from("usuarios").update({ bits:(mu.bits||0)-500 }).eq("id",m.usuario_id);
+          } else if (quienPaga === "admin") {
+            if ((perfil?.bits||0) < 500) { alert("No tenés 500 BIT suficientes."); return; }
+            await supabase.from("usuarios").update({ bits:(perfil.bits||0)-500 }).eq("id",perfil.id);
+            setPerfil((p:any)=>({...p,bits:(p.bits||0)-500}));
           } else {
-            if (m?.usuario_id) {
-              const { data: mu } = await supabase.from("usuarios").select("bits").eq("id",m.usuario_id).single();
-              if (mu) await supabase.from("usuarios").update({ bits: (mu.bits||0)+500 }).eq("id",m.usuario_id);
-              await supabase.from("notificaciones").insert({
-                usuario_id:m.usuario_id, tipo:"sistema", nexo_id:id,
-                mensaje:`❌ Tu solicitud de admin en "${nexo.titulo}" fue rechazada. Se devolvieron 500 BIT.${msg?` — ${msg}`:""}`, leida:false,
-              });
-            }
-            await supabase.from("nexo_miembros").update({ rol:"miembro" }).eq("id",mId);
-            setMiembros(prev=>prev.map(x=>x.id===mId?{...x,rol:"miembro"}:x));
+            if ((nexo?.bits_promo||0) < 500) { alert("El grupo no tiene 500 BIT Promo suficientes."); return; }
+            await supabase.from("nexos").update({ bits_promo:(nexo.bits_promo||0)-500 }).eq("id",id);
+            setNexo((n:any)=>({...n,bits_promo:(n.bits_promo||0)-500}));
           }
+          // Acreditar 150 BIT Promo al admin que aprueba
+          await supabase.from("usuarios").update({
+            bits_promo:(perfil.bits_promo||0)+150,
+            bits_promotor_total:(perfil.bits_promotor_total||0)+150,
+          }).eq("id",perfil.id);
+          setPerfil((p:any)=>({...p,bits_promo:(p.bits_promo||0)+150}));
+          await supabase.from("nexo_miembros").update({ rol:"admin" }).eq("id",mId);
+          setMiembros(prev=>prev.map(x=>x.id===mId?{...x,rol:"admin"}:x));
+          if (m?.usuario_id) await supabase.from("notificaciones").insert({
+            usuario_id:m.usuario_id, tipo:"sistema", nexo_id:id,
+            mensaje:`✅ ¡Fuiste aprobado como admin en "${nexo.titulo}"!${msg?` — ${msg}`:""}`, leida:false,
+          });
           setPopupAdminAccion(null);
         };
+
+        const rechazar = async () => {
+          const mId = popupAdminAccion.mId;
+          const msg = popupAdminAccion.mensaje.trim();
+          if (m?.usuario_id) {
+            const { data: mu } = await supabase.from("usuarios").select("bits").eq("id",m.usuario_id).single();
+            if (mu) await supabase.from("usuarios").update({ bits:(mu.bits||0)+500 }).eq("id",m.usuario_id);
+            await supabase.from("notificaciones").insert({
+              usuario_id:m.usuario_id, tipo:"sistema", nexo_id:id,
+              mensaje:`❌ Tu solicitud de admin en "${nexo.titulo}" fue rechazada. Se devolvieron 500 BIT.${msg?` — ${msg}`:""}`, leida:false,
+            });
+          }
+          await supabase.from("nexo_miembros").update({ rol:"miembro" }).eq("id",mId);
+          setMiembros(prev=>prev.map(x=>x.id===mId?{...x,rol:"miembro"}:x));
+          setPopupAdminAccion(null);
+        };
+
         return (
           <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", zIndex:800, display:"flex", alignItems:"flex-end", justifyContent:"center" }}>
-            <div style={{ background:"#fff", borderRadius:"24px 24px 0 0", padding:"24px 20px 40px", width:"100%", maxWidth:"480px" }}>
+            <div style={{ background:"#fff", borderRadius:"24px 24px 0 0", padding:"24px 20px 40px", width:"100%", maxWidth:"480px", maxHeight:"90vh", overflowY:"auto" }}>
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"16px" }}>
                 <div style={{ fontSize:"16px", fontWeight:900, color:"#1a2a3a" }}>{esAprobar?"✅ Aprobar admin":"❌ Rechazar solicitud"}</div>
                 <button onClick={()=>setPopupAdminAccion(null)} style={{ background:"#f4f4f2", border:"none", borderRadius:"50%", width:"32px", height:"32px", fontSize:"16px", cursor:"pointer" }}>✕</button>
               </div>
               <div style={{ background:"#f9f9f7", borderRadius:"12px", padding:"14px 16px", marginBottom:"16px" }}>
                 <div style={{ fontSize:"14px", fontWeight:900, color:"#1a2a3a" }}>{nombre}</div>
-                <div style={{ fontSize:"12px", color:"#9a9a9a", fontWeight:600 }}>{esAprobar?"Será promovido a admin del grupo":"Se le devolverán 500 BIT"}</div>
+                <div style={{ fontSize:"12px", color:"#9a9a9a", fontWeight:600 }}>{esAprobar?"Elegí quién paga los 500 BIT":"Se le devolverán 500 BIT"}</div>
               </div>
               <div style={{ marginBottom:"16px" }}>
                 <label style={{ fontSize:"11px", fontWeight:800, color:"#666", textTransform:"uppercase" as const, letterSpacing:"1px", marginBottom:"6px", display:"block" }}>Mensaje para {nombre} (opcional)</label>
                 <textarea value={popupAdminAccion.mensaje} onChange={e=>setPopupAdminAccion(p=>p?{...p,mensaje:e.target.value}:p)}
                   placeholder={esAprobar?"Ej: Bienvenido al equipo admin!":"Ej: Gracias por tu interés, por ahora no necesitamos más admins."}
-                  rows={3} style={{ width:"100%", border:"2px solid #e8e8e6", borderRadius:"12px", padding:"12px 14px", fontSize:"13px", fontFamily:"'Nunito',sans-serif", outline:"none", resize:"vertical", boxSizing:"border-box" as const }} />
+                  rows={2} style={{ width:"100%", border:"2px solid #e8e8e6", borderRadius:"12px", padding:"12px 14px", fontSize:"13px", fontFamily:"'Nunito',sans-serif", outline:"none", resize:"vertical", boxSizing:"border-box" as const }} />
               </div>
-              <button onClick={ejecutar}
-                style={{ width:"100%", background:esAprobar?"linear-gradient(135deg,#8e44ad,#6c3483)":"linear-gradient(135deg,#e74c3c,#c0392b)", border:"none", borderRadius:"14px", padding:"16px", fontSize:"15px", fontWeight:900, color:"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
-                {esAprobar?"✅ Aprobar como admin":"❌ Rechazar y devolver 500 BIT"}
-              </button>
+              {esAprobar ? (
+                <div style={{ display:"flex", flexDirection:"column", gap:"8px" }}>
+                  <button onClick={()=>aprobarConPago("solicitante")} style={{ width:"100%", background:"linear-gradient(135deg,#d4a017,#f0c040)", border:"none", borderRadius:"14px", padding:"14px", fontSize:"14px", fontWeight:900, color:"#1a2a3a", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
+                    💳 Lo paga el solicitante (500 BIT)
+                  </button>
+                  <button onClick={()=>aprobarConPago("admin")} style={{ width:"100%", background:"linear-gradient(135deg,#8e44ad,#6c3483)", border:"none", borderRadius:"14px", padding:"14px", fontSize:"14px", fontWeight:900, color:"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
+                    🎁 Lo pago yo (500 BIT)
+                  </button>
+                  <button onClick={()=>aprobarConPago("grupo")} style={{ width:"100%", background:"linear-gradient(135deg,#3a7bd5,#2962b0)", border:"none", borderRadius:"14px", padding:"14px", fontSize:"14px", fontWeight:900, color:"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
+                    💰 BIT Promo del grupo ({nexo?.bits_promo||0} disponibles)
+                  </button>
+                  <div style={{ fontSize:"10px", color:"#9a9a9a", fontWeight:600, textAlign:"center" }}>En todos los casos recibís 150 BIT Promo</div>
+                </div>
+              ) : (
+                <button onClick={rechazar}
+                  style={{ width:"100%", background:"linear-gradient(135deg,#e74c3c,#c0392b)", border:"none", borderRadius:"14px", padding:"16px", fontSize:"15px", fontWeight:900, color:"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
+                  ❌ Rechazar y devolver 500 BIT
+                </button>
+              )}
             </div>
           </div>
         );

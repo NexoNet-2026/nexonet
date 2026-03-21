@@ -42,6 +42,7 @@ export default function NexoPage() {
   const [ownerInsignia, setOwnerInsignia] = useState<string>("ninguna");
   const [repContadores, setRepContadores] = useState<Record<string,number>>({});
   const [renovando, setRenovando] = useState(false);
+  const [popupPagoDescarga, setPopupPagoDescarga] = useState<any>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const tabBarRef = useRef<HTMLDivElement>(null);
 
@@ -408,7 +409,7 @@ export default function NexoPage() {
           enviando={enviando}
           onEnviar={enviarMensaje}
           onVisor={setVisor}
-          onPagarDescarga={pagarDescarga}
+          onPagarDescarga={setPopupPagoDescarga}
           bottomRef={bottomRef}
           colorNexo={colorNexo}
         />}
@@ -430,6 +431,39 @@ export default function NexoPage() {
                 <a href={visor.url} target="_blank" rel="noopener noreferrer" style={{ background:"linear-gradient(135deg,#d4a017,#f0c040)", borderRadius:"12px", padding:"12px 24px", fontSize:"14px", fontWeight:900, color:"#1a2a3a", textDecoration:"none" }}>📥 Descargar</a>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* POPUP CONFIRMAR PAGO DESCARGA */}
+      {popupPagoDescarga && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", zIndex:800, display:"flex", alignItems:"flex-end", justifyContent:"center" }}>
+          <div style={{ background:"#fff", borderRadius:"24px 24px 0 0", padding:"24px 20px 40px", width:"100%", maxWidth:"480px" }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"16px" }}>
+              <div style={{ fontSize:"16px", fontWeight:900, color:"#1a2a3a" }}>📥 Confirmar descarga</div>
+              <button onClick={()=>setPopupPagoDescarga(null)} style={{ background:"#f4f4f2", border:"none", borderRadius:"50%", width:"32px", height:"32px", fontSize:"16px", cursor:"pointer" }}>✕</button>
+            </div>
+            <div style={{ background:"#f9f9f7", borderRadius:"12px", padding:"14px 16px", marginBottom:"16px" }}>
+              <div style={{ fontSize:"14px", fontWeight:900, color:"#1a2a3a", marginBottom:"4px" }}>{popupPagoDescarga.titulo || "Archivo"}</div>
+              {popupPagoDescarga.descripcion && <div style={{ fontSize:"12px", color:"#9a9a9a", fontWeight:600 }}>{popupPagoDescarga.descripcion}</div>}
+            </div>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", background:"rgba(212,160,23,0.08)", borderRadius:"12px", padding:"12px 16px", marginBottom:"12px" }}>
+              <span style={{ fontSize:"13px", fontWeight:700, color:"#1a2a3a" }}>Costo</span>
+              <span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"24px", color:"#d4a017" }}>{popupPagoDescarga.precio_bits} BIT</span>
+            </div>
+            <div style={{ fontSize:"12px", color:"#9a9a9a", fontWeight:600, marginBottom:"16px", textAlign:"center" }}>
+              Tenés <strong style={{ color:"#1a2a3a" }}>{((perfil?.bits||0)+(perfil?.bits_free||0)+(perfil?.bits_promo||0)).toLocaleString()} BIT</strong> disponibles
+            </div>
+            <div style={{ display:"flex", flexDirection:"column", gap:"8px" }}>
+              <button onClick={async()=>{ setPopupPagoDescarga(null); await pagarDescarga(popupPagoDescarga); }}
+                style={{ width:"100%", background:"linear-gradient(135deg,#27ae60,#1e8449)", border:"none", borderRadius:"14px", padding:"16px", fontSize:"15px", fontWeight:900, color:"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif", boxShadow:"0 4px 0 #155a2e" }}>
+                ✅ Confirmar pago
+              </button>
+              <button onClick={()=>setPopupPagoDescarga(null)}
+                style={{ width:"100%", background:"#f4f4f2", border:"none", borderRadius:"14px", padding:"14px", fontSize:"14px", fontWeight:800, color:"#9a9a9a", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
+                Cancelar
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -100,6 +100,7 @@ function BuscarInner() {
   const [entRubroSel, setEntRubroSel] = useState<number|null>(null);
   const [entSubSel, setEntSubSel] = useState<number|null>(null);
   const [entLoading, setEntLoading] = useState(false);
+  const [entError, setEntError] = useState<string|null>(null);
   // Filtro subtipo para grupos
   const [grupoSubtipoSel, setGrupoSubtipoSel] = useState<string|null>(null);
 
@@ -334,12 +335,16 @@ function BuscarInner() {
       trabajo:   {rubros:"trabajo_rubros",subrubros:"trabajo_subrubros"},
     };
     const t = ENT_TABLES[tipoActivo];
-    if (!t) { setEntRubros([]); setEntRubroSel(null); setEntSubSel(null); setEntLoading(false); return; }
-    setEntLoading(true);
+    if (!t) { setEntRubros([]); setEntRubroSel(null); setEntSubSel(null); setEntLoading(false); setEntError(null); return; }
+    setEntLoading(true); setEntError(null);
     Promise.all([
       supabase.from(t.rubros).select("id,nombre").order("orden",{ascending:true}),
       supabase.from(t.subrubros).select("id,nombre,rubro_id,orden").order("orden",{ascending:true}),
-    ]).then(([{data:rData},{data:sData}])=>{
+    ]).then(([{data:rData,error:rErr},{data:sData,error:sErr}])=>{
+      if (rErr || sErr) {
+        console.error("Error cargando rubros:", rErr, sErr);
+        setEntError(`Rubros: ${rErr?.message||"ok"} | Subs: ${sErr?.message||"ok"}`);
+      }
       const rubrosConSubs = (rData||[]).map((r:any)=>({
         ...r, subrubros: (sData||[]).filter((s:any)=>Number(s.rubro_id)===Number(r.id)),
       }));
@@ -584,7 +589,7 @@ function BuscarInner() {
       {/* DEBUG — remover después */}
       {tipoActivo !== "anuncios" && tipoActivo !== "grupos" && (
         <div style={{fontSize:"10px",color:"red",padding:"4px 16px",background:"#fff8f8"}}>
-          Rubros: {entRubros.length} | Subs total: {entRubros.reduce((a,r)=>(a+(r.subrubros||[]).length),0)} | Nexos {tipoActivo}: {nexos.filter(n=>n.tipo===(tipoActivo==="empresas"?"empresa":tipoActivo==="servicios"?"servicio":tipoActivo)).length} | Loading: {String(entLoading)}
+          Rubros: {entRubros.length} | Subs: {entRubros.reduce((a,r)=>(a+(r.subrubros||[]).length),0)} | Nexos: {nexos.filter(n=>n.tipo===(tipoActivo==="empresas"?"empresa":tipoActivo==="servicios"?"servicio":tipoActivo)).length} | Loading: {String(entLoading)} | Error: {entError||"ninguno"}
         </div>
       )}
 

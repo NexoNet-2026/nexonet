@@ -586,12 +586,6 @@ function BuscarInner() {
         </div>
       </div>
 
-      {/* DEBUG — remover después */}
-      {tipoActivo !== "anuncios" && tipoActivo !== "grupos" && (
-        <div style={{fontSize:"10px",color:"red",padding:"4px 16px",background:"#fff8f8"}}>
-          Rubros: {entRubros.length} | Subs: {entRubros.reduce((a,r)=>(a+(r.subrubros||[]).length),0)} | Nexos: {nexos.filter(n=>n.tipo===(tipoActivo==="empresas"?"empresa":tipoActivo==="servicios"?"servicio":tipoActivo)).length} | Loading: {String(entLoading)} | Error: {entError||"ninguno"}
-        </div>
-      )}
 
       {/* CONTENIDO */}
       {loading ? (
@@ -763,7 +757,7 @@ function BuscarInner() {
                         </button>
                       </div>
                       {subs.length > 0 && (
-                        <div style={{display:"flex",gap:"8px",padding:"0 16px 12px",overflowX:"auto",scrollbarWidth:"none"}}>
+                        <div style={{display:"flex",gap:"8px",padding:"0 16px 12px",overflowX:"auto",scrollbarWidth:"none",WebkitOverflowScrolling:"touch"}}>
                           {subs.map((sub:any)=>(
                             <button key={sub.id} onClick={()=>setEntSubSel(entSubSel===sub.id?null:sub.id)}
                               style={{background:entSubSel===sub.id?"#1a2a3a":"#f4f4f2",border:`2px solid ${entSubSel===sub.id?"#1a2a3a":"#e8e8e6"}`,borderRadius:"20px",padding:"5px 14px",fontSize:"12px",fontWeight:700,color:entSubSel===sub.id?colorActivo:"#2c2c2e",whiteSpace:"nowrap",cursor:"pointer",flexShrink:0,fontFamily:"'Nunito',sans-serif"}}>

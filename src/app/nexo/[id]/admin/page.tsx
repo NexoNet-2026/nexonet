@@ -261,6 +261,41 @@ export default function NexoAdminPage() {
       setMiembros(prev=>prev.map(x=>x.id===mId?{...x,estado:"activo",bits_pagados:500}:x));
       return;
     }
+    if (accion === "aprobar_admin") {
+      // Aprobar solicitud de admin
+      await supabase.from("nexo_miembros").update({ rol:"admin" }).eq("id",mId);
+      setMiembros(prev=>prev.map(x=>x.id===mId?{...x,rol:"admin"}:x));
+      return;
+    }
+    if (accion === "rechazar_admin") {
+      // Rechazar solicitud: devolver 500 BIT al miembro
+      const m = miembros.find(x=>x.id===mId);
+      if (m?.usuario_id) {
+        const { data: mu } = await supabase.from("usuarios").select("bits").eq("id",m.usuario_id).single();
+        if (mu) await supabase.from("usuarios").update({ bits: (mu.bits||0)+500 }).eq("id",m.usuario_id);
+      }
+      await supabase.from("nexo_miembros").update({ rol:"miembro" }).eq("id",mId);
+      setMiembros(prev=>prev.map(x=>x.id===mId?{...x,rol:"miembro"}:x));
+      return;
+    }
+    if (accion === "hacer_admin") {
+      // Creador asigna admin: creador paga 500 BIT, recibe 150 BIT Promotor
+      if ((perfil?.bits||0) < 500) { alert("Necesitás 500 BIT para asignar admin."); return; }
+      await supabase.from("usuarios").update({
+        bits: (perfil.bits||0)-500,
+        bits_promo: (perfil.bits_promo||0)+150,
+        bits_promotor_total: (perfil.bits_promotor_total||0)+150,
+      }).eq("id", perfil.id);
+      setPerfil((p:any)=>({...p, bits:(p.bits||0)-500, bits_promo:(p.bits_promo||0)+150}));
+      await supabase.from("nexo_miembros").update({ rol:"admin" }).eq("id",mId);
+      setMiembros(prev=>prev.map(x=>x.id===mId?{...x,rol:"admin"}:x));
+      return;
+    }
+    if (accion === "quitar_admin") {
+      await supabase.from("nexo_miembros").update({ rol:"miembro" }).eq("id",mId);
+      setMiembros(prev=>prev.map(x=>x.id===mId?{...x,rol:"miembro"}:x));
+      return;
+    }
     const updates: Record<string,any> = {
       expulsar:   { estado:"expulsado" },
       bloquear:   { estado:"bloqueado" },
@@ -319,11 +354,12 @@ export default function NexoAdminPage() {
   if (cargando) return <main style={{ paddingTop:"95px", textAlign:"center", color:"#9a9a9a", fontFamily:"'Nunito',sans-serif" }}>Cargando panel...</main>;
 
   const pendientes = miembros.filter(m=>m.estado==="pendiente");
+  const adminSolicitados = miembros.filter(m=>m.rol==="admin_solicitado" && m.estado==="activo");
   const activos    = miembros.filter(m=>m.estado==="activo");
   const TABS: {key:TabAdmin;emoji:string;label:string;badge?:number}[] = [
     { key:"sliders",   emoji:"📋", label:"Sliders"   },
     { key:"descargas", emoji:"📥", label:"Descargas" },
-    { key:"miembros",  emoji:"👥", label:"Miembros",  badge:pendientes.length||undefined },
+    { key:"miembros",  emoji:"👥", label:"Miembros",  badge:(pendientes.length+adminSolicitados.length)||undefined },
     { key:"info",      emoji:"✏️", label:"Info"      },
     { key:"config",    emoji:"⚙️", label:"Config"    },
   ];
@@ -518,9 +554,15 @@ export default function NexoAdminPage() {
                 {pendientes.map(m=><TarjetaMiembro key={m.id} m={m} onAccion={accionMiembro} showAprobar />)}
               </div>
             )}
+            {adminSolicitados.length > 0 && (
+              <div>
+                <SecHeader label={`⭐ Solicitudes de admin (${adminSolicitados.length})`} color="#d4a017" />
+                {adminSolicitados.map(m=><TarjetaMiembro key={m.id} m={m} onAccion={accionMiembro} showAdminSolicitud />)}
+              </div>
+            )}
             <div>
               <SecHeader label={`✅ Activos (${activos.length})`} color="#27ae60" />
-              {activos.map(m=><TarjetaMiembro key={m.id} m={m} onAccion={accionMiembro} />)}
+              {activos.map(m=><TarjetaMiembro key={m.id} m={m} onAccion={accionMiembro} showHacerAdmin />)}
               {activos.length===0 && <EmptyCard emoji="👥" texto="Sin miembros activos" sub="" />}
             </div>
           </div>
@@ -810,10 +852,11 @@ export default function NexoAdminPage() {
   );
 }
 
-function TarjetaMiembro({ m, onAccion, showAprobar }: { m:any; onAccion:(id:string,acc:string)=>void; showAprobar?:boolean }) {
+function TarjetaMiembro({ m, onAccion, showAprobar, showAdminSolicitud, showHacerAdmin }: { m:any; onAccion:(id:string,acc:string)=>void; showAprobar?:boolean; showAdminSolicitud?:boolean; showHacerAdmin?:boolean }) {
   const [exp, setExp] = useState(false);
-  const rolColors: Record<string,string> = { creador:"#d4a017", moderador:"#3a7bd5", miembro:"#27ae60" };
+  const rolColors: Record<string,string> = { creador:"#d4a017", moderador:"#3a7bd5", miembro:"#27ae60", admin:"#8e44ad", admin_solicitado:"#e67e22" };
   const c = rolColors[m.rol]||"#27ae60";
+  const rolLabel: Record<string,string> = { creador:"👑 Creador", moderador:"🛡️ Mod", admin:"⭐ Admin", admin_solicitado:"⏳ Solicita admin", miembro:"✅ Miembro" };
   return (
     <div style={{ background:"#fff", borderRadius:"14px", marginBottom:"8px", overflow:"hidden", boxShadow:"0 2px 6px rgba(0,0,0,0.05)" }}>
       <div style={{ padding:"12px 14px", display:"flex", alignItems:"center", gap:"10px", cursor:"pointer" }} onClick={()=>setExp(e=>!e)}>
@@ -827,19 +870,23 @@ function TarjetaMiembro({ m, onAccion, showAprobar }: { m:any; onAccion:(id:stri
         <div style={{ display:"flex", gap:"5px", alignItems:"center" }}>
           {m.silenciado&&<span style={{ fontSize:"12px" }}>🔇</span>}
           <span style={{ background:`${c}18`, color:c, borderRadius:"20px", padding:"2px 9px", fontSize:"9px", fontWeight:900 }}>
-            {m.rol==="creador"?"👑 Creador":m.rol==="moderador"?"🛡️ Mod":"✅ Miembro"}
+            {rolLabel[m.rol]||"✅ Miembro"}
           </span>
           <span style={{ fontSize:"14px", color:"#d4a017", transform:exp?"rotate(90deg)":"none", transition:"transform .2s", display:"inline-block" }}>›</span>
         </div>
       </div>
       {exp && (
         <div style={{ borderTop:"1px solid #f4f4f2", padding:"10px 14px", background:"#fafafa", display:"flex", flexWrap:"wrap", gap:"6px" }}>
-          {showAprobar       && <AccBtn label="✅ Aprobar"      color="#27ae60" onClick={()=>onAccion(m.id,"aprobar")} />}
-          {m.rol==="miembro" && <AccBtn label="🛡️ Hacer mod"   color="#3a7bd5" onClick={()=>onAccion(m.id,"hacer_mod")} />}
-          {m.rol==="moderador"&&<AccBtn label="⬇️ Quitar mod"  color="#7f8c8d" onClick={()=>onAccion(m.id,"quitar_mod")} />}
+          {showAprobar          && <AccBtn label="✅ Aprobar"        color="#27ae60" onClick={()=>onAccion(m.id,"aprobar")} />}
+          {showAdminSolicitud   && <AccBtn label="✅ Aprobar admin"  color="#8e44ad" onClick={()=>onAccion(m.id,"aprobar_admin")} />}
+          {showAdminSolicitud   && <AccBtn label="❌ Rechazar"       color="#e74c3c" onClick={()=>onAccion(m.id,"rechazar_admin")} />}
+          {showHacerAdmin && m.rol==="miembro"    && <AccBtn label="⭐ Hacer admin (500 BIT)" color="#8e44ad" onClick={()=>onAccion(m.id,"hacer_admin")} />}
+          {m.rol==="miembro"    && <AccBtn label="🛡️ Hacer mod"     color="#3a7bd5" onClick={()=>onAccion(m.id,"hacer_mod")} />}
+          {m.rol==="moderador"  && <AccBtn label="⬇️ Quitar mod"    color="#7f8c8d" onClick={()=>onAccion(m.id,"quitar_mod")} />}
+          {m.rol==="admin"      && <AccBtn label="⬇️ Quitar admin"  color="#7f8c8d" onClick={()=>onAccion(m.id,"quitar_admin")} />}
           <AccBtn label={m.silenciado?"🔊 Activar":"🔇 Silenciar"} color="#e67e22" onClick={()=>onAccion(m.id,"silenciar")} />
-          {m.estado==="activo"&&<AccBtn label="🚫 Expulsar"    color="#e74c3c" onClick={()=>onAccion(m.id,"expulsar")} />}
-          <AccBtn label="⛔ Bloquear" color="#c0392b" onClick={()=>onAccion(m.id,"bloquear")} />
+          {m.estado==="activo"&&m.rol!=="creador"&&<AccBtn label="🚫 Expulsar" color="#e74c3c" onClick={()=>onAccion(m.id,"expulsar")} />}
+          {m.rol!=="creador"&&<AccBtn label="⛔ Bloquear" color="#c0392b" onClick={()=>onAccion(m.id,"bloquear")} />}
         </div>
       )}
     </div>

@@ -233,23 +233,24 @@ export default function NexoPage() {
     setPagandoDescarga(descarga.id);
 
     try {
-      // Descontar BIT al comprador según método de pago
-      const campo = metodo === "bit_free" ? "bits_free" : "bits";
-      const saldo = perfil[campo] || 0;
-      if (saldo < costo) { alert(`No tenés suficientes ${campo === "bits_free" ? "BIT Free" : "BIT Nexo"}. Tenés ${saldo}, necesitás ${costo}.`); setPagandoDescarga(null); return; }
-      const { error: e1 } = await supabase.from("usuarios").update({ [campo]: saldo - costo }).eq("id", perfil.id);
+      // Descontar BIT al comprador — solo BIT Nexo (no FREE)
+      if (metodo === "bit_free") { alert("Las descargas no se pueden pagar con BIT Free"); setPagandoDescarga(null); return; }
+      const campo = "bits";
+      const saldo = perfil.bits || 0;
+      if (saldo < costo) { alert(`No tenés suficientes BIT Nexo. Tenés ${saldo}, necesitás ${costo}.`); setPagandoDescarga(null); return; }
+      const { error: e1 } = await supabase.from("usuarios").update({ bits: saldo - costo }).eq("id", perfil.id);
       if (e1) { console.error("Error descontando BIT:", e1); alert("Error al descontar BIT: " + e1.message); setPagandoDescarga(null); return; }
-      setPerfil((p: any) => ({ ...p, [campo]: saldo - costo }));
+      setPerfil((p: any) => ({ ...p, bits: saldo - costo }));
 
       // Acreditar 60% BIT Promotor al creador del nexo
-      const bitsAdmin = Math.floor(costo * 0.6);
-      const bitsNexonet = costo - bitsAdmin;
-      const { data: adminData, error: e2 } = await supabase.from("usuarios").select("bits_promo,bits_promotor_total").eq("id", nexo.usuario_id).single();
+      const bitsCreador = Math.floor(costo * 0.6);
+      const bitsNexonet = costo - bitsCreador;
+      const { data: duenio, error: e2 } = await supabase.from("usuarios").select("bits_promotor,bits_promotor_total").eq("id", nexo.usuario_id).single();
       if (e2) console.error("Error leyendo dueño:", e2);
-      if (adminData) {
+      if (duenio) {
         const { error: e3 } = await supabase.from("usuarios").update({
-          bits_promo: (adminData.bits_promo || 0) + bitsAdmin,
-          bits_promotor_total: (adminData.bits_promotor_total || 0) + bitsAdmin,
+          bits_promotor: (duenio.bits_promotor || 0) + bitsCreador,
+          bits_promotor_total: (duenio.bits_promotor_total || 0) + bitsCreador,
         }).eq("id", nexo.usuario_id);
         if (e3) console.error("Error acreditando promotor:", e3);
       }
@@ -257,7 +258,7 @@ export default function NexoPage() {
       // Registrar pago (40% queda en sistema)
       const { error: e4 } = await supabase.from("nexo_descargas_pagos").insert({
         descarga_id: descarga.id, nexo_id: id, comprador_id: perfil.id,
-        admin_id: nexo.usuario_id, bits_pagados: costo, bits_admin: bitsAdmin, bits_nexonet: bitsNexonet,
+        admin_id: nexo.usuario_id, bits_pagados: costo, bits_admin: bitsCreador, bits_nexonet: bitsNexonet,
       });
       if (e4) console.error("Error registrando pago:", e4);
 
@@ -456,7 +457,7 @@ export default function NexoPage() {
           emoji="📥"
           costo={`${popupPagoDescarga.precio_bits} BIT`}
           descripcion={popupPagoDescarga.titulo || "Archivo"}
-          bits={{ free: Math.max(0, perfil?.bits_free||0), nexo: Math.max(0, perfil?.bits||0), promo: Math.max(0, perfil?.bits_promo||0) }}
+          bits={{ free: 0, nexo: Math.max(0, perfil?.bits||0), promo: Math.max(0, perfil?.bits_promo||0) }}
           onClose={() => setPopupPagoDescarga(null)}
           onPagar={async (metodo: MetodoPago) => {
             const item = popupPagoDescarga;

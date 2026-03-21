@@ -119,7 +119,7 @@ export default function NexoPage() {
           .maybeSingle();
 
         if (!yaVisito) {
-          const duenoBits = (n.usuarios as any)?.bits ?? 0;
+          const duenoBits = ownerData?.bits ?? 0;
           if (typeof duenoBits === "number" && duenoBits >= 1) {
             // Registrar visita
             await supabase.from("nexo_visitas").insert({
@@ -249,7 +249,7 @@ export default function NexoPage() {
       <Header />
 
       {/* HERO CON BANNER */}
-      <div style={{ position:"relative", minHeight:"240px", background: nexo.banner_url ? `url(${nexo.banner_url}) center/cover no-repeat` : `linear-gradient(135deg,#1a2a3a,#243b55)`, paddingTop:"105px" }}>
+      <div style={{ position:"relative", minHeight:"240px", background: nexo.banner_url ? `url(${nexo.banner_url}) center/cover no-repeat` : `linear-gradient(135deg,#1a2a3a,#243b55)`, paddingTop:"95px" }}>
         {nexo.banner_url && <div style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.52)" }} />}
         <div style={{ position:"relative", zIndex:1, padding:"16px 16px 20px" }}>
           <div style={{ display:"flex", alignItems:"flex-end", gap:"14px" }}>
@@ -270,6 +270,11 @@ export default function NexoPage() {
                 {nexo.precio && <span style={{ color:colorNexo, fontWeight:800 }}>$ {parseFloat(nexo.precio).toLocaleString("es-AR")} {nexo.moneda}</span>}
                 {nexo.tipo==="grupo" && <span>👥 {miembros.length} miembro{miembros.length!==1?"s":""}</span>}
               </div>
+              {nexo.usuarios && (
+                <div style={{ fontSize:"11px", color:"rgba(255,255,255,0.45)", fontWeight:600, marginTop:"4px" }}>
+                  Creado por <span style={{ color:"rgba(255,255,255,0.75)", fontWeight:800 }}>{nexo.usuarios.nombre || nexo.usuarios.nombre_usuario || "---"}</span>
+                </div>
+              )}
             </div>
             <div style={{ display:"flex", flexDirection:"column", gap:"6px", flexShrink:0 }}>
               {esAdmin && (

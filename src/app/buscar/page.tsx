@@ -358,9 +358,9 @@ function BuscarInner() {
 
   const nexosPorTipo: Record<string, Nexo[]> = {
     grupos:    nexosFilt.filter(n => n.tipo === "grupo" && (!grupoSubtipoSel || n.subtipo === grupoSubtipoSel)),
-    empresas:  nexosFilt.filter(n => n.tipo === "empresa" && (!entSubSel || (n as any).subrubro_id === entSubSel)),
-    servicios: nexosFilt.filter(n => n.tipo === "servicio" && (!entSubSel || (n as any).subrubro_id === entSubSel)),
-    trabajo:   nexosFilt.filter(n => n.tipo === "trabajo" && (!entSubSel || (n as any).subrubro_id === entSubSel)),
+    empresas:  nexosFilt.filter(n => n.tipo === "empresa"),
+    servicios: nexosFilt.filter(n => n.tipo === "servicio"),
+    trabajo:   nexosFilt.filter(n => n.tipo === "trabajo"),
   };
 
   const busLibre = query.trim()!==""&&!rSel&&!sSel;
@@ -729,61 +729,79 @@ function BuscarInner() {
 
           {tipoActivo !== "anuncios" && tipoActivo !== "grupos" && (
             <div>
-              {/* RUBROS SLIDER */}
-              {entRubros.length > 0 && (
-                <div style={{padding:"12px 16px 0",overflowX:"auto",scrollbarWidth:"none",display:"flex",gap:"8px",WebkitOverflowScrolling:"touch"}}>
-                  <button onClick={()=>{setEntRubroSel(null);setEntSubSel(null);}}
-                    style={{flexShrink:0,background:!entRubroSel?colorActivo:"#fff",border:`2px solid ${colorActivo}40`,borderRadius:"20px",padding:"6px 14px",fontSize:"12px",fontWeight:800,color:!entRubroSel?"#fff":colorActivo,cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>
-                    Todos
-                  </button>
-                  {entRubros.map(r=>(
-                    <button key={r.id} onClick={()=>{setEntRubroSel(r.id);setEntSubSel(null);}}
-                      style={{flexShrink:0,background:entRubroSel===r.id?colorActivo:"#fff",border:`2px solid ${colorActivo}40`,borderRadius:"20px",padding:"6px 14px",fontSize:"12px",fontWeight:800,color:entRubroSel===r.id?"#fff":colorActivo,cursor:"pointer",fontFamily:"'Nunito',sans-serif",whiteSpace:"nowrap"}}>
-                      {r.nombre}
-                    </button>
-                  ))}
+              {entRubros.length > 0 ? (
+                (entRubroSel ? entRubros.filter(r=>r.id===entRubroSel) : entRubros).map(rubro => {
+                  const subs = (rubro.subrubros||[]).sort((a:any,b:any)=>(a.orden||0)-(b.orden||0));
+                  const allItems = (nexosPorTipo[tipoActivo]||[]);
+                  const rubroSubIds = subs.map((s:any)=>s.id);
+                  const itemsRubro = allItems.filter((n:any) => rubroSubIds.includes(n.subrubro_id) || (!n.subrubro_id && !entRubroSel));
+                  const itemsFinal = entSubSel ? itemsRubro.filter((n:any)=>n.subrubro_id===entSubSel) : itemsRubro;
+                  if (itemsFinal.length === 0 && !entRubroSel) return null;
+                  return (
+                    <div key={rubro.id} style={{marginBottom:"8px",background:"#fff",paddingBottom:"12px",borderBottom:"6px solid #f4f4f2"}}>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 16px 8px"}}>
+                        <button onClick={()=>{setEntRubroSel(rubro.id===entRubroSel?null:rubro.id);setEntSubSel(null);}}
+                          style={{fontSize:"16px",fontWeight:900,color:"#1a2a3a",background:"none",border:"none",cursor:"pointer",fontFamily:"'Nunito',sans-serif",padding:0,textAlign:"left"}}>
+                          {rubro.nombre} →
+                        </button>
+                      </div>
+                      {subs.length > 0 && (
+                        <div style={{display:"flex",gap:"8px",padding:"0 16px 12px",overflowX:"auto",scrollbarWidth:"none"}}>
+                          {subs.map((sub:any)=>(
+                            <button key={sub.id} onClick={()=>setEntSubSel(entSubSel===sub.id?null:sub.id)}
+                              style={{background:entSubSel===sub.id?"#1a2a3a":"#f4f4f2",border:`2px solid ${entSubSel===sub.id?"#1a2a3a":"#e8e8e6"}`,borderRadius:"20px",padding:"5px 14px",fontSize:"12px",fontWeight:700,color:entSubSel===sub.id?colorActivo:"#2c2c2e",whiteSpace:"nowrap",cursor:"pointer",flexShrink:0,fontFamily:"'Nunito',sans-serif"}}>
+                              {sub.nombre}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      {itemsFinal.length === 0 ? (
+                        <div style={{padding:"12px 16px",color:"#9a9a9a",fontSize:"13px",fontWeight:600}}>Sin resultados en este rubro</div>
+                      ) : (
+                        <div style={{display:"flex",gap:"12px",padding:"0 16px",overflowX:"auto",scrollbarWidth:"none"}}>
+                          {itemsFinal.map((n:any,i:number) => (
+                            <TarjetaNexo key={n.id} nexo={n} color={colorActivo} onNavigate={()=>router.push(`/nexo/${n.id}`)} esPrimero={i===0&&(n.visitas_semana||0)>0} />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              ) : (
+                <div style={{padding:"12px 16px",display:"flex",flexDirection:"column",gap:"12px"}}>
+                  {(nexosPorTipo[tipoActivo]||[]).length === 0 ? (
+                    <div style={{textAlign:"center",padding:"50px 20px"}}>
+                      <div style={{fontSize:"48px",marginBottom:"12px"}}>{TIPOS.find(t=>t.key===tipoActivo)?.emoji}</div>
+                      <div style={{fontSize:"16px",fontWeight:900,color:"#1a2a3a",marginBottom:"6px"}}>
+                        No hay {TIPOS.find(t=>t.key===tipoActivo)?.label.toLowerCase()} todavía
+                      </div>
+                      <div style={{fontSize:"13px",color:"#9a9a9a",fontWeight:600,marginBottom:"20px"}}>Sé el primero en crear uno</div>
+                      <button onClick={()=>router.push("/publicar")}
+                        style={{background:`linear-gradient(135deg,${colorActivo}cc,${colorActivo})`,border:"none",borderRadius:"12px",padding:"12px 24px",fontSize:"13px",fontWeight:900,color:"#fff",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>
+                        ➕ Crear
+                      </button>
+                    </div>
+                  ) : (
+                    (nexosPorTipo[tipoActivo]||[]).map((n, i) => (
+                      <TarjetaNexo key={n.id} nexo={n} color={colorActivo} onNavigate={()=>router.push(`/nexo/${n.id}`)} esPrimero={i === 0 && (n.visitas_semana || 0) > 0} />
+                    ))
+                  )}
                 </div>
               )}
-              {/* SUBRUBROS CHIPS */}
-              {entRubroSel && (() => {
-                const rubro = entRubros.find(r=>r.id===entRubroSel);
-                const subs = (rubro?.subrubros||[]).sort((a:any,b:any)=>(a.orden||0)-(b.orden||0));
-                if (subs.length===0) return null;
+              {/* Sin categoría */}
+              {entRubros.length > 0 && !entRubroSel && (() => {
+                const allSubIds = entRubros.flatMap(r=>(r.subrubros||[]).map((s:any)=>s.id));
+                const sinCat = (nexosPorTipo[tipoActivo]||[]).filter((n:any)=>!n.subrubro_id || !allSubIds.includes(n.subrubro_id));
+                if (sinCat.length === 0) return null;
                 return (
-                  <div style={{padding:"8px 16px 0",display:"flex",gap:"6px",overflowX:"auto",scrollbarWidth:"none",WebkitOverflowScrolling:"touch"}}>
-                    <button onClick={()=>setEntSubSel(null)}
-                      style={{flexShrink:0,background:!entSubSel?"#1a2a3a":"#f4f4f2",borderRadius:"16px",padding:"4px 12px",fontSize:"11px",fontWeight:800,color:!entSubSel?"#fff":"#666",border:"none",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>
-                      Todos
-                    </button>
-                    {subs.map((s:any)=>(
-                      <button key={s.id} onClick={()=>setEntSubSel(s.id)}
-                        style={{flexShrink:0,background:entSubSel===s.id?"#1a2a3a":"#f4f4f2",borderRadius:"16px",padding:"4px 12px",fontSize:"11px",fontWeight:800,color:entSubSel===s.id?"#fff":"#666",border:"none",cursor:"pointer",fontFamily:"'Nunito',sans-serif",whiteSpace:"nowrap"}}>
-                        {s.nombre}
-                      </button>
-                    ))}
+                  <div style={{marginBottom:"8px",background:"#fff",paddingBottom:"12px",borderBottom:"6px solid #f4f4f2"}}>
+                    <div style={{padding:"14px 16px 8px"}}><span style={{fontSize:"16px",fontWeight:900,color:"#1a2a3a"}}>📦 Otros</span></div>
+                    <div style={{display:"flex",gap:"12px",padding:"0 16px",overflowX:"auto",scrollbarWidth:"none"}}>
+                      {sinCat.slice(0,8).map((n:any) => <TarjetaNexo key={n.id} nexo={n} color={colorActivo} onNavigate={()=>router.push(`/nexo/${n.id}`)} />)}
+                    </div>
                   </div>
                 );
               })()}
-              {/* LISTADO */}
-              <div style={{padding:"12px 16px",display:"flex",flexDirection:"column",gap:"12px"}}>
-                {(nexosPorTipo[tipoActivo]||[]).length === 0 ? (
-                  <div style={{textAlign:"center",padding:"50px 20px"}}>
-                    <div style={{fontSize:"48px",marginBottom:"12px"}}>{TIPOS.find(t=>t.key===tipoActivo)?.emoji}</div>
-                    <div style={{fontSize:"16px",fontWeight:900,color:"#1a2a3a",marginBottom:"6px"}}>
-                      No hay {TIPOS.find(t=>t.key===tipoActivo)?.label.toLowerCase()} {entSubSel?"en esta categoría":"todavía"}
-                    </div>
-                    <div style={{fontSize:"13px",color:"#9a9a9a",fontWeight:600,marginBottom:"20px"}}>Sé el primero en crear uno</div>
-                    <button onClick={()=>router.push("/publicar")}
-                      style={{background:`linear-gradient(135deg,${colorActivo}cc,${colorActivo})`,border:"none",borderRadius:"12px",padding:"12px 24px",fontSize:"13px",fontWeight:900,color:"#fff",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>
-                      ➕ Crear
-                    </button>
-                  </div>
-                ) : (
-                  (nexosPorTipo[tipoActivo]||[]).map((n, i) => (
-                    <TarjetaNexo key={n.id} nexo={n} color={colorActivo} onNavigate={()=>router.push(`/nexo/${n.id}`)} esPrimero={i === 0 && (n.visitas_semana || 0) > 0} />
-                  ))
-                )}
-              </div>
             </div>
           )}
         </>

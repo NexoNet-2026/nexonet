@@ -186,8 +186,12 @@ export default function NexoAdminPage() {
     return "archivo";
   };
 
+  const TIPOS_TEXTO = ["novedades","faq","testimonios","calendario","proveedores"];
   const agregarItem = async () => {
-    if (!formItem.url || !popupItem) return;
+    if (!popupItem) return;
+    const esTexto = TIPOS_TEXTO.includes(popupItem.slider.tipo);
+    if (!esTexto && !formItem.url) return;
+    if (esTexto && !formItem.titulo && !formItem.descripcion) return;
     // Cobrar 500 BIT por cada ítem
     const bitsTotal = Math.max(0,perfil?.bits||0) + Math.max(0,perfil?.bits_free||0) + Math.max(0,perfil?.bits_promotor||0);
     if (bitsTotal < 500) { alert("Necesitás 500 BIT para agregar un ítem."); return; }
@@ -199,7 +203,7 @@ export default function NexoAdminPage() {
     const { data } = await supabase.from("nexo_slider_items").insert({
       slider_id: popupItem.slider.id, nexo_id:id,
       titulo: formItem.titulo||null, descripcion:formItem.descripcion||null,
-      url: formItem.url, tipo: formItem.tipo,
+      url: formItem.url||null, tipo: formItem.url ? formItem.tipo : "texto",
       precio_bits: parseInt(formItem.precio_bits)||0,
       orden: (sliderItems[popupItem.slider.id]||[]).length,
       publicado_por: perfil.id,
@@ -221,7 +225,7 @@ export default function NexoAdminPage() {
     if (!formDesc.url || !formDesc.titulo) return;
     const { data } = await supabase.from("nexo_descargas").insert({
       nexo_id:id, titulo:formDesc.titulo, descripcion:formDesc.descripcion||null,
-      url:formDesc.url, precio_bits:parseInt(formDesc.precio_bits)||1,
+      url:formDesc.url, precio_bits:parseInt(formDesc.precio_bits)||0,
       tipo_archivo:formDesc.tipo_archivo,
     }).select().single();
     if (data) setDescargas(prev=>[data,...prev]);
@@ -489,7 +493,7 @@ export default function NexoAdminPage() {
                     <div style={{ fontSize:"14px", fontWeight:900, color:"#1a2a3a", marginBottom:"2px" }}>{d.titulo}</div>
                     {d.descripcion && <div style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:600 }}>{d.descripcion}</div>}
                     <div style={{ fontSize:"11px", color:"#27ae60", fontWeight:800, marginTop:"4px" }}>
-                      💰 {Math.floor((d.precio_bits||0)*0.8)} BIT para vos por descarga
+                      💰 {Math.floor((d.precio_bits||0)*0.6)} BIT Promotor por descarga
                     </div>
                   </div>
                   <div style={{ display:"flex", flexDirection:"column", gap:"6px" }}>
@@ -755,10 +759,16 @@ export default function NexoAdminPage() {
             )}
             <Campo label="Título (opcional)" valor={formItem.titulo} onChange={v=>setFormItem(f=>({...f,titulo:v}))} />
             <CampoTA label="Descripción (opcional)" valor={formItem.descripcion} onChange={v=>setFormItem(f=>({...f,descripcion:v}))} />
-            <button onClick={agregarItem} disabled={!formItem.url||subiendoImg==="item"}
-              style={{ width:"100%", background:`linear-gradient(135deg,${colorNexo}cc,${colorNexo})`, border:"none", borderRadius:"12px", padding:"14px", fontSize:"15px", fontWeight:900, color:"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif", opacity:formItem.url?1:0.5, boxShadow:`0 4px 0 ${colorNexo}88` }}>
-              ✅ Agregar al slider
-            </button>
+            {(() => {
+              const esTexto = popupItem && TIPOS_TEXTO.includes(popupItem.slider.tipo);
+              const habilitado = subiendoImg!=="item" && (esTexto ? (!!formItem.titulo || !!formItem.descripcion) : !!formItem.url);
+              return (
+                <button onClick={agregarItem} disabled={!habilitado}
+                  style={{ width:"100%", background:`linear-gradient(135deg,${colorNexo}cc,${colorNexo})`, border:"none", borderRadius:"12px", padding:"14px", fontSize:"15px", fontWeight:900, color:"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif", opacity:habilitado?1:0.5, boxShadow:`0 4px 0 ${colorNexo}88` }}>
+                  ✅ Agregar al slider
+                </button>
+              );
+            })()}
           </div>
         </div>
       )}
@@ -780,9 +790,13 @@ export default function NexoAdminPage() {
               <label style={LS}>Precio en BIT (0 = gratis)</label>
               <input type="number" min="0" value={formDesc.precio_bits} onChange={e=>setFormDesc(f=>({...f,precio_bits:e.target.value}))} style={IS} />
             </div>
-            {parseInt(formDesc.precio_bits)>0 && (
+            {parseInt(formDesc.precio_bits)>0 ? (
               <div style={{ background:"rgba(22,160,133,0.08)", borderRadius:"10px", padding:"10px 14px", marginBottom:"12px", fontSize:"12px", fontWeight:700, color:"#16a085" }}>
-                Por cada descarga recibís: <strong>{Math.floor(parseInt(formDesc.precio_bits)*0.6)} BIT Promotor</strong> (60%)
+                El usuario paga {formDesc.precio_bits} BIT — vos recibís <strong>{Math.floor(parseInt(formDesc.precio_bits)*0.6)} BIT Promotor</strong> (60%)
+              </div>
+            ) : (
+              <div style={{ background:"rgba(39,174,96,0.08)", borderRadius:"10px", padding:"10px 14px", marginBottom:"12px", fontSize:"12px", fontWeight:800, color:"#27ae60" }}>
+                🎁 GRATIS — los miembros descargan sin costo
               </div>
             )}
             <button onClick={agregarDescarga} disabled={!formDesc.url||!formDesc.titulo}

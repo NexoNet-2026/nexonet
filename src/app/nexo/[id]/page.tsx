@@ -179,6 +179,7 @@ export default function NexoPage() {
   );
   const esMiembro = miMiembro?.estado === "activo";
   const [solicitandoAdmin, setSolicitandoAdmin] = useState(false);
+  const [popupUnirse, setPopupUnirse] = useState(false);
   const colorNexo = TIPO_COLORES[nexo?.tipo] || "#d4a017";
   const emojiNexo = nexo?.subtipo ? SUBTIPO_EMOJIS[nexo.subtipo] : TIPO_EMOJIS[nexo?.tipo] || "✨";
 
@@ -187,7 +188,6 @@ export default function NexoPage() {
     const acceso = nexo?.config?.tipo_acceso || "libre";
 
     if (acceso === "aprobacion") {
-      // Solo solicitar, sin cobrar BIT todavía
       const { data: mm } = await supabase.from("nexo_miembros")
         .insert({ nexo_id:id, usuario_id:perfil.id, rol:"miembro", estado:"pendiente", bits_pagados:0 })
         .select().single();
@@ -195,19 +195,29 @@ export default function NexoPage() {
       alert("Tu solicitud fue enviada. El administrador la revisará.");
       return;
     }
+    setPopupUnirse(true);
+  };
 
-    // Para "libre" y "pago": usuario paga 500 BIT, dueño recibe 150 BIT Promotor
-    const bitsTotal = Math.max(0,(perfil.bits||0)) + Math.max(0,(perfil.bits_free||0)) + Math.max(0,(perfil.bits_promo||0));
-    if (bitsTotal < 500) { alert("Necesitás 500 BIT para unirte a este grupo"); return; }
-    const campo = (perfil.bits_free||0) >= 500 ? "bits_free" : (perfil.bits_promo||0) >= 500 ? "bits_promo" : "bits";
-    await supabase.from("usuarios").update({ [campo]: (perfil[campo]||0) - 500 }).eq("id", perfil.id);
-    setPerfil((p:any) => ({...p, [campo]: (p[campo]||0) - 500}));
+  const confirmarUnirse = async (metodo: MetodoPago) => {
+    if (!perfil) return;
+    if (metodo === "bit_free") { alert("No se puede pagar con BIT Free"); return; }
+    const campo = "bits";
+    const saldo = perfil.bits || 0;
+    if (saldo < 500) { alert(`No tenés suficientes BIT Nexo. Tenés ${saldo}, necesitás 500.`); return; }
+
+    const { error: e1 } = await supabase.from("usuarios").update({ bits: saldo - 500 }).eq("id", perfil.id);
+    if (e1) { console.error("Error descontando BIT:", e1); alert("Error: " + e1.message); return; }
+    setPerfil((p:any) => ({...p, bits: saldo - 500}));
+
     // Acreditar 150 BIT Promotor al dueño
     const { data: dueno } = await supabase.from("usuarios").select("bits_promo,bits_promotor_total").eq("id", nexo.usuario_id).single();
-    if (dueno) await supabase.from("usuarios").update({
-      bits_promo: (dueno.bits_promo || 0) + 150,
-      bits_promotor_total: (dueno.bits_promotor_total || 0) + 150,
-    }).eq("id", nexo.usuario_id);
+    if (dueno) {
+      const { error: e2 } = await supabase.from("usuarios").update({
+        bits_promo: (dueno.bits_promo || 0) + 150,
+        bits_promotor_total: (dueno.bits_promotor_total || 0) + 150,
+      }).eq("id", nexo.usuario_id);
+      if (e2) console.error("Error acreditando promotor:", e2);
+    }
 
     const { data: mm } = await supabase.from("nexo_miembros")
       .insert({ nexo_id:id, usuario_id:perfil.id, rol:"miembro", estado:"activo", bits_pagados:500 })
@@ -448,6 +458,22 @@ export default function NexoPage() {
             )}
           </div>
         </div>
+      )}
+
+      {/* POPUP UNIRSE AL GRUPO */}
+      {popupUnirse && (
+        <PopupCompra
+          titulo="👥 Unirse al grupo"
+          emoji="👥"
+          costo="500 BIT"
+          descripcion={nexo?.titulo}
+          bits={{ free: 0, nexo: Math.max(0, perfil?.bits||0), promo: Math.max(0, perfil?.bits_promo||0) }}
+          onClose={() => setPopupUnirse(false)}
+          onPagar={async (metodo: MetodoPago) => {
+            setPopupUnirse(false);
+            await confirmarUnirse(metodo);
+          }}
+        />
       )}
 
       {/* POPUP CONFIRMAR PAGO DESCARGA */}

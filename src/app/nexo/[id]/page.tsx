@@ -249,8 +249,9 @@ export default function NexoPage() {
       descarga_id:descarga.id, nexo_id:id, comprador_id:perfil.id,
       admin_id:nexo.usuario_id, bits_pagados:descarga.precio_bits, bits_admin:bitsAdmin, bits_nexonet:bitsNexonet,
     });
-    // Incrementar contador
+    // Incrementar contador (intentar en ambas tablas, una fallará silenciosamente)
     await supabase.from("nexo_descargas").update({ descargas:(descarga.descargas||0)+1 }).eq("id",descarga.id);
+    await supabase.from("nexo_slider_items").update({ descargas:(descarga.descargas||0)+1 }).eq("id",descarga.id);
 
     setDescargasPagadas(prev => new Set([...prev, descarga.id]));
     setPagandoDescarga(null);
@@ -538,7 +539,7 @@ function SliderContenido({ slider, items, mensajes, perfil, nexo, esAdmin, esMie
                 ) : (esMiembro||esAdmin) ? (
                   <button onClick={()=>onPagarDescarga(item)} disabled={!!procesando}
                     style={{ width:"100%", background:`linear-gradient(135deg,${colorNexo}cc,${colorNexo})`, border:"none", borderRadius:"12px", padding:"12px", fontSize:"14px", fontWeight:900, color:"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif", boxShadow:`0 3px 0 ${colorNexo}88` }}>
-                    {procesando?"⏳ Procesando...`":`💰 Pagar ${item.precio_bits} BIT y descargar`}
+                    {procesando?"⏳ Procesando...":`💰 Pagar ${item.precio_bits} BIT y descargar`}
                   </button>
                 ) : (
                   <div style={{ textAlign:"center", fontSize:"13px", fontWeight:700, color:"#9a9a9a", padding:"10px", background:"#f4f4f2", borderRadius:"12px" }}>

@@ -64,7 +64,7 @@ export default function NexoAdminPage() {
     whatsapp:"", link_externo:"", banner_url:"", avatar_url:"",
   });
   const [formItem, setFormItem] = useState({ titulo:"", descripcion:"", url:"", tipo:"imagen", precio_bits:"0" });
-  const [formDesc, setFormDesc] = useState({ titulo:"", descripcion:"", url:"", tipo_archivo:"pdf", precio_bits:"10" });
+  const [formDesc, setFormDesc] = useState({ titulo:"", descripcion:"", url:"", tipo_archivo:"pdf", precio_bits:"10", rights:false });
 
   useEffect(() => {
     const cargar = async () => {
@@ -229,6 +229,7 @@ export default function NexoAdminPage() {
       nexo_id:id, titulo:formDesc.titulo, descripcion:formDesc.descripcion||null,
       url:formDesc.url, precio_bits:precioBits,
       tipo_archivo:formDesc.tipo_archivo,
+      rights_declared:true, rights_declared_at:new Date().toISOString(),
     }).select().single();
     if (data) setDescargas(prev=>[data,...prev]);
     // También insertar en nexo_slider_items si existe slider tipo "descargas"
@@ -244,7 +245,7 @@ export default function NexoAdminPage() {
       }).select().single();
       if (si) setSliderItems(prev=>({...prev,[sliderDesc.id]:[...(prev[sliderDesc.id]||[]),si]}));
     }
-    setFormDesc({ titulo:"", descripcion:"", url:"", tipo_archivo:"pdf", precio_bits:"10" });
+    setFormDesc({ titulo:"", descripcion:"", url:"", tipo_archivo:"pdf", precio_bits:"10", rights:false });
     setPopupDescarga(false);
   };
 
@@ -860,8 +861,14 @@ export default function NexoAdminPage() {
                 🎁 GRATIS — los miembros descargan sin costo
               </div>
             )}
-            <button onClick={agregarDescarga} disabled={!formDesc.url||!formDesc.titulo}
-              style={{ width:"100%", background:"linear-gradient(135deg,#16a085,#1abc9c)", border:"none", borderRadius:"12px", padding:"14px", fontSize:"15px", fontWeight:900, color:"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif", opacity:formDesc.url&&formDesc.titulo?1:0.5, boxShadow:"0 4px 0 #0e6b59" }}>
+            <label style={{ display:"flex", alignItems:"flex-start", gap:"10px", cursor:"pointer", padding:"12px 14px", background:"rgba(142,68,173,0.06)", border:"2px solid rgba(142,68,173,0.2)", borderRadius:"12px", marginBottom:"14px" }}>
+              <input type="checkbox" checked={formDesc.rights} onChange={e=>setFormDesc(f=>({...f,rights:e.target.checked}))} style={{ width:"18px", height:"18px", accentColor:"#8e44ad", marginTop:"2px", flexShrink:0 }} />
+              <span style={{ fontSize:"11px", fontWeight:700, color:"#1a2a3a", lineHeight:1.5 }}>
+                Declaro que soy titular o tengo autorización expresa para distribuir este contenido. Asumo plena responsabilidad legal por su publicación.
+              </span>
+            </label>
+            <button onClick={agregarDescarga} disabled={!formDesc.url||!formDesc.titulo||!formDesc.rights}
+              style={{ width:"100%", background:"linear-gradient(135deg,#16a085,#1abc9c)", border:"none", borderRadius:"12px", padding:"14px", fontSize:"15px", fontWeight:900, color:"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif", opacity:formDesc.url&&formDesc.titulo&&formDesc.rights?1:0.5, boxShadow:"0 4px 0 #0e6b59" }}>
               ✅ Publicar descarga
             </button>
           </div>

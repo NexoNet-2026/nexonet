@@ -564,11 +564,15 @@ export default function Usuario() {
               </div>
             )}
 
-            {/* Darme de baja */}
-            <button onClick={()=>setPopupBaja(true)}
-              style={{ background:"none", border:"none", padding:"16px 0 0", cursor:"pointer", fontFamily:"'Nunito',sans-serif", fontSize:"12px", fontWeight:600, color:"#cc6666", textAlign:"center", width:"100%" }}>
-              Solicitar baja de cuenta
-            </button>
+            {/* Legal + Darme de baja */}
+            <div style={{ display:"flex", justifyContent:"center", gap:"16px", paddingTop:"16px" }}>
+              <button onClick={()=>router.push("/legal")} style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"'Nunito',sans-serif", fontSize:"12px", fontWeight:600, color:"#3a7bd5" }}>
+                ⚖️ Legal
+              </button>
+              <button onClick={()=>setPopupBaja(true)} style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"'Nunito',sans-serif", fontSize:"12px", fontWeight:600, color:"#cc6666" }}>
+                Solicitar baja de cuenta
+              </button>
+            </div>
           </div>
         )}
 

@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabase";
 
 const ADMIN_UUID = "ab56253d-b92e-4b73-a19a-3cd0cd95c458";
 
-type Tab = "dashboard"|"usuarios"|"anuncios"|"grupos"|"mensajes"|"promotores"|"pagos"|"alarmas"|"config"|"contactos";
+type Tab = "dashboard"|"usuarios"|"anuncios"|"grupos"|"mensajes"|"promotores"|"pagos"|"alarmas"|"config"|"contactos"|"reclamos";
 type ConfigSub = "anuncios"|"empresas"|"servicios"|"trabajo"|"grupos"|"filtros_ia";
 
 const S = {
@@ -91,6 +91,9 @@ export default function AdminPanel() {
 
   const [nuevaAn, setNuevaAn] = useState<any>({ titulo:"", descripcion:"", precio:"", provincia:"", ciudad:"", tipo:"conexion", flash:false, permuto:false });
   const [nuevoGr, setNuevoGr] = useState({ nombre:"", descripcion:"", categoria_id:"" });
+
+  // Reclamos copyright
+  const [claims, setClaims] = useState<any[]>([]);
 
   // Filtros IA
   const [filtrosIA, setFiltrosIA] = useState<any[]>([]);
@@ -179,6 +182,10 @@ export default function AdminPanel() {
       .select("*,usuarios(nombre_usuario,codigo,email)")
       .order("created_at",{ascending:false}).limit(100);
     setContactos(contData||[]);
+
+    // Reclamos copyright
+    const {data:claimsData} = await supabase.from("copyright_claims").select("*").order("received_at",{ascending:false}).limit(100);
+    setClaims(claimsData||[]);
 
     // Visitas stats
     const hoy = new Date().toISOString().slice(0,10);
@@ -632,6 +639,7 @@ export default function AdminPanel() {
     {id:"alarmas",  e:"🔔",l:"Alarmas"},
     {id:"contactos",e:"📩",l:"Contactos"},
     {id:"config",   e:"⚙️",l:"Config"},
+    {id:"reclamos", e:"⚖️",l:"Reclamos"},
   ];
 
   const ItemRow = ({label,onEdit,onDelete,onUp,onDown,badge,extra}:{label:string;onEdit:()=>void;onDelete:()=>void;onUp?:()=>void;onDown?:()=>void;badge?:React.ReactNode;extra?:React.ReactNode}) => (
@@ -1297,6 +1305,49 @@ export default function AdminPanel() {
                 <button onClick={async()=>{await supabase.auth.signOut();router.push("/admin/login");}} style={S.btn("#e74c3c")}>🚪 Cerrar sesión</button>
               </div>
             </div>
+          </>
+        )}
+        {/* ══ RECLAMOS ═══════════════════════════════════════════════════════ */}
+        {!loading && tab==="reclamos" && (
+          <>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"10px",marginBottom:"14px"}}>
+              <StatBox n={String(claims.filter(c=>c.status==="pending").length)} l="Pendientes" e="⏳" c="#e67e22" />
+              <StatBox n={String(claims.filter(c=>c.status==="valid").length)} l="Válidos" e="✅" c="#27ae60" />
+              <StatBox n={String(claims.length)} l="Total" e="⚖️" c="#3a7bd5" />
+            </div>
+            {claims.length===0 && <div style={{...S.card,textAlign:"center",color:"#9a9a9a",fontWeight:600}}>No hay reclamos todavía.</div>}
+            {claims.map(c=>(
+              <div key={c.id} style={{...S.card,borderLeft:`4px solid ${c.status==="pending"?"#e67e22":c.status==="valid"?"#27ae60":"#9a9a9a"}`}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"8px"}}>
+                  <div>
+                    <div style={{fontSize:"14px",fontWeight:900,color:"#1a2a3a"}}>{c.claimant_name}</div>
+                    <div style={{fontSize:"12px",color:"#9a9a9a",fontWeight:600}}>{c.claimant_email} · {new Date(c.received_at).toLocaleDateString("es-AR")}</div>
+                  </div>
+                  <span style={S.badge("#fff",c.status==="pending"?"#e67e22":c.status==="valid"?"#27ae60":"#9a9a9a")}>{c.status}</span>
+                </div>
+                <div style={{fontSize:"13px",fontWeight:600,color:"#1a2a3a",lineHeight:1.5,background:"#f9f9f7",borderRadius:"10px",padding:"10px 12px",marginBottom:"8px"}}>{c.description}</div>
+                {c.content_url && <div style={{fontSize:"11px",color:"#3a7bd5",fontWeight:700,marginBottom:"8px",wordBreak:"break-all"}}>🔗 {c.content_url}</div>}
+                {c.resolution_notes && <div style={{fontSize:"12px",color:"#27ae60",fontWeight:600,background:"rgba(39,174,96,0.06)",borderRadius:"10px",padding:"8px 12px",marginBottom:"8px"}}>Resolución: {c.resolution_notes}</div>}
+                {c.status==="pending" && (
+                  <div style={{display:"flex",gap:"8px"}}>
+                    <button onClick={async()=>{
+                      await supabase.from("copyright_claims").update({status:"valid",resolved_at:new Date().toISOString(),resolved_by:ADMIN_UUID,resolution_notes:"Contenido removido"}).eq("id",c.id);
+                      if(c.download_id) await supabase.from("nexo_descargas").update({activo:false}).eq("id",c.download_id);
+                      if(c.nexo_slider_item_id) await supabase.from("nexo_slider_items").update({activo:false}).eq("id",c.nexo_slider_item_id);
+                      setClaims(prev=>prev.map(x=>x.id===c.id?{...x,status:"valid",resolved_at:new Date().toISOString()}:x));
+                      showToast("✅ Reclamo válido — contenido removido");
+                    }} style={S.btn("#27ae60")}>✅ Válido — Remover</button>
+                    <button onClick={async()=>{
+                      const motivo = prompt("Motivo del rechazo:");
+                      if(!motivo) return;
+                      await supabase.from("copyright_claims").update({status:"rejected",resolved_at:new Date().toISOString(),resolved_by:ADMIN_UUID,resolution_notes:motivo}).eq("id",c.id);
+                      setClaims(prev=>prev.map(x=>x.id===c.id?{...x,status:"rejected",resolution_notes:motivo,resolved_at:new Date().toISOString()}:x));
+                      showToast("❌ Reclamo rechazado");
+                    }} style={S.btn("#e74c3c",true)}>❌ Rechazar</button>
+                  </div>
+                )}
+              </div>
+            ))}
           </>
         )}
       </div>

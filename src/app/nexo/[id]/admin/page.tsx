@@ -133,14 +133,13 @@ export default function NexoAdminPage() {
   };
 
   const agregarSlider = async (tipo: string, tituloCustom?: string) => {
-    if (sliders.length >= 5) { alert("Máximo 5 sliders por nexo. Eliminá uno para agregar otro."); setPopupSlider(false); return; }
-    // Cobrar 500 BIT
+    // Cobrar 50 BIT por slider adicional
     const bitsTotal = Math.max(0,perfil?.bits||0) + Math.max(0,perfil?.bits_free||0) + Math.max(0,perfil?.bits_promotor||0);
-    if (bitsTotal < 500) { alert("Necesitás 500 BIT para agregar un slider."); return; }
-    const campo = (perfil?.bits||0) >= 500 ? "bits" : (perfil?.bits_free||0) >= 500 ? "bits_free" : "bits_promotor";
+    if (bitsTotal < 50) { alert("Necesitás 50 BIT para agregar un slider."); return; }
+    const campo = (perfil?.bits||0) >= 50 ? "bits" : (perfil?.bits_free||0) >= 50 ? "bits_free" : "bits_promotor";
     const valor = perfil[campo] || 0;
-    await supabase.from("usuarios").update({ [campo]: valor - 500 }).eq("id", perfil.id);
-    setPerfil((p:any) => ({ ...p, [campo]: valor - 500 }));
+    await supabase.from("usuarios").update({ [campo]: valor - 50 }).eq("id", perfil.id);
+    setPerfil((p:any) => ({ ...p, [campo]: valor - 50 }));
 
     const cat = SLIDERS_CATALOGO.find(c=>c.tipo===tipo);
     const titulo = tituloCustom || cat?.titulo || tipo;
@@ -640,7 +639,7 @@ export default function NexoAdminPage() {
           <div style={{ width:"100%", background:"#fff", borderRadius:"24px 24px 0 0", padding:"22px 18px 44px", maxHeight:"80vh", overflowY:"auto", fontFamily:"'Nunito',sans-serif" }} onClick={e=>e.stopPropagation()}>
             <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"20px", color:"#1a2a3a", letterSpacing:"1px", marginBottom:"6px" }}>➕ Tipo de slider</div>
             <div style={{ fontSize:"12px", color:"#9a9a9a", fontWeight:600, marginBottom:"14px" }}>
-              {sliders.length}/5 sliders · 500 BIT por slider
+              {sliders.length} sliders · 50 BIT por slider
             </div>
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"8px", marginBottom:"14px" }}>
               {SLIDERS_CATALOGO.map(c=>{

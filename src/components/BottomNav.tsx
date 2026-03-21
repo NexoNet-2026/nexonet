@@ -87,7 +87,8 @@ export default function BottomNav() {
       }}>
         {navItems.map(({ icon, label, href, central }: any) => {
           const isActive = pathname === href ||
-            (href === "/publicar" && (pathname === "/publicar" || pathname?.startsWith("/nexo/crear")));
+            (href === "/publicar" && (pathname === "/publicar" || pathname?.startsWith("/nexo/crear"))) ||
+            (href.includes("tipo=grupos") && (pathname?.startsWith("/nexo/") || pathname?.startsWith("/grupos")));
 
           if (central) {
             return (

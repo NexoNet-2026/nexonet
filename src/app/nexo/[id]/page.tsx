@@ -40,6 +40,7 @@ export default function NexoPage() {
   const [descargasPagadas, setDescargasPagadas] = useState<Set<string>>(new Set());
   const [ownerInsignia, setOwnerInsignia] = useState<string>("ninguna");
   const [repContadores, setRepContadores] = useState<Record<string,number>>({});
+  const [renovando, setRenovando] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const tabBarRef = useRef<HTMLDivElement>(null);
 
@@ -274,6 +275,43 @@ export default function NexoPage() {
           </div>
         </div>
       </div>
+
+      {/* BANNER RENOVACIÓN EMPRESA */}
+      {nexo?.tipo==="empresa" && nexo?.usuario_id===perfil?.id && nexo?.siguiente_pago && (() => {
+        const ahora = new Date();
+        const sigPago = new Date(nexo.siguiente_pago);
+        const diasRest = Math.ceil((sigPago.getTime() - ahora.getTime()) / (1000*60*60*24));
+        const esTrial = !!nexo.trial_hasta && new Date(nexo.trial_hasta) >= ahora;
+        const vencido = diasRest <= 0;
+        const proximo = diasRest > 0 && diasRest <= 5;
+
+        if (!vencido && !proximo) return null;
+        return (
+          <div style={{padding:"10px 16px",background:vencido?"rgba(231,76,60,0.1)":"rgba(230,126,34,0.1)",borderBottom:vencido?"2px solid rgba(231,76,60,0.3)":"2px solid rgba(230,126,34,0.3)"}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:"10px"}}>
+              <div>
+                <div style={{fontSize:"12px",fontWeight:800,color:vencido?"#e74c3c":"#e67e22"}}>
+                  {vencido ? "⚠️ Tu empresa está pausada — renovar para reactivar" : `⏰ ${esTrial?"Trial":"Plan"} vence en ${diasRest} día${diasRest!==1?"s":""}`}
+                </div>
+                <div style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600}}>Costo: 10.000 BIT/mes</div>
+              </div>
+              <button onClick={async()=>{
+                setRenovando(true);
+                const res = await fetch("/api/empresa/renovar",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({nexo_id:nexo.id,usuario_id:perfil.id})});
+                const data = await res.json();
+                if (data.ok) {
+                  setNexo((n:any)=>({...n,siguiente_pago:data.siguiente_pago,estado:"activo"}));
+                  alert("✅ Empresa renovada por 30 días");
+                } else { alert(data.error||"Error al renovar"); }
+                setRenovando(false);
+              }} disabled={renovando}
+                style={{background:vencido?"linear-gradient(135deg,#e74c3c,#c0392b)":"linear-gradient(135deg,#e67e22,#d35400)",border:"none",borderRadius:"10px",padding:"8px 14px",fontSize:"12px",fontWeight:900,color:"#fff",cursor:"pointer",fontFamily:"'Nunito',sans-serif",whiteSpace:"nowrap",opacity:renovando?0.6:1}}>
+                {renovando?"⏳":"🔄 Renovar"}
+              </button>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* TAB BAR SLIDER */}
       <div ref={tabBarRef} style={{ position:"sticky", top:"60px", zIndex:100, background:"#1a2a3a", boxShadow:"0 3px 14px rgba(0,0,0,0.28)", overflowX:"auto", scrollbarWidth:"none", display:"flex" }}>

@@ -128,7 +128,7 @@ export default function Usuario() {
 
       // Cargar nexos del usuario (empresa, servicio, trabajo)
       const { data: nxData } = await supabase.from("nexos")
-        .select("id,titulo,tipo,ciudad,provincia,avatar_url,estado")
+        .select("id,titulo,tipo,ciudad,provincia,avatar_url,estado,trial_hasta,siguiente_pago")
         .eq("usuario_id", session.user.id)
         .order("created_at", { ascending: false });
       if (nxData) setMisNexos(nxData);
@@ -373,11 +373,18 @@ export default function Usuario() {
               </div>
               <div style={{ flex:1, padding:"12px 14px" }}>
                 <div style={{ fontSize:"14px", fontWeight:900, color:"#1a2a3a", marginBottom:"4px" }}>{n.titulo}</div>
-                <div style={{ display:"flex", gap:"8px", alignItems:"center" }}>
+                <div style={{ display:"flex", gap:"8px", alignItems:"center", flexWrap:"wrap" }}>
                   {n.ciudad && <span style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:600 }}>📍 {n.ciudad}</span>}
                   <span style={{ fontSize:"10px", fontWeight:800, padding:"2px 8px", borderRadius:"20px", background: n.estado==="activo" ? "#e8f8ee" : "#f4f4f2", color: n.estado==="activo" ? "#27ae60" : "#9a9a9a" }}>
                     {n.estado === "activo" ? "✓ Activo" : "⏸ Pausado"}
                   </span>
+                  {tipo==="empresa" && n.siguiente_pago && (() => {
+                    const dias = Math.ceil((new Date(n.siguiente_pago).getTime() - Date.now()) / (1000*60*60*24));
+                    const esTrial = n.trial_hasta && new Date(n.trial_hasta) >= new Date();
+                    if (dias <= 0) return <span style={{ fontSize:"10px", fontWeight:800, padding:"2px 8px", borderRadius:"20px", background:"#fde8e8", color:"#e74c3c" }}>⚠️ Vencido</span>;
+                    if (dias <= 5) return <span style={{ fontSize:"10px", fontWeight:800, padding:"2px 8px", borderRadius:"20px", background:"#fef3e0", color:"#e67e22" }}>⏰ {dias}d</span>;
+                    return <span style={{ fontSize:"10px", fontWeight:800, padding:"2px 8px", borderRadius:"20px", background:"#e8f0fe", color:"#3a7bd5" }}>{esTrial?"🎉 Trial":"📅"} {dias}d</span>;
+                  })()}
                 </div>
               </div>
               <div style={{ display:"flex", alignItems:"center", paddingRight:"12px", color:`${color}80`, fontSize:"20px" }}>›</div>

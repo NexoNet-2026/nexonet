@@ -733,10 +733,10 @@ function BuscarInner() {
                 (entRubroSel ? entRubros.filter(r=>r.id===entRubroSel) : entRubros).map(rubro => {
                   const subs = (rubro.subrubros||[]).sort((a:any,b:any)=>(a.orden||0)-(b.orden||0));
                   const allItems = (nexosPorTipo[tipoActivo]||[]);
-                  const rubroSubIds = subs.map((s:any)=>s.id);
-                  const itemsRubro = allItems.filter((n:any) => rubroSubIds.includes(n.subrubro_id) || (!n.subrubro_id && !entRubroSel));
-                  const itemsFinal = entSubSel ? itemsRubro.filter((n:any)=>n.subrubro_id===entSubSel) : itemsRubro;
-                  if (itemsFinal.length === 0 && !entRubroSel) return null;
+                  const rubroSubIds = subs.map((s:any)=>Number(s.id));
+                  const itemsRubro = allItems.filter((n:any) => rubroSubIds.includes(Number(n.subrubro_id)));
+                  const itemsFinal = entSubSel ? itemsRubro.filter((n:any)=>Number(n.subrubro_id)===Number(entSubSel)) : itemsRubro;
+                  if (itemsFinal.length === 0 && !entRubroSel && subs.length === 0) return null;
                   return (
                     <div key={rubro.id} style={{marginBottom:"8px",background:"#fff",paddingBottom:"12px",borderBottom:"6px solid #f4f4f2"}}>
                       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 16px 8px"}}>
@@ -790,8 +790,8 @@ function BuscarInner() {
               )}
               {/* Sin categoría */}
               {entRubros.length > 0 && !entRubroSel && (() => {
-                const allSubIds = entRubros.flatMap(r=>(r.subrubros||[]).map((s:any)=>s.id));
-                const sinCat = (nexosPorTipo[tipoActivo]||[]).filter((n:any)=>!n.subrubro_id || !allSubIds.includes(n.subrubro_id));
+                const allSubIds = entRubros.flatMap(r=>(r.subrubros||[]).map((s:any)=>Number(s.id)));
+                const sinCat = (nexosPorTipo[tipoActivo]||[]).filter((n:any)=>!n.subrubro_id || !allSubIds.includes(Number(n.subrubro_id)));
                 if (sinCat.length === 0) return null;
                 return (
                   <div style={{marginBottom:"8px",background:"#fff",paddingBottom:"12px",borderBottom:"6px solid #f4f4f2"}}>

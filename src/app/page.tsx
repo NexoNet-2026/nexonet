@@ -17,20 +17,30 @@ export default function Home() {
 
   const anuFiltrados = soloPermuto ? anuncios.filter(a => a.permuto) : anuncios;
   const recientes = anuFiltrados.slice(0, 12);
-  const grupos    = nexos.filter(n => n.tipo === "grupo").slice(0, 10);
   const empresas  = nexos.filter(n => n.tipo === "empresa").slice(0, 10);
   const servicios = nexos.filter(n => n.tipo === "servicio").slice(0, 10);
   const trabajos  = nexos.filter(n => n.tipo === "trabajo").slice(0, 10);
 
+  const SUBTIPOS_GRUPO: {key:string;emoji:string;label:string}[] = [
+    {key:"emprendimiento",emoji:"🚀",label:"Emprendimientos"},
+    {key:"curso",emoji:"🎓",label:"Cursos"},
+    {key:"consorcio",emoji:"🏢",label:"Consorcios"},
+    {key:"deportivo",emoji:"⚽",label:"Deportivos"},
+    {key:"estudio",emoji:"📚",label:"Estudio"},
+    {key:"venta",emoji:"🛒",label:"Venta"},
+    {key:"artistas",emoji:"🎨",label:"Artistas"},
+    {key:"vecinos",emoji:"🏘️",label:"Vecinos"},
+    {key:"generico",emoji:"✨",label:"Grupos"},
+  ];
+
   const sections: { titulo: string; acento: string; tipo: string; emoji: string; textoVacio: string; crearUrl: string; nexoUrl: (id: string) => string }[] = [
     { titulo: "🏢 Empresas",     acento: "#c0392b", tipo: "empresas",  emoji: "🏢", textoVacio: "Sé el primero en crear una empresa",    crearUrl: "/nexo/crear/empresa",  nexoUrl: id => `/nexo/${id}` },
-    { titulo: "👥 Grupos",       acento: "#3a7bd5", tipo: "grupos",    emoji: "👥", textoVacio: "Sé el primero en crear un grupo",       crearUrl: "/nexo/crear/grupo",    nexoUrl: id => `/nexo/${id}` },
     { titulo: "🛠️ Servicios",   acento: "#27ae60", tipo: "servicios", emoji: "🛠️", textoVacio: "Sé el primero en ofrecer un servicio", crearUrl: "/nexo/crear/servicio", nexoUrl: id => `/nexo/${id}` },
     { titulo: "💼 Busco Trabajo", acento: "#8e44ad", tipo: "trabajo",  emoji: "💼", textoVacio: "Sé el primero en buscar trabajo",       crearUrl: "/nexo/crear/trabajo",  nexoUrl: id => `/nexo/${id}` },
   ];
 
   const nexosByTipo: Record<string, typeof nexos> = {
-    empresas: empresas, grupos: grupos, servicios: servicios, trabajo: trabajos,
+    empresas: empresas, servicios: servicios, trabajo: trabajos,
   };
 
   return (
@@ -45,6 +55,22 @@ export default function Home() {
           <Slider titulo="🕐 Recién publicados" acento="#d4a017" verTodos="/buscar" onTituloClick={() => router.push("/buscar")}>
             {recientes.map((a, i) => <TarjetaAnuncio key={a.id} a={a} esPrimero={i === 0 && (a.visitas_semana || 0) > 0} />)}
           </Slider>
+
+          {/* GRUPOS POR SUBTIPO */}
+          {SUBTIPOS_GRUPO.map(st => {
+            const items = nexos.filter(n => n.tipo === "grupo" && n.subtipo === st.key).slice(0, 10);
+            if (items.length === 0) return null;
+            return (
+              <Slider key={st.key} titulo={`${st.emoji} ${st.label}`} acento="#3a7bd5" verTodos="/grupos" onTituloClick={() => router.push("/grupos")}>
+                {items.map((n, i) => <TarjetaNexo key={n.id} nexo={n} color="#3a7bd5" onClick={() => router.push(`/nexo/${n.id}`)} esPrimero={i === 0 && (n.visitas_semana || 0) > 0} />)}
+              </Slider>
+            );
+          })}
+          {nexos.filter(n => n.tipo === "grupo").length === 0 && (
+            <Slider titulo="👥 Grupos" acento="#3a7bd5" verTodos="/grupos" onTituloClick={() => router.push("/grupos")}>
+              {[<TarjetaVacia key="vacia" emoji="👥" texto="Sé el primero en crear un grupo" color="#3a7bd5" onClick={() => router.push("/nexo/crear/grupo")} />]}
+            </Slider>
+          )}
 
           {sections.map(s => {
             const items = nexosByTipo[s.tipo] || [];

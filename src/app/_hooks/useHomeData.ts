@@ -24,7 +24,7 @@ export function useHomeData() {
           subrubros(nombre,rubros(nombre))
         `).eq("estado", "activo").order("created_at", { ascending: false }).limit(80),
         supabase.from("nexos")
-          .select("id,titulo,descripcion,tipo,ciudad,provincia,avatar_url,config,usuario_id,usuarios(insignia_logro)")
+          .select("id,titulo,descripcion,tipo,subtipo,ciudad,provincia,avatar_url,config,usuario_id,usuarios(insignia_logro)")
           .order("created_at", { ascending: false }).limit(120),
       ]);
 

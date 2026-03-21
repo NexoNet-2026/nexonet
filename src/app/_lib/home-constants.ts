@@ -19,6 +19,7 @@ export type Anuncio = {
 
 export type Nexo = {
   id: string; titulo: string; descripcion: string; tipo: string;
+  subtipo?: string;
   ciudad: string; provincia: string; avatar_url: string;
   miembros_count?: number; config?: any;
   visitas_semana?: number;

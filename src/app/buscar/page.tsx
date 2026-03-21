@@ -27,6 +27,18 @@ type Ciudad = { id:number; nombre:string; provincia_id:number };
 type Barrio = { id:number; nombre:string; ciudad_id:number };
 type TipoPublicacion = "anuncios" | "grupos" | "empresas" | "servicios" | "trabajo";
 
+const SUBTIPOS_GRUPO = [
+  {key:"emprendimiento",emoji:"🚀",label:"Emprendimientos"},
+  {key:"curso",emoji:"🎓",label:"Cursos"},
+  {key:"consorcio",emoji:"🏢",label:"Consorcios"},
+  {key:"deportivo",emoji:"⚽",label:"Deportivos"},
+  {key:"estudio",emoji:"📚",label:"Estudio"},
+  {key:"venta",emoji:"🛒",label:"Venta"},
+  {key:"artistas",emoji:"🎨",label:"Artistas"},
+  {key:"vecinos",emoji:"🏘️",label:"Vecinos"},
+  {key:"generico",emoji:"✨",label:"General"},
+];
+
 const TIPOS: { key:TipoPublicacion; emoji:string; label:string; color:string }[] = [
   { key:"anuncios",  emoji:"📣", label:"Anuncios",  color:"#d4a017" },
   { key:"grupos",    emoji:"👥", label:"Grupos",    color:"#3a7bd5" },
@@ -647,24 +659,13 @@ function BuscarInner() {
             <div>
               {/* SUBTIPOS SLIDER */}
               {(() => {
-                const subtipos = [
-                  {key:"emprendimiento",emoji:"🚀",label:"Emprendimiento"},
-                  {key:"curso",emoji:"🎓",label:"Curso"},
-                  {key:"consorcio",emoji:"🏢",label:"Consorcio"},
-                  {key:"deportivo",emoji:"⚽",label:"Deportivo"},
-                  {key:"estudio",emoji:"📚",label:"Estudio"},
-                  {key:"venta",emoji:"🛒",label:"Venta"},
-                  {key:"artistas",emoji:"🎨",label:"Artistas"},
-                  {key:"vecinos",emoji:"🏘️",label:"Vecinos"},
-                  {key:"generico",emoji:"✨",label:"General"},
-                ];
                 return (
                   <div style={{padding:"12px 16px 0",overflowX:"auto",scrollbarWidth:"none",display:"flex",gap:"8px",WebkitOverflowScrolling:"touch"}}>
                     <button onClick={()=>setGrupoSubtipoSel(null)}
                       style={{flexShrink:0,background:!grupoSubtipoSel?"#3a7bd5":"#fff",border:"2px solid rgba(58,123,213,0.4)",borderRadius:"20px",padding:"6px 14px",fontSize:"12px",fontWeight:800,color:!grupoSubtipoSel?"#fff":"#3a7bd5",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>
                       Todos
                     </button>
-                    {subtipos.map(st=>(
+                    {SUBTIPOS_GRUPO.map(st=>(
                       <button key={st.key} onClick={()=>setGrupoSubtipoSel(st.key)}
                         style={{flexShrink:0,background:grupoSubtipoSel===st.key?"#3a7bd5":"#fff",border:"2px solid rgba(58,123,213,0.4)",borderRadius:"20px",padding:"6px 14px",fontSize:"12px",fontWeight:800,color:grupoSubtipoSel===st.key?"#fff":"#3a7bd5",cursor:"pointer",fontFamily:"'Nunito',sans-serif",whiteSpace:"nowrap"}}>
                         {st.emoji} {st.label}
@@ -674,23 +675,55 @@ function BuscarInner() {
                 );
               })()}
               {/* LISTADO */}
-              <div style={{padding:"12px 16px",display:"flex",flexDirection:"column",gap:"12px"}}>
-                {(nexosPorTipo["grupos"]||[]).length === 0 ? (
-                  <div style={{textAlign:"center",padding:"50px 20px"}}>
-                    <div style={{fontSize:"48px",marginBottom:"12px"}}>👥</div>
-                    <div style={{fontSize:"16px",fontWeight:900,color:"#1a2a3a",marginBottom:"6px"}}>No hay grupos {grupoSubtipoSel?"de este tipo":"todavía"}</div>
-                    <div style={{fontSize:"13px",color:"#9a9a9a",fontWeight:600,marginBottom:"20px"}}>Sé el primero en crear uno</div>
-                    <button onClick={()=>router.push("/nexo/crear/grupo")}
-                      style={{background:"linear-gradient(135deg,#3a7bd5cc,#3a7bd5)",border:"none",borderRadius:"12px",padding:"12px 24px",fontSize:"13px",fontWeight:900,color:"#fff",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>
-                      ➕ Crear grupo
-                    </button>
-                  </div>
-                ) : (
-                  (nexosPorTipo["grupos"]||[]).map((n, i) => (
+              {(nexosPorTipo["grupos"]||[]).length === 0 ? (
+                <div style={{textAlign:"center",padding:"50px 20px"}}>
+                  <div style={{fontSize:"48px",marginBottom:"12px"}}>👥</div>
+                  <div style={{fontSize:"16px",fontWeight:900,color:"#1a2a3a",marginBottom:"6px"}}>No hay grupos {grupoSubtipoSel?"de este tipo":"todavía"}</div>
+                  <div style={{fontSize:"13px",color:"#9a9a9a",fontWeight:600,marginBottom:"20px"}}>Sé el primero en crear uno</div>
+                  <button onClick={()=>router.push("/nexo/crear/grupo")}
+                    style={{background:"linear-gradient(135deg,#3a7bd5cc,#3a7bd5)",border:"none",borderRadius:"12px",padding:"12px 24px",fontSize:"13px",fontWeight:900,color:"#fff",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>
+                    ➕ Crear grupo
+                  </button>
+                </div>
+              ) : grupoSubtipoSel ? (
+                <div style={{padding:"12px 16px",display:"flex",gap:"12px",overflowX:"auto",scrollbarWidth:"none",WebkitOverflowScrolling:"touch"}}>
+                  {(nexosPorTipo["grupos"]||[]).map(n => (
                     <TarjetaGrupoSlider key={n.id} nexo={n} onNavigate={()=>router.push(`/nexo/${n.id}`)} />
-                  ))
-                )}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                (() => {
+                  const allGrupos = nexosPorTipo["grupos"]||[];
+                  const stConGrupos = SUBTIPOS_GRUPO.filter(st=>allGrupos.some(g=>g.subtipo===st.key));
+                  const sinSub = allGrupos.filter(g=>!g.subtipo || !SUBTIPOS_GRUPO.some(st=>st.key===g.subtipo));
+                  return (
+                    <>
+                      {stConGrupos.map(st=>{
+                        const items = allGrupos.filter(g=>g.subtipo===st.key);
+                        return (
+                          <div key={st.key} style={{marginBottom:"4px"}}>
+                            <div style={{padding:"12px 16px 6px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                              <span style={{fontSize:"15px",fontWeight:900,color:"#1a2a3a"}}>{st.emoji} {st.label} <span style={{fontSize:"12px",color:"#9a9a9a",fontWeight:600}}>({items.length})</span></span>
+                              <span onClick={()=>setGrupoSubtipoSel(st.key)} style={{fontSize:"12px",fontWeight:700,color:"#3a7bd5",cursor:"pointer"}}>Ver todos →</span>
+                            </div>
+                            <div style={{display:"flex",gap:"12px",padding:"0 16px",overflowX:"auto",scrollbarWidth:"none",WebkitOverflowScrolling:"touch"}}>
+                              {items.slice(0,8).map(n=><TarjetaGrupoSlider key={n.id} nexo={n} onNavigate={()=>router.push(`/nexo/${n.id}`)} />)}
+                            </div>
+                          </div>
+                        );
+                      })}
+                      {sinSub.length > 0 && (
+                        <div style={{marginBottom:"4px"}}>
+                          <div style={{padding:"12px 16px 6px"}}><span style={{fontSize:"15px",fontWeight:900,color:"#1a2a3a"}}>✨ Otros <span style={{fontSize:"12px",color:"#9a9a9a",fontWeight:600}}>({sinSub.length})</span></span></div>
+                          <div style={{display:"flex",gap:"12px",padding:"0 16px",overflowX:"auto",scrollbarWidth:"none",WebkitOverflowScrolling:"touch"}}>
+                            {sinSub.slice(0,8).map(n=><TarjetaGrupoSlider key={n.id} nexo={n} onNavigate={()=>router.push(`/nexo/${n.id}`)} />)}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  );
+                })()
+              )}
             </div>
           )}
 

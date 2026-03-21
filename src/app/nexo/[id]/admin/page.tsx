@@ -74,7 +74,12 @@ export default function NexoAdminPage() {
       setPerfil(u);
 
       const { data: n } = await supabase.from("nexos").select("*").eq("id", id).single();
-      if (!n || n.usuario_id !== session.user.id) { router.push(`/nexo/${id}`); return; }
+      if (!n) { router.push(`/nexo/${id}`); return; }
+      const { data: miRol } = await supabase.from("nexo_miembros")
+        .select("rol").eq("nexo_id",id).eq("usuario_id",session.user.id).eq("estado","activo").maybeSingle();
+      const tieneAcceso = String(n.usuario_id) === String(session.user.id) ||
+        miRol?.rol === "creador" || miRol?.rol === "admin" || miRol?.rol === "admin_pago_pendiente" || miRol?.rol === "moderador";
+      if (!tieneAcceso) { router.push(`/nexo/${id}`); return; }
       setNexo(n);
       setFormInfo({ titulo:n.titulo||"", descripcion:n.descripcion||"", precio:n.precio||"", ciudad:n.ciudad||"", provincia:n.provincia||"", whatsapp:n.whatsapp||"", link_externo:n.link_externo||"", banner_url:n.banner_url||"", avatar_url:n.avatar_url||"" });
 

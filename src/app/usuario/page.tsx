@@ -121,7 +121,7 @@ export default function Usuario() {
 
       const { count: total }  = await supabase.from("anuncios").select("*",{count:"exact",head:true}).eq("usuario_id", session.user.id);
       const { count: activos } = await supabase.from("anuncios").select("*",{count:"exact",head:true}).eq("usuario_id", session.user.id).eq("estado","activo");
-      const { count: grupos }  = await supabase.from("grupos").select("*",{count:"exact",head:true}).eq("creador_id", session.user.id);
+      const { count: grupos }  = await supabase.from("nexos").select("*",{count:"exact",head:true}).eq("usuario_id", session.user.id).eq("tipo","grupo");
       setTotalAnuncios(total || 0);
       setAnunciosActivos(activos || 0);
       setGruposCreados(grupos || 0);
@@ -179,35 +179,32 @@ export default function Usuario() {
 
       if (data) setBitsBusq(data.bits_busquedas || 0);
 
+      // Grupos: cargar desde nexo_miembros (tipo grupo) + nexos creados
       const { data: mgData } = await supabase
-        .from("grupo_miembros")
-        .select("rol, estado, grupo_id, grupos(id,nombre,imagen,tipo,miembros_count,categoria_id,grupo_categorias(nombre,emoji),grupo_subcategorias(nombre))")
+        .from("nexo_miembros")
+        .select("rol, estado, nexo_id")
         .eq("usuario_id", session.user.id)
         .in("estado", ["activo","pendiente"]);
 
-      const { data: creadosData } = await supabase
-        .from("grupos")
-        .select("id,nombre,imagen,tipo,miembros_count,categoria_id,grupo_categorias(nombre,emoji),grupo_subcategorias(nombre)")
-        .eq("creador_id", session.user.id);
+      const miembroNexoIds = (mgData||[]).map((m:any) => m.nexo_id).filter(Boolean);
+      const { data: gruposNexos } = miembroNexoIds.length > 0
+        ? await supabase.from("nexos").select("id,titulo,avatar_url,ciudad,tipo,estado").in("id", miembroNexoIds).eq("tipo","grupo")
+        : { data: [] };
 
-      const miembroIds = new Set((mgData||[]).map((m:any) => m.grupos?.id));
+      const { data: creadosData } = await supabase
+        .from("nexos")
+        .select("id,titulo,avatar_url,ciudad,tipo,estado")
+        .eq("usuario_id", session.user.id).eq("tipo","grupo");
+
+      const miembroIds = new Set((gruposNexos||[]).map((g:any) => g.id));
       const creadosExtra = (creadosData||[]).filter((g:any) => !miembroIds.has(g.id));
 
-      const fromMiembros = (mgData||[]).map((m:any)=>({
-        ...m.grupos,
-        mi_rol:    m.rol,
-        mi_estado: m.estado,
-        categoria_nombre:    m.grupos?.grupo_categorias?.nombre || "",
-        categoria_emoji:     m.grupos?.grupo_categorias?.emoji  || "👥",
-        subcategoria_nombre: m.grupos?.grupo_subcategorias?.nombre || "",
-      }));
-      const fromCreados = creadosExtra.map((g:any)=>({
-        ...g,
-        mi_rol:    "creador",
-        mi_estado: "activo",
-        categoria_nombre:    (g.grupo_categorias as any)?.nombre || "",
-        categoria_emoji:     (g.grupo_categorias as any)?.emoji  || "👥",
-        subcategoria_nombre: (g.grupo_subcategorias as any)?.nombre || "",
+      const fromMiembros = (gruposNexos||[]).map((g:any) => {
+        const mm = (mgData||[]).find((m:any) => m.nexo_id === g.id);
+        return { ...g, nombre: g.titulo, imagen: g.avatar_url, mi_rol: mm?.rol || "miembro", mi_estado: mm?.estado || "activo", categoria_nombre: "", categoria_emoji: "👥", subcategoria_nombre: "" };
+      });
+      const fromCreados = creadosExtra.map((g:any) => ({
+        ...g, nombre: g.titulo, imagen: g.avatar_url, mi_rol: "creador", mi_estado: "activo", categoria_nombre: "", categoria_emoji: "👥", subcategoria_nombre: "",
       }));
       setMisGruposData([...fromMiembros, ...fromCreados]);
     };
@@ -917,7 +914,7 @@ export default function Usuario() {
                 <div style={{ fontSize:"40px", marginBottom:"12px" }}>👥</div>
                 <div style={{ fontSize:"15px", fontWeight:800, color:"#1a2a3a", marginBottom:"6px" }}>No estás en ningún grupo</div>
                 <div style={{ fontSize:"13px", color:"#9a9a9a", fontWeight:600, marginBottom:"20px" }}>Unite a grupos o creá el tuyo</div>
-                <button onClick={()=>router.push("/grupos")} style={{ background:"linear-gradient(135deg,#f0c040,#d4a017)", border:"none", borderRadius:"12px", padding:"12px 24px", fontSize:"13px", fontWeight:900, color:"#1a2a3a", cursor:"pointer", fontFamily:"'Nunito',sans-serif", boxShadow:"0 3px 0 #a07810" }}>🔍 Explorar grupos</button>
+                <button onClick={()=>router.push("/buscar?tipo=grupos")} style={{ background:"linear-gradient(135deg,#f0c040,#d4a017)", border:"none", borderRadius:"12px", padding:"12px 24px", fontSize:"13px", fontWeight:900, color:"#1a2a3a", cursor:"pointer", fontFamily:"'Nunito',sans-serif", boxShadow:"0 3px 0 #a07810" }}>🔍 Explorar grupos</button>
               </div>
             ) : (
               misGruposData.map((g:any) => (
@@ -946,7 +943,7 @@ export default function Usuario() {
                 </div>
               ))
             )}
-            <button onClick={()=>router.push("/grupos/crear")} style={{ background:"rgba(212,160,23,0.08)", border:"2px dashed rgba(212,160,23,0.4)", borderRadius:"16px", padding:"16px", fontSize:"13px", fontWeight:800, color:"#d4a017", cursor:"pointer", fontFamily:"'Nunito',sans-serif", display:"flex", alignItems:"center", justifyContent:"center", gap:"8px" }}>
+            <button onClick={()=>router.push("/nexo/crear/grupo")} style={{ background:"rgba(212,160,23,0.08)", border:"2px dashed rgba(212,160,23,0.4)", borderRadius:"16px", padding:"16px", fontSize:"13px", fontWeight:800, color:"#d4a017", cursor:"pointer", fontFamily:"'Nunito',sans-serif", display:"flex", alignItems:"center", justifyContent:"center", gap:"8px" }}>
               ➕ Crear nuevo grupo
             </button>
           </div>

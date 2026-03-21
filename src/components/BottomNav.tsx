@@ -18,7 +18,7 @@ export default function BottomNav() {
     { icon: "🔍", label: "Buscar",  href: "/buscar" },
     { icon: "🗺️", label: "Mapa",    href: "/mapa" },
     { icon: "➕", label: "Crear",   href: "/publicar", central: true },
-    { icon: "👥", label: "Grupos",  href: "/grupos" },
+    { icon: "👥", label: "Grupos",  href: "/buscar?tipo=grupos" },
     { icon: "👤", label: "Perfil",  href: "/usuario" },
   ];
 

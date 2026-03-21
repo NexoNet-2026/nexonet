@@ -140,16 +140,9 @@ function BuscarInner() {
         .eq("estado","activo").order("created_at",{ascending:false}).limit(200),
       supabase.from("nexos")
         .select("id,titulo,descripcion,tipo,subtipo,ciudad,provincia,avatar_url,banner_url,precio,moneda,usuario_id,config")
-        .eq("estado","activo").order("created_at",{ascending:false}).limit(100),
-      supabase.from("grupos")
-        .select("id,nombre,descripcion,imagen,ciudad,provincia,creador_id,miembros_count,pago_ingreso_admin,config,activo,categoria_id")
-        .eq("activo", true)
-        .order("created_at",{ascending:false}).limit(100),
-      supabase.from("grupo_categorias")
-        .select("id,nombre,emoji")
-        .eq("activo", true)
-        .order("orden"),
-    ]).then(async ([{data:pData},{data:rData},{data:sData},{data:aData},{data:nData},{data:gData},{data:catData}]) => {
+        .eq("estado","activo").order("created_at",{ascending:false}).limit(200),
+    ]).then(async ([{data:pData},{data:rData},{data:sData},{data:aData},{data:nData}]) => {
+      const gData: any[] = []; const catData: any[] = [];
 
       if (pData) setProvs(pData);
 

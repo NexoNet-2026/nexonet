@@ -14,7 +14,7 @@ export function useHomeData() {
     const cargar = async () => {
       const [
         { data: rData }, { data: sData }, { data: aData },
-        { data: nData }, { data: gData },
+        { data: nData },
       ] = await Promise.all([
         supabase.from("rubros").select("id,nombre").order("nombre"),
         supabase.from("subrubros").select("id,nombre,rubro_id").order("nombre"),
@@ -25,10 +25,7 @@ export function useHomeData() {
         `).eq("estado", "activo").order("created_at", { ascending: false }).limit(80),
         supabase.from("nexos")
           .select("id,titulo,descripcion,tipo,ciudad,provincia,avatar_url,config,usuario_id,usuarios(insignia_logro)")
-          .order("created_at", { ascending: false }).limit(60),
-        supabase.from("grupos")
-          .select("id,nombre,descripcion,imagen,ciudad,provincia,creador_id,miembros_count,pago_ingreso_admin")
-          .order("created_at", { ascending: false }).limit(60),
+          .order("created_at", { ascending: false }).limit(120),
       ]);
 
       if (rData) setRubros(rData);
@@ -80,16 +77,7 @@ export function useHomeData() {
         setAnuncios(mapped);
       }
 
-      let nexosArr: Nexo[] = nData ? nData.map((n: any) => ({ ...n, id: String(n.id), owner_insignia_logro: n.usuarios?.insignia_logro || "ninguna" })) : [];
-      const gruposArr: Nexo[] = gData ? gData.map((g: any) => ({
-        id: String(g.id), titulo: g.nombre || "Sin nombre",
-        descripcion: g.descripcion || "", tipo: "grupo",
-        ciudad: g.ciudad || "", provincia: g.provincia || "",
-        avatar_url: g.imagen || "",
-        miembros_count: g.miembros_count || 0,
-        config: { tipo_acceso: g.pago_ingreso_admin ? "pago" : "libre" },
-      })) : [];
-      let allNexos = [...nexosArr, ...gruposArr];
+      let allNexos: Nexo[] = nData ? nData.map((n: any) => ({ ...n, id: String(n.id), owner_insignia_logro: n.usuarios?.insignia_logro || "ninguna" })) : [];
 
       // Obtener visitas semanales de nexos
       const hace7dias = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);

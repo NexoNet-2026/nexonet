@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Header from "@/components/Header";
 import { supabase } from "@/lib/supabase";
@@ -56,7 +56,7 @@ export default function NexoAdminPage() {
   const [sliderItems,   setSliderItems]   = useState<Record<string,any[]>>({});
   const [sliderAbierto, setSliderAbierto] = useState<string|null>(null);
   const [customTitulo,  setCustomTitulo]  = useState("");
-  const fileRef = useRef<HTMLInputElement>(null);
+  const ts = () => new Date().getTime();
 
   const [formInfo, setFormInfo] = useState({
     titulo:"", descripcion:"", precio:"", ciudad:"", provincia:"",
@@ -156,7 +156,7 @@ export default function NexoAdminPage() {
     if (!file || !perfil) return;
     setSubiendoImg("item");
     const ext  = file.name.split(".").pop();
-    const path = `nexos/${id}/items/${Date.now()}.${ext}`;
+    const path = `nexos/${id}/items/${ts()}.${ext}`;
     const { error } = await supabase.storage.from("nexos").upload(path, file, { upsert:true });
     if (error) { alert("Error: " + error.message); setSubiendoImg(null); return; }
     const { data } = supabase.storage.from("nexos").getPublicUrl(path);
@@ -169,7 +169,7 @@ export default function NexoAdminPage() {
     if (!file || !perfil) return;
     setSubiendoImg("desc");
     const ext  = file.name.split(".").pop();
-    const path = `nexos/${id}/descargas/${Date.now()}.${ext}`;
+    const path = `nexos/${id}/descargas/${ts()}.${ext}`;
     const { error } = await supabase.storage.from("nexos").upload(path, file, { upsert:true });
     if (error) { alert("Error: " + error.message); setSubiendoImg(null); return; }
     const { data } = supabase.storage.from("nexos").getPublicUrl(path);
@@ -305,11 +305,11 @@ export default function NexoAdminPage() {
     const file = e.target.files?.[0];
     if (!file) return;
     setSubiendoImg(campo);
-    const path = `nexos/${id}/${campo}_${Date.now()}.${file.name.split(".").pop()}`;
+    const path = `nexos/${id}/${campo}_${ts()}.${file.name.split(".").pop()}`;
     const { error } = await supabase.storage.from("nexos").upload(path, file, { upsert:true });
     if (error) { alert("Error: " + error.message); setSubiendoImg(null); return; }
     const { data } = supabase.storage.from("nexos").getPublicUrl(path);
-    const url = `${data.publicUrl}?t=${Date.now()}`;
+    const url = `${data.publicUrl}?t=${ts()}`;
     setFormInfo(f=>({...f,[campo]:url}));
     await supabase.from("nexos").update({[campo]:url}).eq("id",id);
     setSubiendoImg(null);
@@ -730,7 +730,7 @@ export default function NexoAdminPage() {
         <div style={{ position:"fixed", inset:0, zIndex:500, background:"rgba(0,0,0,0.7)", display:"flex", alignItems:"flex-end" }} onClick={()=>setPopupItem(null)}>
           <div style={{ width:"100%", background:"#fff", borderRadius:"24px 24px 0 0", padding:"22px 18px 44px", maxHeight:"85vh", overflowY:"auto", fontFamily:"'Nunito',sans-serif" }} onClick={e=>e.stopPropagation()}>
             <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"20px", color:"#1a2a3a", letterSpacing:"1px", marginBottom:"4px" }}>
-              ➕ Agregar a "{popupItem.slider.titulo}"
+              ➕ Agregar a &ldquo;{popupItem.slider.titulo}&rdquo;
             </div>
             <div style={{ fontSize:"12px", color:"#9a9a9a", fontWeight:600, marginBottom:"14px" }}>
               500 BIT por ítem

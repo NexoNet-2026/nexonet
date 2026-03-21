@@ -261,17 +261,13 @@ export default function Usuario() {
     const { error } = await supabase.from("usuarios").update({
       nombre_usuario:personal.nombre_usuario, nombre:personal.nombre, apellido:personal.apellido,
       whatsapp:personal.whatsapp, provincia:personal.provincia, ciudad:personal.ciudad,
-      barrio:personal.barrio, direccion:personal.direccion, vis_personal:visP,
-      nombre_empresa:emp.nombre_empresa, telefono:emp.telefono, whatsapp_empresa:emp.whatsapp_empresa,
-      provincia_empresa:emp.provincia_empresa, ciudad_empresa:emp.ciudad_empresa,
-      barrio_empresa:emp.barrio_empresa, direccion_empresa:emp.direccion_empresa, vis_empresa:visE,
-      horarios, feriados,
+      vis_personal:visP,
     }).eq("id", session.user.id);
     setGuardando(false);
     if (error) {
       alert("Error al guardar: " + error.message);
     } else {
-      setPerfil((p: any) => ({ ...p, ...personal, ...emp, vis_personal:visP, vis_empresa:visE, horarios, feriados }));
+      setPerfil((p: any) => ({ ...p, ...personal, vis_personal:visP }));
       alert("¡Cambios guardados!");
     }
   };
@@ -640,7 +636,9 @@ export default function Usuario() {
             <div style={C}>
               <ST>👤 Datos personales</ST>
               <Campo label="Nombre de usuario" valor={personal.nombre_usuario} onChange={v=>setPersonal(p=>({...p,nombre_usuario:v}))} visible={visP.nombre_usuario} onToggle={()=>toggleP("nombre_usuario")} />
-              <Campo label="Nombre y apellido" valor={`${personal.nombre}${personal.apellido?" "+personal.apellido:""}`} onChange={v=>{const pts=v.split(" ");setPersonal(p=>({...p,nombre:pts[0]||"",apellido:pts.slice(1).join(" ")}))}} visible={visP.nombre_apellido} onToggle={()=>toggleP("nombre_apellido")} placeholder="Nombre Apellido" />
+              <Campo label="Nombre" valor={personal.nombre} onChange={v=>setPersonal(p=>({...p,nombre:v}))} visible={visP.nombre_apellido} onToggle={()=>toggleP("nombre_apellido")} placeholder="Tu nombre" />
+              <Campo label="Apellido" valor={personal.apellido} onChange={v=>setPersonal(p=>({...p,apellido:v}))} visible={visP.nombre_apellido} onToggle={()=>toggleP("nombre_apellido")} placeholder="Tu apellido" />
+              <div style={{ fontSize:"12px", color:"#9a9a9a", fontWeight:600, padding:"8px 0 4px" }}>📧 {perfil?.email}</div>
               <Campo label="WhatsApp" valor={personal.whatsapp} onChange={v=>setPersonal(p=>({...p,whatsapp:v}))} visible={visP.whatsapp} onToggle={()=>toggleP("whatsapp")} placeholder="Ej: 3492123456" icono="📱" />
               {personal.whatsapp && (
                 <div onClick={async () => {
@@ -657,64 +655,17 @@ export default function Usuario() {
                   </div>
                 </div>
               )}
-              <GPS onClick={geolocPersonal} ok={!!personal.lat} label="Geolocalizar mi ubicación" />
               <Campo label="Provincia" valor={personal.provincia} onChange={v=>setPersonal(p=>({...p,provincia:v}))} visible={visP.provincia} onToggle={()=>toggleP("provincia")} placeholder="Ej: Santa Fe" icono="🗺️" />
               <Campo label="Ciudad" valor={personal.ciudad} onChange={v=>setPersonal(p=>({...p,ciudad:v}))} visible={visP.ciudad} onToggle={()=>toggleP("ciudad")} placeholder="Ej: Rosario" icono="🏙️" />
-              <Campo label="Barrio" valor={personal.barrio} onChange={v=>setPersonal(p=>({...p,barrio:v}))} visible={visP.barrio} onToggle={()=>toggleP("barrio")} placeholder="Ej: Centro" icono="🏘️" />
-              <Campo label="Dirección" valor={personal.direccion} onChange={v=>setPersonal(p=>({...p,direccion:v}))} visible={visP.direccion} onToggle={()=>toggleP("direccion")} placeholder="Calle y número" icono="🏠" />
             </div>
 
-            {esEmpresa ? (
-              <div style={{ ...C, border:"2px solid rgba(192,57,43,0.25)" }}>
-                <ST color="#c0392b">🏢 Datos de la empresa</ST>
-                <Campo label="Nombre de la empresa" valor={emp.nombre_empresa} onChange={v=>setEmp(e=>({...e,nombre_empresa:v}))} visible={visE.nombre_empresa} onToggle={()=>toggleE("nombre_empresa")} placeholder="Nombre comercial" highlight />
-                <Campo label="Teléfono fijo" valor={emp.telefono} onChange={v=>setEmp(e=>({...e,telefono:v}))} visible={visE.telefono} onToggle={()=>toggleE("telefono")} placeholder="Ej: 0341-4123456" icono="☎️" />
-                <Campo label="WhatsApp empresa" valor={emp.whatsapp_empresa} onChange={v=>setEmp(e=>({...e,whatsapp_empresa:v}))} visible={visE.whatsapp_empresa} onToggle={()=>toggleE("whatsapp_empresa")} placeholder="Ej: 3412345678" icono="📱" />
-                <GPS onClick={geolocEmpresa} ok={!!emp.lat_empresa} label="Geolocalizar ubicación comercial" color="#c0392b" />
-                <Campo label="Provincia" valor={emp.provincia_empresa} onChange={v=>setEmp(e=>({...e,provincia_empresa:v}))} visible={visE.provincia_empresa} onToggle={()=>toggleE("provincia_empresa")} placeholder="Ej: Santa Fe" icono="🗺️" />
-                <Campo label="Ciudad" valor={emp.ciudad_empresa} onChange={v=>setEmp(e=>({...e,ciudad_empresa:v}))} visible={visE.ciudad_empresa} onToggle={()=>toggleE("ciudad_empresa")} placeholder="Ej: Rosario" icono="🏙️" />
-                <Campo label="Barrio" valor={emp.barrio_empresa} onChange={v=>setEmp(e=>({...e,barrio_empresa:v}))} visible={visE.barrio_empresa} onToggle={()=>toggleE("barrio_empresa")} placeholder="Ej: Palermo" icono="🏘️" />
-                <Campo label="Dirección comercial" valor={emp.direccion_empresa} onChange={v=>setEmp(e=>({...e,direccion_empresa:v}))} visible={visE.direccion_empresa} onToggle={()=>toggleE("direccion_empresa")} placeholder="Calle y número" icono="🏪" highlight />
-                <div style={{ borderTop:"1px solid #f0e8e8", paddingTop:"16px", marginTop:"6px" }}>
-                  <div style={THS("#c0392b")}>🕐 Horarios de atención</div>
-                  <div style={{ display:"flex", flexDirection:"column", gap:"8px" }}>
-                    {DIAS_SEMANA.map(dia => (
-                      <FilaHorario key={dia} label={dia} activo={horarios[dia].activo} desde={horarios[dia].desde} hasta={horarios[dia].hasta}
-                        onToggle={()=>setHorarios(h=>({...h,[dia]:{...h[dia],activo:!h[dia].activo}}))}
-                        onDesde={v=>setHorarios(h=>({...h,[dia]:{...h[dia],desde:v}}))}
-                        onHasta={v=>setHorarios(h=>({...h,[dia]:{...h[dia],hasta:v}}))} />
-                    ))}
-                  </div>
-                </div>
-                <div style={{ borderTop:"1px solid #f0e8e8", paddingTop:"16px", marginTop:"14px" }}>
-                  <div style={THS("#c0392b")}>📅 Feriados nacionales</div>
-                  <div style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:600, marginBottom:"12px" }}>Activá los feriados en que abrís</div>
-                  <div style={{ display:"flex", flexDirection:"column", gap:"8px" }}>
-                    {Object.entries(FERIADOS_ARG).map(([fecha, nombre]) => {
-                      const [dd,mm] = fecha.split("/");
-                      const M = ["","Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
-                      return (
-                        <FilaHorario key={fecha} label={`${dd} ${M[parseInt(mm)]} — ${nombre}`}
-                          activo={feriados[fecha]?.activo||false} desde={feriados[fecha]?.desde||"10:00"} hasta={feriados[fecha]?.hasta||"16:00"}
-                          onToggle={()=>setFeriados(f=>({...f,[fecha]:{...f[fecha],activo:!f[fecha]?.activo}}))}
-                          onDesde={v=>setFeriados(f=>({...f,[fecha]:{...f[fecha],desde:v}}))}
-                          onHasta={v=>setFeriados(f=>({...f,[fecha]:{...f[fecha],hasta:v}}))}
-                          esFeriado />
-                      );
-                    })}
-                  </div>
-                </div>
+            <div style={{ background:"rgba(58,123,213,0.06)", border:"2px solid rgba(58,123,213,0.2)", borderRadius:"14px", padding:"14px 16px", display:"flex", gap:"12px", alignItems:"center" }}>
+              <span style={{ fontSize:"24px" }}>🏢</span>
+              <div style={{ flex:1 }}>
+                <div style={{ fontSize:"13px", fontWeight:800, color:"#1a2a3a" }}>Datos de tu empresa o grupo</div>
+                <div style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:600 }}>Se editan desde el panel admin de cada empresa/grupo</div>
               </div>
-            ) : (
-              <div style={{ background:"linear-gradient(135deg, #2c1a1a, #4a2020)", borderRadius:"16px", padding:"20px", textAlign:"center" }}>
-                <div style={{ fontSize:"32px", marginBottom:"8px" }}>🏢</div>
-                <div style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:"20px", color:"#f0a040", letterSpacing:"1px", marginBottom:"4px" }}>Perfil de empresa</div>
-                <div style={{ fontSize:"12px", color:"#e88a8a", fontWeight:600, marginBottom:"16px" }}>Activá tu perfil empresarial con BIT Empresa × 50</div>
-                <button onClick={()=>setPopupEmpresa(true)} style={{ background:"linear-gradient(135deg, #c0392b, #e74c3c)", border:"none", borderRadius:"12px", padding:"12px 24px", fontSize:"13px", fontWeight:900, color:"#fff", cursor:"pointer", fontFamily:"'Nunito', sans-serif", letterSpacing:"0.5px" }}>
-                  🏢 Comprar Anuncios BIT EMPRESA
-                </button>
-              </div>
-            )}
+            </div>
 
             <button onClick={guardar} disabled={guardando} style={{ ...BTN, opacity:guardando?0.7:1 }}>
               {guardando ? "Guardando..." : "Guardar cambios"}

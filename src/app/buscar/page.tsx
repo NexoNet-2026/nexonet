@@ -99,6 +99,7 @@ function BuscarInner() {
   const [entRubros, setEntRubros] = useState<{id:number;nombre:string;subrubros:{id:number;nombre:string}[]}[]>([]);
   const [entRubroSel, setEntRubroSel] = useState<number|null>(null);
   const [entSubSel, setEntSubSel] = useState<number|null>(null);
+  const [entLoading, setEntLoading] = useState(false);
   // Filtro subtipo para grupos
   const [grupoSubtipoSel, setGrupoSubtipoSel] = useState<string|null>(null);
 
@@ -159,7 +160,7 @@ function BuscarInner() {
         .eq("estado","activo").order("created_at",{ascending:false}).limit(200),
       supabase.from("nexos")
         .select("id,titulo,descripcion,tipo,subtipo,ciudad,provincia,avatar_url,banner_url,precio,moneda,usuario_id,config,subrubro_id")
-        .eq("estado","activo").order("created_at",{ascending:false}).limit(200),
+        .eq("estado","activo").order("created_at",{ascending:false}).limit(500),
     ]).then(async ([{data:pData},{data:rData},{data:sData},{data:aData},{data:nData}]) => {
       const gData: any[] = []; const catData: any[] = [];
 
@@ -333,7 +334,8 @@ function BuscarInner() {
       trabajo:   {rubros:"trabajo_rubros",subrubros:"trabajo_subrubros"},
     };
     const t = ENT_TABLES[tipoActivo];
-    if (!t) { setEntRubros([]); setEntRubroSel(null); setEntSubSel(null); return; }
+    if (!t) { setEntRubros([]); setEntRubroSel(null); setEntSubSel(null); setEntLoading(false); return; }
+    setEntLoading(true);
     Promise.all([
       supabase.from(t.rubros).select("id,nombre").order("orden",{ascending:true}),
       supabase.from(t.subrubros).select("id,nombre,rubro_id,orden").order("orden",{ascending:true}),
@@ -343,6 +345,7 @@ function BuscarInner() {
       }));
       setEntRubros(rubrosConSubs);
       setEntRubroSel(null); setEntSubSel(null);
+      setEntLoading(false);
     });
   }, [tipoActivo]);
 
@@ -578,6 +581,13 @@ function BuscarInner() {
         </div>
       </div>
 
+      {/* DEBUG — remover después */}
+      {tipoActivo !== "anuncios" && tipoActivo !== "grupos" && (
+        <div style={{fontSize:"10px",color:"red",padding:"4px 16px",background:"#fff8f8"}}>
+          Rubros: {entRubros.length} | Subs total: {entRubros.reduce((a,r)=>(a+(r.subrubros||[]).length),0)} | Nexos {tipoActivo}: {nexos.filter(n=>n.tipo===(tipoActivo==="empresas"?"empresa":tipoActivo==="servicios"?"servicio":tipoActivo)).length} | Loading: {String(entLoading)}
+        </div>
+      )}
+
       {/* CONTENIDO */}
       {loading ? (
         <div style={{textAlign:"center",padding:"40px",color:"#9a9a9a",fontWeight:700}}>Cargando...</div>
@@ -729,7 +739,9 @@ function BuscarInner() {
 
           {tipoActivo !== "anuncios" && tipoActivo !== "grupos" && (
             <div>
-              {entRubros.length > 0 ? (
+              {entLoading ? (
+                <div style={{textAlign:"center",padding:"40px",color:"#9a9a9a",fontWeight:700}}>Cargando categorías...</div>
+              ) : entRubros.length > 0 ? (
                 (entRubroSel ? entRubros.filter(r=>r.id===entRubroSel) : entRubros).map(rubro => {
                   const subs = (rubro.subrubros||[]).sort((a:any,b:any)=>(a.orden||0)-(b.orden||0));
                   const allItems = (nexosPorTipo[tipoActivo]||[]);

@@ -888,7 +888,15 @@ export default function Usuario() {
                       const { data:{ session } } = await supabase.auth.getSession();
                       if (!session) return;
                       const payload = { usuario_id: session.user.id, titulo: formBusq.titulo || null, subrubro_id: formBusq.subrubro_id ? parseInt(formBusq.subrubro_id) : null, precio_min: formBusq.precio_min ? parseFloat(formBusq.precio_min) : null, precio_max: formBusq.precio_max ? parseFloat(formBusq.precio_max) : null, moneda: formBusq.moneda || null, ciudad: formBusq.ciudad || null, provincia: formBusq.provincia || null, keywords: formBusq.keywords || null, activo: true };
-                      if (formBusq.id) { await supabase.from("busquedas_automaticas").update(payload).eq("id", formBusq.id); setBusquedas(prev => prev.map(x => x.id===formBusq.id ? {...x,...payload} : x)); } else { const { data:nb } = await supabase.from("busquedas_automaticas").insert(payload).select().single(); if (nb) setBusquedas(prev => [nb, ...prev]); }
+                      if (formBusq.id) {
+                        const { error } = await supabase.from("busquedas_automaticas").update(payload).eq("id", formBusq.id);
+                        if (error) { console.error("Error actualizando búsqueda:", error); alert("Error al actualizar la búsqueda: " + error.message); return; }
+                        setBusquedas(prev => prev.map(x => x.id===formBusq.id ? {...x,...payload} : x));
+                      } else {
+                        const { data:nb, error } = await supabase.from("busquedas_automaticas").insert(payload).select().single();
+                        if (error) { console.error("Error guardando búsqueda:", error); alert("Error al guardar la búsqueda: " + error.message); return; }
+                        if (nb) setBusquedas(prev => [nb, ...prev]);
+                      }
                       setFormBusq(null);
                     }} style={{ background:"linear-gradient(135deg,#16a085,#1abc9c)", border:"none", borderRadius:"14px", padding:"16px", fontSize:"15px", fontWeight:900, color:"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif", boxShadow:"0 4px 0 #0e6b59" }}>
                       {formBusq.id ? "💾 Guardar cambios" : "✅ Crear búsqueda"}

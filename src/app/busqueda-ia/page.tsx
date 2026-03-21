@@ -137,9 +137,11 @@ export default function BusquedaIA() {
       activo:      b.activa,
     };
     if (b.dbId) {
-      await supabase.from("busquedas_automaticas").update(payload).eq("id", b.dbId);
+      const { error } = await supabase.from("busquedas_automaticas").update(payload).eq("id", b.dbId);
+      if (error) { console.error("Error actualizando búsqueda:", error); alert("Error al actualizar la búsqueda: " + error.message); upd(b.id,"guardando",false); return; }
     } else {
-      const { data } = await supabase.from("busquedas_automaticas").insert(payload).select().single();
+      const { data, error } = await supabase.from("busquedas_automaticas").insert(payload).select().single();
+      if (error) { console.error("Error guardando búsqueda:", error); alert("Error al guardar la búsqueda: " + error.message); upd(b.id,"guardando",false); return; }
       if (data) upd(b.id,"dbId",data.id);
     }
     upd(b.id,"guardando",false);

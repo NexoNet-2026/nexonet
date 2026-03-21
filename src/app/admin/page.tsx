@@ -5,7 +5,8 @@ import { supabase } from "@/lib/supabase";
 
 const ADMIN_UUID = "ab56253d-b92e-4b73-a19a-3cd0cd95c458";
 
-type Tab = "dashboard"|"usuarios"|"anuncios"|"grupos"|"mensajes"|"promotores"|"pagos"|"alarmas"|"config"|"filtros_ia"|"contactos";
+type Tab = "dashboard"|"usuarios"|"anuncios"|"grupos"|"mensajes"|"promotores"|"pagos"|"alarmas"|"config"|"contactos";
+type ConfigSub = "anuncios"|"empresas"|"servicios"|"trabajo"|"grupos"|"filtros_ia";
 
 const S = {
   card:  { background:"#fff", borderRadius:"16px", padding:"20px", boxShadow:"0 2px 12px rgba(0,0,0,0.07)", marginBottom:"14px" } as React.CSSProperties,
@@ -95,6 +96,16 @@ export default function AdminPanel() {
   const [filtrosIA, setFiltrosIA] = useState<any[]>([]);
   const [filtroSubSel, setFiltroSubSel] = useState<number|null>(null);
   const [modalFiltro, setModalFiltro] = useState<any>(null);
+
+  // Config subtab + entity rubros for empresa/servicio/trabajo
+  const [configSub, setConfigSub] = useState<ConfigSub>("anuncios");
+  const [entRubros, setEntRubros] = useState<any[]>([]);
+  const [expandEntRubro, setExpandEntRubro] = useState<number|null>(null);
+  const [modalEntRubro, setModalEntRubro] = useState<any>(null);
+  const [modalEntSub, setModalEntSub] = useState<any>(null);
+  const [entFiltros, setEntFiltros] = useState<any[]>([]);
+  const [entFiltroSubSel, setEntFiltroSubSel] = useState<number|null>(null);
+  const [modalEntFiltro, setModalEntFiltro] = useState<any>(null);
 
   // Crear usuario
   const [modalCrearUser, setModalCrearUser] = useState(false);
@@ -496,6 +507,98 @@ export default function AdminPanel() {
     showToast("Filtro eliminado");
   };
 
+  // ── Entity rubros (empresa/servicio/trabajo) ──
+  const ENT_TABLES: Record<string, {rubros:string;subrubros:string;filtros:string}> = {
+    empresas:  {rubros:"empresa_rubros",  subrubros:"empresa_subrubros",  filtros:"empresa_filtros"},
+    servicios: {rubros:"servicio_rubros", subrubros:"servicio_subrubros", filtros:"servicio_filtros"},
+    trabajo:   {rubros:"trabajo_rubros",  subrubros:"trabajo_subrubros",  filtros:"trabajo_filtros"},
+  };
+  const cargarEntRubros = async (tipo: string) => {
+    const t = ENT_TABLES[tipo]; if (!t) return;
+    const {data} = await supabase.from(t.rubros).select(`*,subrubros:${t.subrubros}(id,nombre,orden,sliders_sugeridos)`).order("orden",{ascending:true});
+    setEntRubros(data||[]);
+    setExpandEntRubro(null); setEntFiltroSubSel(null); setEntFiltros([]);
+  };
+  const guardarEntRubro = async (r:any, tipo:string) => {
+    const t = ENT_TABLES[tipo]; if (!t||!r.nombre) return;
+    if (r.id) {
+      await supabase.from(t.rubros).update({nombre:r.nombre,orden:parseInt(r.orden)||0}).eq("id",r.id);
+      setEntRubros(prev=>prev.map(x=>x.id===r.id?{...x,...r}:x));
+      showToast("✅ Rubro actualizado");
+    } else {
+      const {data} = await supabase.from(t.rubros).insert({nombre:r.nombre,orden:parseInt(r.orden)||entRubros.length}).select().single();
+      if (data) setEntRubros(prev=>[...prev,{...data,subrubros:[]}]);
+      showToast("✅ Rubro creado");
+    }
+    setModalEntRubro(null);
+  };
+  const eliminarEntRubro = async (id:number, tipo:string) => {
+    const t = ENT_TABLES[tipo]; if (!t) return;
+    if (!confirm("¿Eliminar este rubro y todos sus subrubros?")) return;
+    await supabase.from(t.rubros).delete().eq("id",id);
+    setEntRubros(prev=>prev.filter(x=>x.id!==id));
+    showToast("Rubro eliminado");
+  };
+  const moverEntRubro = async (r:any, dir:"up"|"down", tipo:string) => {
+    const t = ENT_TABLES[tipo]; if (!t) return;
+    const idx = entRubros.findIndex(x=>x.id===r.id);
+    const swap = dir==="up" ? entRubros[idx-1] : entRubros[idx+1];
+    if (!swap) return;
+    await Promise.all([
+      supabase.from(t.rubros).update({orden:swap.orden}).eq("id",r.id),
+      supabase.from(t.rubros).update({orden:r.orden}).eq("id",swap.id),
+    ]);
+    const nuevos = [...entRubros];
+    [nuevos[idx], nuevos[dir==="up"?idx-1:idx+1]] = [nuevos[dir==="up"?idx-1:idx+1], nuevos[idx]];
+    setEntRubros(nuevos);
+  };
+  const guardarEntSub = async (s:any, tipo:string) => {
+    const t = ENT_TABLES[tipo]; if (!t||!s.nombre||!s.rubro_id) return;
+    if (s.id) {
+      const upd: any = {nombre:s.nombre,orden:parseInt(s.orden)||0};
+      if (s.sliders_sugeridos !== undefined) upd.sliders_sugeridos = s.sliders_sugeridos ? JSON.parse(s.sliders_sugeridos) : null;
+      await supabase.from(t.subrubros).update(upd).eq("id",s.id);
+      setEntRubros(prev=>prev.map(r=>r.id===s.rubro_id?{...r,subrubros:(r.subrubros||[]).map((x:any)=>x.id===s.id?{...x,...s,sliders_sugeridos:upd.sliders_sugeridos??x.sliders_sugeridos}:x)}:r));
+      showToast("✅ Subrubro actualizado");
+    } else {
+      const ins: any = {nombre:s.nombre,rubro_id:s.rubro_id,orden:parseInt(s.orden)||0};
+      if (s.sliders_sugeridos) ins.sliders_sugeridos = JSON.parse(s.sliders_sugeridos);
+      const {data} = await supabase.from(t.subrubros).insert(ins).select().single();
+      if (data) setEntRubros(prev=>prev.map(r=>r.id===s.rubro_id?{...r,subrubros:[...(r.subrubros||[]),data]}:r));
+      showToast("✅ Subrubro creado");
+    }
+    setModalEntSub(null);
+  };
+  const eliminarEntSub = async (id:number, rubro_id:number, tipo:string) => {
+    const t = ENT_TABLES[tipo]; if (!t) return;
+    if (!confirm("¿Eliminar este subrubro?")) return;
+    await supabase.from(t.subrubros).delete().eq("id",id);
+    setEntRubros(prev=>prev.map(r=>r.id===rubro_id?{...r,subrubros:(r.subrubros||[]).filter((x:any)=>x.id!==id)}:r));
+    showToast("Subrubro eliminado");
+  };
+  const cargarEntFiltros = async (subId:number, tipo:string) => {
+    const t = ENT_TABLES[tipo]; if (!t) return;
+    setEntFiltroSubSel(subId);
+    const {data} = await supabase.from(t.filtros).select("*").eq("subrubro_id",subId).order("orden");
+    setEntFiltros(data||[]);
+  };
+  const guardarEntFiltro = async (f:any, tipo:string) => {
+    const t = ENT_TABLES[tipo]; if (!t||!f.nombre||!entFiltroSubSel) return;
+    const payload = { subrubro_id:entFiltroSubSel, nombre:f.nombre, tipo:f.tipo||"rango", opciones:f.opciones?JSON.parse(f.opciones):null, orden:parseInt(f.orden)||0 };
+    if (f.id) { await supabase.from(t.filtros).update(payload).eq("id",f.id); }
+    else { await supabase.from(t.filtros).insert(payload); }
+    setModalEntFiltro(null);
+    showToast("✅ Filtro guardado");
+    await cargarEntFiltros(entFiltroSubSel, tipo);
+  };
+  const eliminarEntFiltro = async (id:number, tipo:string) => {
+    const t = ENT_TABLES[tipo]; if (!t) return;
+    if (!confirm("¿Eliminar este filtro?")) return;
+    await supabase.from(t.filtros).delete().eq("id",id);
+    if (entFiltroSubSel) await cargarEntFiltros(entFiltroSubSel, tipo);
+    showToast("Filtro eliminado");
+  };
+
   // ── Alarmas ──
   const guardarAlarmas = async (nuevas:any) => {
     setAlarmas(nuevas);
@@ -529,7 +632,6 @@ export default function AdminPanel() {
     {id:"alarmas",  e:"🔔",l:"Alarmas"},
     {id:"contactos",e:"📩",l:"Contactos"},
     {id:"config",   e:"⚙️",l:"Config"},
-    {id:"filtros_ia",e:"🤖",l:"Filtros IA"},
   ];
 
   const ItemRow = ({label,onEdit,onDelete,onUp,onDown,badge,extra}:{label:string;onEdit:()=>void;onDelete:()=>void;onUp?:()=>void;onDown?:()=>void;badge?:React.ReactNode;extra?:React.ReactNode}) => (
@@ -982,86 +1084,211 @@ export default function AdminPanel() {
         {/* ══ CONFIG ═══════════════════════════════════════════════════════════ */}
         {!loading && tab==="config" && (
           <>
-            <div style={S.card}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"12px"}}>
-                <div style={S.sect}>📁 Rubros de Anuncios</div>
-                <button onClick={()=>setModalRubro({nombre:"",emoji:"",orden:rubros.length})} style={S.btn("#27ae60")}>+ Nuevo rubro</button>
-              </div>
-              {rubros.map((r:any, idx:number)=>(
-                <div key={r.id} style={{marginBottom:"8px",border:"1px solid #f0f0f0",borderRadius:"12px",overflow:"hidden"}}>
-                  <div style={{display:"flex",alignItems:"center",gap:"6px",padding:"10px 12px",background:expandRubro===r.id?"#f9f9f7":"#fff",cursor:"pointer"}} onClick={()=>setExpandRubro(expandRubro===r.id?null:r.id)}>
-                    <span style={{fontSize:"18px"}}>{r.emoji||"📁"}</span>
-                    <span style={{flex:1,fontSize:"14px",fontWeight:800,color:"#1a2a3a"}}>{r.nombre}</span>
-                    <span style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600}}>{(r.subrubros||[]).length} sub</span>
-                    <button onClick={e=>{e.stopPropagation();moverRubro(r,"up");}} disabled={idx===0} style={{...S.btn("#9a9a9a",true),padding:"3px 8px",opacity:idx===0?0.3:1}}>↑</button>
-                    <button onClick={e=>{e.stopPropagation();moverRubro(r,"down");}} disabled={idx===rubros.length-1} style={{...S.btn("#9a9a9a",true),padding:"3px 8px",opacity:idx===rubros.length-1?0.3:1}}>↓</button>
-                    <button onClick={e=>{e.stopPropagation();setModalRubro({...r});}} style={{...S.btn("#3a7bd5",true),padding:"3px 8px"}}>✏️</button>
-                    <button onClick={e=>{e.stopPropagation();eliminarRubro(r.id);}} style={{...S.btn("#e74c3c",true),padding:"3px 8px"}}>🗑️</button>
-                    <span style={{fontSize:"16px",color:"#9a9a9a"}}>{expandRubro===r.id?"▲":"▼"}</span>
-                  </div>
-                  {expandRubro===r.id && (
-                    <div style={{padding:"8px 12px 12px",background:"#f9f9f7",borderTop:"1px solid #f0f0f0"}}>
-                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"8px"}}>
-                        <span style={{fontSize:"11px",fontWeight:800,color:"#9a9a9a",textTransform:"uppercase",letterSpacing:"0.5px"}}>Subrubros</span>
-                        <button onClick={()=>setModalSubrubro({nombre:"",rubro_id:r.id,orden:0})} style={{...S.btn("#27ae60",true),padding:"3px 10px",fontSize:"11px"}}>+ Agregar</button>
-                      </div>
-                      {(r.subrubros||[]).sort((a:any,b:any)=>(a.orden||0)-(b.orden||0)).map((s:any)=>(
-                        <ItemRow key={s.id}
-                          label={s.nombre}
-                          onEdit={()=>setModalSubrubro({...s,rubro_id:r.id})}
-                          onDelete={()=>eliminarSubrubro(s.id,r.id)}
-                        />
-                      ))}
-                      {(r.subrubros||[]).length===0 && <div style={{fontSize:"12px",color:"#bbb",fontWeight:600,padding:"8px 0"}}>Sin subrubros todavía</div>}
-                    </div>
-                  )}
-                </div>
+            {/* SUBTABS */}
+            <div style={{display:"flex",gap:"6px",flexWrap:"wrap",marginBottom:"14px"}}>
+              {([
+                ["anuncios","📋","Anuncios"],["empresas","🏢","Empresas"],["servicios","🛠️","Servicios"],
+                ["trabajo","💼","Trabajo"],["grupos","🏘️","Grupos"],["filtros_ia","🤖","Filtros IA"],
+              ] as [ConfigSub,string,string][]).map(([id,e,l])=>(
+                <button key={id} onClick={()=>{setConfigSub(id);if(["empresas","servicios","trabajo"].includes(id))cargarEntRubros(id);}}
+                  style={{...S.btn(configSub===id?"#d4a017":"#9a9a9a",configSub!==id),padding:"6px 14px",fontSize:"12px"}}>
+                  {e} {l}
+                </button>
               ))}
             </div>
 
-            <div style={S.card}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"12px"}}>
-                <div style={S.sect}>🏘️ Categorías de Grupos</div>
-                <button onClick={()=>setModalGrupoCat({nombre:"",emoji:"",descripcion:"",orden:grupoCats.length})} style={S.btn("#27ae60")}>+ Nueva categoría</button>
-              </div>
-              {grupoCats.map((c:any, idx:number)=>(
-                <div key={c.id} style={{marginBottom:"8px",border:"1px solid #f0f0f0",borderRadius:"12px",overflow:"hidden",opacity:c.activo?1:0.6}}>
-                  <div style={{display:"flex",alignItems:"center",gap:"6px",padding:"10px 12px",background:expandGrupoCat===c.id?"#f9f9f7":"#fff",cursor:"pointer"}} onClick={()=>setExpandGrupoCat(expandGrupoCat===c.id?null:c.id)}>
-                    <span style={{fontSize:"18px"}}>{c.emoji||"🏘️"}</span>
-                    <span style={{flex:1,fontSize:"14px",fontWeight:800,color:"#1a2a3a"}}>{c.nombre}</span>
-                    <span style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600}}>{grupoSubcats.filter(s=>s.categoria_id===c.id).length} sub</span>
-                    {!c.activo && <span style={S.badge("#fff","#e74c3c")}>OFF</span>}
-                    <div onClick={e=>{e.stopPropagation();toggleGrupoCatActivo(c);}} style={{width:"36px",height:"20px",borderRadius:"10px",background:c.activo?"#27ae60":"#e0e0e0",cursor:"pointer",position:"relative",flexShrink:0}}>
-                      <div style={{position:"absolute",top:"2px",left:c.activo?"18px":"2px",width:"16px",height:"16px",borderRadius:"50%",background:"#fff",transition:"left .2s"}} />
-                    </div>
-                    <button onClick={e=>{e.stopPropagation();moverGrupoCat(c,"up");}} disabled={idx===0} style={{...S.btn("#9a9a9a",true),padding:"3px 8px",opacity:idx===0?0.3:1}}>↑</button>
-                    <button onClick={e=>{e.stopPropagation();moverGrupoCat(c,"down");}} disabled={idx===grupoCats.length-1} style={{...S.btn("#9a9a9a",true),padding:"3px 8px",opacity:idx===grupoCats.length-1?0.3:1}}>↓</button>
-                    <button onClick={e=>{e.stopPropagation();setModalGrupoCat({...c});}} style={{...S.btn("#3a7bd5",true),padding:"3px 8px"}}>✏️</button>
-                    <button onClick={e=>{e.stopPropagation();eliminarGrupoCat(c.id);}} style={{...S.btn("#e74c3c",true),padding:"3px 8px"}}>🗑️</button>
-                    <span style={{fontSize:"16px",color:"#9a9a9a"}}>{expandGrupoCat===c.id?"▲":"▼"}</span>
-                  </div>
-                  {expandGrupoCat===c.id && (
-                    <div style={{padding:"8px 12px 12px",background:"#f9f9f7",borderTop:"1px solid #f0f0f0"}}>
-                      {c.descripcion && <div style={{fontSize:"12px",color:"#9a9a9a",fontWeight:600,marginBottom:"8px"}}>{c.descripcion}</div>}
-                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"8px"}}>
-                        <span style={{fontSize:"11px",fontWeight:800,color:"#9a9a9a",textTransform:"uppercase",letterSpacing:"0.5px"}}>Subcategorías</span>
-                        <button onClick={()=>setModalGrupoSubcat({nombre:"",descripcion:"",categoria_id:c.id})} style={{...S.btn("#27ae60",true),padding:"3px 10px",fontSize:"11px"}}>+ Agregar</button>
-                      </div>
-                      {grupoSubcats.filter(s=>s.categoria_id===c.id).map((s:any)=>(
-                        <ItemRow key={s.id}
-                          label={s.nombre}
-                          badge={!s.activo?<span style={S.badge("#fff","#e74c3c")}>OFF</span>:undefined}
-                          onEdit={()=>setModalGrupoSubcat({...s})}
-                          onDelete={()=>eliminarGrupoSubcat(s.id)}
-                        />
-                      ))}
-                      {grupoSubcats.filter(s=>s.categoria_id===c.id).length===0 && <div style={{fontSize:"12px",color:"#bbb",fontWeight:600,padding:"8px 0"}}>Sin subcategorías todavía</div>}
-                    </div>
-                  )}
+            {/* ── ANUNCIOS rubros ── */}
+            {configSub==="anuncios" && (
+              <div style={S.card}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"12px"}}>
+                  <div style={S.sect}>📁 Rubros de Anuncios</div>
+                  <button onClick={()=>setModalRubro({nombre:"",emoji:"",orden:rubros.length})} style={S.btn("#27ae60")}>+ Nuevo rubro</button>
                 </div>
-              ))}
-            </div>
+                {rubros.map((r:any, idx:number)=>(
+                  <div key={r.id} style={{marginBottom:"8px",border:"1px solid #f0f0f0",borderRadius:"12px",overflow:"hidden"}}>
+                    <div style={{display:"flex",alignItems:"center",gap:"6px",padding:"10px 12px",background:expandRubro===r.id?"#f9f9f7":"#fff",cursor:"pointer"}} onClick={()=>setExpandRubro(expandRubro===r.id?null:r.id)}>
+                      <span style={{fontSize:"18px"}}>{r.emoji||"📁"}</span>
+                      <span style={{flex:1,fontSize:"14px",fontWeight:800,color:"#1a2a3a"}}>{r.nombre}</span>
+                      <span style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600}}>{(r.subrubros||[]).length} sub</span>
+                      <button onClick={e=>{e.stopPropagation();moverRubro(r,"up");}} disabled={idx===0} style={{...S.btn("#9a9a9a",true),padding:"3px 8px",opacity:idx===0?0.3:1}}>↑</button>
+                      <button onClick={e=>{e.stopPropagation();moverRubro(r,"down");}} disabled={idx===rubros.length-1} style={{...S.btn("#9a9a9a",true),padding:"3px 8px",opacity:idx===rubros.length-1?0.3:1}}>↓</button>
+                      <button onClick={e=>{e.stopPropagation();setModalRubro({...r});}} style={{...S.btn("#3a7bd5",true),padding:"3px 8px"}}>✏️</button>
+                      <button onClick={e=>{e.stopPropagation();eliminarRubro(r.id);}} style={{...S.btn("#e74c3c",true),padding:"3px 8px"}}>🗑️</button>
+                      <span style={{fontSize:"16px",color:"#9a9a9a"}}>{expandRubro===r.id?"▲":"▼"}</span>
+                    </div>
+                    {expandRubro===r.id && (
+                      <div style={{padding:"8px 12px 12px",background:"#f9f9f7",borderTop:"1px solid #f0f0f0"}}>
+                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"8px"}}>
+                          <span style={{fontSize:"11px",fontWeight:800,color:"#9a9a9a",textTransform:"uppercase",letterSpacing:"0.5px"}}>Subrubros</span>
+                          <button onClick={()=>setModalSubrubro({nombre:"",rubro_id:r.id,orden:0})} style={{...S.btn("#27ae60",true),padding:"3px 10px",fontSize:"11px"}}>+ Agregar</button>
+                        </div>
+                        {(r.subrubros||[]).sort((a:any,b:any)=>(a.orden||0)-(b.orden||0)).map((s:any)=>(
+                          <ItemRow key={s.id} label={s.nombre} onEdit={()=>setModalSubrubro({...s,rubro_id:r.id})} onDelete={()=>eliminarSubrubro(s.id,r.id)} />
+                        ))}
+                        {(r.subrubros||[]).length===0 && <div style={{fontSize:"12px",color:"#bbb",fontWeight:600,padding:"8px 0"}}>Sin subrubros todavía</div>}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
 
+            {/* ── EMPRESAS / SERVICIOS / TRABAJO rubros (genérico) ── */}
+            {(configSub==="empresas"||configSub==="servicios"||configSub==="trabajo") && (
+              <>
+                <div style={S.card}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"12px"}}>
+                    <div style={S.sect}>📁 Rubros de {configSub==="empresas"?"Empresas":configSub==="servicios"?"Servicios":"Trabajo"}</div>
+                    <button onClick={()=>setModalEntRubro({nombre:"",orden:entRubros.length,_tipo:configSub})} style={S.btn("#27ae60")}>+ Nuevo rubro</button>
+                  </div>
+                  {entRubros.map((r:any, idx:number)=>(
+                    <div key={r.id} style={{marginBottom:"8px",border:"1px solid #f0f0f0",borderRadius:"12px",overflow:"hidden"}}>
+                      <div style={{display:"flex",alignItems:"center",gap:"6px",padding:"10px 12px",background:expandEntRubro===r.id?"#f9f9f7":"#fff",cursor:"pointer"}} onClick={()=>setExpandEntRubro(expandEntRubro===r.id?null:r.id)}>
+                        <span style={{fontSize:"18px"}}>📁</span>
+                        <span style={{flex:1,fontSize:"14px",fontWeight:800,color:"#1a2a3a"}}>{r.nombre}</span>
+                        <span style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600}}>{(r.subrubros||[]).length} sub</span>
+                        <button onClick={e=>{e.stopPropagation();moverEntRubro(r,"up",configSub);}} disabled={idx===0} style={{...S.btn("#9a9a9a",true),padding:"3px 8px",opacity:idx===0?0.3:1}}>↑</button>
+                        <button onClick={e=>{e.stopPropagation();moverEntRubro(r,"down",configSub);}} disabled={idx===entRubros.length-1} style={{...S.btn("#9a9a9a",true),padding:"3px 8px",opacity:idx===entRubros.length-1?0.3:1}}>↓</button>
+                        <button onClick={e=>{e.stopPropagation();setModalEntRubro({...r,_tipo:configSub});}} style={{...S.btn("#3a7bd5",true),padding:"3px 8px"}}>✏️</button>
+                        <button onClick={e=>{e.stopPropagation();eliminarEntRubro(r.id,configSub);}} style={{...S.btn("#e74c3c",true),padding:"3px 8px"}}>🗑️</button>
+                        <span style={{fontSize:"16px",color:"#9a9a9a"}}>{expandEntRubro===r.id?"▲":"▼"}</span>
+                      </div>
+                      {expandEntRubro===r.id && (
+                        <div style={{padding:"8px 12px 12px",background:"#f9f9f7",borderTop:"1px solid #f0f0f0"}}>
+                          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"8px"}}>
+                            <span style={{fontSize:"11px",fontWeight:800,color:"#9a9a9a",textTransform:"uppercase",letterSpacing:"0.5px"}}>Subrubros</span>
+                            <button onClick={()=>setModalEntSub({nombre:"",rubro_id:r.id,orden:0,sliders_sugeridos:"",_tipo:configSub})} style={{...S.btn("#27ae60",true),padding:"3px 10px",fontSize:"11px"}}>+ Agregar</button>
+                          </div>
+                          {(r.subrubros||[]).sort((a:any,b:any)=>(a.orden||0)-(b.orden||0)).map((s:any)=>(
+                            <div key={s.id} style={{display:"flex",alignItems:"center",gap:"6px",padding:"6px 0",borderBottom:"1px solid #f4f4f2"}}>
+                              <div style={{flex:1,fontSize:"13px",fontWeight:700,color:"#1a2a3a"}}>{s.nombre}</div>
+                              <button onClick={()=>cargarEntFiltros(s.id,configSub)} style={{...S.btn(entFiltroSubSel===s.id?"#d4a017":"#9a9a9a",true),padding:"3px 8px",fontSize:"10px"}}>🔧 Filtros</button>
+                              <button onClick={()=>setModalEntSub({...s,rubro_id:r.id,sliders_sugeridos:s.sliders_sugeridos?JSON.stringify(s.sliders_sugeridos):"",_tipo:configSub})} style={{...S.btn("#3a7bd5",true),padding:"3px 8px"}}>✏️</button>
+                              <button onClick={()=>eliminarEntSub(s.id,r.id,configSub)} style={{...S.btn("#e74c3c",true),padding:"3px 8px"}}>🗑️</button>
+                            </div>
+                          ))}
+                          {(r.subrubros||[]).length===0 && <div style={{fontSize:"12px",color:"#bbb",fontWeight:600,padding:"8px 0"}}>Sin subrubros todavía</div>}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  {entRubros.length===0 && <div style={{fontSize:"13px",color:"#9a9a9a",fontWeight:600}}>Sin rubros todavía. Creá el primero.</div>}
+                </div>
+                {/* Filtros del subrubro seleccionado */}
+                {entFiltroSubSel && (
+                  <div style={S.card}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"12px"}}>
+                      <div style={S.sect}>🔧 Filtros del subrubro</div>
+                      <button onClick={()=>setModalEntFiltro({nombre:"",tipo:configSub==="empresas"?"rango":"lista",opciones:"",orden:entFiltros.length,_tipo:configSub})} style={S.btn("#27ae60")}>+ Agregar filtro</button>
+                    </div>
+                    {entFiltros.length===0 && <div style={{fontSize:"13px",color:"#9a9a9a",fontWeight:600}}>Sin filtros todavía.</div>}
+                    {entFiltros.map((f:any)=>(
+                      <div key={f.id} style={{display:"flex",alignItems:"center",gap:"8px",padding:"8px 0",borderBottom:"1px solid #f4f4f2"}}>
+                        <div style={{flex:1}}>
+                          <div style={{fontSize:"13px",fontWeight:800,color:"#1a2a3a"}}>{f.nombre}</div>
+                          <div style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600}}>
+                            Tipo: <strong>{f.tipo}</strong>
+                            {f.opciones && ` · ${JSON.stringify(f.opciones)}`}
+                          </div>
+                        </div>
+                        <button onClick={()=>setModalEntFiltro({...f,opciones:f.opciones?JSON.stringify(f.opciones):"",_tipo:configSub})} style={{...S.btn("#3a7bd5",true),padding:"4px 8px"}}>✏️</button>
+                        <button onClick={()=>eliminarEntFiltro(f.id,configSub)} style={{...S.btn("#e74c3c",true),padding:"4px 8px"}}>🗑️</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* ── GRUPOS categorías ── */}
+            {configSub==="grupos" && (
+              <div style={S.card}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"12px"}}>
+                  <div style={S.sect}>🏘️ Categorías de Grupos</div>
+                  <button onClick={()=>setModalGrupoCat({nombre:"",emoji:"",descripcion:"",orden:grupoCats.length})} style={S.btn("#27ae60")}>+ Nueva categoría</button>
+                </div>
+                {grupoCats.map((c:any, idx:number)=>(
+                  <div key={c.id} style={{marginBottom:"8px",border:"1px solid #f0f0f0",borderRadius:"12px",overflow:"hidden",opacity:c.activo?1:0.6}}>
+                    <div style={{display:"flex",alignItems:"center",gap:"6px",padding:"10px 12px",background:expandGrupoCat===c.id?"#f9f9f7":"#fff",cursor:"pointer"}} onClick={()=>setExpandGrupoCat(expandGrupoCat===c.id?null:c.id)}>
+                      <span style={{fontSize:"18px"}}>{c.emoji||"🏘️"}</span>
+                      <span style={{flex:1,fontSize:"14px",fontWeight:800,color:"#1a2a3a"}}>{c.nombre}</span>
+                      <span style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600}}>{grupoSubcats.filter(s=>s.categoria_id===c.id).length} sub</span>
+                      {!c.activo && <span style={S.badge("#fff","#e74c3c")}>OFF</span>}
+                      <div onClick={e=>{e.stopPropagation();toggleGrupoCatActivo(c);}} style={{width:"36px",height:"20px",borderRadius:"10px",background:c.activo?"#27ae60":"#e0e0e0",cursor:"pointer",position:"relative",flexShrink:0}}>
+                        <div style={{position:"absolute",top:"2px",left:c.activo?"18px":"2px",width:"16px",height:"16px",borderRadius:"50%",background:"#fff",transition:"left .2s"}} />
+                      </div>
+                      <button onClick={e=>{e.stopPropagation();moverGrupoCat(c,"up");}} disabled={idx===0} style={{...S.btn("#9a9a9a",true),padding:"3px 8px",opacity:idx===0?0.3:1}}>↑</button>
+                      <button onClick={e=>{e.stopPropagation();moverGrupoCat(c,"down");}} disabled={idx===grupoCats.length-1} style={{...S.btn("#9a9a9a",true),padding:"3px 8px",opacity:idx===grupoCats.length-1?0.3:1}}>↓</button>
+                      <button onClick={e=>{e.stopPropagation();setModalGrupoCat({...c});}} style={{...S.btn("#3a7bd5",true),padding:"3px 8px"}}>✏️</button>
+                      <button onClick={e=>{e.stopPropagation();eliminarGrupoCat(c.id);}} style={{...S.btn("#e74c3c",true),padding:"3px 8px"}}>🗑️</button>
+                      <span style={{fontSize:"16px",color:"#9a9a9a"}}>{expandGrupoCat===c.id?"▲":"▼"}</span>
+                    </div>
+                    {expandGrupoCat===c.id && (
+                      <div style={{padding:"8px 12px 12px",background:"#f9f9f7",borderTop:"1px solid #f0f0f0"}}>
+                        {c.descripcion && <div style={{fontSize:"12px",color:"#9a9a9a",fontWeight:600,marginBottom:"8px"}}>{c.descripcion}</div>}
+                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"8px"}}>
+                          <span style={{fontSize:"11px",fontWeight:800,color:"#9a9a9a",textTransform:"uppercase",letterSpacing:"0.5px"}}>Subcategorías</span>
+                          <button onClick={()=>setModalGrupoSubcat({nombre:"",descripcion:"",categoria_id:c.id})} style={{...S.btn("#27ae60",true),padding:"3px 10px",fontSize:"11px"}}>+ Agregar</button>
+                        </div>
+                        {grupoSubcats.filter(s=>s.categoria_id===c.id).map((s:any)=>(
+                          <ItemRow key={s.id} label={s.nombre} badge={!s.activo?<span style={S.badge("#fff","#e74c3c")}>OFF</span>:undefined} onEdit={()=>setModalGrupoSubcat({...s})} onDelete={()=>eliminarGrupoSubcat(s.id)} />
+                        ))}
+                        {grupoSubcats.filter(s=>s.categoria_id===c.id).length===0 && <div style={{fontSize:"12px",color:"#bbb",fontWeight:600,padding:"8px 0"}}>Sin subcategorías todavía</div>}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* ── FILTROS IA (búsquedas automáticas) ── */}
+            {configSub==="filtros_ia" && (
+              <>
+                <div style={S.card}>
+                  <div style={S.sect}>🤖 Filtros por subrubro (Anuncios)</div>
+                  <div style={{fontSize:"12px",color:"#9a9a9a",fontWeight:600,marginBottom:"14px"}}>
+                    Seleccioná un subrubro para ver y configurar sus filtros de búsqueda IA
+                  </div>
+                  {rubros.map((r:any)=>(
+                    <div key={r.id} style={{marginBottom:"10px"}}>
+                      <div style={{fontSize:"13px",fontWeight:900,color:"#1a2a3a",marginBottom:"6px"}}>{r.emoji||"📁"} {r.nombre}</div>
+                      <div style={{display:"flex",gap:"6px",flexWrap:"wrap",marginBottom:"4px"}}>
+                        {(r.subrubros||[]).map((s:any)=>(
+                          <button key={s.id} onClick={()=>cargarFiltros(s.id)}
+                            style={{...S.btn(filtroSubSel===s.id?"#d4a017":"#9a9a9a",filtroSubSel!==s.id),padding:"5px 12px",fontSize:"11px"}}>
+                            {s.nombre}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {filtroSubSel && (
+                  <div style={S.card}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"12px"}}>
+                      <div style={S.sect}>🔧 Filtros configurados</div>
+                      <button onClick={()=>setModalFiltro({nombre:"",tipo:"rango",opciones:"",orden:filtrosIA.length})} style={S.btn("#27ae60")}>+ Agregar filtro</button>
+                    </div>
+                    {filtrosIA.length===0 && <div style={{fontSize:"13px",color:"#9a9a9a",fontWeight:600}}>Sin filtros todavía. Agregá uno.</div>}
+                    {filtrosIA.map((f:any)=>(
+                      <div key={f.id} style={{display:"flex",alignItems:"center",gap:"8px",padding:"8px 0",borderBottom:"1px solid #f4f4f2"}}>
+                        <div style={{flex:1}}>
+                          <div style={{fontSize:"13px",fontWeight:800,color:"#1a2a3a"}}>{f.nombre}</div>
+                          <div style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600}}>
+                            Tipo: <strong>{f.tipo}</strong>
+                            {f.opciones && ` · ${JSON.stringify(f.opciones)}`}
+                          </div>
+                        </div>
+                        <button onClick={()=>setModalFiltro({...f,opciones:f.opciones?JSON.stringify(f.opciones):""})} style={{...S.btn("#3a7bd5",true),padding:"4px 8px"}}>✏️</button>
+                        <button onClick={()=>eliminarFiltro(f.id)} style={{...S.btn("#e74c3c",true),padding:"4px 8px"}}>🗑️</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* Acciones del sistema — siempre visible */}
             <div style={S.card}>
               <div style={S.sect}>🔧 Acciones del sistema</div>
               <div style={{display:"flex",gap:"8px",flexWrap:"wrap"}}>
@@ -1070,53 +1297,6 @@ export default function AdminPanel() {
                 <button onClick={async()=>{await supabase.auth.signOut();router.push("/admin/login");}} style={S.btn("#e74c3c")}>🚪 Cerrar sesión</button>
               </div>
             </div>
-          </>
-        )}
-
-        {/* ══ FILTROS IA ═════════════════════════════════════════════════════ */}
-        {!loading && tab==="filtros_ia" && (
-          <>
-            <div style={S.card}>
-              <div style={S.sect}>🤖 Filtros por subrubro</div>
-              <div style={{fontSize:"12px",color:"#9a9a9a",fontWeight:600,marginBottom:"14px"}}>
-                Seleccioná un subrubro para ver y configurar sus filtros de búsqueda
-              </div>
-              {rubros.map((r:any)=>(
-                <div key={r.id} style={{marginBottom:"10px"}}>
-                  <div style={{fontSize:"13px",fontWeight:900,color:"#1a2a3a",marginBottom:"6px"}}>{r.emoji||"📁"} {r.nombre}</div>
-                  <div style={{display:"flex",gap:"6px",flexWrap:"wrap",marginBottom:"4px"}}>
-                    {(r.subrubros||[]).map((s:any)=>(
-                      <button key={s.id} onClick={()=>cargarFiltros(s.id)}
-                        style={{...S.btn(filtroSubSel===s.id?"#d4a017":"#9a9a9a",filtroSubSel!==s.id),padding:"5px 12px",fontSize:"11px"}}>
-                        {s.nombre}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-            {filtroSubSel && (
-              <div style={S.card}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"12px"}}>
-                  <div style={S.sect}>🔧 Filtros configurados</div>
-                  <button onClick={()=>setModalFiltro({nombre:"",tipo:"rango",opciones:"",orden:filtrosIA.length})} style={S.btn("#27ae60")}>+ Agregar filtro</button>
-                </div>
-                {filtrosIA.length===0 && <div style={{fontSize:"13px",color:"#9a9a9a",fontWeight:600}}>Sin filtros todavía. Agregá uno.</div>}
-                {filtrosIA.map((f:any)=>(
-                  <div key={f.id} style={{display:"flex",alignItems:"center",gap:"8px",padding:"8px 0",borderBottom:"1px solid #f4f4f2"}}>
-                    <div style={{flex:1}}>
-                      <div style={{fontSize:"13px",fontWeight:800,color:"#1a2a3a"}}>{f.nombre}</div>
-                      <div style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600}}>
-                        Tipo: <strong>{f.tipo}</strong>
-                        {f.opciones && ` · Opciones: ${JSON.stringify(f.opciones)}`}
-                      </div>
-                    </div>
-                    <button onClick={()=>setModalFiltro({...f,opciones:f.opciones?JSON.stringify(f.opciones):""})} style={{...S.btn("#3a7bd5",true),padding:"4px 8px"}}>✏️</button>
-                    <button onClick={()=>eliminarFiltro(f.id)} style={{...S.btn("#e74c3c",true),padding:"4px 8px"}}>🗑️</button>
-                  </div>
-                ))}
-              </div>
-            )}
           </>
         )}
       </div>
@@ -1375,6 +1555,52 @@ export default function AdminPanel() {
           <label style={S.label}>Orden</label>
           <input style={{...S.input,marginBottom:"16px"}} type="number" placeholder="0" value={modalFiltro.orden||""} onChange={e=>setModalFiltro({...modalFiltro,orden:e.target.value})} />
           <button onClick={()=>guardarFiltro(modalFiltro)} style={S.btn("#27ae60")} disabled={!modalFiltro.nombre}>💾 Guardar filtro</button>
+        </Modal>
+      )}
+
+      {/* ══ MODAL ENTITY RUBRO (empresa/servicio/trabajo) ═══════════════════════ */}
+      {modalEntRubro && (
+        <Modal titulo={modalEntRubro.id?"✏️ Editar rubro":"➕ Nuevo rubro"} onClose={()=>setModalEntRubro(null)}>
+          <label style={S.label}>Nombre</label>
+          <input style={{...S.input,marginBottom:"10px"}} placeholder="Ej: Gastronomía" value={modalEntRubro.nombre||""} onChange={e=>setModalEntRubro({...modalEntRubro,nombre:e.target.value})} />
+          <label style={S.label}>Orden (número)</label>
+          <input style={{...S.input,marginBottom:"16px"}} type="number" placeholder="0" value={modalEntRubro.orden||""} onChange={e=>setModalEntRubro({...modalEntRubro,orden:e.target.value})} />
+          <button onClick={()=>guardarEntRubro(modalEntRubro,modalEntRubro._tipo)} style={S.btn("#27ae60")} disabled={!modalEntRubro.nombre}>💾 Guardar</button>
+        </Modal>
+      )}
+
+      {/* ══ MODAL ENTITY SUBRUBRO ════════════════════════════════════════════════ */}
+      {modalEntSub && (
+        <Modal titulo={modalEntSub.id?"✏️ Editar subrubro":"➕ Nuevo subrubro"} onClose={()=>setModalEntSub(null)}>
+          <label style={S.label}>Nombre</label>
+          <input style={{...S.input,marginBottom:"10px"}} placeholder="Ej: Restaurante" value={modalEntSub.nombre||""} onChange={e=>setModalEntSub({...modalEntSub,nombre:e.target.value})} />
+          <label style={S.label}>Orden (número)</label>
+          <input style={{...S.input,marginBottom:"10px"}} type="number" placeholder="0" value={modalEntSub.orden||""} onChange={e=>setModalEntSub({...modalEntSub,orden:e.target.value})} />
+          <label style={S.label}>Sliders sugeridos (JSON array, opcional)</label>
+          <textarea style={{...S.input,minHeight:"50px",resize:"vertical",marginBottom:"16px"}} placeholder={'["galería","servicios","testimonios"]'} value={modalEntSub.sliders_sugeridos||""} onChange={e=>setModalEntSub({...modalEntSub,sliders_sugeridos:e.target.value})} />
+          <button onClick={()=>guardarEntSub(modalEntSub,modalEntSub._tipo)} style={S.btn("#27ae60")} disabled={!modalEntSub.nombre}>💾 Guardar</button>
+        </Modal>
+      )}
+
+      {/* ══ MODAL ENTITY FILTRO ══════════════════════════════════════════════════ */}
+      {modalEntFiltro && (
+        <Modal titulo={modalEntFiltro.id?"✏️ Editar filtro":"➕ Nuevo filtro"} onClose={()=>setModalEntFiltro(null)}>
+          <label style={S.label}>Nombre del campo *</label>
+          <input style={{...S.input,marginBottom:"10px"}} placeholder="Ej: Modalidad, Jornada, Precio..." value={modalEntFiltro.nombre||""} onChange={e=>setModalEntFiltro({...modalEntFiltro,nombre:e.target.value})} />
+          <label style={S.label}>Tipo</label>
+          <select style={{...S.input,marginBottom:"10px"}} value={modalEntFiltro.tipo||"rango"} onChange={e=>setModalEntFiltro({...modalEntFiltro,tipo:e.target.value})}>
+            <option value="rango">📊 Rango (desde/hasta)</option>
+            <option value="lista">📋 Lista (opciones fijas)</option>
+          </select>
+          {modalEntFiltro.tipo==="lista" && (
+            <>
+              <label style={S.label}>Opciones (JSON array)</label>
+              <textarea style={{...S.input,minHeight:"60px",resize:"vertical",marginBottom:"10px"}} placeholder={'["Presencial","Remoto","Híbrido"]'} value={modalEntFiltro.opciones||""} onChange={e=>setModalEntFiltro({...modalEntFiltro,opciones:e.target.value})} />
+            </>
+          )}
+          <label style={S.label}>Orden</label>
+          <input style={{...S.input,marginBottom:"16px"}} type="number" placeholder="0" value={modalEntFiltro.orden||""} onChange={e=>setModalEntFiltro({...modalEntFiltro,orden:e.target.value})} />
+          <button onClick={()=>guardarEntFiltro(modalEntFiltro,modalEntFiltro._tipo)} style={S.btn("#27ae60")} disabled={!modalEntFiltro.nombre}>💾 Guardar filtro</button>
         </Modal>
       )}
 

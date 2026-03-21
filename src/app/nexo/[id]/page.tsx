@@ -5,6 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
 import { supabase } from "@/lib/supabase";
+import PopupCompra, { MetodoPago } from "@/components/PopupCompra";
 import InsigniaLogro from "@/app/_components/InsigniaLogro";
 import InsigniaReputacion from "@/app/_components/InsigniaReputacion";
 import BotonDarInsignia from "@/app/_components/BotonDarInsignia";
@@ -226,38 +227,51 @@ export default function NexoPage() {
     setEnviando(false);
   };
 
-  const pagarDescarga = async (descarga: any) => {
+  const pagarDescarga = async (descarga: any, metodo?: MetodoPago) => {
     if (!perfil) { router.push("/login"); return; }
-    const bitsTotal = Math.max(0,(perfil.bits||0)) + Math.max(0,(perfil.bits_free||0)) + Math.max(0,(perfil.bits_promo||0));
-    if (bitsTotal < descarga.precio_bits) {
-      alert(`Necesitás ${descarga.precio_bits} BIT para descargar este archivo`);
-      return;
-    }
+    const costo = descarga.precio_bits;
     setPagandoDescarga(descarga.id);
-    const bitsAdmin   = Math.floor(descarga.precio_bits * 0.6);
-    const bitsNexonet = descarga.precio_bits - bitsAdmin;
 
-    // Descontar del comprador
-    await supabase.from("usuarios").update({ bits: Math.max(0,(perfil.bits||0) - descarga.precio_bits) }).eq("id",perfil.id);
-    // Acreditar 60% BIT Promotor al creador del nexo
-    const { data: adminData } = await supabase.from("usuarios").select("bits_promo,bits_promotor_total").eq("id", nexo.usuario_id).single();
-    await supabase.from("usuarios").update({
-      bits_promo:          ((adminData as any)?.bits_promo          || 0) + bitsAdmin,
-      bits_promotor_total: ((adminData as any)?.bits_promotor_total || 0) + bitsAdmin,
-    }).eq("id", nexo.usuario_id);
-    // Registrar pago (40% queda en sistema)
-    await supabase.from("nexo_descargas_pagos").insert({
-      descarga_id:descarga.id, nexo_id:id, comprador_id:perfil.id,
-      admin_id:nexo.usuario_id, bits_pagados:descarga.precio_bits, bits_admin:bitsAdmin, bits_nexonet:bitsNexonet,
-    });
-    // Incrementar contador (intentar en ambas tablas, una fallará silenciosamente)
-    await supabase.from("nexo_descargas").update({ descargas:(descarga.descargas||0)+1 }).eq("id",descarga.id);
-    await supabase.from("nexo_slider_items").update({ descargas:(descarga.descargas||0)+1 }).eq("id",descarga.id);
+    try {
+      // Descontar BIT al comprador según método de pago
+      const campo = metodo === "bit_free" ? "bits_free" : "bits";
+      const saldo = perfil[campo] || 0;
+      if (saldo < costo) { alert(`No tenés suficientes ${campo === "bits_free" ? "BIT Free" : "BIT Nexo"}. Tenés ${saldo}, necesitás ${costo}.`); setPagandoDescarga(null); return; }
+      const { error: e1 } = await supabase.from("usuarios").update({ [campo]: saldo - costo }).eq("id", perfil.id);
+      if (e1) { console.error("Error descontando BIT:", e1); alert("Error al descontar BIT: " + e1.message); setPagandoDescarga(null); return; }
+      setPerfil((p: any) => ({ ...p, [campo]: saldo - costo }));
 
-    setDescargasPagadas(prev => new Set([...prev, descarga.id]));
+      // Acreditar 60% BIT Promotor al creador del nexo
+      const bitsAdmin = Math.floor(costo * 0.6);
+      const bitsNexonet = costo - bitsAdmin;
+      const { data: adminData, error: e2 } = await supabase.from("usuarios").select("bits_promo,bits_promotor_total").eq("id", nexo.usuario_id).single();
+      if (e2) console.error("Error leyendo dueño:", e2);
+      if (adminData) {
+        const { error: e3 } = await supabase.from("usuarios").update({
+          bits_promo: (adminData.bits_promo || 0) + bitsAdmin,
+          bits_promotor_total: (adminData.bits_promotor_total || 0) + bitsAdmin,
+        }).eq("id", nexo.usuario_id);
+        if (e3) console.error("Error acreditando promotor:", e3);
+      }
+
+      // Registrar pago (40% queda en sistema)
+      const { error: e4 } = await supabase.from("nexo_descargas_pagos").insert({
+        descarga_id: descarga.id, nexo_id: id, comprador_id: perfil.id,
+        admin_id: nexo.usuario_id, bits_pagados: costo, bits_admin: bitsAdmin, bits_nexonet: bitsNexonet,
+      });
+      if (e4) console.error("Error registrando pago:", e4);
+
+      // Incrementar contador en ambas tablas
+      await supabase.from("nexo_descargas").update({ descargas: (descarga.descargas || 0) + 1 }).eq("id", descarga.id);
+      await supabase.from("nexo_slider_items").update({ descargas: (descarga.descargas || 0) + 1 }).eq("id", descarga.id);
+
+      setDescargasPagadas(prev => new Set([...prev, descarga.id]));
+      window.open(descarga.url, "_blank");
+    } catch (err: any) {
+      console.error("Error inesperado en pagarDescarga:", err);
+      alert("Error inesperado: " + (err?.message || "Intentá de nuevo"));
+    }
     setPagandoDescarga(null);
-    // Abrir el archivo
-    window.open(descarga.url, "_blank");
   };
 
   if (cargando) return <main style={{ paddingTop:"80px", textAlign:"center", color:"#9a9a9a", fontFamily:"'Nunito',sans-serif" }}>Cargando...</main>;
@@ -437,35 +451,19 @@ export default function NexoPage() {
 
       {/* POPUP CONFIRMAR PAGO DESCARGA */}
       {popupPagoDescarga && (
-        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", zIndex:800, display:"flex", alignItems:"flex-end", justifyContent:"center" }}>
-          <div style={{ background:"#fff", borderRadius:"24px 24px 0 0", padding:"24px 20px 40px", width:"100%", maxWidth:"480px" }}>
-            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"16px" }}>
-              <div style={{ fontSize:"16px", fontWeight:900, color:"#1a2a3a" }}>📥 Confirmar descarga</div>
-              <button onClick={()=>setPopupPagoDescarga(null)} style={{ background:"#f4f4f2", border:"none", borderRadius:"50%", width:"32px", height:"32px", fontSize:"16px", cursor:"pointer" }}>✕</button>
-            </div>
-            <div style={{ background:"#f9f9f7", borderRadius:"12px", padding:"14px 16px", marginBottom:"16px" }}>
-              <div style={{ fontSize:"14px", fontWeight:900, color:"#1a2a3a", marginBottom:"4px" }}>{popupPagoDescarga.titulo || "Archivo"}</div>
-              {popupPagoDescarga.descripcion && <div style={{ fontSize:"12px", color:"#9a9a9a", fontWeight:600 }}>{popupPagoDescarga.descripcion}</div>}
-            </div>
-            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", background:"rgba(212,160,23,0.08)", borderRadius:"12px", padding:"12px 16px", marginBottom:"12px" }}>
-              <span style={{ fontSize:"13px", fontWeight:700, color:"#1a2a3a" }}>Costo</span>
-              <span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"24px", color:"#d4a017" }}>{popupPagoDescarga.precio_bits} BIT</span>
-            </div>
-            <div style={{ fontSize:"12px", color:"#9a9a9a", fontWeight:600, marginBottom:"16px", textAlign:"center" }}>
-              Tenés <strong style={{ color:"#1a2a3a" }}>{((perfil?.bits||0)+(perfil?.bits_free||0)+(perfil?.bits_promo||0)).toLocaleString()} BIT</strong> disponibles
-            </div>
-            <div style={{ display:"flex", flexDirection:"column", gap:"8px" }}>
-              <button onClick={async()=>{ setPopupPagoDescarga(null); await pagarDescarga(popupPagoDescarga); }}
-                style={{ width:"100%", background:"linear-gradient(135deg,#27ae60,#1e8449)", border:"none", borderRadius:"14px", padding:"16px", fontSize:"15px", fontWeight:900, color:"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif", boxShadow:"0 4px 0 #155a2e" }}>
-                ✅ Confirmar pago
-              </button>
-              <button onClick={()=>setPopupPagoDescarga(null)}
-                style={{ width:"100%", background:"#f4f4f2", border:"none", borderRadius:"14px", padding:"14px", fontSize:"14px", fontWeight:800, color:"#9a9a9a", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
-                Cancelar
-              </button>
-            </div>
-          </div>
-        </div>
+        <PopupCompra
+          titulo="📥 Descargar archivo"
+          emoji="📥"
+          costo={`${popupPagoDescarga.precio_bits} BIT`}
+          descripcion={popupPagoDescarga.titulo || "Archivo"}
+          bits={{ free: Math.max(0, perfil?.bits_free||0), nexo: Math.max(0, perfil?.bits||0), promo: Math.max(0, perfil?.bits_promo||0) }}
+          onClose={() => setPopupPagoDescarga(null)}
+          onPagar={async (metodo: MetodoPago) => {
+            const item = popupPagoDescarga;
+            setPopupPagoDescarga(null);
+            await pagarDescarga(item, metodo);
+          }}
+        />
       )}
 
       <BottomNav />

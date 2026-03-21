@@ -340,7 +340,7 @@ export default function NexoPage() {
                   if (dueno) await supabase.from("usuarios").update({ bits_promo: (dueno.bits_promo||0)+150, bits_promotor_total: (dueno.bits_promotor_total||0)+150 }).eq("id", nexo.usuario_id);
                   await supabase.from("nexo_miembros").update({ rol: "admin_solicitado" }).eq("id", miMiembro.id);
                   setMiMiembro((m:any) => ({...m, rol:"admin_solicitado"}));
-                  await supabase.from("notificaciones").insert({ usuario_id: nexo.usuario_id, tipo: "sistema", mensaje: `⭐ ${perfil.nombre_usuario} solicita ser admin en "${nexo.titulo}"`, leida: false });
+                  await supabase.from("notificaciones").insert({ usuario_id: nexo.usuario_id, tipo: "solicitud_admin", mensaje: `⭐ ${perfil.nombre_usuario} solicita ser admin en "${nexo.titulo}"`, leida: false, nexo_id: nexo.id });
                   setSolicitandoAdmin(false);
                 }} style={{ background:"linear-gradient(135deg,#f0c040,#d4a017)", border:"none", borderRadius:"10px", padding:"8px 12px", fontSize:"11px", fontWeight:900, color:"#1a2a3a", cursor:"pointer", fontFamily:"'Nunito',sans-serif", opacity:solicitandoAdmin?0.5:1 }}>
                   ⭐ Ser admin (500 BIT)

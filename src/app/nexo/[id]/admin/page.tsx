@@ -56,6 +56,7 @@ export default function NexoAdminPage() {
   const [sliderItems,   setSliderItems]   = useState<Record<string,any[]>>({});
   const [sliderAbierto, setSliderAbierto] = useState<string|null>(null);
   const [customTitulo,  setCustomTitulo]  = useState("");
+  const [popupAdminAccion, setPopupAdminAccion] = useState<{mId:string;accion:string;mensaje:string}|null>(null);
   const ts = () => new Date().getTime();
 
   const [formInfo, setFormInfo] = useState({
@@ -275,21 +276,8 @@ export default function NexoAdminPage() {
       setMiembros(prev=>prev.map(x=>x.id===mId?{...x,estado:"activo",bits_pagados:500}:x));
       return;
     }
-    if (accion === "aprobar_admin") {
-      // Aprobar solicitud de admin
-      await supabase.from("nexo_miembros").update({ rol:"admin" }).eq("id",mId);
-      setMiembros(prev=>prev.map(x=>x.id===mId?{...x,rol:"admin"}:x));
-      return;
-    }
-    if (accion === "rechazar_admin") {
-      // Rechazar solicitud: devolver 500 BIT al miembro
-      const m = miembros.find(x=>x.id===mId);
-      if (m?.usuario_id) {
-        const { data: mu } = await supabase.from("usuarios").select("bits").eq("id",m.usuario_id).single();
-        if (mu) await supabase.from("usuarios").update({ bits: (mu.bits||0)+500 }).eq("id",m.usuario_id);
-      }
-      await supabase.from("nexo_miembros").update({ rol:"miembro" }).eq("id",mId);
-      setMiembros(prev=>prev.map(x=>x.id===mId?{...x,rol:"miembro"}:x));
+    if (accion === "aprobar_admin" || accion === "rechazar_admin") {
+      setPopupAdminAccion({ mId, accion, mensaje: "" });
       return;
     }
     if (accion === "hacer_admin") {
@@ -879,6 +867,60 @@ export default function NexoAdminPage() {
           </div>
         </div>
       )}
+      {/* POPUP APROBAR/RECHAZAR ADMIN */}
+      {popupAdminAccion && (() => {
+        const m = miembros.find(x=>x.id===popupAdminAccion.mId);
+        const nombre = m?.usuarios?.nombre_usuario || "usuario";
+        const esAprobar = popupAdminAccion.accion === "aprobar_admin";
+        const ejecutar = async () => {
+          const mId = popupAdminAccion.mId;
+          const msg = popupAdminAccion.mensaje.trim();
+          if (esAprobar) {
+            await supabase.from("nexo_miembros").update({ rol:"admin" }).eq("id",mId);
+            setMiembros(prev=>prev.map(x=>x.id===mId?{...x,rol:"admin"}:x));
+            if (m?.usuario_id) await supabase.from("notificaciones").insert({
+              usuario_id:m.usuario_id, tipo:"sistema", nexo_id:id,
+              mensaje:`✅ ¡Fuiste aprobado como admin en "${nexo.titulo}"!${msg?` — ${msg}`:""}`, leida:false,
+            });
+          } else {
+            if (m?.usuario_id) {
+              const { data: mu } = await supabase.from("usuarios").select("bits").eq("id",m.usuario_id).single();
+              if (mu) await supabase.from("usuarios").update({ bits: (mu.bits||0)+500 }).eq("id",m.usuario_id);
+              await supabase.from("notificaciones").insert({
+                usuario_id:m.usuario_id, tipo:"sistema", nexo_id:id,
+                mensaje:`❌ Tu solicitud de admin en "${nexo.titulo}" fue rechazada. Se devolvieron 500 BIT.${msg?` — ${msg}`:""}`, leida:false,
+              });
+            }
+            await supabase.from("nexo_miembros").update({ rol:"miembro" }).eq("id",mId);
+            setMiembros(prev=>prev.map(x=>x.id===mId?{...x,rol:"miembro"}:x));
+          }
+          setPopupAdminAccion(null);
+        };
+        return (
+          <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", zIndex:800, display:"flex", alignItems:"flex-end", justifyContent:"center" }}>
+            <div style={{ background:"#fff", borderRadius:"24px 24px 0 0", padding:"24px 20px 40px", width:"100%", maxWidth:"480px" }}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"16px" }}>
+                <div style={{ fontSize:"16px", fontWeight:900, color:"#1a2a3a" }}>{esAprobar?"✅ Aprobar admin":"❌ Rechazar solicitud"}</div>
+                <button onClick={()=>setPopupAdminAccion(null)} style={{ background:"#f4f4f2", border:"none", borderRadius:"50%", width:"32px", height:"32px", fontSize:"16px", cursor:"pointer" }}>✕</button>
+              </div>
+              <div style={{ background:"#f9f9f7", borderRadius:"12px", padding:"14px 16px", marginBottom:"16px" }}>
+                <div style={{ fontSize:"14px", fontWeight:900, color:"#1a2a3a" }}>{nombre}</div>
+                <div style={{ fontSize:"12px", color:"#9a9a9a", fontWeight:600 }}>{esAprobar?"Será promovido a admin del grupo":"Se le devolverán 500 BIT"}</div>
+              </div>
+              <div style={{ marginBottom:"16px" }}>
+                <label style={{ fontSize:"11px", fontWeight:800, color:"#666", textTransform:"uppercase" as const, letterSpacing:"1px", marginBottom:"6px", display:"block" }}>Mensaje para {nombre} (opcional)</label>
+                <textarea value={popupAdminAccion.mensaje} onChange={e=>setPopupAdminAccion(p=>p?{...p,mensaje:e.target.value}:p)}
+                  placeholder={esAprobar?"Ej: Bienvenido al equipo admin!":"Ej: Gracias por tu interés, por ahora no necesitamos más admins."}
+                  rows={3} style={{ width:"100%", border:"2px solid #e8e8e6", borderRadius:"12px", padding:"12px 14px", fontSize:"13px", fontFamily:"'Nunito',sans-serif", outline:"none", resize:"vertical", boxSizing:"border-box" as const }} />
+              </div>
+              <button onClick={ejecutar}
+                style={{ width:"100%", background:esAprobar?"linear-gradient(135deg,#8e44ad,#6c3483)":"linear-gradient(135deg,#e74c3c,#c0392b)", border:"none", borderRadius:"14px", padding:"16px", fontSize:"15px", fontWeight:900, color:"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
+                {esAprobar?"✅ Aprobar como admin":"❌ Rechazar y devolver 500 BIT"}
+              </button>
+            </div>
+          </div>
+        );
+      })()}
     </main>
   );
 }

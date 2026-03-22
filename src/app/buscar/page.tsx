@@ -6,6 +6,7 @@ import BottomNav from "@/components/BottomNav";
 import { supabase } from "@/lib/supabase";
 import PopupCompra, { MetodoPago } from "@/components/PopupCompra";
 import InsigniaLogro from "@/app/_components/InsigniaLogro";
+import TarjetaNexoGlobal from "@/app/_components/TarjetaNexo";
 
 type Anuncio = {
   permuto?: boolean; id:number; titulo:string; precio:number; moneda:string;
@@ -790,7 +791,9 @@ function BuscarInner() {
                       ) : (
                         <div style={{display:"flex",gap:"12px",padding:"0 16px",overflowX:"auto",scrollbarWidth:"none"}}>
                           {itemsFinal.map((n:any,i:number) => (
-                            <TarjetaNexo key={n.id} nexo={n} color={colorActivo} onNavigate={()=>router.push(`/nexo/${n.id}`)} esPrimero={i===0&&(n.visitas_semana||0)>0} />
+                            <div key={n.id} style={{minWidth:"160px",width:"160px",flexShrink:0}}>
+                              <TarjetaNexoGlobal nexo={n} color={colorActivo} onClick={()=>router.push(`/nexo/${n.id}`)} esPrimero={i===0&&(n.visitas_semana||0)>0} />
+                            </div>
                           ))}
                         </div>
                       )}
@@ -818,7 +821,9 @@ function BuscarInner() {
                       </div>
                       <div style={{display:"flex",gap:"12px",padding:"0 16px",overflowX:"auto",scrollbarWidth:"none"}}>
                         {(nexosPorTipo[tipoActivo]||[]).map((n, i) => (
-                          <TarjetaNexo key={n.id} nexo={n} color={colorActivo} onNavigate={()=>router.push(`/nexo/${n.id}`)} esPrimero={i === 0 && (n.visitas_semana || 0) > 0} />
+                          <div key={n.id} style={{minWidth:"160px",width:"160px",flexShrink:0}}>
+                            <TarjetaNexoGlobal nexo={n} color={colorActivo} onClick={()=>router.push(`/nexo/${n.id}`)} esPrimero={i === 0 && (n.visitas_semana || 0) > 0} />
+                          </div>
                         ))}
                       </div>
                     </div>
@@ -834,7 +839,11 @@ function BuscarInner() {
                   <div style={{marginBottom:"8px",background:"#fff",paddingBottom:"12px",borderBottom:"6px solid #f4f4f2"}}>
                     <div style={{padding:"14px 16px 8px"}}><span style={{fontSize:"16px",fontWeight:900,color:"#1a2a3a"}}>📦 Otros</span></div>
                     <div style={{display:"flex",gap:"12px",padding:"0 16px",overflowX:"auto",scrollbarWidth:"none"}}>
-                      {sinCat.slice(0,8).map((n:any) => <TarjetaNexo key={n.id} nexo={n} color={colorActivo} onNavigate={()=>router.push(`/nexo/${n.id}`)} />)}
+                      {sinCat.slice(0,8).map((n:any) => (
+                        <div key={n.id} style={{minWidth:"160px",width:"160px",flexShrink:0}}>
+                          <TarjetaNexoGlobal nexo={n} color={colorActivo} onClick={()=>router.push(`/nexo/${n.id}`)} />
+                        </div>
+                      ))}
                     </div>
                   </div>
                 );

@@ -28,18 +28,6 @@ type Ciudad = { id:number; nombre:string; provincia_id:number };
 type Barrio = { id:number; nombre:string; ciudad_id:number };
 type TipoPublicacion = "anuncios" | "grupos" | "empresas" | "servicios" | "trabajo";
 
-const SUBTIPOS_GRUPO = [
-  {key:"emprendimiento",emoji:"🚀",label:"Emprendimientos"},
-  {key:"curso",emoji:"🎓",label:"Cursos"},
-  {key:"consorcio",emoji:"🏢",label:"Consorcios"},
-  {key:"deportivo",emoji:"⚽",label:"Deportivos"},
-  {key:"estudio",emoji:"📚",label:"Estudio"},
-  {key:"venta",emoji:"🛒",label:"Venta"},
-  {key:"artistas",emoji:"🎨",label:"Artistas"},
-  {key:"vecinos",emoji:"🏘️",label:"Vecinos"},
-  {key:"generico",emoji:"✨",label:"General"},
-];
-
 const TIPOS: { key:TipoPublicacion; emoji:string; label:string; color:string }[] = [
   { key:"anuncios",  emoji:"📣", label:"Anuncios",  color:"#d4a017" },
   { key:"grupos",    emoji:"👥", label:"Grupos",    color:"#3a7bd5" },
@@ -102,8 +90,6 @@ function BuscarInner() {
   const [entSubSel, setEntSubSel] = useState<number|null>(null);
   const [entLoading, setEntLoading] = useState(false);
   const [entError, setEntError] = useState<string|null>(null);
-  // Filtro subtipo para grupos
-  const [grupoSubtipoSel, setGrupoSubtipoSel] = useState<string|null>(null);
 
   const [session,    setSession]    = useState<any>(null);
   // ── FIX: trackear cada bolsillo por separado ──
@@ -383,7 +369,7 @@ function BuscarInner() {
   const nexosFilt = nexos.filter(n => filtrarPorUbi(n.ciudad, n.provincia));
 
   const nexosPorTipo: Record<string, Nexo[]> = {
-    grupos:    nexosFilt.filter(n => n.tipo === "grupo" && (!grupoSubtipoSel || n.subtipo === grupoSubtipoSel)),
+    grupos:    nexosFilt.filter(n => n.tipo === "grupo"),
     empresas:  nexosFilt.filter(n => n.tipo === "empresa"),
     servicios: nexosFilt.filter(n => n.tipo === "servicio"),
     trabajo:   nexosFilt.filter(n => n.tipo === "trabajo"),

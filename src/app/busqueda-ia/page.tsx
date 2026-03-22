@@ -38,6 +38,8 @@ type Busqueda = {
   provincia: string;
   ciudad: string;
   keywords: string;
+  marca: string;
+  permuta: string; // "si" | "no" | ""
   activa: boolean;
   guardando: boolean;
   dbId: string | null;
@@ -54,6 +56,7 @@ function nueva(): Busqueda {
     km_min: "", km_max: "", anio_min: "", anio_max: "",
     dormitorios: "", ambientes: "", metros_min: "", metros_max: "",
     provincia: "", ciudad: "", keywords: "",
+    marca: "", permuta: "",
     activa: false, guardando: false, dbId: null,
   };
 }
@@ -95,7 +98,9 @@ export default function BusquedaIA() {
             dormitorios: b.dormitorios?.toString()||"", ambientes: b.ambientes?.toString()||"",
             metros_min: b.metros_min?.toString()||"", metros_max: b.metros_max?.toString()||"",
             provincia: b.provincia||"", ciudad: b.ciudad||"",
-            keywords: b.keywords||"", activa: b.activo, guardando: false, dbId: b.id,
+            keywords: b.keywords||"",
+            marca: b.config?.marca||"", permuta: b.config?.permuta===true?"si":b.config?.permuta===false?"no":"",
+            activa: b.activo, guardando: false, dbId: b.id,
           })));
         }
         setLoading(false);
@@ -135,6 +140,10 @@ export default function BusquedaIA() {
       ciudad:      b.ciudad      || null,
       keywords:    b.keywords    || null,
       activo:      b.activa,
+      config:      {
+        ...(b.marca ? {marca:b.marca} : {}),
+        ...(b.permuta==="si" ? {permuta:true} : b.permuta==="no" ? {permuta:false} : {}),
+      },
     };
     if (b.dbId) {
       const { error } = await supabase.from("busquedas_automaticas").update(payload).eq("id", b.dbId);
@@ -272,6 +281,18 @@ function TarjetaBusqueda({ b, idx, rubros, subrubros, provs, ciudades, bits,
         </button>
       </div>
 
+      {/* Badges de filtros activos */}
+      {b.dbId && (b.precio_min||b.precio_max||b.anio_min||b.anio_max||b.km_min||b.km_max||b.marca||b.permuta) && (
+        <div style={{padding:"8px 16px 0",display:"flex",gap:"6px",flexWrap:"wrap"}}>
+          {(b.precio_min||b.precio_max) && <span style={{background:"rgba(212,160,23,0.15)",border:"1px solid rgba(212,160,23,0.3)",borderRadius:"20px",padding:"3px 10px",fontSize:"10px",fontWeight:800,color:"#d4a017"}}>💰 {b.moneda==="USD"?"U$":"$"}{b.precio_min||"0"} - {b.moneda==="USD"?"U$":"$"}{b.precio_max||"∞"}</span>}
+          {(b.anio_min||b.anio_max) && <span style={{background:"rgba(58,123,213,0.12)",border:"1px solid rgba(58,123,213,0.3)",borderRadius:"20px",padding:"3px 10px",fontSize:"10px",fontWeight:800,color:"#3a7bd5"}}>📅 {b.anio_min||"?"}-{b.anio_max||"?"}</span>}
+          {(b.km_min||b.km_max) && <span style={{background:"rgba(39,174,96,0.12)",border:"1px solid rgba(39,174,96,0.3)",borderRadius:"20px",padding:"3px 10px",fontSize:"10px",fontWeight:800,color:"#27ae60"}}>🚗 {b.km_min?`${Number(b.km_min).toLocaleString()}km`:"0"} - {b.km_max?`${Number(b.km_max).toLocaleString()}km`:"∞"}</span>}
+          {b.marca && <span style={{background:"rgba(142,68,173,0.12)",border:"1px solid rgba(142,68,173,0.3)",borderRadius:"20px",padding:"3px 10px",fontSize:"10px",fontWeight:800,color:"#8e44ad"}}>🏷️ {b.marca}</span>}
+          {b.permuta==="si" && <span style={{background:"rgba(230,126,34,0.12)",border:"1px solid rgba(230,126,34,0.3)",borderRadius:"20px",padding:"3px 10px",fontSize:"10px",fontWeight:800,color:"#e67e22"}}>🔄 Permuta</span>}
+          {b.permuta==="no" && <span style={{background:"rgba(231,76,60,0.12)",border:"1px solid rgba(231,76,60,0.3)",borderRadius:"20px",padding:"3px 10px",fontSize:"10px",fontWeight:800,color:"#e74c3c"}}>🔄 Sin permuta</span>}
+        </div>
+      )}
+
       <div style={{padding:"14px 16px",display:"flex",flexDirection:"column",gap:"14px"}}>
 
         {/* TIPO DE NEXO */}
@@ -332,8 +353,73 @@ function TarjetaBusqueda({ b, idx, rubros, subrubros, provs, ciudades, bits,
           </div>
         </div>
 
-        {/* PRECIO — para anuncios, empresas y servicios */}
-        {(b.tipo_nexo==="anuncio"||b.tipo_nexo==="empresa"||b.tipo_nexo==="servicio") && (
+        {/* ── FILTROS BASE PARA ANUNCIOS ── */}
+        {b.tipo_nexo==="anuncio" && (
+          <div style={{background:"rgba(26,42,58,0.04)",border:"1px solid rgba(26,42,58,0.1)",borderRadius:"12px",padding:"12px 14px",display:"flex",flexDirection:"column",gap:"12px"}}>
+            <div style={{fontSize:"11px",fontWeight:800,color:"#1a2a3a",textTransform:"uppercase",letterSpacing:"0.5px"}}>🔍 Filtros de búsqueda</div>
+
+            <div>
+              <L>💰 Rango de precio</L>
+              <div style={{display:"flex",gap:"8px",alignItems:"center"}}>
+                <input value={b.precio_min} onChange={e=>onUpd(b.id,"precio_min",e.target.value)}
+                  placeholder="Desde" type="number" style={{...IS,flex:1}}/>
+                <span style={{color:"#9a9a9a",fontWeight:800,fontSize:"13px"}}>—</span>
+                <input value={b.precio_max} onChange={e=>onUpd(b.id,"precio_max",e.target.value)}
+                  placeholder="Hasta" type="number" style={{...IS,flex:1}}/>
+                <select value={b.moneda} onChange={e=>onUpd(b.id,"moneda",e.target.value)} style={{...IS,width:"80px"}}>
+                  <option value="ARS">$ ARS</option>
+                  <option value="USD">USD</option>
+                  <option value="EUR">EUR</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <L>📅 Año de fabricación</L>
+              <div style={{display:"flex",gap:"8px",alignItems:"center"}}>
+                <input value={b.anio_min} onChange={e=>onUpd(b.id,"anio_min",e.target.value)}
+                  placeholder={`Desde (${ANIO_MIN})`} type="number" min={ANIO_MIN} max={ANIO_MAX} style={{...IS,flex:1}}/>
+                <span style={{color:"#9a9a9a",fontWeight:800}}>—</span>
+                <input value={b.anio_max} onChange={e=>onUpd(b.id,"anio_max",e.target.value)}
+                  placeholder={`Hasta (${ANIO_MAX})`} type="number" min={ANIO_MIN} max={ANIO_MAX} style={{...IS,flex:1}}/>
+              </div>
+            </div>
+
+            <div>
+              <L>🚗 Kilómetros</L>
+              <div style={{display:"flex",gap:"8px",alignItems:"center"}}>
+                <input value={b.km_min} onChange={e=>onUpd(b.id,"km_min",e.target.value)}
+                  placeholder="Desde KM" type="number" style={{...IS,flex:1}}/>
+                <span style={{color:"#9a9a9a",fontWeight:800}}>—</span>
+                <input value={b.km_max} onChange={e=>onUpd(b.id,"km_max",e.target.value)}
+                  placeholder="Hasta KM" type="number" style={{...IS,flex:1}}/>
+              </div>
+            </div>
+
+            <div>
+              <L>🏷️ Marca</L>
+              <input value={b.marca} onChange={e=>onUpd(b.id,"marca",e.target.value)}
+                placeholder="Ej: Toyota, Samsung, Nike..." style={IS}/>
+            </div>
+
+            <div>
+              <L>🔄 Permuta</L>
+              <div style={{display:"flex",gap:"8px"}}>
+                {[{v:"",l:"Indiferente"},{v:"si",l:"Sí"},{v:"no",l:"No"}].map(op=>(
+                  <button key={op.v} onClick={()=>onUpd(b.id,"permuta",op.v)}
+                    style={{flex:1,background:b.permuta===op.v?"#1a2a3a":"#f4f4f2",border:`2px solid ${b.permuta===op.v?"#1a2a3a":"#e8e8e6"}`,
+                    borderRadius:"10px",padding:"8px",fontSize:"12px",fontWeight:800,
+                    color:b.permuta===op.v?"#d4a017":"#666",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>
+                    {op.l}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* PRECIO — para empresas y servicios (sin anuncios, ya tienen arriba) */}
+        {(b.tipo_nexo==="empresa"||b.tipo_nexo==="servicio") && (
           <div>
             <L>💰 Rango de precio</L>
             <div style={{display:"flex",gap:"8px",alignItems:"center"}}>
@@ -343,7 +429,7 @@ function TarjetaBusqueda({ b, idx, rubros, subrubros, provs, ciudades, bits,
               <input value={b.precio_max} onChange={e=>onUpd(b.id,"precio_max",e.target.value)}
                 placeholder="Hasta" type="number" style={{...IS,flex:1}}/>
               <select value={b.moneda} onChange={e=>onUpd(b.id,"moneda",e.target.value)} style={{...IS,width:"80px"}}>
-                <option value="ARS">ARS</option>
+                <option value="ARS">$ ARS</option>
                 <option value="USD">USD</option>
               </select>
             </div>

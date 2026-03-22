@@ -1904,21 +1904,32 @@ export default function AdminPanel() {
       {modalEntFiltro && (
         <Modal titulo={modalEntFiltro.id?"✏️ Editar filtro":"➕ Nuevo filtro"} onClose={()=>setModalEntFiltro(null)}>
           <label style={S.label}>Nombre del campo *</label>
-          <input style={{...S.input,marginBottom:"10px"}} placeholder="Ej: Modalidad, Jornada, Precio..." value={modalEntFiltro.nombre||""} onChange={e=>setModalEntFiltro({...modalEntFiltro,nombre:e.target.value})} />
+          <input style={{...S.input,marginBottom:"10px"}} placeholder="Ej: Precio, Año, Marca, Permuta..." value={modalEntFiltro.nombre||""} onChange={e=>setModalEntFiltro({...modalEntFiltro,nombre:e.target.value})} />
           <label style={S.label}>Tipo</label>
           <select style={{...S.input,marginBottom:"10px"}} value={modalEntFiltro.tipo||"rango"} onChange={e=>setModalEntFiltro({...modalEntFiltro,tipo:e.target.value})}>
+            <option value="boolean">✅ Sí / No</option>
+            <option value="numero">🔢 Número simple</option>
             <option value="rango">📊 Rango (desde/hasta)</option>
-            <option value="lista">📋 Lista (opciones fijas)</option>
+            <option value="texto">✏️ Texto libre</option>
+            <option value="opciones">📋 Opciones (lista fija)</option>
+            <option value="moneda">💲 Moneda ($ ARS / USD / EUR)</option>
           </select>
-          {modalEntFiltro.tipo==="lista" && (
+          {(modalEntFiltro.tipo==="opciones"||modalEntFiltro.tipo==="lista") && (
             <>
-              <label style={S.label}>Opciones (JSON array)</label>
-              <textarea style={{...S.input,minHeight:"60px",resize:"vertical",marginBottom:"10px"}} placeholder={'["Presencial","Remoto","Híbrido"]'} value={modalEntFiltro.opciones||""} onChange={e=>setModalEntFiltro({...modalEntFiltro,opciones:e.target.value})} />
+              <label style={S.label}>Opciones (separadas por coma)</label>
+              <textarea style={{...S.input,minHeight:"60px",resize:"vertical",marginBottom:"10px"}} placeholder="Opción 1, Opción 2, Opción 3" value={modalEntFiltro.opciones||""} onChange={e=>setModalEntFiltro({...modalEntFiltro,opciones:e.target.value})} />
+              <div style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600,marginBottom:"10px"}}>Se guardarán como: {modalEntFiltro.opciones ? JSON.stringify((modalEntFiltro.opciones.startsWith("[")?JSON.parse(modalEntFiltro.opciones):modalEntFiltro.opciones.split(",").map((o:string)=>o.trim()).filter(Boolean))) : "[]"}</div>
             </>
           )}
           <label style={S.label}>Orden</label>
           <input style={{...S.input,marginBottom:"16px"}} type="number" placeholder="0" value={modalEntFiltro.orden||""} onChange={e=>setModalEntFiltro({...modalEntFiltro,orden:e.target.value})} />
-          <button onClick={()=>guardarEntFiltro(modalEntFiltro,modalEntFiltro._tipo)} style={S.btn("#27ae60")} disabled={!modalEntFiltro.nombre}>💾 Guardar filtro</button>
+          <button onClick={()=>{
+            const f = {...modalEntFiltro};
+            if ((f.tipo==="opciones"||f.tipo==="lista") && f.opciones && !f.opciones.startsWith("[")) {
+              f.opciones = JSON.stringify(f.opciones.split(",").map((o:string)=>o.trim()).filter(Boolean));
+            }
+            guardarEntFiltro(f,f._tipo);
+          }} style={S.btn("#27ae60")} disabled={!modalEntFiltro.nombre}>💾 Guardar filtro</button>
         </Modal>
       )}
 
@@ -1929,15 +1940,18 @@ export default function AdminPanel() {
           <input style={{...S.input,marginBottom:"10px"}} placeholder="Ej: Color, Tamaño, Precio..." value={modalGrupoFiltro.nombre||""} onChange={e=>setModalGrupoFiltro({...modalGrupoFiltro,nombre:e.target.value})} />
           <label style={S.label}>Tipo</label>
           <select style={{...S.input,marginBottom:"10px"}} value={modalGrupoFiltro.tipo||"texto"} onChange={e=>setModalGrupoFiltro({...modalGrupoFiltro,tipo:e.target.value})}>
+            <option value="boolean">✅ Sí / No</option>
+            <option value="numero">🔢 Número simple</option>
+            <option value="rango">📊 Rango (desde/hasta)</option>
             <option value="texto">✏️ Texto libre</option>
             <option value="opciones">📋 Opciones (lista fija)</option>
-            <option value="rango">📊 Rango (min/max numérico)</option>
+            <option value="moneda">💲 Moneda ($ ARS / USD / EUR)</option>
           </select>
           {modalGrupoFiltro.tipo==="opciones" && (
             <>
               <label style={S.label}>Opciones (separadas por coma)</label>
               <textarea style={{...S.input,minHeight:"60px",resize:"vertical",marginBottom:"10px"}} placeholder="Opción 1, Opción 2, Opción 3" value={modalGrupoFiltro.opciones||""} onChange={e=>setModalGrupoFiltro({...modalGrupoFiltro,opciones:e.target.value})} />
-              <div style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600,marginBottom:"10px"}}>Se guardarán como: {modalGrupoFiltro.opciones ? JSON.stringify(modalGrupoFiltro.opciones.split(",").map((o:string)=>o.trim()).filter(Boolean)) : "[]"}</div>
+              <div style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600,marginBottom:"10px"}}>Se guardarán como: {modalGrupoFiltro.opciones ? JSON.stringify(modalGrupoFiltro.opciones.startsWith("[")?JSON.parse(modalGrupoFiltro.opciones):modalGrupoFiltro.opciones.split(",").map((o:string)=>o.trim()).filter(Boolean)) : "[]"}</div>
             </>
           )}
           <label style={S.label}>Orden</label>

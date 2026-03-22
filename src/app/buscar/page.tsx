@@ -705,14 +705,14 @@ function BuscarInner() {
                         </button>
                       </div>
                       {subs.length > 0 && (
-                        <div style={{display:"flex",gap:"8px",padding:"0 16px 12px",overflowX:"auto",scrollbarWidth:"none",WebkitOverflowScrolling:"touch"}}>
+                        <ChipsConFlechas>
                           {subs.map((sub:any)=>(
                             <button key={sub.id} onClick={()=>setEntSubSel(entSubSel===sub.id?null:sub.id)}
                               style={{background:entSubSel===sub.id?"#1a2a3a":"#f4f4f2",border:`2px solid ${entSubSel===sub.id?"#1a2a3a":"#e8e8e6"}`,borderRadius:"20px",padding:"5px 14px",fontSize:"12px",fontWeight:700,color:entSubSel===sub.id?"#3a7bd5":"#2c2c2e",whiteSpace:"nowrap",cursor:"pointer",flexShrink:0,fontFamily:"'Nunito',sans-serif"}}>
                               {sub.nombre}
                             </button>
                           ))}
-                        </div>
+                        </ChipsConFlechas>
                       )}
                       {itemsFinal.length === 0 ? (
                         <div style={{padding:"12px 16px",color:"#9a9a9a",fontSize:"13px",fontWeight:600}}>Sin grupos en esta categoría</div>
@@ -776,14 +776,14 @@ function BuscarInner() {
                         </button>
                       </div>
                       {subs.length > 0 && (
-                        <div style={{display:"flex",gap:"8px",padding:"0 16px 12px",overflowX:"auto",scrollbarWidth:"none",WebkitOverflowScrolling:"touch"}}>
+                        <ChipsConFlechas>
                           {subs.map((sub:any)=>(
                             <button key={sub.id} onClick={()=>setEntSubSel(entSubSel===sub.id?null:sub.id)}
                               style={{background:entSubSel===sub.id?"#1a2a3a":"#f4f4f2",border:`2px solid ${entSubSel===sub.id?"#1a2a3a":"#e8e8e6"}`,borderRadius:"20px",padding:"5px 14px",fontSize:"12px",fontWeight:700,color:entSubSel===sub.id?colorActivo:"#2c2c2e",whiteSpace:"nowrap",cursor:"pointer",flexShrink:0,fontFamily:"'Nunito',sans-serif"}}>
                               {sub.nombre}
                             </button>
                           ))}
-                        </div>
+                        </ChipsConFlechas>
                       )}
                       {itemsFinal.length === 0 ? (
                         <div style={{padding:"12px 16px",color:"#9a9a9a",fontSize:"13px",fontWeight:600}}>Sin resultados en este rubro</div>
@@ -975,7 +975,7 @@ function TarjetaAnuncio({ a, fmt, qLow, query, horizontal, modoConexion, selecci
 
 function TarjetaGrupoSlider({ nexo, onNavigate }: { nexo:Nexo; onNavigate:()=>void }) {
   return (
-    <div onClick={onNavigate} style={{flexShrink:0,width:"150px",cursor:"pointer"}}>
+    <div onClick={onNavigate} style={{flexShrink:0,minWidth:"160px",maxWidth:"160px",width:"160px",cursor:"pointer"}}>
       <div style={{background:"#fff",borderRadius:"14px",overflow:"hidden",boxShadow:"0 2px 10px rgba(0,0,0,0.08)",border:"2px solid rgba(58,123,213,0.15)"}}>
         <div style={{width:"100%",height:"90px",background:"linear-gradient(135deg,#1a2a3a,#243b55)",display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden",position:"relative"}}>
           {nexo.avatar_url
@@ -1010,7 +1010,7 @@ function TarjetaNexo({ nexo, color, onNavigate, esPrimero }: { nexo:Nexo; color:
   };
   const emoji = nexo.subtipo ? (SUBTIPO_EMOJIS[nexo.subtipo]||"✨") : (TIPO_EMOJIS[nexo.tipo]||"✨");
   return (
-    <div onClick={onNavigate} style={{background:"#fff",borderRadius:"16px",overflow:"hidden",boxShadow:"0 2px 10px rgba(0,0,0,0.07)",cursor:"pointer",display:"flex",alignItems:"stretch",border:esPrimero?`2px solid #ff6b00`:`2px solid ${color}20`,position:"relative"}}>
+    <div onClick={onNavigate} style={{background:"#fff",borderRadius:"16px",overflow:"hidden",boxShadow:"0 2px 10px rgba(0,0,0,0.07)",cursor:"pointer",display:"flex",alignItems:"stretch",border:esPrimero?`2px solid #ff6b00`:`2px solid ${color}20`,position:"relative",minWidth:"160px",maxWidth:"160px",width:"160px",flexShrink:0}}>
       {esPrimero && (
         <div style={{position:"absolute",top:"-6px",right:"-4px",zIndex:2,background:"linear-gradient(135deg,#ff6b00,#ff4500)",borderRadius:"8px",padding:"2px 7px",fontSize:"10px",fontWeight:900,color:"#fff",boxShadow:"0 2px 6px rgba(255,69,0,0.4)"}}>🔥</div>
       )}
@@ -1068,6 +1068,21 @@ function SelUbi({value,placeholder,opciones,onChange}:{value:string;placeholder:
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function ChipsConFlechas({ children }: { children: React.ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const btnStyle: React.CSSProperties = {position:"absolute",top:"50%",transform:"translateY(-50%)",zIndex:2,background:"rgba(255,255,255,0.95)",border:"1px solid #e8e8e6",borderRadius:"50%",width:"28px",height:"28px",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",boxShadow:"0 2px 6px rgba(0,0,0,0.12)",fontSize:"14px",fontWeight:900,color:"#1a2a3a"};
+  return (
+    <div style={{position:"relative"}}>
+      <button onClick={()=>ref.current?.scrollBy({left:-150,behavior:"smooth"})} className="chips-arrow" style={{...btnStyle,left:"2px"}}>←</button>
+      <div ref={ref} style={{display:"flex",gap:"8px",padding:"0 16px 12px",overflowX:"auto",scrollbarWidth:"none",WebkitOverflowScrolling:"touch"}}>
+        {children}
+      </div>
+      <button onClick={()=>ref.current?.scrollBy({left:150,behavior:"smooth"})} className="chips-arrow" style={{...btnStyle,right:"2px"}}>→</button>
+      <style>{`@media(max-width:768px){.chips-arrow{display:none!important;}}`}</style>
     </div>
   );
 }

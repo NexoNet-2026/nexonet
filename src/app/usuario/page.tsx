@@ -802,11 +802,11 @@ export default function Usuario() {
             <div style={{ background:"linear-gradient(135deg,#0d3d30,#16a085)", borderRadius:"16px", padding:"18px 20px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
               <div>
                 <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"20px", color:"#fff", letterSpacing:"1px" }}>🔍 BIT Búsquedas Automáticas</div>
-                <div style={{ fontSize:"11px", color:"rgba(255,255,255,0.6)", fontWeight:600, marginTop:"2px" }}>Cada match automático consume 1 BIT tuyo + 1 del anuncio</div>
+                <div style={{ fontSize:"11px", color:"rgba(255,255,255,0.6)", fontWeight:600, marginTop:"2px" }}>Tus BIT disponibles para usar en la plataforma</div>
               </div>
               <div style={{ textAlign:"right" }}>
                 <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"36px", color: bitsBusq > 0 ? "#7effd4" : "#ff8a80", letterSpacing:"1px" }}>{bitsBusq}</div>
-                <div style={{ fontSize:"9px", color:"rgba(255,255,255,0.5)", fontWeight:700 }}>disponibles</div>
+                <div style={{ fontSize:"9px", color:"rgba(255,255,255,0.5)", fontWeight:700 }}>BIT totales</div>
               </div>
             </div>
 

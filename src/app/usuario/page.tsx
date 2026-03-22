@@ -289,9 +289,14 @@ export default function Usuario() {
   const enviarContacto = async () => {
     if (!contactoTipo || !contactoTexto.trim() || !perfil) return;
     setEnviandoContacto(true);
-    await supabase.from("contactos_nexonet").insert({
+    const { error } = await supabase.from("contactos_nexonet").insert({
       usuario_id: perfil.id, tipo: contactoTipo, mensaje: contactoTexto.trim(),
     });
+    if (error) {
+      alert("Error al guardar: " + error.message);
+      setEnviandoContacto(false);
+      return;
+    }
     await supabase.from("notificaciones").insert({
       usuario_id: perfil.id, tipo: "sistema",
       mensaje: `✅ Tu ${contactoTipo} fue recibida. Te responderemos pronto.`, leida: false,

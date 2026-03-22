@@ -113,6 +113,9 @@ export default function AdminPanel() {
   const [grupoFiltros, setGrupoFiltros] = useState<any[]>([]);
   const [grupoFiltroSubSel, setGrupoFiltroSubSel] = useState<number|null>(null);
   const [modalGrupoFiltro, setModalGrupoFiltro] = useState<any>(null);
+  // Filtros IA globales
+  const [filtrosIAGlobal, setFiltrosIAGlobal] = useState<any[]>([]);
+  const [modalFiltroIA, setModalFiltroIA] = useState<any>(null);
 
   // Crear usuario
   const [modalCrearUser, setModalCrearUser] = useState(false);
@@ -556,6 +559,43 @@ export default function AdminPanel() {
     const nuevos = [...grupoFiltros];
     [nuevos[idx], nuevos[dir==="up"?idx-1:idx+1]] = [nuevos[dir==="up"?idx-1:idx+1], nuevos[idx]];
     setGrupoFiltros(nuevos);
+  };
+
+  // ── Filtros IA globales ──
+  const cargarFiltrosIAGlobal = async () => {
+    const {data} = await supabase.from("filtros_busqueda_ia").select("*").order("orden");
+    setFiltrosIAGlobal(data||[]);
+  };
+  const guardarFiltroIA = async (f:any) => {
+    if (!f.nombre) return;
+    const payload = {
+      nombre:f.nombre, tipo:f.tipo||"texto", activo:f.activo!==false,
+      opciones:f.opciones?JSON.parse(f.opciones):[], orden:parseInt(f.orden)||0,
+      categorias:f.categorias?JSON.parse(f.categorias):["todos"],
+    };
+    if (f.id) { await supabase.from("filtros_busqueda_ia").update(payload).eq("id",f.id); }
+    else { await supabase.from("filtros_busqueda_ia").insert(payload); }
+    setModalFiltroIA(null);
+    showToast("✅ Filtro IA guardado");
+    await cargarFiltrosIAGlobal();
+  };
+  const eliminarFiltroIA = async (id:number) => {
+    if (!confirm("¿Eliminar este filtro IA?")) return;
+    await supabase.from("filtros_busqueda_ia").delete().eq("id",id);
+    await cargarFiltrosIAGlobal();
+    showToast("Filtro IA eliminado");
+  };
+  const moverFiltroIAGlobal = async (f:any, dir:"up"|"down") => {
+    const idx = filtrosIAGlobal.findIndex(x=>x.id===f.id);
+    const swap = dir==="up" ? filtrosIAGlobal[idx-1] : filtrosIAGlobal[idx+1];
+    if (!swap) return;
+    await Promise.all([
+      supabase.from("filtros_busqueda_ia").update({orden:swap.orden??idx}).eq("id",f.id),
+      supabase.from("filtros_busqueda_ia").update({orden:f.orden??idx}).eq("id",swap.id),
+    ]);
+    const nuevos = [...filtrosIAGlobal];
+    [nuevos[idx], nuevos[dir==="up"?idx-1:idx+1]] = [nuevos[dir==="up"?idx-1:idx+1], nuevos[idx]];
+    setFiltrosIAGlobal(nuevos);
   };
 
   // ── Crear usuario ──
@@ -1511,15 +1551,38 @@ export default function AdminPanel() {
                           <button onClick={()=>setModalGrupoSubcat({nombre:"",descripcion:"",categoria_id:c.id})} style={{...S.btn("#27ae60",true),padding:"3px 10px",fontSize:"11px"}}>+ Agregar</button>
                         </div>
                         {(()=>{const sorted=grupoSubcats.filter(s=>s.categoria_id===c.id).sort((a:any,b:any)=>(a.orden||0)-(b.orden||0));return sorted.map((s:any,si:number)=>(
-                          <div key={s.id} style={{display:"flex",alignItems:"center",gap:"6px",padding:"6px 0",borderBottom:"1px solid #f4f4f2"}}>
-                            <div style={{flex:1,fontSize:"13px",fontWeight:700,color:"#1a2a3a",display:"flex",alignItems:"center",gap:"6px"}}>
-                              {s.nombre} {!s.activo&&<span style={S.badge("#fff","#e74c3c")}>OFF</span>}
+                          <div key={s.id}>
+                            <div style={{display:"flex",alignItems:"center",gap:"6px",padding:"6px 0",borderBottom:"1px solid #f4f4f2"}}>
+                              <div style={{flex:1,fontSize:"13px",fontWeight:700,color:"#1a2a3a",display:"flex",alignItems:"center",gap:"6px"}}>
+                                {s.nombre} {!s.activo&&<span style={S.badge("#fff","#e74c3c")}>OFF</span>}
+                              </div>
+                              <button onClick={()=>moverGrupoSubcat(c.id,s,"up")} disabled={si===0} style={{...S.btn("#9a9a9a",true),padding:"3px 8px",opacity:si===0?0.3:1}}>↑</button>
+                              <button onClick={()=>moverGrupoSubcat(c.id,s,"down")} disabled={si===sorted.length-1} style={{...S.btn("#9a9a9a",true),padding:"3px 8px",opacity:si===sorted.length-1?0.3:1}}>↓</button>
+                              <button onClick={()=>{if(grupoFiltroSubSel===s.id){setGrupoFiltroSubSel(null);setGrupoFiltros([]);}else{cargarGrupoFiltros(s.id);}}} style={{...S.btn(grupoFiltroSubSel===s.id?"#d4a017":"#9a9a9a",true),padding:"3px 8px",fontSize:"10px"}}>🔧 Filtros</button>
+                              <button onClick={()=>setModalGrupoSubcat({...s})} style={{...S.btn("#3a7bd5",true),padding:"3px 8px"}}>✏️</button>
+                              <button onClick={()=>eliminarGrupoSubcat(s.id)} style={{...S.btn("#e74c3c",true),padding:"3px 8px"}}>🗑️</button>
                             </div>
-                            <button onClick={()=>moverGrupoSubcat(c.id,s,"up")} disabled={si===0} style={{...S.btn("#9a9a9a",true),padding:"3px 8px",opacity:si===0?0.3:1}}>↑</button>
-                            <button onClick={()=>moverGrupoSubcat(c.id,s,"down")} disabled={si===sorted.length-1} style={{...S.btn("#9a9a9a",true),padding:"3px 8px",opacity:si===sorted.length-1?0.3:1}}>↓</button>
-                            <button onClick={()=>cargarGrupoFiltros(s.id)} style={{...S.btn(grupoFiltroSubSel===s.id?"#d4a017":"#9a9a9a",true),padding:"3px 8px",fontSize:"10px"}}>🔧 Filtros</button>
-                            <button onClick={()=>setModalGrupoSubcat({...s})} style={{...S.btn("#3a7bd5",true),padding:"3px 8px"}}>✏️</button>
-                            <button onClick={()=>eliminarGrupoSubcat(s.id)} style={{...S.btn("#e74c3c",true),padding:"3px 8px"}}>🗑️</button>
+                            {grupoFiltroSubSel===s.id && (
+                              <div style={{padding:"8px 0 8px 16px",borderBottom:"1px solid #f0f0f0",background:"#fefef8"}}>
+                                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"6px"}}>
+                                  <span style={{fontSize:"10px",fontWeight:800,color:"#d4a017",textTransform:"uppercase",letterSpacing:"0.5px"}}>Filtros de {s.nombre}</span>
+                                  <button onClick={()=>setModalGrupoFiltro({nombre:"",tipo:"texto",opciones:"",orden:grupoFiltros.length})} style={{...S.btn("#27ae60",true),padding:"3px 8px",fontSize:"10px"}}>➕ Agregar</button>
+                                </div>
+                                {grupoFiltros.length===0 && <div style={{fontSize:"11px",color:"#bbb",fontWeight:600,padding:"4px 0"}}>Sin filtros</div>}
+                                {(()=>{const sf=[...grupoFiltros].sort((a:any,b:any)=>(a.orden||0)-(b.orden||0));return sf.map((f:any,fi:number)=>(
+                                  <div key={f.id} style={{display:"flex",alignItems:"center",gap:"6px",padding:"4px 0",borderBottom:"1px solid #f8f8f6"}}>
+                                    <div style={{flex:1}}>
+                                      <span style={{fontSize:"12px",fontWeight:700,color:"#1a2a3a"}}>{f.nombre}</span>
+                                      <span style={{fontSize:"10px",color:"#9a9a9a",fontWeight:600,marginLeft:"6px"}}>{f.tipo}{f.opciones?` · ${JSON.stringify(f.opciones)}`:""}</span>
+                                    </div>
+                                    <button onClick={()=>moverGrupoFiltro(f,"up")} disabled={fi===0} style={{...S.btn("#9a9a9a",true),padding:"2px 6px",opacity:fi===0?0.3:1,fontSize:"10px"}}>↑</button>
+                                    <button onClick={()=>moverGrupoFiltro(f,"down")} disabled={fi===sf.length-1} style={{...S.btn("#9a9a9a",true),padding:"2px 6px",opacity:fi===sf.length-1?0.3:1,fontSize:"10px"}}>↓</button>
+                                    <button onClick={()=>setModalGrupoFiltro({...f,opciones:f.opciones?JSON.stringify(f.opciones):""})} style={{...S.btn("#3a7bd5",true),padding:"2px 6px",fontSize:"10px"}}>✏️</button>
+                                    <button onClick={()=>eliminarGrupoFiltro(f.id)} style={{...S.btn("#e74c3c",true),padding:"2px 6px",fontSize:"10px"}}>🗑️</button>
+                                  </div>
+                                ));})()}
+                              </div>
+                            )}
                           </div>
                         ));})()}
                         {grupoSubcats.filter(s=>s.categoria_id===c.id).length===0 && <div style={{fontSize:"12px",color:"#bbb",fontWeight:600,padding:"8px 0"}}>Sin subcategorías todavía</div>}
@@ -1528,78 +1591,91 @@ export default function AdminPanel() {
                   </div>
                 ))}
               </div>
-              {/* Filtros de la subcategoría de grupo seleccionada */}
-              {grupoFiltroSubSel && (
-                <div style={S.card}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"12px"}}>
-                    <div style={S.sect}>🔧 Filtros de subcategoría</div>
-                    <button onClick={()=>setModalGrupoFiltro({nombre:"",tipo:"texto",opciones:"",orden:grupoFiltros.length})} style={S.btn("#27ae60")}>+ Agregar filtro</button>
-                  </div>
-                  {grupoFiltros.length===0 && <div style={{fontSize:"13px",color:"#9a9a9a",fontWeight:600}}>Sin filtros todavía.</div>}
-                  {(()=>{const sorted=[...grupoFiltros].sort((a:any,b:any)=>(a.orden||0)-(b.orden||0));return sorted.map((f:any,fi:number)=>(
-                    <div key={f.id} style={{display:"flex",alignItems:"center",gap:"8px",padding:"8px 0",borderBottom:"1px solid #f4f4f2"}}>
-                      <div style={{flex:1}}>
-                        <div style={{fontSize:"13px",fontWeight:800,color:"#1a2a3a"}}>{f.nombre}</div>
-                        <div style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600}}>
-                          Tipo: <strong>{f.tipo}</strong>
-                          {f.opciones && ` · ${JSON.stringify(f.opciones)}`}
-                        </div>
-                      </div>
-                      <button onClick={()=>moverGrupoFiltro(f,"up")} disabled={fi===0} style={{...S.btn("#9a9a9a",true),padding:"4px 8px",opacity:fi===0?0.3:1}}>↑</button>
-                      <button onClick={()=>moverGrupoFiltro(f,"down")} disabled={fi===sorted.length-1} style={{...S.btn("#9a9a9a",true),padding:"4px 8px",opacity:fi===sorted.length-1?0.3:1}}>↓</button>
-                      <button onClick={()=>setModalGrupoFiltro({...f,opciones:f.opciones?JSON.stringify(f.opciones):""})} style={{...S.btn("#3a7bd5",true),padding:"4px 8px"}}>✏️</button>
-                      <button onClick={()=>eliminarGrupoFiltro(f.id)} style={{...S.btn("#e74c3c",true),padding:"4px 8px"}}>🗑️</button>
-                    </div>
-                  ));})()}
-                </div>
-              )}
               </>
             )}
 
             {/* ── FILTROS IA (búsquedas automáticas) ── */}
             {configSub==="filtros_ia" && (
               <>
+                {/* Filtros globales de búsqueda IA */}
                 <div style={S.card}>
-                  <div style={S.sect}>🤖 Filtros por subrubro (Anuncios)</div>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"12px"}}>
+                    <div style={S.sect}>🤖 Filtros globales de búsqueda IA</div>
+                    <div style={{display:"flex",gap:"6px"}}>
+                      <button onClick={cargarFiltrosIAGlobal} style={S.btn("#3a7bd5")}>🔄 Cargar</button>
+                      <button onClick={()=>setModalFiltroIA({nombre:"",tipo:"texto",opciones:"",orden:filtrosIAGlobal.length,activo:true,categorias:"[\"todos\"]"})} style={S.btn("#27ae60")}>➕ Nuevo filtro IA</button>
+                    </div>
+                  </div>
                   <div style={{fontSize:"12px",color:"#9a9a9a",fontWeight:600,marginBottom:"14px"}}>
-                    Seleccioná un subrubro para ver y configurar sus filtros de búsqueda IA
+                    Filtros que aparecen en las búsquedas automáticas IA para todos los usuarios
+                  </div>
+                  {filtrosIAGlobal.length===0 && <div style={{fontSize:"13px",color:"#9a9a9a",fontWeight:600}}>Sin filtros IA. Hacé click en "🔄 Cargar" o creá uno nuevo.</div>}
+                  {(()=>{const sorted=[...filtrosIAGlobal].sort((a:any,b:any)=>(a.orden||0)-(b.orden||0));return sorted.map((f:any,fi:number)=>(
+                    <div key={f.id} style={{display:"flex",alignItems:"center",gap:"8px",padding:"8px 0",borderBottom:"1px solid #f4f4f2",opacity:f.activo?1:0.5}}>
+                      <div style={{flex:1}}>
+                        <div style={{fontSize:"13px",fontWeight:800,color:"#1a2a3a",display:"flex",alignItems:"center",gap:"6px"}}>
+                          {f.nombre}
+                          {!f.activo&&<span style={S.badge("#fff","#e74c3c")}>OFF</span>}
+                        </div>
+                        <div style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600}}>
+                          Tipo: <strong>{f.tipo}</strong>
+                          {f.opciones&&f.opciones.length>0?` · ${JSON.stringify(f.opciones)}`:""}
+                          {f.categorias?` · Categorías: ${JSON.stringify(f.categorias)}`:""}
+                        </div>
+                      </div>
+                      <div onClick={async()=>{const n=!f.activo;await supabase.from("filtros_busqueda_ia").update({activo:n}).eq("id",f.id);setFiltrosIAGlobal(prev=>prev.map(x=>x.id===f.id?{...x,activo:n}:x));}} style={{width:"36px",height:"20px",borderRadius:"10px",background:f.activo?"#27ae60":"#e0e0e0",cursor:"pointer",position:"relative",flexShrink:0}}>
+                        <div style={{position:"absolute",top:"2px",left:f.activo?"18px":"2px",width:"16px",height:"16px",borderRadius:"50%",background:"#fff",transition:"left .2s"}} />
+                      </div>
+                      <button onClick={()=>moverFiltroIAGlobal(f,"up")} disabled={fi===0} style={{...S.btn("#9a9a9a",true),padding:"3px 8px",opacity:fi===0?0.3:1}}>↑</button>
+                      <button onClick={()=>moverFiltroIAGlobal(f,"down")} disabled={fi===sorted.length-1} style={{...S.btn("#9a9a9a",true),padding:"3px 8px",opacity:fi===sorted.length-1?0.3:1}}>↓</button>
+                      <button onClick={()=>setModalFiltroIA({...f,opciones:f.opciones?JSON.stringify(f.opciones):"",categorias:f.categorias?JSON.stringify(f.categorias):"[\"todos\"]"})} style={{...S.btn("#3a7bd5",true),padding:"3px 8px"}}>✏️</button>
+                      <button onClick={()=>eliminarFiltroIA(f.id)} style={{...S.btn("#e74c3c",true),padding:"3px 8px"}}>🗑️</button>
+                    </div>
+                  ));})()}
+                </div>
+
+                {/* Filtros por subrubro de anuncios (existente) */}
+                <div style={S.card}>
+                  <div style={S.sect}>📋 Filtros por subrubro (Anuncios)</div>
+                  <div style={{fontSize:"12px",color:"#9a9a9a",fontWeight:600,marginBottom:"14px"}}>
+                    Seleccioná un subrubro para ver y configurar sus filtros específicos
                   </div>
                   {rubros.map((r:any)=>(
                     <div key={r.id} style={{marginBottom:"10px"}}>
                       <div style={{fontSize:"13px",fontWeight:900,color:"#1a2a3a",marginBottom:"6px"}}>{r.emoji||"📁"} {r.nombre}</div>
                       <div style={{display:"flex",gap:"6px",flexWrap:"wrap",marginBottom:"4px"}}>
                         {(r.subrubros||[]).map((s:any)=>(
-                          <button key={s.id} onClick={()=>cargarFiltros(s.id)}
+                          <button key={s.id} onClick={()=>{if(filtroSubSel===s.id){setFiltroSubSel(null);setFiltrosIA([]);}else{cargarFiltros(s.id);}}}
                             style={{...S.btn(filtroSubSel===s.id?"#d4a017":"#9a9a9a",filtroSubSel!==s.id),padding:"5px 12px",fontSize:"11px"}}>
                             {s.nombre}
                           </button>
                         ))}
                       </div>
+                      {/* Inline filtros panel for selected subrubro */}
+                      {(r.subrubros||[]).filter((s:any)=>filtroSubSel===s.id).map((s:any)=>(
+                        <div key={`f-${s.id}`} style={{padding:"8px 0 8px 16px",borderBottom:"1px solid #f0f0f0",background:"#fefef8",marginBottom:"8px",borderRadius:"8px"}}>
+                          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"6px"}}>
+                            <span style={{fontSize:"10px",fontWeight:800,color:"#d4a017",textTransform:"uppercase",letterSpacing:"0.5px"}}>Filtros de {s.nombre}</span>
+                            <button onClick={()=>setModalFiltro({nombre:"",tipo:"rango",opciones:"",orden:filtrosIA.length})} style={{...S.btn("#27ae60",true),padding:"3px 8px",fontSize:"10px"}}>➕ Agregar</button>
+                          </div>
+                          {filtrosIA.length===0 && <div style={{fontSize:"11px",color:"#bbb",fontWeight:600,padding:"4px 0"}}>Sin filtros</div>}
+                          {(()=>{const sf=[...filtrosIA].sort((a:any,b:any)=>(a.orden||0)-(b.orden||0));return sf.map((f:any,fi:number)=>(
+                            <div key={f.id} style={{display:"flex",alignItems:"center",gap:"6px",padding:"4px 0",borderBottom:"1px solid #f8f8f6"}}>
+                              <div style={{flex:1}}>
+                                <span style={{fontSize:"12px",fontWeight:700,color:"#1a2a3a"}}>{f.nombre}</span>
+                                <span style={{fontSize:"10px",color:"#9a9a9a",fontWeight:600,marginLeft:"6px"}}>{f.tipo}{f.opciones?` · ${JSON.stringify(f.opciones)}`:""}</span>
+                              </div>
+                              <button onClick={()=>moverFiltroIA(f,"up")} disabled={fi===0} style={{...S.btn("#9a9a9a",true),padding:"2px 6px",opacity:fi===0?0.3:1,fontSize:"10px"}}>↑</button>
+                              <button onClick={()=>moverFiltroIA(f,"down")} disabled={fi===sf.length-1} style={{...S.btn("#9a9a9a",true),padding:"2px 6px",opacity:fi===sf.length-1?0.3:1,fontSize:"10px"}}>↓</button>
+                              <button onClick={()=>setModalFiltro({...f,opciones:f.opciones?JSON.stringify(f.opciones):""})} style={{...S.btn("#3a7bd5",true),padding:"2px 6px",fontSize:"10px"}}>✏️</button>
+                              <button onClick={()=>eliminarFiltro(f.id)} style={{...S.btn("#e74c3c",true),padding:"2px 6px",fontSize:"10px"}}>🗑️</button>
+                            </div>
+                          ));})()}
+                        </div>
+                      ))}
                     </div>
                   ))}
                 </div>
-                {filtroSubSel && (
-                  <div style={S.card}>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"12px"}}>
-                      <div style={S.sect}>🔧 Filtros configurados</div>
-                      <button onClick={()=>setModalFiltro({nombre:"",tipo:"rango",opciones:"",orden:filtrosIA.length})} style={S.btn("#27ae60")}>+ Agregar filtro</button>
-                    </div>
-                    {filtrosIA.length===0 && <div style={{fontSize:"13px",color:"#9a9a9a",fontWeight:600}}>Sin filtros todavía. Agregá uno.</div>}
-                    {filtrosIA.map((f:any)=>(
-                      <div key={f.id} style={{display:"flex",alignItems:"center",gap:"8px",padding:"8px 0",borderBottom:"1px solid #f4f4f2"}}>
-                        <div style={{flex:1}}>
-                          <div style={{fontSize:"13px",fontWeight:800,color:"#1a2a3a"}}>{f.nombre}</div>
-                          <div style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600}}>
-                            Tipo: <strong>{f.tipo}</strong>
-                            {f.opciones && ` · ${JSON.stringify(f.opciones)}`}
-                          </div>
-                        </div>
-                        <button onClick={()=>setModalFiltro({...f,opciones:f.opciones?JSON.stringify(f.opciones):""})} style={{...S.btn("#3a7bd5",true),padding:"4px 8px"}}>✏️</button>
-                        <button onClick={()=>eliminarFiltro(f.id)} style={{...S.btn("#e74c3c",true),padding:"4px 8px"}}>🗑️</button>
-                      </div>
-                    ))}
-                  </div>
-                )}
               </>
             )}
 
@@ -2014,6 +2090,48 @@ export default function AdminPanel() {
             }
             guardarGrupoFiltro(f);
           }} style={S.btn("#27ae60")} disabled={!modalGrupoFiltro.nombre}>💾 Guardar filtro</button>
+        </Modal>
+      )}
+
+      {/* ══ MODAL FILTRO IA GLOBAL ══════════════════════════════════════════════ */}
+      {modalFiltroIA && (
+        <Modal titulo={modalFiltroIA.id?"✏️ Editar filtro IA":"➕ Nuevo filtro IA"} onClose={()=>setModalFiltroIA(null)}>
+          <label style={S.label}>Nombre del filtro *</label>
+          <input style={{...S.input,marginBottom:"10px"}} placeholder="Ej: Precio, Año, Kilómetros, Marca..." value={modalFiltroIA.nombre||""} onChange={e=>setModalFiltroIA({...modalFiltroIA,nombre:e.target.value})} />
+          <label style={S.label}>Tipo</label>
+          <select style={{...S.input,marginBottom:"10px"}} value={modalFiltroIA.tipo||"texto"} onChange={e=>setModalFiltroIA({...modalFiltroIA,tipo:e.target.value})}>
+            <option value="boolean">✅ Sí / No</option>
+            <option value="numero">🔢 Número simple</option>
+            <option value="rango">📊 Rango (desde/hasta)</option>
+            <option value="texto">✏️ Texto libre</option>
+            <option value="opciones">📋 Opciones (lista fija)</option>
+            <option value="moneda">💲 Moneda ($ ARS / USD / EUR)</option>
+          </select>
+          {modalFiltroIA.tipo==="opciones" && (
+            <>
+              <label style={S.label}>Opciones (separadas por coma)</label>
+              <textarea style={{...S.input,minHeight:"60px",resize:"vertical",marginBottom:"10px"}} placeholder="Opción 1, Opción 2, Opción 3" value={modalFiltroIA.opciones||""} onChange={e=>setModalFiltroIA({...modalFiltroIA,opciones:e.target.value})} />
+            </>
+          )}
+          <label style={S.label}>Activo</label>
+          <div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"10px"}}>
+            <div onClick={()=>setModalFiltroIA({...modalFiltroIA,activo:!modalFiltroIA.activo})} style={{width:"40px",height:"22px",borderRadius:"11px",background:modalFiltroIA.activo!==false?"#27ae60":"#e0e0e0",cursor:"pointer",position:"relative"}}>
+              <div style={{position:"absolute",top:"3px",left:modalFiltroIA.activo!==false?"20px":"3px",width:"16px",height:"16px",borderRadius:"50%",background:"#fff",transition:"left .2s"}} />
+            </div>
+            <span style={{fontSize:"12px",fontWeight:700,color:"#1a2a3a"}}>{modalFiltroIA.activo!==false?"Activo":"Inactivo"}</span>
+          </div>
+          <label style={S.label}>Categorías donde aplica (JSON array)</label>
+          <textarea style={{...S.input,minHeight:"40px",resize:"vertical",marginBottom:"10px"}} placeholder='["todos"]' value={modalFiltroIA.categorias||'["todos"]'} onChange={e=>setModalFiltroIA({...modalFiltroIA,categorias:e.target.value})} />
+          <div style={{fontSize:"10px",color:"#9a9a9a",fontWeight:600,marginBottom:"10px"}}>Usá ["todos"] para todos, o listá rubros: ["Vehículos","Inmuebles"]</div>
+          <label style={S.label}>Orden</label>
+          <input style={{...S.input,marginBottom:"16px"}} type="number" placeholder="0" value={modalFiltroIA.orden||""} onChange={e=>setModalFiltroIA({...modalFiltroIA,orden:e.target.value})} />
+          <button onClick={()=>{
+            const f = {...modalFiltroIA};
+            if (f.tipo==="opciones" && f.opciones && !f.opciones.startsWith("[")) {
+              f.opciones = JSON.stringify(f.opciones.split(",").map((o:string)=>o.trim()).filter(Boolean));
+            }
+            guardarFiltroIA(f);
+          }} style={S.btn("#27ae60")} disabled={!modalFiltroIA.nombre}>💾 Guardar filtro IA</button>
         </Modal>
       )}
 

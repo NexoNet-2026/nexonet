@@ -44,6 +44,23 @@ export default function Header() {
     return () => listener.subscription.unsubscribe();
   }, []);
 
+  // ── Heartbeat de presencia cada 30 seg ──
+  useEffect(() => {
+    if (!userId) return;
+    const enviarHeartbeat = async () => {
+      const pagina = window.location.pathname;
+      const dispositivo = window.innerWidth < 768 ? "mobile" : "desktop";
+      await supabase.rpc("fn_heartbeat", {
+        p_usuario_id: userId,
+        p_pagina: pagina,
+        p_dispositivo: dispositivo,
+      }).catch(() => {});
+    };
+    enviarHeartbeat();
+    const interval = setInterval(enviarHeartbeat, 30000);
+    return () => clearInterval(interval);
+  }, [userId]);
+
   const cargarNotifs = async (uid: string) => {
     const { data } = await supabase
       .from("notificaciones")

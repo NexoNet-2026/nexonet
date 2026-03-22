@@ -122,6 +122,16 @@ export default function AdminPanel() {
   const [visitStats, setVisitStats] = useState<any>({ hoy:0, semana:0, mes:0, anio:0 });
   const [registrosMes, setRegistrosMes] = useState<{mes:string;cant:number}[]>([]);
   const [dineroStats, setDineroStats] = useState<any>({ total:0, esteMes:0 });
+  // Realtime
+  const [rtOnline, setRtOnline] = useState(0);
+  const [rtOnline15, setRtOnline15] = useState(0);
+  const [rtHoy, setRtHoy] = useState(0);
+  const [rt7d, setRt7d] = useState(0);
+  const [rtPaginas, setRtPaginas] = useState<{pagina:string;usuarios:number}[]>([]);
+  const [rtPicos, setRtPicos] = useState<{hora:string;usuarios:number}[]>([]);
+  const [rtBits, setRtBits] = useState<{nexo:number;free:number;promo:number;promoTotal:number}>({nexo:0,free:0,promo:0,promoTotal:0});
+  const [rtLastUpdate, setRtLastUpdate] = useState<Date>(new Date());
+  const [rtSegs, setRtSegs] = useState(0);
 
   // Respuesta admin en mensajes
   const [respAdmin, setRespAdmin] = useState<{msg:any;texto:string}|null>(null);
@@ -229,6 +239,61 @@ export default function AdminPanel() {
     setDineroStats({ total:totalDinero, esteMes:esteMesDinero });
 
     setLoading(false);
+    cargarRealtime();
+  }, []);
+
+  // ── Realtime dashboard ──
+  const cargarRealtime = async () => {
+    const now5 = new Date(Date.now() - 5*60*1000).toISOString();
+    const now15 = new Date(Date.now() - 15*60*1000).toISOString();
+    const todayStart = new Date(); todayStart.setHours(0,0,0,0);
+    const day7 = new Date(Date.now() - 7*24*60*60*1000).toISOString();
+    const h24 = new Date(Date.now() - 24*60*60*1000).toISOString();
+    const [
+      {count:c5}, {count:c15},
+      {data:pags},
+      {data:sesHoy}, {data:ses7d},
+      {data:picosData},
+      {data:usrBits},
+    ] = await Promise.all([
+      supabase.from("usuarios_conectados").select("*",{count:"exact",head:true}).gte("last_seen",now5),
+      supabase.from("usuarios_conectados").select("*",{count:"exact",head:true}).gte("last_seen",now15),
+      supabase.from("usuarios_conectados").select("pagina").gte("last_seen",now5),
+      supabase.from("sesiones_log").select("usuario_id").gte("inicio",todayStart.toISOString()),
+      supabase.from("sesiones_log").select("usuario_id").gte("inicio",day7),
+      supabase.from("sesiones_log").select("inicio,usuario_id").gte("inicio",h24),
+      supabase.from("usuarios").select("bits,bits_free,bits_promo,bits_promotor_total"),
+    ]);
+    setRtOnline(c5||0);
+    setRtOnline15(c15||0);
+    setRtHoy(new Set((sesHoy||[]).map((s:any)=>s.usuario_id)).size);
+    setRt7d(new Set((ses7d||[]).map((s:any)=>s.usuario_id)).size);
+    // Páginas activas
+    const pagMap: Record<string,number> = {};
+    (pags||[]).forEach((p:any) => { const k = p.pagina||"/desconocida"; pagMap[k]=(pagMap[k]||0)+1; });
+    setRtPaginas(Object.entries(pagMap).map(([pagina,usuarios])=>({pagina,usuarios})).sort((a,b)=>b.usuarios-a.usuarios));
+    // Picos por hora
+    const picoMap: Record<string,Set<string>> = {};
+    (picosData||[]).forEach((s:any) => {
+      const h = new Date(s.inicio).toISOString().slice(0,13)+":00";
+      if (!picoMap[h]) picoMap[h] = new Set();
+      picoMap[h].add(s.usuario_id);
+    });
+    setRtPicos(Object.entries(picoMap).map(([hora,set])=>({hora,usuarios:set.size})).sort((a,b)=>a.hora.localeCompare(b.hora)));
+    // BIT
+    const bNexo = (usrBits||[]).reduce((a:number,u:any)=>a+(u.bits||0),0);
+    const bFree = (usrBits||[]).reduce((a:number,u:any)=>a+(u.bits_free||0),0);
+    const bPromo = (usrBits||[]).reduce((a:number,u:any)=>a+(u.bits_promo||0),0);
+    const bPromoT = (usrBits||[]).reduce((a:number,u:any)=>a+(u.bits_promotor_total||0),0);
+    setRtBits({nexo:bNexo,free:bFree,promo:bPromo,promoTotal:bPromoT});
+    setRtLastUpdate(new Date());
+    setRtSegs(0);
+  };
+
+  useEffect(() => {
+    const rtInterval = setInterval(cargarRealtime, 30000);
+    const segInterval = setInterval(() => setRtSegs(s=>s+1), 1000);
+    return () => { clearInterval(rtInterval); clearInterval(segInterval); };
   }, []);
 
   // ── Usuarios ──
@@ -777,6 +842,92 @@ export default function AdminPanel() {
               <StatBox n={String(stats.mensajes||0)} l="Mensajes" e="💬" c="#8e44ad" />
               <StatBox n={`$${((stats.pagos||0)/1000).toFixed(0)}K`} l="Recaudado" e="💰" c="#e67e22" />
               <StatBox n={String(stats.bits||0)}     l="BIT circulando" e="🪙" c="#d4a017" />
+            </div>
+
+            {/* ── EN TIEMPO REAL ── */}
+            <div style={{...S.card,background:"linear-gradient(135deg,#0d1f2d,#1a2a3a)",border:"2px solid rgba(39,174,96,0.3)"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"14px"}}>
+                <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"20px",color:"#7effd4",letterSpacing:"1px"}}>🟢 En tiempo real</div>
+                <div style={{fontSize:"10px",color:"rgba(255,255,255,0.4)",fontWeight:700}}>🔄 Hace {rtSegs < 60 ? `${rtSegs}s` : `${Math.floor(rtSegs/60)}m`}</div>
+              </div>
+              {/* Contador grande */}
+              <div style={{textAlign:"center",marginBottom:"16px"}}>
+                <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"64px",color:rtOnline>0?"#7effd4":"#ff8a80",letterSpacing:"2px",lineHeight:1}}>{rtOnline}</div>
+                <div style={{fontSize:"11px",fontWeight:800,color:"rgba(255,255,255,0.5)",textTransform:"uppercase",letterSpacing:"1px"}}>usuarios online ahora</div>
+              </div>
+              {/* Métricas */}
+              <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"8px",marginBottom:"16px"}}>
+                <div style={{background:"rgba(39,174,96,0.15)",borderRadius:"10px",padding:"10px",textAlign:"center"}}>
+                  <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"24px",color:"#7effd4"}}>{rtOnline}</div>
+                  <div style={{fontSize:"8px",fontWeight:700,color:"rgba(255,255,255,0.5)",textTransform:"uppercase"}}>🟢 Ahora</div>
+                </div>
+                <div style={{background:"rgba(241,196,15,0.15)",borderRadius:"10px",padding:"10px",textAlign:"center"}}>
+                  <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"24px",color:"#f1c40f"}}>{rtOnline15}</div>
+                  <div style={{fontSize:"8px",fontWeight:700,color:"rgba(255,255,255,0.5)",textTransform:"uppercase"}}>🟡 15 min</div>
+                </div>
+                <div style={{background:"rgba(58,123,213,0.15)",borderRadius:"10px",padding:"10px",textAlign:"center"}}>
+                  <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"24px",color:"#5dade2"}}>{rtHoy}</div>
+                  <div style={{fontSize:"8px",fontWeight:700,color:"rgba(255,255,255,0.5)",textTransform:"uppercase"}}>📅 Hoy</div>
+                </div>
+                <div style={{background:"rgba(142,68,173,0.15)",borderRadius:"10px",padding:"10px",textAlign:"center"}}>
+                  <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"24px",color:"#bb8fce"}}>{rt7d}</div>
+                  <div style={{fontSize:"8px",fontWeight:700,color:"rgba(255,255,255,0.5)",textTransform:"uppercase"}}>📊 7 días</div>
+                </div>
+              </div>
+              {/* Páginas activas */}
+              {rtPaginas.length>0 && (
+                <div style={{marginBottom:"16px"}}>
+                  <div style={{fontSize:"11px",fontWeight:800,color:"rgba(255,255,255,0.5)",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"8px"}}>📍 Páginas activas ahora</div>
+                  {rtPaginas.slice(0,8).map(p=>(
+                    <div key={p.pagina} style={{display:"flex",alignItems:"center",gap:"8px",padding:"4px 0"}}>
+                      <div style={{flex:1,fontSize:"12px",fontWeight:700,color:"rgba(255,255,255,0.8)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.pagina}</div>
+                      <div style={{background:"rgba(39,174,96,0.25)",borderRadius:"20px",padding:"2px 10px",fontSize:"11px",fontWeight:900,color:"#7effd4",flexShrink:0}}>{p.usuarios}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {/* Picos últimas 24h */}
+              {rtPicos.length>0 && (
+                <div style={{marginBottom:"16px"}}>
+                  <div style={{fontSize:"11px",fontWeight:800,color:"rgba(255,255,255,0.5)",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"8px"}}>📈 Picos por hora (24h)</div>
+                  <div style={{display:"flex",alignItems:"flex-end",gap:"2px",height:"80px"}}>
+                    {rtPicos.map((p,i)=>{
+                      const max = Math.max(...rtPicos.map(x=>x.usuarios),1);
+                      const h = Math.max((p.usuarios/max)*70,3);
+                      const horaLabel = new Date(p.hora).getHours().toString().padStart(2,"0");
+                      return (
+                        <div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:"1px",justifyContent:"flex-end",height:"100%"}}>
+                          <div style={{fontSize:"8px",fontWeight:800,color:"#7effd4"}}>{p.usuarios||""}</div>
+                          <div style={{width:"100%",height:`${h}px`,background:"linear-gradient(180deg,#27ae60,#1abc9c)",borderRadius:"3px 3px 0 0",minHeight:"3px"}} />
+                          <div style={{fontSize:"7px",fontWeight:700,color:"rgba(255,255,255,0.35)"}}>{horaLabel}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+              {/* BIT en circulación */}
+              <div>
+                <div style={{fontSize:"11px",fontWeight:800,color:"rgba(255,255,255,0.5)",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"8px"}}>🪙 BIT en circulación</div>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:"8px"}}>
+                  <div style={{background:"rgba(212,160,23,0.12)",borderRadius:"10px",padding:"10px",textAlign:"center"}}>
+                    <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"20px",color:"#d4a017"}}>{rtBits.nexo.toLocaleString("es-AR")}</div>
+                    <div style={{fontSize:"8px",fontWeight:700,color:"rgba(255,255,255,0.4)",textTransform:"uppercase"}}>BIT Nexo</div>
+                  </div>
+                  <div style={{background:"rgba(41,128,185,0.12)",borderRadius:"10px",padding:"10px",textAlign:"center"}}>
+                    <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"20px",color:"#2980b9"}}>{rtBits.free.toLocaleString("es-AR")}</div>
+                    <div style={{fontSize:"8px",fontWeight:700,color:"rgba(255,255,255,0.4)",textTransform:"uppercase"}}>BIT Free</div>
+                  </div>
+                  <div style={{background:"rgba(39,174,96,0.12)",borderRadius:"10px",padding:"10px",textAlign:"center"}}>
+                    <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"20px",color:"#27ae60"}}>{rtBits.promo.toLocaleString("es-AR")}</div>
+                    <div style={{fontSize:"8px",fontWeight:700,color:"rgba(255,255,255,0.4)",textTransform:"uppercase"}}>BIT Promo</div>
+                  </div>
+                  <div style={{background:"rgba(142,68,173,0.12)",borderRadius:"10px",padding:"10px",textAlign:"center"}}>
+                    <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"20px",color:"#8e44ad"}}>{rtBits.promoTotal.toLocaleString("es-AR")}</div>
+                    <div style={{fontSize:"8px",fontWeight:700,color:"rgba(255,255,255,0.4)",textTransform:"uppercase"}}>Promo histórico</div>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div style={S.card}>

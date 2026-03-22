@@ -1014,7 +1014,7 @@ function TarjetaNexo({ nexo, color, onNavigate, esPrimero }: { nexo:Nexo; color:
       {esPrimero && (
         <div style={{position:"absolute",top:"-6px",right:"-4px",zIndex:2,background:"linear-gradient(135deg,#ff6b00,#ff4500)",borderRadius:"8px",padding:"2px 7px",fontSize:"10px",fontWeight:900,color:"#fff",boxShadow:"0 2px 6px rgba(255,69,0,0.4)"}}>🔥</div>
       )}
-      <div style={{background:"#fff",borderRadius:"14px",overflow:"hidden",boxShadow:"0 2px 10px rgba(0,0,0,0.08)",border:esPrimero?`2px solid #ff6b00`:`1px solid #f0f0f0`}}>
+      <div style={{background:"#fff",borderRadius:"12px",overflow:"hidden",boxShadow:"0 2px 10px rgba(0,0,0,0.08)",border:esPrimero?`2px solid #ff6b00`:`1px solid #f0f0f0`}}>
         <div style={{background:color,padding:"3px 8px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
           <span style={{fontSize:"9px",fontWeight:900,color:"#fff",textTransform:"uppercase"}}>{nexo.tipo}</span>
           <span style={{fontSize:"12px"}}>{emoji}</span>

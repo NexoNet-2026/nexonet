@@ -1010,38 +1010,40 @@ function TarjetaNexo({ nexo, color, onNavigate, esPrimero }: { nexo:Nexo; color:
   };
   const emoji = nexo.subtipo ? (SUBTIPO_EMOJIS[nexo.subtipo]||"✨") : (TIPO_EMOJIS[nexo.tipo]||"✨");
   return (
-    <div onClick={onNavigate} style={{background:"#fff",borderRadius:"16px",overflow:"hidden",boxShadow:"0 2px 10px rgba(0,0,0,0.07)",cursor:"pointer",display:"flex",alignItems:"stretch",border:esPrimero?`2px solid #ff6b00`:`2px solid ${color}20`,position:"relative",minWidth:"160px",maxWidth:"160px",width:"160px",flexShrink:0}}>
+    <div onClick={onNavigate} style={{flexShrink:0,width:"160px",minWidth:"160px",cursor:"pointer",position:"relative"}}>
       {esPrimero && (
         <div style={{position:"absolute",top:"-6px",right:"-4px",zIndex:2,background:"linear-gradient(135deg,#ff6b00,#ff4500)",borderRadius:"8px",padding:"2px 7px",fontSize:"10px",fontWeight:900,color:"#fff",boxShadow:"0 2px 6px rgba(255,69,0,0.4)"}}>🔥</div>
       )}
-      <div style={{width:"80px",flexShrink:0,background:`linear-gradient(135deg,${color}33,${color}11)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"32px",position:"relative",overflow:"hidden"}}>
-        {nexo.avatar_url
-          ? <img src={nexo.avatar_url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}} />
-          : <span>{emoji}</span>
-        }
-        <div style={{position:"absolute",top:"6px",left:"6px",background:color,borderRadius:"20px",padding:"2px 7px",fontSize:"9px",fontWeight:900,color:"#fff",textTransform:"uppercase"}}>
-          {nexo.tipo}
+      <div style={{background:"#fff",borderRadius:"14px",overflow:"hidden",boxShadow:"0 2px 10px rgba(0,0,0,0.08)",border:esPrimero?`2px solid #ff6b00`:`1px solid #f0f0f0`}}>
+        <div style={{background:color,padding:"3px 8px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <span style={{fontSize:"9px",fontWeight:900,color:"#fff",textTransform:"uppercase"}}>{nexo.tipo}</span>
+          <span style={{fontSize:"12px"}}>{emoji}</span>
         </div>
-      </div>
-      <div style={{flex:1,padding:"12px 14px",minWidth:0}}>
-        <div style={{fontSize:"14px",fontWeight:900,color:"#1a2a3a",marginBottom:"3px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-          {nexo.titulo}
+        <div style={{width:"100%",height:"120px",background:`linear-gradient(135deg,${color}33,${color}11)`,display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden"}}>
+          {nexo.avatar_url
+            ? <img src={nexo.avatar_url} alt={nexo.titulo} style={{width:"100%",height:"100%",objectFit:"cover"}} />
+            : <span style={{fontSize:"36px"}}>{emoji}</span>
+          }
         </div>
-        {nexo.descripcion && (
-          <div style={{fontSize:"12px",color:"#9a9a9a",fontWeight:600,marginBottom:"6px",overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical" as any}}>
-            {nexo.descripcion}
+        <div style={{padding:"8px 10px 10px"}}>
+          <div style={{fontSize:"12px",fontWeight:800,color:"#1a2a3a",marginBottom:"3px",overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical" as any}}>
+            {nexo.titulo}
           </div>
-        )}
-        <div style={{display:"flex",gap:"8px",alignItems:"center",flexWrap:"wrap"}}>
-          {nexo.ciudad && <span style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600}}>📍 {nexo.ciudad}</span>}
-          {nexo.tipo==="grupo" && <span style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600}}>👥 {nexo.miembros_count||0} miembros</span>}
-          {nexo.tipo==="grupo" && nexo.config?.tipo_acceso==="pago" && (
-            <span style={{background:`${color}18`,color,borderRadius:"20px",padding:"2px 8px",fontSize:"10px",fontWeight:800}}>💰 500 BIT</span>
+          {nexo.descripcion && (
+            <div style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600,marginBottom:"4px",overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical" as any}}>
+              {nexo.descripcion}
+            </div>
           )}
-          {nexo.precio && <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"16px",color}}>${nexo.precio.toLocaleString("es-AR")}</span>}
+          {nexo.precio && <div style={{fontSize:"14px",fontWeight:900,color}}>${nexo.precio.toLocaleString("es-AR")}</div>}
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:"2px"}}>
+            {nexo.ciudad && <span style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600}}>📍 {nexo.ciudad}</span>}
+            {nexo.tipo==="grupo" && <span style={{fontSize:"10px",color:"#9a9a9a",fontWeight:600}}>👥 {nexo.miembros_count||0}</span>}
+          </div>
+          {nexo.tipo==="grupo" && nexo.config?.tipo_acceso==="pago" && (
+            <div style={{marginTop:"3px",background:`${color}18`,color,borderRadius:"20px",padding:"2px 8px",fontSize:"10px",fontWeight:800,textAlign:"center"}}>💰 500 BIT</div>
+          )}
         </div>
       </div>
-      <div style={{display:"flex",alignItems:"center",paddingRight:"12px",color:`${color}80`,fontSize:"20px",flexShrink:0}}>›</div>
     </div>
   );
 }

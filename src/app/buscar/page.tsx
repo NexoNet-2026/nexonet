@@ -352,7 +352,7 @@ function BuscarInner() {
       return;
     }
     const t = ENT_TABLES[tipoActivo];
-    if (!t) { setEntRubros([]); setEntRubroSel(null); setEntSubSel(null); setEntLoading(false); setEntError(null); return; }
+    if (!t) { setEntRubroSel(null); setEntSubSel(null); setEntLoading(false); setEntError(null); return; }
     setEntLoading(true); setEntError(null);
     Promise.all([
       supabase.from(t.rubros).select("id,nombre").order("orden",{ascending:true}),
@@ -682,8 +682,8 @@ function BuscarInner() {
           )}
 
           {tipoActivo === "grupos" && (
-            <div>
-              {entLoading ? (
+            <div style={{transition:"opacity 0.2s ease",opacity:entLoading?0.5:1}}>
+              {entLoading && entRubros.length === 0 ? (
                 <div style={{textAlign:"center",padding:"40px",color:"#9a9a9a",fontWeight:700}}>Cargando categorías...</div>
               ) : entRubros.length > 0 ? (
                 (entRubroSel ? entRubros.filter(r=>r.id===entRubroSel) : entRubros).map(rubro => {
@@ -756,8 +756,8 @@ function BuscarInner() {
           )}
 
           {tipoActivo !== "anuncios" && tipoActivo !== "grupos" && (
-            <div>
-              {entLoading ? (
+            <div style={{transition:"opacity 0.2s ease",opacity:entLoading?0.5:1}}>
+              {entLoading && entRubros.length === 0 ? (
                 <div style={{textAlign:"center",padding:"40px",color:"#9a9a9a",fontWeight:700}}>Cargando categorías...</div>
               ) : entRubros.length > 0 ? (
                 (entRubroSel ? entRubros.filter(r=>r.id===entRubroSel) : entRubros).map(rubro => {

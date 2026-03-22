@@ -74,13 +74,13 @@ export default function BusquedaIA() {
       setSession(s);
       if (!s) { setLoading(false); return; }
       Promise.all([
-        supabase.from("usuarios").select("bits_busquedas").eq("id", s.user.id).single(),
+        supabase.from("usuarios").select("bits,bits_free,bits_promo").eq("id", s.user.id).single(),
         supabase.from("rubros").select("id,nombre").order("nombre"),
         supabase.from("subrubros").select("id,nombre,rubro_id").order("nombre"),
         supabase.from("provincias").select("id,nombre").order("nombre"),
         supabase.from("busquedas_automaticas").select("*").eq("usuario_id", s.user.id).order("created_at"),
       ]).then(([{ data: u }, { data: r }, { data: s2 }, { data: p }, { data: bData }]) => {
-        if (u) setBits(Math.max(0, u.bits_busquedas || 0));
+        if (u) setBits(Math.max(0, u.bits||0) + Math.max(0, u.bits_free||0) + Math.max(0, u.bits_promo||0));
         if (r)  setRubros(r.map((x:any) => ({ id:Number(x.id), nombre:x.nombre })));
         if (s2) setSubrubros(s2.map((x:any) => ({ id:Number(x.id), nombre:x.nombre, rubro_id:Number(x.rubro_id) })));
         if (p)  setProvs(p);

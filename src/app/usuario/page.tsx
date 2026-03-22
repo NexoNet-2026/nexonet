@@ -183,7 +183,9 @@ export default function Usuario() {
       const { data: srData } = await supabase.from("subrubros").select("id, nombre, rubros(nombre)").order("nombre");
       if (srData) setSubrubros(srData);
 
-      if (data) setBitsBusq(data.bits_busquedas || 0);
+      if (data) setBitsBusq(
+        Math.max(0, data.bits||0) + Math.max(0, data.bits_free||0) + Math.max(0, data.bits_promo||0)
+      );
 
       // Grupos: cargar desde nexo_miembros (tipo grupo) + nexos creados
       const { data: mgData } = await supabase

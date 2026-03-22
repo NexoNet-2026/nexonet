@@ -791,9 +791,7 @@ function BuscarInner() {
                       ) : (
                         <div style={{display:"flex",gap:"12px",padding:"0 16px",overflowX:"auto",scrollbarWidth:"none"}}>
                           {itemsFinal.map((n:any,i:number) => (
-                            <div key={n.id} style={{minWidth:"160px",width:"160px",flexShrink:0}}>
-                              <TarjetaNexoGlobal nexo={n} color={colorActivo} onClick={()=>router.push(`/nexo/${n.id}`)} esPrimero={i===0&&(n.visitas_semana||0)>0} />
-                            </div>
+                            <TarjetaNexoGlobal key={n.id} nexo={n} color={colorActivo} onClick={()=>router.push(`/nexo/${n.id}`)} esPrimero={i===0&&(n.visitas_semana||0)>0} />
                           ))}
                         </div>
                       )}
@@ -821,9 +819,7 @@ function BuscarInner() {
                       </div>
                       <div style={{display:"flex",gap:"12px",padding:"0 16px",overflowX:"auto",scrollbarWidth:"none"}}>
                         {(nexosPorTipo[tipoActivo]||[]).map((n, i) => (
-                          <div key={n.id} style={{minWidth:"160px",width:"160px",flexShrink:0}}>
-                            <TarjetaNexoGlobal nexo={n} color={colorActivo} onClick={()=>router.push(`/nexo/${n.id}`)} esPrimero={i === 0 && (n.visitas_semana || 0) > 0} />
-                          </div>
+                            <TarjetaNexoGlobal key={n.id} nexo={n} color={colorActivo} onClick={()=>router.push(`/nexo/${n.id}`)} esPrimero={i === 0 && (n.visitas_semana || 0) > 0} />
                         ))}
                       </div>
                     </div>
@@ -840,9 +836,7 @@ function BuscarInner() {
                     <div style={{padding:"14px 16px 8px"}}><span style={{fontSize:"16px",fontWeight:900,color:"#1a2a3a"}}>📦 Otros</span></div>
                     <div style={{display:"flex",gap:"12px",padding:"0 16px",overflowX:"auto",scrollbarWidth:"none"}}>
                       {sinCat.slice(0,8).map((n:any) => (
-                        <div key={n.id} style={{minWidth:"160px",width:"160px",flexShrink:0}}>
-                          <TarjetaNexoGlobal nexo={n} color={colorActivo} onClick={()=>router.push(`/nexo/${n.id}`)} />
-                        </div>
+                          <TarjetaNexoGlobal key={n.id} nexo={n} color={colorActivo} onClick={()=>router.push(`/nexo/${n.id}`)} />
                       ))}
                     </div>
                   </div>

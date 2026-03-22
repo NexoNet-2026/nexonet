@@ -50,11 +50,13 @@ export default function Header() {
     const enviarHeartbeat = async () => {
       const pagina = window.location.pathname;
       const dispositivo = window.innerWidth < 768 ? "mobile" : "desktop";
-      await supabase.rpc("fn_heartbeat", {
-        p_usuario_id: userId,
-        p_pagina: pagina,
-        p_dispositivo: dispositivo,
-      }).catch(() => {});
+      try {
+        await supabase.rpc("fn_heartbeat", {
+          p_usuario_id: userId,
+          p_pagina: pagina,
+          p_dispositivo: dispositivo,
+        });
+      } catch (_) {}
     };
     enviarHeartbeat();
     const interval = setInterval(enviarHeartbeat, 30000);

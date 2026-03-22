@@ -93,6 +93,8 @@ function NexoCrearInner() {
   const [entRubros,    setEntRubros]    = useState<{id:number;nombre:string}[]>([]);
   const [entSubrubros, setEntSubrubros] = useState<{id:number;nombre:string;rubro_id:number}[]>([]);
   const [sliders,   setSliders]   = useState<{id:string;emoji:string;titulo:string;tipo:string;orden:number}[]>([]);
+  const [subFiltros, setSubFiltros] = useState<any[]>([]);
+  const [filtroVals, setFiltroVals] = useState<Record<string,any>>({});
 
   const [form, setForm] = useState({
     titulo:"", descripcion:"", precio:"", moneda:"ARS",
@@ -104,6 +106,13 @@ function NexoCrearInner() {
   });
 
   const F = (k:string, v:any) => setForm(f => ({...f, [k]:v}));
+  const cargarSubFiltros = async (subId:string) => {
+    if (!subId) { setSubFiltros([]); setFiltroVals({}); return; }
+    const {data} = await supabase.from("subrubro_filtros").select("*").eq("subrubro_id",parseInt(subId)).order("orden");
+    setSubFiltros(data||[]);
+    setFiltroVals({});
+  };
+  const setFV = (nombre:string, val:any) => setFiltroVals(prev=>({...prev,[nombre]:val}));
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data:{ session } }) => {
@@ -257,6 +266,19 @@ function NexoCrearInner() {
       if (form.lng)         payload.lng         = parseFloat(form.lng);
       if (form.subrubro_id) payload.subrubro_id = parseInt(form.subrubro_id);
 
+      // Guardar filtros dinámicos
+      const filtrosLimpios: Record<string,any> = {};
+      for (const [k,v] of Object.entries(filtroVals)) {
+        if (v!=null && v!=="" && !(typeof v==="object" && !v.desde && !v.hasta)) filtrosLimpios[k] = v;
+      }
+      if (Object.keys(filtrosLimpios).length > 0) {
+        if (tipo==="anuncio"||tipo==="trabajo") {
+          payload.filtros = filtrosLimpios;
+        } else {
+          payload.config = { ...payload.config, filtros: filtrosLimpios };
+        }
+      }
+
       if (tipo==="empresa") {
         const en30dias = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
         payload.trial_hasta = esPrimeraEmpresa ? en30dias : null;
@@ -324,11 +346,66 @@ function NexoCrearInner() {
               </select>
               {form.rubro_id && subsDe.length>0 && (<>
                 <L>Subrubro</L>
-                <select value={form.subrubro_id} onChange={e=>F("subrubro_id",e.target.value)} style={{...IS,marginBottom:"0"}}>
+                <select value={form.subrubro_id} onChange={e=>{F("subrubro_id",e.target.value);cargarSubFiltros(e.target.value);}} style={{...IS,marginBottom:"0"}}>
                   <option value="">— Todos —</option>
                   {subsDe.map(s=><option key={s.id} value={s.id}>{s.nombre}</option>)}
                 </select>
               </>)}
+            </div>
+          )}
+
+          {/* ── Filtros dinámicos de subcategoría ── */}
+          {subFiltros.length>0 && (
+            <div style={CAJA}>
+              <SL>🔧 Detalles adicionales</SL>
+              <div style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600,marginBottom:"12px"}}>Completá los campos que apliquen a tu publicación</div>
+              {subFiltros.map((f:any)=>(
+                <div key={f.id} style={{marginBottom:"12px"}}>
+                  {f.tipo==="boolean" && (<>
+                    <L>{f.nombre}</L>
+                    <div style={{display:"flex",gap:"8px"}}>
+                      {[{v:true,l:"Sí"},{v:false,l:"No"}].map(op=>(
+                        <button key={String(op.v)} onClick={()=>setFV(f.nombre,op.v)}
+                          style={{flex:1,background:filtroVals[f.nombre]===op.v?"#1a2a3a":"#f4f4f2",border:`2px solid ${filtroVals[f.nombre]===op.v?"#1a2a3a":"#e8e8e6"}`,borderRadius:"10px",padding:"8px",fontSize:"12px",fontWeight:800,color:filtroVals[f.nombre]===op.v?colorPage:"#666",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>
+                          {op.l}
+                        </button>
+                      ))}
+                    </div>
+                  </>)}
+                  {f.tipo==="numero" && (<>
+                    <L>{f.nombre}</L>
+                    <input type="number" value={filtroVals[f.nombre]||""} onChange={e=>setFV(f.nombre,e.target.value)} placeholder={f.nombre} style={IS}/>
+                  </>)}
+                  {f.tipo==="rango" && (<>
+                    <L>{f.nombre}</L>
+                    <div style={{display:"flex",gap:"8px",alignItems:"center"}}>
+                      <input type="number" value={filtroVals[f.nombre]?.desde||""} onChange={e=>setFV(f.nombre,{...filtroVals[f.nombre],desde:e.target.value})} placeholder="Desde" style={{...IS,flex:1}}/>
+                      <span style={{color:"#9a9a9a",fontWeight:800}}>—</span>
+                      <input type="number" value={filtroVals[f.nombre]?.hasta||""} onChange={e=>setFV(f.nombre,{...filtroVals[f.nombre],hasta:e.target.value})} placeholder="Hasta" style={{...IS,flex:1}}/>
+                    </div>
+                  </>)}
+                  {f.tipo==="texto" && (<>
+                    <L>{f.nombre}</L>
+                    <input value={filtroVals[f.nombre]||""} onChange={e=>setFV(f.nombre,e.target.value)} placeholder={f.nombre} style={IS}/>
+                  </>)}
+                  {f.tipo==="opciones" && (<>
+                    <L>{f.nombre}</L>
+                    <select value={filtroVals[f.nombre]||""} onChange={e=>setFV(f.nombre,e.target.value)} style={IS}>
+                      <option value="">— Seleccionar —</option>
+                      {(Array.isArray(f.opciones)?f.opciones:[]).map((op:string)=><option key={op} value={op}>{op}</option>)}
+                    </select>
+                  </>)}
+                  {f.tipo==="moneda" && (<>
+                    <L>{f.nombre}</L>
+                    <select value={filtroVals[f.nombre]||""} onChange={e=>setFV(f.nombre,e.target.value)} style={IS}>
+                      <option value="">— Seleccionar —</option>
+                      <option value="ARS">$ ARS</option>
+                      <option value="USD">USD</option>
+                      <option value="EUR">EUR</option>
+                    </select>
+                  </>)}
+                </div>
+              ))}
             </div>
           )}
 
@@ -573,7 +650,7 @@ function NexoCrearInner() {
                   {form.rubro_id && entSubrubros.filter(s=>s.rubro_id===parseInt(form.rubro_id)).length > 0 && (
                     <>
                       <L>Subrubro</L>
-                      <select value={form.subrubro_id} onChange={e=>F("subrubro_id",e.target.value)} style={{...IS,marginBottom:"12px"}}>
+                      <select value={form.subrubro_id} onChange={e=>{F("subrubro_id",e.target.value);cargarSubFiltros(e.target.value);}} style={{...IS,marginBottom:"12px"}}>
                         <option value="">— Todos —</option>
                         {entSubrubros.filter(s=>s.rubro_id===parseInt(form.rubro_id)).map(s=><option key={s.id} value={s.id}>{s.nombre}</option>)}
                       </select>

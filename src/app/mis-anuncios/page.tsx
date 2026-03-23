@@ -363,6 +363,24 @@ export default function MisAnuncios() {
                 </button>
               </div>
 
+              {/* DÉBITO AUTOMÁTICO MP */}
+              <div style={{ margin:"0 14px 12px", background:"rgba(58,123,213,0.04)", border:"1px solid rgba(58,123,213,0.2)", borderRadius:"12px", padding:"10px 14px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                <div>
+                  <div style={{ fontSize:"12px", fontWeight:900, color:"#1a2a3a" }}>💳 Débito automático</div>
+                  <div style={{ fontSize:"10px", color:"#9a9a9a", fontWeight:600, marginTop:"2px" }}>
+                    Se cobra $500 ARS/mes de tu tarjeta via MercadoPago
+                  </div>
+                </div>
+                <button onClick={async()=>{
+                  const res = await fetch("/api/mp/suscripcion/crear",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({usuario_id:session.user.id,tipo:"anuncio",referencia_id:a.id,monto:500,descripcion:`Anuncio NexoNet: ${a.titulo}`,back_url:window.location.href})});
+                  const data = await res.json();
+                  if(data.init_point) window.location.href=data.init_point;
+                  else alert("Error al crear suscripción");
+                }} style={{background:"linear-gradient(135deg,#3a7bd5,#2980b9)",border:"none",borderRadius:"10px",padding:"8px 14px",fontSize:"11px",fontWeight:900,color:"#fff",cursor:"pointer",fontFamily:"'Nunito',sans-serif",whiteSpace:"nowrap",flexShrink:0}}>
+                  Activar
+                </button>
+              </div>
+
               {/* NOTIFICACIÓN WHATSAPP */}
               <div style={{ margin:"0 14px 12px", background:"rgba(37,211,102,0.04)", border:"1px solid rgba(37,211,102,0.2)", borderRadius:"12px", padding:"10px 14px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
                 <div>

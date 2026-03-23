@@ -70,11 +70,18 @@ export async function GET(req: Request) {
     const { data: usuario } = await supabase.from("usuarios").select("bits, bits_free, bits_promo, email, nombre").eq("id", a.usuario_id).single();
     const total = (usuario?.bits || 0) + (usuario?.bits_free || 0) + (usuario?.bits_promo || 0);
 
+    // Verificar suscripción MP activa
+    const { data: subMP } = await supabase.from("suscripciones_mp").select("id").eq("usuario_id",a.usuario_id).eq("referencia_id",String(a.id)).eq("estado","authorized").maybeSingle();
+
     if (a.renovar_automatico && total >= 500) {
       const { updates } = descontarBits(usuario, 500);
       await supabase.from("usuarios").update(updates).eq("id", a.usuario_id);
       await supabase.from("anuncios").update({ fecha_vencimiento: EN30D() }).eq("id", a.id);
       await supabase.from("notificaciones").insert({ usuario_id: a.usuario_id, tipo: "sistema", leida: false, mensaje: `🔄 Tu anuncio "${a.titulo}" fue renovado automáticamente por 500 BIT.` });
+      res.avisos++;
+    } else if (subMP) {
+      // Tiene débito automático MP — extender 3 días para esperar el cobro
+      await supabase.from("anuncios").update({ fecha_vencimiento: new Date(Date.now() + 3*24*60*60*1000).toISOString() }).eq("id", a.id);
       res.avisos++;
     } else {
       await supabase.from("anuncios").update({ estado: "pausado" }).eq("id", a.id);
@@ -96,6 +103,7 @@ export async function GET(req: Request) {
   for (const e of empresasVencidas || []) {
     const { data: usuario } = await supabase.from("usuarios").select("bits, bits_free, bits_promo, email, nombre").eq("id", e.usuario_id).single();
     const total = (usuario?.bits || 0) + (usuario?.bits_free || 0) + (usuario?.bits_promo || 0);
+    const { data: subMP } = await supabase.from("suscripciones_mp").select("id").eq("usuario_id",e.usuario_id).eq("referencia_id",String(e.id)).eq("estado","authorized").maybeSingle();
 
     if (total >= 10000) {
       const { updates } = descontarBits(usuario, 10000);
@@ -103,6 +111,9 @@ export async function GET(req: Request) {
       await supabase.from("nexos").update({ siguiente_pago: EN30D() }).eq("id", e.id);
       await supabase.from("empresa_pagos").insert({ nexo_id: e.id, usuario_id: e.usuario_id, monto_bits: 10000, periodo_desde: hoy, periodo_hasta: EN30D() });
       await supabase.from("notificaciones").insert({ usuario_id: e.usuario_id, tipo: "sistema", leida: false, mensaje: `🔄 Tu empresa "${e.titulo}" fue renovada automáticamente por 10.000 BIT.` });
+      res.avisos++;
+    } else if (subMP) {
+      await supabase.from("nexos").update({ siguiente_pago: new Date(Date.now() + 3*24*60*60*1000).toISOString() }).eq("id", e.id);
       res.avisos++;
     } else {
       await supabase.from("nexos").update({ estado: "pausado" }).eq("id", e.id);

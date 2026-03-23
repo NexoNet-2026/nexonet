@@ -34,7 +34,58 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     console.log("MP Webhook:", JSON.stringify(body));
 
-    // Solo procesar pagos aprobados
+    // ── Suscripciones (preapproval) ──
+    if (body.type === "subscription_preapproval") {
+      const preapprovalId = body.data?.id;
+      if (preapprovalId) {
+        const mpRes = await fetch(`https://api.mercadopago.com/preapproval/${preapprovalId}`, {
+          headers: { "Authorization": `Bearer ${ACCESS_TOKEN}` },
+        });
+        const pre = await mpRes.json();
+        const nuevoEstado = pre.status === "authorized" ? "authorized" : pre.status === "cancelled" ? "cancelled" : pre.status === "paused" ? "paused" : "pending";
+        await supabase.from("suscripciones_mp").update({
+          estado: nuevoEstado,
+          updated_at: new Date().toISOString(),
+        }).eq("mp_preapproval_id", preapprovalId);
+      }
+      return NextResponse.json({ ok: true });
+    }
+
+    // ── Pagos de suscripción (authorized_payment) ──
+    if (body.type === "subscription_authorized_payment") {
+      const payId = body.data?.id;
+      if (payId) {
+        const mpRes = await fetch(`https://api.mercadopago.com/v1/payments/${payId}`, {
+          headers: { "Authorization": `Bearer ${ACCESS_TOKEN}` },
+        });
+        const pago = await mpRes.json();
+        if (pago.status === "approved" && pago.metadata?.preapproval_id) {
+          const { data: sub } = await supabase.from("suscripciones_mp")
+            .select("*").eq("mp_preapproval_id", pago.metadata.preapproval_id).single();
+          if (sub) {
+            // Acreditar BIT según tipo
+            const bitsCantidad = sub.tipo === "empresa" ? 10000 : 500;
+            const { data: usr } = await supabase.from("usuarios").select("bits").eq("id", sub.usuario_id).single();
+            if (usr) {
+              await supabase.from("usuarios").update({ bits: (usr.bits || 0) + bitsCantidad }).eq("id", sub.usuario_id);
+            }
+            // Actualizar próximo cobro
+            await supabase.from("suscripciones_mp").update({
+              proximo_cobro: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+              updated_at: new Date().toISOString(),
+            }).eq("id", sub.id);
+            // Notificar
+            await supabase.from("notificaciones").insert({
+              usuario_id: sub.usuario_id, tipo: "sistema", leida: false,
+              mensaje: `💳 Débito automático: se acreditaron ${bitsCantidad.toLocaleString()} BIT por tu suscripción de ${sub.tipo}.`,
+            });
+          }
+        }
+      }
+      return NextResponse.json({ ok: true });
+    }
+
+    // Solo procesar pagos aprobados (compra directa)
     if (body.type !== "payment") return NextResponse.json({ ok: true });
 
     const paymentId = body.data?.id;

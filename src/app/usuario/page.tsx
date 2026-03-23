@@ -587,6 +587,12 @@ export default function Usuario() {
               </div>
             )}
 
+            {/* Suscripciones MP */}
+            <div style={{background:"#fff",borderRadius:"16px",padding:"16px 18px",boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
+              <div style={{fontSize:"14px",fontWeight:900,color:"#1a2a3a",marginBottom:"10px"}}>💳 Débitos automáticos</div>
+              <SuscripcionesMP perfil={perfil} />
+            </div>
+
             {/* Legal + Darme de baja */}
             <div style={{ display:"flex", justifyContent:"center", gap:"16px", paddingTop:"16px" }}>
               <button onClick={()=>router.push("/legal")} style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"'Nunito',sans-serif", fontSize:"12px", fontWeight:600, color:"#3a7bd5" }}>
@@ -1030,6 +1036,40 @@ export default function Usuario() {
       <BottomNav />
     </main>
   );
+}
+
+function SuscripcionesMP({ perfil }: { perfil: any }) {
+  const [subs, setSubs] = useState<any[]>([]);
+  const [cargado, setCargado] = useState(false);
+  const [cancelando, setCancelando] = useState<string|null>(null);
+  useEffect(() => {
+    if (!perfil?.id) return;
+    supabase.from("suscripciones_mp").select("*").eq("usuario_id", perfil.id).order("created_at",{ascending:false})
+      .then(({data}) => { setSubs(data||[]); setCargado(true); });
+  }, [perfil?.id]);
+  const cancelar = async (id:string) => {
+    if (!confirm("¿Cancelar este débito automático?")) return;
+    setCancelando(id);
+    await fetch("/api/mp/suscripcion/cancelar", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({suscripcion_id:id}) });
+    setSubs(prev=>prev.map(s=>s.id===id?{...s,estado:"cancelled"}:s));
+    setCancelando(null);
+  };
+  if (!cargado) return <div style={{fontSize:"12px",color:"#9a9a9a",fontWeight:600}}>Cargando...</div>;
+  if (subs.length===0) return <div style={{fontSize:"12px",color:"#9a9a9a",fontWeight:600}}>No tenés débitos automáticos activos.</div>;
+  const ESTADOS: Record<string,{color:string;label:string}> = {pending:{color:"#e67e22",label:"Pendiente"},authorized:{color:"#27ae60",label:"Activo"},paused:{color:"#9a9a9a",label:"Pausado"},cancelled:{color:"#e74c3c",label:"Cancelado"}};
+  return (<div style={{display:"flex",flexDirection:"column",gap:"8px"}}>
+    {subs.map(s=>{const est=ESTADOS[s.estado]||ESTADOS.pending;return(
+      <div key={s.id} style={{display:"flex",alignItems:"center",gap:"10px",padding:"8px 0",borderBottom:"1px solid #f4f4f2"}}>
+        <div style={{flex:1}}>
+          <div style={{fontSize:"13px",fontWeight:800,color:"#1a2a3a"}}>{s.tipo==="empresa"?"🏢 Empresa":s.tipo==="anuncio"?"📣 Anuncio":"👥 Grupo"} — ${s.monto?.toLocaleString("es-AR")}/mes</div>
+          <div style={{fontSize:"10px",color:"#9a9a9a",fontWeight:600}}>
+            {s.proximo_cobro?`Próximo cobro: ${new Date(s.proximo_cobro).toLocaleDateString("es-AR")}`:""} · <span style={{color:est.color,fontWeight:800}}>{est.label}</span>
+          </div>
+        </div>
+        {s.estado==="authorized" && <button onClick={()=>cancelar(s.id)} disabled={cancelando===s.id} style={{background:"rgba(231,76,60,0.1)",border:"1px solid rgba(231,76,60,0.3)",borderRadius:"8px",padding:"5px 10px",fontSize:"11px",fontWeight:800,color:"#e74c3c",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>{cancelando===s.id?"⏳":"❌ Cancelar"}</button>}
+      </div>
+    );})}
+  </div>);
 }
 
 function SaldoPill({ label, valor, color }: { label:string; valor:number; color:string }) {

@@ -188,6 +188,7 @@ export default function BusquedaIA() {
       <Header/>
 
       <div style={{background:"linear-gradient(135deg,#1a2a3a,#243b55)",padding:"16px"}}>
+        <button onClick={()=>router.back()} style={{background:"rgba(255,255,255,0.15)",border:"1px solid rgba(255,255,255,0.25)",borderRadius:"10px",padding:"7px 13px",color:"#fff",fontSize:"13px",fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',sans-serif",marginBottom:"10px"}}>← Volver</button>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"8px"}}>
           <div>
             <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"24px",color:"#f0c040",letterSpacing:"1px"}}>🤖 Búsqueda Inteligente IA</div>

@@ -116,6 +116,7 @@ function RegistroInner() {
     <main style={{paddingTop:"95px",paddingBottom:"130px",background:"#f4f4f2",minHeight:"100vh",fontFamily:"'Nunito',sans-serif"}}>
       <Header />
       <div style={{padding:"24px 16px",maxWidth:"400px",margin:"0 auto"}}>
+        <button onClick={()=>router.back()} style={{background:"rgba(26,42,58,0.08)",border:"1px solid rgba(26,42,58,0.2)",borderRadius:"10px",padding:"7px 13px",color:"#1a2a3a",fontSize:"13px",fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',sans-serif",marginBottom:"14px"}}>← Volver</button>
 
         {/* PASOS */}
         <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:"8px",marginBottom:"28px"}}>

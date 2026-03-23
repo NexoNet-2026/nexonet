@@ -76,6 +76,7 @@ export default function PromoterPage() {
 
       {/* HERO */}
       <div style={{ background: "linear-gradient(135deg,#1a2a3a,#243b55)", padding: "24px 20px 28px" }}>
+        <button onClick={()=>router.back()} style={{background:"rgba(255,255,255,0.15)",border:"1px solid rgba(255,255,255,0.25)",borderRadius:"10px",padding:"7px 13px",color:"#fff",fontSize:"13px",fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',sans-serif",marginBottom:"14px"}}>← Volver</button>
         <div style={{ display: "flex", alignItems: "center", gap: "14px", marginBottom: "20px" }}>
           <div style={{ width: "56px", height: "56px", borderRadius: "50%", background: "rgba(212,160,23,0.2)",
                          border: "2px solid #d4a017", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "26px" }}>

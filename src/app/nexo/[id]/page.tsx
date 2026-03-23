@@ -222,7 +222,7 @@ export default function NexoPage() {
     }
 
     const { data: mm } = await supabase.from("nexo_miembros")
-      .insert({ nexo_id:id, usuario_id:perfil.id, rol:"miembro", estado:"activo", bits_pagados:500 })
+      .insert({ nexo_id:id, usuario_id:perfil.id, rol:"miembro", estado:"activo", bits_pagados:500, fecha_pago:new Date().toISOString(), vence_el:new Date(Date.now()+30*24*60*60*1000).toISOString() })
       .select().single();
     setMiMiembro(mm);
     setMiembros(prev => [...prev, {...mm, usuarios:perfil}]);
@@ -370,6 +370,23 @@ export default function NexoPage() {
                 </button>
               )}
               {miMiembro?.estado==="pendiente" && <div style={{ background:"rgba(230,126,34,0.2)", border:"1px solid rgba(230,126,34,0.4)", borderRadius:"10px", padding:"7px 12px", fontSize:"11px", fontWeight:800, color:"#e67e22" }}>⏳ Pendiente</div>}
+              {miMiembro?.estado==="vencido" && (
+                <button onClick={async()=>{
+                  if (!perfil) return;
+                  const bitsTotal = (perfil.bits||0)+(perfil.bits_free||0)+(perfil.bits_promo||0);
+                  if (bitsTotal<500){alert("Necesitás 500 BIT para renovar tu membresía");return;}
+                  const campo = (perfil.bits_free||0)>=500?"bits_free":(perfil.bits||0)>=500?"bits":"bits_promo";
+                  await supabase.from("usuarios").update({[campo]:(perfil[campo]||0)-500}).eq("id",perfil.id);
+                  setPerfil((p:any)=>({...p,[campo]:(p[campo]||0)-500}));
+                  const {data:dueno} = await supabase.from("usuarios").select("bits_promo,bits_promotor_total").eq("id",nexo.usuario_id).single();
+                  if(dueno) await supabase.from("usuarios").update({bits_promo:(dueno.bits_promo||0)+150,bits_promotor_total:(dueno.bits_promotor_total||0)+150}).eq("id",nexo.usuario_id);
+                  await supabase.from("nexo_miembros").update({estado:"activo",vence_el:new Date(Date.now()+30*24*60*60*1000).toISOString(),fecha_pago:new Date().toISOString(),bits_pagados:(miMiembro.bits_pagados||0)+500}).eq("id",miMiembro.id);
+                  setMiMiembro((m:any)=>({...m,estado:"activo",vence_el:new Date(Date.now()+30*24*60*60*1000).toISOString()}));
+                  alert("✅ Membresía renovada por 30 días");
+                }} style={{background:"linear-gradient(135deg,#e74c3c,#c0392b)",border:"none",borderRadius:"10px",padding:"8px 14px",fontSize:"12px",fontWeight:900,color:"#fff",cursor:"pointer",fontFamily:"'Nunito',sans-serif",display:"flex",alignItems:"center",gap:"6px"}}>
+                  ⚠️ Membresía vencida — 💳 Renovar (500 BIT)
+                </button>
+              )}
               {miMiembro?.rol === "admin_solicitado" && <div style={{ background:"rgba(212,160,23,0.15)", border:"1px solid rgba(212,160,23,0.4)", borderRadius:"10px", padding:"7px 12px", fontSize:"11px", fontWeight:800, color:"#d4a017" }}>⭐ Admin solicitado</div>}
               {miMiembro?.rol === "admin_pago_pendiente" && (
                 <button onClick={()=>setPopupPagoAdmin(true)} style={{ background:"linear-gradient(135deg,#f0c040,#d4a017)", border:"none", borderRadius:"10px", padding:"8px 12px", fontSize:"11px", fontWeight:900, color:"#1a2a3a", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>

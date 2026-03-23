@@ -1946,10 +1946,7 @@ export default function AdminPanel() {
           <select style={{...S.input,marginBottom:"12px"}} value={bitTipo} onChange={e=>setBitTipo(e.target.value)}>
             <option value="bits">💛 BIT Nexo</option>
             <option value="bits_free">💙 BIT Free</option>
-            <option value="bits_conexion">🔗 BIT Conexión</option>
-            <option value="bits_busquedas">🤖 BIT Búsquedas IA</option>
-            <option value="bits_promotor">⭐ BIT Promotor</option>
-            <option value="bits_grupo">🏘️ BIT Grupo</option>
+            <option value="bits_promo">🟢 BIT Promo</option>
           </select>
           <label style={S.label}>Cantidad (negativa para quitar)</label>
           <input style={{...S.input,marginBottom:"12px"}} type="number" placeholder="Ej: 500" value={bitCant} onChange={e=>setBitCant(e.target.value)} />

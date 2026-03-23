@@ -123,6 +123,9 @@ export default function AdminPanel() {
   // Crear usuario
   const [modalCrearUser, setModalCrearUser] = useState(false);
   const [nuevoUser, setNuevoUser] = useState({ email:"", password:"", nombre_usuario:"", nombre:"" });
+  // Crear usuario interno/bot
+  const [modalCrearBot, setModalCrearBot] = useState(false);
+  const [nuevoBot, setNuevoBot] = useState({ nombre_usuario:"", nombre:"", email:"", ciudad:"", provincia:"", avatar_url:"" });
 
   // Dashboard stats extra
   const [visitStats, setVisitStats] = useState<any>({ hoy:0, semana:0, mes:0, anio:0 });
@@ -626,6 +629,24 @@ export default function AdminPanel() {
     await cargarTodo();
   };
 
+  const crearBot = async () => {
+    if (!nuevoBot.nombre_usuario||!nuevoBot.nombre) { showToast("Completá nombre de usuario y nombre visible"); return; }
+    const email = nuevoBot.email || `${nuevoBot.nombre_usuario.toLowerCase().replace(/\s+/g,"_")}@interno.nexonet.ar`;
+    const pass = "NX" + Math.random().toString(36).slice(2,10) + "!";
+    const { data, error } = await supabase.auth.signUp({ email, password:pass });
+    if (error||!data.user) { showToast("Error: "+(error?.message||"No se pudo crear")); return; }
+    const { data:cod } = await supabase.rpc("generar_codigo_usuario");
+    await supabase.from("usuarios").insert({
+      id:data.user.id, email, nombre_usuario:nuevoBot.nombre_usuario, nombre:nuevoBot.nombre,
+      codigo:cod, bits_free:50000, bits_free_fecha:new Date().toISOString(),
+      ciudad:nuevoBot.ciudad||null, provincia:nuevoBot.provincia||null,
+      avatar_url:nuevoBot.avatar_url||null, is_interno:true, es_bot:true,
+    });
+    showToast(`✅ Bot creado: ${email} / ${pass}`);
+    setModalCrearBot(false); setNuevoBot({nombre_usuario:"",nombre:"",email:"",ciudad:"",provincia:"",avatar_url:""});
+    await cargarTodo();
+  };
+
   // ── Responder mensaje como admin ──
   const responderComoAdmin = async () => {
     if (!respAdmin||!respAdmin.texto.trim()) return;
@@ -1111,6 +1132,7 @@ export default function AdminPanel() {
             <div style={{display:"flex",gap:"8px",marginBottom:"14px"}}>
               <input style={{...S.input,flex:1}} placeholder="🔍 Buscar por nombre, email o código..." value={busqUser} onChange={e=>setBusqUser(e.target.value)} />
               <button onClick={()=>setModalCrearUser(true)} style={S.btn("#27ae60")}>+ Crear</button>
+              <button onClick={()=>setModalCrearBot(true)} style={S.btn("#8e44ad")}>🤖 Bot</button>
             </div>
             <div style={S.card}>
               <div style={{display:"flex",gap:"6px",flexWrap:"wrap"}}>
@@ -1724,6 +1746,7 @@ export default function AdminPanel() {
               <div style={S.sect}>🔧 Acciones del sistema</div>
               <div style={{display:"flex",gap:"8px",flexWrap:"wrap"}}>
                 <button onClick={cargarTodo}            style={S.btn("#3a7bd5")}>🔄 Refrescar datos</button>
+                <button onClick={()=>router.push("/admin/importar")} style={S.btn("#8e44ad")}>📥 Importar anuncios</button>
                 <button onClick={()=>router.push("/")} style={S.btn("#d4a017")}>🏠 Ir al sitio</button>
                 <button onClick={async()=>{await supabase.auth.signOut();router.push("/admin/login");}} style={S.btn("#e74c3c")}>🚪 Cerrar sesión</button>
               </div>
@@ -1994,6 +2017,28 @@ export default function AdminPanel() {
           <label style={S.label}>Nombre real (opcional)</label>
           <input style={{...S.input,marginBottom:"16px"}} placeholder="Juan Pérez" value={nuevoUser.nombre} onChange={e=>setNuevoUser({...nuevoUser,nombre:e.target.value})} />
           <button onClick={crearUsuario} style={S.btn("#27ae60")} disabled={!nuevoUser.email||!nuevoUser.password||!nuevoUser.nombre_usuario}>👤 Crear usuario</button>
+        </Modal>
+      )}
+
+      {/* ══ MODAL CREAR BOT ══════════════════════════════════════════════════ */}
+      {modalCrearBot && (
+        <Modal titulo="🤖 Crear usuario interno" onClose={()=>setModalCrearBot(false)}>
+          <label style={S.label}>Nombre de usuario *</label>
+          <input style={{...S.input,marginBottom:"10px"}} placeholder="mercadolibre_rosario" value={nuevoBot.nombre_usuario} onChange={e=>setNuevoBot({...nuevoBot,nombre_usuario:e.target.value})} />
+          <label style={S.label}>Nombre visible *</label>
+          <input style={{...S.input,marginBottom:"10px"}} placeholder="MercadoLibre Rosario" value={nuevoBot.nombre} onChange={e=>setNuevoBot({...nuevoBot,nombre:e.target.value})} />
+          <label style={S.label}>Email (auto si vacío)</label>
+          <input style={{...S.input,marginBottom:"10px"}} placeholder="auto@interno.nexonet.ar" value={nuevoBot.email} onChange={e=>setNuevoBot({...nuevoBot,email:e.target.value})} />
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px",marginBottom:"10px"}}>
+            <div><label style={S.label}>Ciudad</label><input style={S.input} placeholder="Rosario" value={nuevoBot.ciudad} onChange={e=>setNuevoBot({...nuevoBot,ciudad:e.target.value})} /></div>
+            <div><label style={S.label}>Provincia</label><input style={S.input} placeholder="Santa Fe" value={nuevoBot.provincia} onChange={e=>setNuevoBot({...nuevoBot,provincia:e.target.value})} /></div>
+          </div>
+          <label style={S.label}>Avatar URL (opcional)</label>
+          <input style={{...S.input,marginBottom:"10px"}} placeholder="https://..." value={nuevoBot.avatar_url} onChange={e=>setNuevoBot({...nuevoBot,avatar_url:e.target.value})} />
+          <div style={{background:"rgba(142,68,173,0.08)",border:"1px solid rgba(142,68,173,0.2)",borderRadius:"10px",padding:"10px 12px",marginBottom:"16px",fontSize:"11px",color:"#8e44ad",fontWeight:700}}>
+            🤖 Se creará con 50.000 BIT Free, marcado como interno/bot. Email y contraseña se generan automáticamente.
+          </div>
+          <button onClick={crearBot} style={S.btn("#8e44ad")} disabled={!nuevoBot.nombre_usuario||!nuevoBot.nombre}>🤖 Crear usuario interno</button>
         </Modal>
       )}
 

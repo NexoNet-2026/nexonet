@@ -1879,8 +1879,11 @@ export default function AdminPanel() {
             <button onClick={async()=>{
               const q = modalSocio._buscar?.trim();
               if(!q) return;
-              const {data} = await supabase.from("usuarios").select("id,nombre_usuario,email,codigo").or(`email.eq.${q},codigo.eq.${q}`).limit(1).single();
-              if(data) { setModalSocio({...modalSocio,usuario_id:data.id,_usuario:data}); showToast(`Encontrado: ${data.nombre_usuario}`); }
+              let found = null;
+              const {data: byEmail} = await supabase.from("usuarios").select("id,nombre_usuario,email,codigo").eq("email",q).limit(1).maybeSingle();
+              if (byEmail) { found = byEmail; }
+              else { const {data: byCodigo} = await supabase.from("usuarios").select("id,nombre_usuario,email,codigo").eq("codigo",q).limit(1).maybeSingle(); if (byCodigo) found = byCodigo; }
+              if(found) { setModalSocio({...modalSocio,usuario_id:found.id,_usuario:found}); showToast(`Encontrado: ${found.nombre_usuario}`); }
               else showToast("Usuario no encontrado");
             }} style={S.btn("#3a7bd5")}>🔍</button>
           </div>

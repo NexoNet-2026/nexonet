@@ -66,12 +66,20 @@ function RegistroInner() {
       setError("No se pudo crear el usuario."); setLoading(false); return;
     }
 
-    // Resolver referido_por
+    // Resolver referido_por y socio regional
     let referidoPor: string | null = null;
+    let socioRegionalId: string | null = null;
     const codigoRef = promotorInfo?.codigo || refParam || "";
     if (codigoRef) {
-      const { data: p } = await supabase.from("usuarios").select("id").eq("codigo", codigoRef).single();
-      if (p) referidoPor = p.id;
+      if (codigoRef.startsWith("SR-")) {
+        // Código de socio regional
+        const { data: sr } = await supabase.from("socios_comerciales").select("id").eq("codigo_referido", codigoRef).eq("activo", true).single();
+        if (sr) socioRegionalId = sr.id;
+      } else {
+        // Código de promotor normal
+        const { data: p } = await supabase.from("usuarios").select("id").eq("codigo", codigoRef).single();
+        if (p) referidoPor = p.id;
+      }
     }
 
     const { data: codigoData, error: rpcError } = await supabase.rpc("generar_codigo_usuario");
@@ -86,8 +94,9 @@ function RegistroInner() {
       codigo:              codigoData,
       codigo_promotor_ref: codigoRef || null,
       referido_por:        referidoPor,
-      bits_free:           3000,          // ← BIT Free de bienvenida
-      bits_free_fecha:     new Date().toISOString(), // ← fecha de acreditación
+      socio_regional_id:   socioRegionalId,
+      bits_free:           3000,
+      bits_free_fecha:     new Date().toISOString(),
     });
 
     if (insertError) { setError("Error guardando perfil: " + insertError.message); setLoading(false); return; }

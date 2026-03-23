@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabase";
 
 const ADMIN_UUID = "ab56253d-b92e-4b73-a19a-3cd0cd95c458";
 
-type Tab = "dashboard"|"usuarios"|"anuncios"|"grupos"|"mensajes"|"promotores"|"pagos"|"alarmas"|"config"|"contactos"|"reclamos";
+type Tab = "dashboard"|"usuarios"|"anuncios"|"grupos"|"mensajes"|"promotores"|"pagos"|"alarmas"|"config"|"contactos"|"reclamos"|"socios";
 type ConfigSub = "anuncios"|"empresas"|"servicios"|"trabajo"|"grupos"|"filtros_ia"|"general";
 
 const S = {
@@ -119,6 +119,11 @@ export default function AdminPanel() {
   // Config global
   const [configGlobal, setConfigGlobal] = useState<any[]>([]);
   const [configGuardando, setConfigGuardando] = useState<string|null>(null);
+  // Socios comerciales
+  const [socios, setSocios] = useState<any[]>([]);
+  const [modalSocio, setModalSocio] = useState<any>(null);
+  const [modalReintegro, setModalReintegro] = useState<any>(null);
+  const [reintegroCant, setReintegroCant] = useState("");
 
   // Crear usuario
   const [modalCrearUser, setModalCrearUser] = useState(false);
@@ -604,6 +609,25 @@ export default function AdminPanel() {
     setFiltrosIAGlobal(nuevos);
   };
 
+  // ── Socios comerciales ──
+  const cargarSocios = async () => {
+    const {data} = await supabase.from("socios_comerciales").select("*,usuarios(nombre_usuario,email,codigo)").order("created_at",{ascending:false});
+    setSocios(data||[]);
+  };
+  const guardarSocio = async (s:any) => {
+    if (!s.usuario_id||!s.tipo||!s.porcentaje) { showToast("Completá todos los campos"); return; }
+    const payload = {usuario_id:s.usuario_id,tipo:s.tipo,porcentaje:parseFloat(s.porcentaje),region:s.region||null,codigo_referido:s.codigo_referido||null,activo:s.activo!==false};
+    if (s.id) { await supabase.from("socios_comerciales").update(payload).eq("id",s.id); }
+    else { await supabase.from("socios_comerciales").insert(payload); }
+    setModalSocio(null); showToast("✅ Socio guardado"); await cargarSocios();
+  };
+  const registrarReintegro = async () => {
+    const cant = parseInt(reintegroCant);
+    if (!cant||!modalReintegro) return;
+    await supabase.from("socios_comerciales").update({bits_promotor_reintegrado:(modalReintegro.bits_promotor_reintegrado||0)+cant}).eq("id",modalReintegro.id);
+    setModalReintegro(null); setReintegroCant(""); showToast("✅ Reintegro registrado"); await cargarSocios();
+  };
+
   // ── Config global ──
   const cargarConfigGlobal = async () => {
     const {data} = await supabase.from("config_global").select("*").order("clave");
@@ -871,6 +895,7 @@ export default function AdminPanel() {
     {id:"contactos",e:"📩",l:"Contactos"},
     {id:"config",   e:"⚙️",l:"Config"},
     {id:"reclamos", e:"⚖️",l:"Reclamos"},
+    {id:"socios",   e:"🤝",l:"Socios"},
   ];
 
   const ItemRow = ({label,onEdit,onDelete,onUp,onDown,badge,extra}:{label:string;onEdit:()=>void;onDelete:()=>void;onUp?:()=>void;onDown?:()=>void;badge?:React.ReactNode;extra?:React.ReactNode}) => (
@@ -1797,7 +1822,85 @@ export default function AdminPanel() {
             ))}
           </>
         )}
+
+        {/* ══ SOCIOS ═══════════════════════════════════════════════════════ */}
+        {!loading && tab==="socios" && (
+          <>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"14px"}}>
+              <div style={{display:"flex",gap:"8px"}}>
+                <button onClick={cargarSocios} style={S.btn("#3a7bd5")}>🔄 Cargar</button>
+                <button onClick={()=>setModalSocio({tipo:"regional",porcentaje:"10",region:"",codigo_referido:"",usuario_id:"",activo:true,_buscar:""})} style={S.btn("#27ae60")}>➕ Nuevo socio</button>
+              </div>
+            </div>
+            {socios.length===0 && <div style={{...S.card,textAlign:"center",color:"#9a9a9a",fontWeight:600}}>Sin socios. Hacé click en 🔄 Cargar.</div>}
+            {socios.map(s=>(
+              <div key={s.id} style={{...S.card,marginBottom:"10px"}}>
+                <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
+                  <div style={{width:"40px",height:"40px",borderRadius:"50%",background:s.tipo==="principal"?"linear-gradient(135deg,#d4a017,#f0c040)":"linear-gradient(135deg,#3a7bd5,#5dade2)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"18px",flexShrink:0}}>
+                    {s.tipo==="principal"?"👑":"🤝"}
+                  </div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:"14px",fontWeight:900,color:"#1a2a3a"}}>{s.usuarios?.nombre_usuario||"—"} <span style={{fontSize:"11px",fontWeight:700,color:s.tipo==="principal"?"#d4a017":"#3a7bd5",background:s.tipo==="principal"?"rgba(212,160,23,0.1)":"rgba(58,123,213,0.1)",padding:"2px 8px",borderRadius:"10px"}}>{s.tipo.toUpperCase()}</span></div>
+                    <div style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600}}>{s.usuarios?.email} · {s.region||"Nacional"} · Código: {s.codigo_referido||"—"}</div>
+                    <div style={{display:"flex",gap:"10px",marginTop:"4px"}}>
+                      <span style={{fontSize:"11px",fontWeight:800,color:"#27ae60"}}>📈 {s.porcentaje}%</span>
+                      <span style={{fontSize:"11px",fontWeight:800,color:"#d4a017"}}>🪙 {(s.bits_promotor_acumulado||0).toLocaleString()} acum.</span>
+                      <span style={{fontSize:"11px",fontWeight:800,color:"#8e44ad"}}>💸 {(s.bits_promotor_reintegrado||0).toLocaleString()} reint.</span>
+                      <span style={{fontSize:"11px",fontWeight:800,color:s.activo?"#27ae60":"#e74c3c"}}>{s.activo?"✅ Activo":"❌ Inactivo"}</span>
+                    </div>
+                  </div>
+                  <div style={{display:"flex",gap:"4px",flexShrink:0}}>
+                    <button onClick={()=>setModalSocio({...s,porcentaje:String(s.porcentaje),_buscar:""})} style={{...S.btn("#3a7bd5",true),padding:"5px 8px"}}>✏️</button>
+                    <button onClick={()=>setModalReintegro(s)} style={{...S.btn("#d4a017",true),padding:"5px 8px"}}>💸</button>
+                    <button onClick={async()=>{await supabase.from("socios_comerciales").update({activo:!s.activo}).eq("id",s.id);await cargarSocios();}} style={{...S.btn(s.activo?"#e74c3c":"#27ae60",true),padding:"5px 8px"}}>{s.activo?"⏸":"▶"}</button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </>
+        )}
       </div>
+
+      {/* ══ MODAL SOCIO ══════════════════════════════════════════════════ */}
+      {modalSocio && (
+        <Modal titulo={modalSocio.id?"✏️ Editar socio":"➕ Nuevo socio"} onClose={()=>setModalSocio(null)}>
+          <label style={S.label}>Buscar usuario por email o código NXN</label>
+          <div style={{display:"flex",gap:"6px",marginBottom:"10px"}}>
+            <input style={{...S.input,flex:1}} placeholder="email o NXN-XXXXX" value={modalSocio._buscar||""} onChange={e=>setModalSocio({...modalSocio,_buscar:e.target.value})} />
+            <button onClick={async()=>{
+              const q = modalSocio._buscar?.trim();
+              if(!q) return;
+              const {data} = await supabase.from("usuarios").select("id,nombre_usuario,email,codigo").or(`email.eq.${q},codigo.eq.${q}`).limit(1).single();
+              if(data) { setModalSocio({...modalSocio,usuario_id:data.id,_usuario:data}); showToast(`Encontrado: ${data.nombre_usuario}`); }
+              else showToast("Usuario no encontrado");
+            }} style={S.btn("#3a7bd5")}>🔍</button>
+          </div>
+          {modalSocio._usuario && <div style={{fontSize:"12px",fontWeight:700,color:"#27ae60",marginBottom:"10px"}}>✅ {modalSocio._usuario.nombre_usuario} ({modalSocio._usuario.email})</div>}
+          <label style={S.label}>Tipo</label>
+          <select style={{...S.input,marginBottom:"10px"}} value={modalSocio.tipo} onChange={e=>setModalSocio({...modalSocio,tipo:e.target.value})}>
+            <option value="principal">👑 Principal</option>
+            <option value="regional">🤝 Regional</option>
+          </select>
+          <label style={S.label}>Porcentaje (%)</label>
+          <input type="number" style={{...S.input,marginBottom:"10px"}} value={modalSocio.porcentaje} onChange={e=>setModalSocio({...modalSocio,porcentaje:e.target.value})} />
+          {modalSocio.tipo==="regional" && (<><label style={S.label}>Región</label><input style={{...S.input,marginBottom:"10px"}} placeholder="Rosario, Santa Fe" value={modalSocio.region||""} onChange={e=>setModalSocio({...modalSocio,region:e.target.value})} /></>)}
+          <label style={S.label}>Código de referido</label>
+          <input style={{...S.input,marginBottom:"16px"}} placeholder="SR-ROSARIO" value={modalSocio.codigo_referido||""} onChange={e=>setModalSocio({...modalSocio,codigo_referido:e.target.value})} />
+          <button onClick={()=>guardarSocio(modalSocio)} style={S.btn("#27ae60")} disabled={!modalSocio.usuario_id}>💾 Guardar socio</button>
+        </Modal>
+      )}
+
+      {/* ══ MODAL REINTEGRO ══════════════════════════════════════════════ */}
+      {modalReintegro && (
+        <Modal titulo="💸 Registrar reintegro" onClose={()=>{setModalReintegro(null);setReintegroCant("");}}>
+          <div style={{fontSize:"13px",color:"#9a9a9a",fontWeight:700,marginBottom:"12px"}}>
+            Socio: {modalReintegro.usuarios?.nombre_usuario} · Acumulado: {(modalReintegro.bits_promotor_acumulado||0).toLocaleString()} · Ya reintegrado: {(modalReintegro.bits_promotor_reintegrado||0).toLocaleString()}
+          </div>
+          <label style={S.label}>Cantidad a reintegrar</label>
+          <input type="number" style={{...S.input,marginBottom:"16px"}} placeholder="5000" value={reintegroCant} onChange={e=>setReintegroCant(e.target.value)} />
+          <button onClick={registrarReintegro} style={S.btn("#d4a017")} disabled={!reintegroCant}>💸 Registrar reintegro de {reintegroCant||"0"} BIT</button>
+        </Modal>
+      )}
 
       {/* ══ MODAL VER USUARIO ══════════════════════════════════════════════════ */}
       {modalUsuario && (

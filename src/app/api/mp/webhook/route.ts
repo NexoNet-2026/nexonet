@@ -172,6 +172,13 @@ export async function POST(req: NextRequest) {
     });
 
     console.log(`✅ Acreditados ${pkg.cantidad} en ${pkg.col} para usuario ${usuario_id}`);
+
+    // Acreditar socios comerciales
+    try {
+      const { acreditarSocios } = await import("@/lib/socios");
+      await acreditarSocios(usuario_id, pkg.cantidad);
+    } catch (_) {}
+
     return NextResponse.json({ ok: true });
 
   } catch (err) {

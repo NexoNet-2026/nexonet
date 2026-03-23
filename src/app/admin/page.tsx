@@ -620,7 +620,7 @@ export default function AdminPanel() {
 
   // ── Socios comerciales ──
   const cargarSocios = async () => {
-    const {data} = await supabase.from("socios_comerciales").select("*,usuarios(nombre_usuario,email,codigo)").order("created_at",{ascending:false});
+    const {data} = await supabase.from("socios_comerciales").select("*,usuarios(id,nombre_usuario,email,codigo,avatar_url)").order("created_at",{ascending:false});
     setSocios(data||[]);
   };
   const guardarSocio = async (s:any) => {

@@ -1133,6 +1133,7 @@ export default function AdminPanel() {
               <input style={{...S.input,flex:1}} placeholder="🔍 Buscar por nombre, email o código..." value={busqUser} onChange={e=>setBusqUser(e.target.value)} />
               <button onClick={()=>setModalCrearUser(true)} style={S.btn("#27ae60")}>+ Crear</button>
               <button onClick={()=>setModalCrearBot(true)} style={S.btn("#8e44ad")}>🤖 Bot</button>
+              <button onClick={()=>router.push("/admin/usuarios-internos")} style={S.btn("#6c3483")}>🤖 Gestionar bots</button>
             </div>
             <div style={S.card}>
               <div style={{display:"flex",gap:"6px",flexWrap:"wrap"}}>

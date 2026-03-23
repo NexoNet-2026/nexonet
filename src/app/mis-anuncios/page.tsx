@@ -41,6 +41,7 @@ export default function MisAnuncios() {
   const [loading,   setLoading]   = useState(true);
   const [perfil,    setPerfil]    = useState<any>(null);
   const [session,   setSession]   = useState<any>(null);
+  const [waSoporte, setWaSoporte] = useState("5493413251818");
 
   const [popupPlan,   setPopupPlan]   = useState(false);
   const [popupBits,   setPopupBits]   = useState(false);
@@ -78,6 +79,7 @@ export default function MisAnuncios() {
     const { data: lista } = await supabase
       .from("anuncios").select("*").eq("usuario_id", session.user.id)
       .order("created_at", { ascending: false });
+    supabase.from("config_global").select("valor").eq("clave","whatsapp_soporte").single().then(({data})=>{if(data?.valor)setWaSoporte(data.valor);});
     if (lista) {
       setAnuncios(lista as Anuncio[]);
       const m: Record<string, string[]> = {};
@@ -299,6 +301,15 @@ export default function MisAnuncios() {
                 </span>
               </div>
 
+              {!activo && (
+                <div style={{margin:"0 14px 8px",display:"flex",gap:"8px",alignItems:"center"}}>
+                  <div style={{flex:1,fontSize:"11px",fontWeight:700,color:"#e67e22"}}>⚠️ Anuncio pausado — activá la renovación o contactá soporte</div>
+                  <a href={`https://wa.me/${waSoporte}?text=${encodeURIComponent("Hola NexoNet, necesito ayuda con mi anuncio: " + a.titulo)}`} target="_blank" rel="noopener noreferrer"
+                    style={{background:"#25D366",color:"#fff",borderRadius:"10px",padding:"6px 12px",fontSize:"11px",fontWeight:800,textDecoration:"none",fontFamily:"'Nunito',sans-serif",whiteSpace:"nowrap",flexShrink:0}}>
+                    💬 Soporte
+                  </a>
+                </div>
+              )}
               <div style={{ display:"flex", gap:"8px", padding:"0 14px 12px" }}>
                 <button onClick={() => router.push(`/anuncios/${a.id}`)} style={Btn("#f4f4f2","#1a2a3a","none")}>
                   👁️ Ver

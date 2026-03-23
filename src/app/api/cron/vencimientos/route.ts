@@ -34,6 +34,11 @@ export async function GET(req: Request) {
   const dia1 = fechaEnDias(1);
   const dia3 = fechaEnDias(3);
 
+  // Cargar número de WhatsApp de soporte
+  const { data: waConfig } = await supabase.from("config_global").select("valor").eq("clave","whatsapp_soporte").single();
+  const wa = waConfig?.valor || "5493413251818";
+  const waLink = (txt: string) => `https://wa.me/${wa}?text=${encodeURIComponent(txt)}`;
+
   // ═══════════════════════════════════════════════════════════════
   // 1. ANUNCIOS VENCIDOS → pausar o auto-renovar
   // ═══════════════════════════════════════════════════════════════
@@ -55,7 +60,7 @@ export async function GET(req: Request) {
       res.avisos++;
     } else {
       await supabase.from("anuncios").update({ estado: "pausado" }).eq("id", a.id);
-      await supabase.from("notificaciones").insert({ usuario_id: a.usuario_id, tipo: "sistema", leida: false, mensaje: `⚠️ Tu anuncio "${a.titulo}" fue pausado por vencimiento. Renovalo desde Mis Anuncios.` });
+      await supabase.from("notificaciones").insert({ usuario_id: a.usuario_id, tipo: "sistema", leida: false, mensaje: `⚠️ Tu anuncio "${a.titulo}" fue pausado por vencimiento. Renovalo desde Mis Anuncios o escribinos: ${waLink("Hola NexoNet, quiero renovar mi anuncio " + a.titulo)}` });
       if (usuario?.email) { await enviarEmail(usuario.email, `⚠️ Anuncio pausado: ${a.titulo}`, emailVencimiento(usuario.nombre || "Usuario", "anuncio", a.titulo, 0, "https://nexonet.vercel.app/mis-anuncios")); res.emails++; }
       res.avisos++;
     }
@@ -82,7 +87,7 @@ export async function GET(req: Request) {
       res.avisos++;
     } else {
       await supabase.from("nexos").update({ estado: "pausado" }).eq("id", e.id);
-      await supabase.from("notificaciones").insert({ usuario_id: e.usuario_id, tipo: "sistema", leida: false, mensaje: `⚠️ Tu empresa "${e.titulo}" fue pausada por vencimiento. Renovála desde tu panel.` });
+      await supabase.from("notificaciones").insert({ usuario_id: e.usuario_id, tipo: "sistema", leida: false, mensaje: `⚠️ Tu empresa "${e.titulo}" fue pausada por vencimiento. Renovála desde tu panel o escribinos: ${waLink("Hola NexoNet, quiero renovar mi empresa " + e.titulo)}` });
       if (usuario?.email) { await enviarEmail(usuario.email, `⚠️ Empresa pausada: ${e.titulo}`, emailVencimiento(usuario.nombre || "Usuario", "empresa", e.titulo, 0, `https://nexonet.vercel.app/nexo/${e.id}/admin`)); res.emails++; }
       res.avisos++;
     }
@@ -113,7 +118,7 @@ export async function GET(req: Request) {
       res.avisos++;
     } else {
       await supabase.from("nexo_miembros").update({ estado: "vencido" }).eq("id", m.id);
-      await supabase.from("notificaciones").insert({ usuario_id: m.usuario_id, tipo: "sistema", leida: false, mensaje: `⚠️ Tu membresía en "${nexo?.titulo}" venció. Recargá BIT para renovarla.` });
+      await supabase.from("notificaciones").insert({ usuario_id: m.usuario_id, tipo: "sistema", leida: false, mensaje: `⚠️ Tu membresía en "${nexo?.titulo}" venció. Recargá BIT o escribinos: ${waLink("Hola NexoNet, quiero renovar mi membresía en " + (nexo?.titulo||""))}` });
       if (usuario?.email) { await enviarEmail(usuario.email, `⚠️ Membresía vencida: ${nexo?.titulo}`, emailVencimiento(usuario.nombre || "Usuario", "membresía de grupo", nexo?.titulo || "", 0, `https://nexonet.vercel.app/nexo/${m.nexo_id}`)); res.emails++; }
       res.avisos++;
     }

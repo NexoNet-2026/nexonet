@@ -6,7 +6,7 @@ import { supabase } from "@/lib/supabase";
 const ADMIN_UUID = "ab56253d-b92e-4b73-a19a-3cd0cd95c458";
 
 type Tab = "dashboard"|"usuarios"|"anuncios"|"grupos"|"mensajes"|"promotores"|"pagos"|"alarmas"|"config"|"contactos"|"reclamos";
-type ConfigSub = "anuncios"|"empresas"|"servicios"|"trabajo"|"grupos"|"filtros_ia";
+type ConfigSub = "anuncios"|"empresas"|"servicios"|"trabajo"|"grupos"|"filtros_ia"|"general";
 
 const S = {
   card:  { background:"#fff", borderRadius:"16px", padding:"20px", boxShadow:"0 2px 12px rgba(0,0,0,0.07)", marginBottom:"14px" } as React.CSSProperties,
@@ -116,6 +116,9 @@ export default function AdminPanel() {
   // Filtros IA globales
   const [filtrosIAGlobal, setFiltrosIAGlobal] = useState<any[]>([]);
   const [modalFiltroIA, setModalFiltroIA] = useState<any>(null);
+  // Config global
+  const [configGlobal, setConfigGlobal] = useState<any[]>([]);
+  const [configGuardando, setConfigGuardando] = useState<string|null>(null);
 
   // Crear usuario
   const [modalCrearUser, setModalCrearUser] = useState(false);
@@ -596,6 +599,18 @@ export default function AdminPanel() {
     const nuevos = [...filtrosIAGlobal];
     [nuevos[idx], nuevos[dir==="up"?idx-1:idx+1]] = [nuevos[dir==="up"?idx-1:idx+1], nuevos[idx]];
     setFiltrosIAGlobal(nuevos);
+  };
+
+  // ── Config global ──
+  const cargarConfigGlobal = async () => {
+    const {data} = await supabase.from("config_global").select("*").order("clave");
+    setConfigGlobal(data||[]);
+  };
+  const guardarConfigGlobal = async (clave:string, valor:string) => {
+    setConfigGuardando(clave);
+    await supabase.from("config_global").update({valor, updated_at:new Date().toISOString()}).eq("clave",clave);
+    setConfigGuardando(null);
+    showToast("✅ Configuración guardada");
   };
 
   // ── Crear usuario ──
@@ -1376,15 +1391,40 @@ export default function AdminPanel() {
             {/* SUBTABS */}
             <div style={{display:"flex",gap:"6px",flexWrap:"wrap",marginBottom:"14px"}}>
               {([
-                ["anuncios","📋","Anuncios"],["empresas","🏢","Empresas"],["servicios","🛠️","Servicios"],
+                ["general","⚙️","General"],["anuncios","📋","Anuncios"],["empresas","🏢","Empresas"],["servicios","🛠️","Servicios"],
                 ["trabajo","💼","Trabajo"],["grupos","🏘️","Grupos"],["filtros_ia","🤖","Filtros IA"],
               ] as [ConfigSub,string,string][]).map(([id,e,l])=>(
-                <button key={id} onClick={()=>{setConfigSub(id);if(["empresas","servicios","trabajo"].includes(id))cargarEntRubros(id);}}
+                <button key={id} onClick={()=>{setConfigSub(id);if(["empresas","servicios","trabajo"].includes(id))cargarEntRubros(id);if(id==="general")cargarConfigGlobal();}}
                   style={{...S.btn(configSub===id?"#d4a017":"#9a9a9a",configSub!==id),padding:"6px 14px",fontSize:"12px"}}>
                   {e} {l}
                 </button>
               ))}
             </div>
+
+            {/* ── GENERAL config_global ── */}
+            {configSub==="general" && (
+              <div style={S.card}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"14px"}}>
+                  <div style={S.sect}>⚙️ Configuración general</div>
+                  <button onClick={cargarConfigGlobal} style={S.btn("#3a7bd5")}>🔄 Recargar</button>
+                </div>
+                {configGlobal.length===0 && <div style={{fontSize:"13px",color:"#9a9a9a",fontWeight:600}}>Sin configuraciones. Hacé click en 🔄 Recargar o ejecutá el SQL 020.</div>}
+                {configGlobal.map((c:any)=>(
+                  <div key={c.clave} style={{padding:"12px 0",borderBottom:"1px solid #f4f4f2"}}>
+                    <div style={{fontSize:"10px",fontWeight:800,color:"#9a9a9a",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"4px"}}>{c.descripcion||c.clave}</div>
+                    <div style={{display:"flex",gap:"8px",alignItems:"center"}}>
+                      <input value={c.valor} onChange={e=>setConfigGlobal(prev=>prev.map(x=>x.clave===c.clave?{...x,valor:e.target.value}:x))}
+                        style={{...S.input,flex:1,marginBottom:0}} />
+                      <button onClick={()=>guardarConfigGlobal(c.clave,c.valor)} disabled={configGuardando===c.clave}
+                        style={{...S.btn("#27ae60"),padding:"8px 14px",fontSize:"12px",opacity:configGuardando===c.clave?0.6:1}}>
+                        {configGuardando===c.clave?"⏳":"💾"}
+                      </button>
+                    </div>
+                    <div style={{fontSize:"10px",color:"#bbb",fontWeight:600,marginTop:"4px"}}>clave: {c.clave} · actualizado: {c.updated_at?new Date(c.updated_at).toLocaleDateString("es-AR"):"-"}</div>
+                  </div>
+                ))}
+              </div>
+            )}
 
             {/* ── ANUNCIOS rubros ── */}
             {configSub==="anuncios" && (

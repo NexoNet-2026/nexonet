@@ -37,6 +37,7 @@ export default function NexoPage() {
   const [texto,     setTexto]     = useState("");
   const [enviando,  setEnviando]  = useState(false);
   const [cargando,  setCargando]  = useState(true);
+  const [waSoporte, setWaSoporte] = useState("5493413251818");
   const [visor,     setVisor]     = useState<any>(null);
   const [pagandoDescarga, setPagandoDescarga] = useState<string|null>(null);
   const [descargasPagadas, setDescargasPagadas] = useState<Set<string>>(new Set());
@@ -139,6 +140,7 @@ export default function NexoPage() {
       }
 
       setCargando(false);
+      supabase.from("config_global").select("valor").eq("clave","whatsapp_soporte").single().then(({data})=>{if(data?.valor)setWaSoporte(data.valor);});
     };
     cargar();
   }, [id]);
@@ -401,6 +403,12 @@ export default function NexoPage() {
                 }} style={{background:"linear-gradient(135deg,#e74c3c,#c0392b)",border:"none",borderRadius:"10px",padding:"8px 14px",fontSize:"12px",fontWeight:900,color:"#fff",cursor:"pointer",fontFamily:"'Nunito',sans-serif",display:"flex",alignItems:"center",gap:"6px"}}>
                   ⚠️ Membresía vencida — 💳 Renovar (500 BIT)
                 </button>
+              )}
+              {miMiembro?.estado==="vencido" && (
+                <a href={`https://wa.me/${waSoporte}?text=${encodeURIComponent("Hola NexoNet, necesito ayuda con mi membresía en " + (nexo?.titulo||""))}`} target="_blank" rel="noopener noreferrer"
+                  style={{background:"#25D366",color:"#fff",borderRadius:"10px",padding:"8px 16px",fontSize:"12px",fontWeight:800,textDecoration:"none",fontFamily:"'Nunito',sans-serif"}}>
+                  💬 WhatsApp soporte
+                </a>
               )}
               {miMiembro?.rol === "admin_solicitado" && <div style={{ background:"rgba(212,160,23,0.15)", border:"1px solid rgba(212,160,23,0.4)", borderRadius:"10px", padding:"7px 12px", fontSize:"11px", fontWeight:800, color:"#d4a017" }}>⭐ Admin solicitado</div>}
               {miMiembro?.rol === "admin_pago_pendiente" && (

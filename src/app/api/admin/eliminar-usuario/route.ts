@@ -38,17 +38,12 @@ export async function POST(req: Request) {
     await supabase.from("usuarios").delete().eq("id", usuario_id);
 
     // Eliminar de auth.users
-    console.log("Intentando eliminar auth user:", usuario_id);
-    console.log("URL:", process.env.NEXT_PUBLIC_SUPABASE_URL);
-    console.log("Service key existe:", !!process.env.SUPABASE_SERVICE_ROLE_KEY);
-
     const { error: authError } = await supabase.auth.admin.deleteUser(usuario_id);
-    console.log("Auth delete result:", authError);
 
-    if (authError) {
+    // "User not found" significa que ya fue eliminado de auth — no es error fatal
+    if (authError && !authError.message.includes("User not found") && !authError.message.includes("not found")) {
       return NextResponse.json({
         error: authError.message,
-        code: (authError as any).status,
         details: JSON.stringify(authError),
       }, { status: 500 });
     }

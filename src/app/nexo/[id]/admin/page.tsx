@@ -213,6 +213,7 @@ export default function NexoAdminPage() {
       precio_bits: parseInt(formItem.precio_bits)||0,
       orden: (sliderItems[popupItem.slider.id]||[]).length,
       publicado_por: perfil.id,
+      vence_el: new Date(Date.now() + 30*24*60*60*1000).toISOString(),
     }).select().single();
     if (data) {
       setSliderItems(prev => ({ ...prev, [popupItem.slider.id]: [...(prev[popupItem.slider.id]||[]), data] }));
@@ -235,6 +236,7 @@ export default function NexoAdminPage() {
       url:formDesc.url, precio_bits:precioBits,
       tipo_archivo:formDesc.tipo_archivo,
       rights_declared:true, rights_declared_at:new Date().toISOString(),
+      vence_el: new Date(Date.now() + 30*24*60*60*1000).toISOString(),
     }).select().single();
     if (data) setDescargas(prev=>[data,...prev]);
     // También insertar en nexo_slider_items si existe slider tipo "descargas"
@@ -247,6 +249,7 @@ export default function NexoAdminPage() {
         precio_bits:precioBits,
         orden:(sliderItems[sliderDesc.id]||[]).length,
         publicado_por:perfil.id,
+        vence_el: new Date(Date.now() + 30*24*60*60*1000).toISOString(),
       }).select().single();
       if (si) setSliderItems(prev=>({...prev,[sliderDesc.id]:[...(prev[sliderDesc.id]||[]),si]}));
     }

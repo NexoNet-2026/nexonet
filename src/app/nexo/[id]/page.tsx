@@ -264,6 +264,21 @@ export default function NexoPage() {
     setEnviando(false);
   };
 
+  const abrirDescarga = async (url: string) => {
+    // Intentar URL firmada (funciona si el bucket es privado)
+    try {
+      const storagePath = url.includes("/nexos/") ? url.split("/nexos/")[1]?.split("?")[0] : null;
+      const bucket = url.includes("/nexos-descargas/") ? "nexos-descargas" : "nexos";
+      const path = url.includes("/nexos-descargas/") ? url.split("/nexos-descargas/")[1]?.split("?")[0] : storagePath;
+      if (path) {
+        const { data } = await supabase.storage.from(bucket).createSignedUrl(path, 300);
+        if (data?.signedUrl) { window.open(data.signedUrl, "_blank"); return; }
+      }
+    } catch (_) {}
+    // Fallback a URL directa (bucket público)
+    window.open(url, "_blank");
+  };
+
   const pagarDescarga = async (descarga: any, metodo?: MetodoPago) => {
     if (!perfil) { router.push("/login"); return; }
     const costo = descarga.precio_bits;
@@ -310,7 +325,7 @@ export default function NexoPage() {
       await supabase.from("nexo_slider_items").update({ descargas: (descarga.descargas || 0) + 1 }).eq("id", descarga.id);
 
       setDescargasPagadas(prev => new Set([...prev, descarga.id]));
-      window.open(descarga.url, "_blank");
+      await abrirDescarga(descarga.url);
     } catch (err: any) {
       console.error("Error inesperado en pagarDescarga:", err);
       alert("Error inesperado: " + (err?.message || "Intentá de nuevo"));
@@ -509,6 +524,7 @@ export default function NexoPage() {
           onEnviar={enviarMensaje}
           onVisor={setVisor}
           onPagarDescarga={setPopupPagoDescarga}
+          onAbrirDescarga={abrirDescarga}
           bottomRef={bottomRef}
           colorNexo={colorNexo}
         />}
@@ -595,7 +611,7 @@ const SLIDER_EMOJIS: Record<string,string> = {
   mensajes:"💬", chat:"💬", personalizado:"✨",
 };
 
-function SliderContenido({ slider, items, mensajes, perfil, nexo, esAdmin, esMiembro, descargasPagadas, pagandoDescarga, miembros, texto, setTexto, enviando, onEnviar, onVisor, onPagarDescarga, bottomRef, colorNexo }: any) {
+function SliderContenido({ slider, items, mensajes, perfil, nexo, esAdmin, esMiembro, descargasPagadas, pagandoDescarga, miembros, texto, setTexto, enviando, onEnviar, onVisor, onPagarDescarga, onAbrirDescarga, bottomRef, colorNexo }: any) {
   const tipo = slider.tipo;
 
   // CHAT
@@ -681,10 +697,10 @@ function SliderContenido({ slider, items, mensajes, perfil, nexo, esAdmin, esMie
                   <span style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:600 }}>📥 {item.descargas||0} descargas</span>
                 </div>
                 {gratis || yaPago ? (
-                  <a href={item.url} target="_blank" rel="noopener noreferrer"
-                    style={{ display:"block", textAlign:"center", background:"linear-gradient(135deg,#27ae60,#1e8449)", borderRadius:"12px", padding:"12px", fontSize:"14px", fontWeight:900, color:"#fff", textDecoration:"none", boxShadow:"0 3px 0 #155a2e" }}>
+                  <button onClick={()=>onAbrirDescarga(item.url)}
+                    style={{ width:"100%", border:"none", cursor:"pointer", fontFamily:"'Nunito',sans-serif", textAlign:"center", background:"linear-gradient(135deg,#27ae60,#1e8449)", borderRadius:"12px", padding:"12px", fontSize:"14px", fontWeight:900, color:"#fff", boxShadow:"0 3px 0 #155a2e" }}>
                     📥 {yaPago?"Descargar de nuevo":"Descargar gratis"}
-                  </a>
+                  </button>
                 ) : (esMiembro||esAdmin) ? (
                   <button onClick={()=>onPagarDescarga(item)} disabled={!!procesando}
                     style={{ width:"100%", background:`linear-gradient(135deg,${colorNexo}cc,${colorNexo})`, border:"none", borderRadius:"12px", padding:"12px", fontSize:"14px", fontWeight:900, color:"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif", boxShadow:`0 3px 0 ${colorNexo}88` }}>

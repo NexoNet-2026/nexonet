@@ -149,8 +149,19 @@ export default function Header() {
     return `${Math.floor(diff/86400)}d`;
   };
 
+  // ── Calcular y exponer altura del header como CSS variable ──
+  useEffect(() => {
+    const updateHeight = () => {
+      const h = document.getElementById("nexonet-header");
+      if (h) document.documentElement.style.setProperty("--header-height", h.offsetHeight + "px");
+    };
+    updateHeight();
+    window.addEventListener("resize", updateHeight);
+    return () => window.removeEventListener("resize", updateHeight);
+  }, [pushBanner]);
+
   return (
-    <div style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 100 }}>
+    <div id="nexonet-header" style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 100 }}>
 
       {/* BANNER PUSH */}
       {pushBanner && userId && (

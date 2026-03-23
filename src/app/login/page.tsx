@@ -43,7 +43,7 @@ export default function Login() {
 
   // ── MODO RECUPERACIÓN ──────────────────────────────────────────
   if (modoRecup) return (
-    <main style={{ paddingTop:"90px", paddingBottom:"130px", background:"#f4f4f2", minHeight:"100vh", fontFamily:"'Nunito',sans-serif" }}>
+    <main style={{ paddingTop:"95px", paddingBottom:"130px", background:"#f4f4f2", minHeight:"100vh", fontFamily:"'Nunito',sans-serif" }}>
       <Header />
       <div style={{ padding:"24px 16px", maxWidth:"400px", margin:"0 auto" }}>
         <div style={{ textAlign:"center", marginBottom:"28px" }}>
@@ -91,7 +91,7 @@ export default function Login() {
 
   // ── MODO LOGIN ─────────────────────────────────────────────────
   return (
-    <main style={{ paddingTop:"90px", paddingBottom:"130px", background:"#f4f4f2", minHeight:"100vh", fontFamily:"'Nunito',sans-serif" }}>
+    <main style={{ paddingTop:"95px", paddingBottom:"130px", background:"#f4f4f2", minHeight:"100vh", fontFamily:"'Nunito',sans-serif" }}>
       <Header />
       <div style={{ padding:"24px 16px", maxWidth:"400px", margin:"0 auto" }}>
 

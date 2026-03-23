@@ -76,7 +76,7 @@ export default function Tienda() {
   };
 
   if (cargando) return (
-    <main style={{ paddingTop:"80px", textAlign:"center", color:"#9a9a9a", fontFamily:"'Nunito',sans-serif" }}>Cargando...</main>
+    <main style={{ paddingTop:"95px", textAlign:"center", color:"#9a9a9a", fontFamily:"'Nunito',sans-serif" }}>Cargando...</main>
   );
 
   return (
@@ -84,7 +84,7 @@ export default function Tienda() {
       <Header />
 
       {/* HERO */}
-      <div style={{ background:"linear-gradient(135deg,#1a2a3a 0%,#243b55 100%)", paddingTop:"80px", paddingBottom:"0" }}>
+      <div style={{ background:"linear-gradient(135deg,#1a2a3a 0%,#243b55 100%)", paddingTop:"95px", paddingBottom:"0" }}>
         <div style={{ padding:"20px 16px 0" }}>
           <div style={{ display:"flex", alignItems:"center", gap:"14px", marginBottom:"20px" }}>
             <div style={{ width:"56px", height:"56px", borderRadius:"16px", background:"rgba(212,160,23,0.2)", border:"2px solid #d4a017", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"28px" }}>💰</div>

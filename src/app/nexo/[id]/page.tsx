@@ -335,8 +335,8 @@ export default function NexoPage() {
     setPagandoDescarga(null);
   };
 
-  if (cargando) return <main style={{ paddingTop:"80px", textAlign:"center", color:"#9a9a9a", fontFamily:"'Nunito',sans-serif" }}>Cargando...</main>;
-  if (!nexo)    return <main style={{ paddingTop:"80px", textAlign:"center", color:"#9a9a9a", fontFamily:"'Nunito',sans-serif" }}>Nexo no encontrado</main>;
+  if (cargando) return <main style={{ paddingTop:"95px", textAlign:"center", color:"#9a9a9a", fontFamily:"'Nunito',sans-serif" }}>Cargando...</main>;
+  if (!nexo)    return <main style={{ paddingTop:"95px", textAlign:"center", color:"#9a9a9a", fontFamily:"'Nunito',sans-serif" }}>Nexo no encontrado</main>;
 
   const sliderActual = páginas.find(s=>s.id===tabActiva);
   const esChat       = sliderActual?.tipo === "mensajes" || sliderActual?.tipo === "chat";

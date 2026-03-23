@@ -61,7 +61,7 @@ export default function PromoterPage() {
   };
 
   if (cargando) return (
-    <main style={{ paddingTop: "80px", fontFamily: "'Nunito',sans-serif", textAlign: "center", color: "#9a9a9a" }}>
+    <main style={{ paddingTop: "95px", fontFamily: "'Nunito',sans-serif", textAlign: "center", color: "#9a9a9a" }}>
       Cargando...
     </main>
   );
@@ -71,7 +71,7 @@ export default function PromoterPage() {
   const totalGanado  = perfil?.bits_promotor_total || 0;
 
   return (
-    <main style={{ paddingTop: "80px", paddingBottom: "100px", fontFamily: "'Nunito',sans-serif", background: "#f4f4f2", minHeight: "100vh" }}>
+    <main style={{ paddingTop: "95px", paddingBottom: "100px", fontFamily: "'Nunito',sans-serif", background: "#f4f4f2", minHeight: "100vh" }}>
       <Header />
 
       {/* HERO */}

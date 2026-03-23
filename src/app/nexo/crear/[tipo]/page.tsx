@@ -151,9 +151,12 @@ function NexoCrearInner() {
         supabase.from(ent.subrubros).select(subSelect).order("orden",{ascending:true}),
       ]).then(([{data:er},{data:es}]) => {
         if (er) setEntRubros(er);
-        if (es) setEntSubrubros(tipo==="grupo"
-          ? es.map((s:any)=>({id:s.id, nombre:s.nombre, rubro_id:s.categoria_id}))
-          : es
+        if (es) setEntSubrubros(
+          (es as any[]).map((s:any)=>({
+            id: s.id,
+            nombre: s.nombre,
+            rubro_id: s.rubro_id ?? s.categoria_id ?? 0,
+          }))
         );
       });
     }

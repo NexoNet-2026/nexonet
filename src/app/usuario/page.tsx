@@ -269,11 +269,23 @@ export default function Usuario() {
   const guardar = async () => {
     const { data:{ session } } = await supabase.auth.getSession();
     if (!session) return;
+    if (!personal.nombre_usuario?.trim()) {
+      alert("El nombre de usuario no puede estar vacío");
+      return;
+    }
     setGuardando(true);
     const { error } = await supabase.from("usuarios").update({
-      nombre_usuario:personal.nombre_usuario, nombre:personal.nombre, apellido:personal.apellido,
-      whatsapp:personal.whatsapp, provincia:personal.provincia, ciudad:personal.ciudad,
-      vis_personal:visP,
+      nombre_usuario: personal.nombre_usuario,
+      nombre: personal.nombre,
+      apellido: personal.apellido,
+      whatsapp: personal.whatsapp,
+      provincia: personal.provincia,
+      ciudad: personal.ciudad,
+      barrio: personal.barrio || null,
+      direccion: personal.direccion || null,
+      lat: personal.lat || null,
+      lng: personal.lng || null,
+      vis_personal: visP,
     }).eq("id", session.user.id);
     setGuardando(false);
     if (error) {

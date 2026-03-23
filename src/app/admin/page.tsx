@@ -318,10 +318,19 @@ export default function AdminPanel() {
     showToast(nuevo?"Usuario bloqueado":"Usuario desbloqueado");
   };
   const eliminarUsuario = async (u:any) => {
-    if (!confirm(`¿Eliminar a ${u.nombre_usuario}?`)) return;
-    await supabase.from("usuarios").delete().eq("id",u.id);
-    setUsuarios(prev=>prev.filter(x=>x.id!==u.id));
-    showToast("Usuario eliminado");
+    if (!confirm(`¿Eliminar a ${u.nombre_usuario}? Esta acción no se puede deshacer.`)) return;
+    const res = await fetch("/api/admin/eliminar-usuario", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ usuario_id: u.id }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      alert("Error al eliminar: " + (data.error || "Error desconocido"));
+      return;
+    }
+    setUsuarios(prev => prev.filter(x => x.id !== u.id));
+    showToast("✅ Usuario eliminado correctamente");
   };
   const asignarBit = async () => {
     if (!modalBit||!bitCant) return;

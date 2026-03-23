@@ -93,7 +93,7 @@ export async function POST(req: NextRequest) {
     // Acreditar BIT + recalcular insignia de logro
     const acumuladoActual = (usuario as any).bits_totales_acumulados || 0;
     const nuevoAcumulado  = acumuladoActual + (pkg.ilimitado ? 99999 : pkg.cantidad);
-    const NIVELES_LOGRO: [string, number][] = [["diamante",10000],["platino",5000],["oro",1000],["plata",500],["bronce",100],["ninguna",0]];
+    const NIVELES_LOGRO: [string, number][] = [["diamante",20000000],["platino",10000000],["oro",5000000],["plata",1000000],["bronce",100000],["ninguna",0]];
     const insignia = NIVELES_LOGRO.find(([, min]) => nuevoAcumulado >= min)?.[0] || "ninguna";
     await supabase.from("usuarios").update({
       [pkg.col]: nuevo,

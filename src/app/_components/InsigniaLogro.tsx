@@ -2,11 +2,11 @@
 
 const NIVELES = [
   { nivel: "ninguna",  emoji: "🌱", nombre: "Nuevo",    color: "#9a9a9a", min: 0 },
-  { nivel: "bronce",   emoji: "🥉", nombre: "Bronce",   color: "#cd7f32", min: 100 },
-  { nivel: "plata",    emoji: "🥈", nombre: "Plata",    color: "#a0a0a0", min: 500 },
-  { nivel: "oro",      emoji: "🥇", nombre: "Oro",      color: "#d4a017", min: 1000 },
-  { nivel: "platino",  emoji: "💎", nombre: "Platino",  color: "#8e44ad", min: 5000 },
-  { nivel: "diamante", emoji: "👑", nombre: "Diamante", color: "#e74c3c", min: 10000 },
+  { nivel: "bronce",   emoji: "🥉", nombre: "Bronce",   color: "#cd7f32", min: 100000 },
+  { nivel: "plata",    emoji: "🥈", nombre: "Plata",    color: "#a0a0a0", min: 1000000 },
+  { nivel: "oro",      emoji: "🥇", nombre: "Oro",      color: "#d4a017", min: 5000000 },
+  { nivel: "platino",  emoji: "💎", nombre: "Platino",  color: "#8e44ad", min: 10000000 },
+  { nivel: "diamante", emoji: "👑", nombre: "Diamante", color: "#e74c3c", min: 20000000 },
 ];
 
 export function calcularInsigniaLogro(bitsTotales: number): string {

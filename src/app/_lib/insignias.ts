@@ -1,11 +1,11 @@
 import { supabase } from "@/lib/supabase";
 
 const NIVELES: [string, number][] = [
-  ["diamante", 10000],
-  ["platino",  5000],
-  ["oro",      1000],
-  ["plata",    500],
-  ["bronce",   100],
+  ["diamante", 20000000],
+  ["platino",  10000000],
+  ["oro",      5000000],
+  ["plata",    1000000],
+  ["bronce",   100000],
   ["ninguna",  0],
 ];
 

@@ -319,7 +319,7 @@ export default function AdminPanel() {
     const actual = modalBit[bitTipo]||0;
     // Recalcular insignia de logro
     const acumulado = (modalBit.bits_totales_acumulados||0) + cant;
-    const NIVELES_LOGRO: [string,number][] = [["diamante",10000],["platino",5000],["oro",1000],["plata",500],["bronce",100],["ninguna",0]];
+    const NIVELES_LOGRO: [string,number][] = [["diamante",20000000],["platino",10000000],["oro",5000000],["plata",1000000],["bronce",100000],["ninguna",0]];
     const insignia = NIVELES_LOGRO.find(([,min]) => acumulado >= min)?.[0] || "ninguna";
     await supabase.from("usuarios").update({[bitTipo]:actual+cant, bits_totales_acumulados:acumulado, insignia_logro:insignia}).eq("id",modalBit.id);
     setUsuarios(prev=>prev.map(x=>x.id===modalBit.id?{...x,[bitTipo]:actual+cant,bits_totales_acumulados:acumulado,insignia_logro:insignia}:x));
@@ -640,7 +640,7 @@ export default function AdminPanel() {
     if (!u) return;
     const nuevoFree = (u.bits_free||0) + 50;
     const acumulado = (u.bits_totales_acumulados||0) + 50;
-    const NIVELES_LOGRO: [string,number][] = [["diamante",10000],["platino",5000],["oro",1000],["plata",500],["bronce",100],["ninguna",0]];
+    const NIVELES_LOGRO: [string,number][] = [["diamante",20000000],["platino",10000000],["oro",5000000],["plata",1000000],["bronce",100000],["ninguna",0]];
     const insignia = NIVELES_LOGRO.find(([,min]) => acumulado >= min)?.[0] || "ninguna";
     await supabase.from("usuarios").update({ bits_free:nuevoFree, bits_totales_acumulados:acumulado, insignia_logro:insignia }).eq("id",uid);
     await supabase.from("contactos_nexonet").update({ aprobado:true }).eq("id",contacto.id);

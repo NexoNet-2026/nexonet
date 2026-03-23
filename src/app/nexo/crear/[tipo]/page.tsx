@@ -141,15 +141,20 @@ function NexoCrearInner() {
       empresa:  {rubros:"empresa_rubros",subrubros:"empresa_subrubros"},
       servicio: {rubros:"servicio_rubros",subrubros:"servicio_subrubros"},
       trabajo:  {rubros:"trabajo_rubros",subrubros:"trabajo_subrubros"},
+      grupo:    {rubros:"grupo_categorias",subrubros:"grupo_subcategorias"},
     };
     const ent = ENT_TABLES[tipo];
     if (ent) {
+      const subSelect = tipo==="grupo" ? "id,nombre,categoria_id" : "id,nombre,rubro_id";
       Promise.all([
         supabase.from(ent.rubros).select("id,nombre").order("orden",{ascending:true}),
-        supabase.from(ent.subrubros).select("id,nombre,rubro_id").order("orden",{ascending:true}),
+        supabase.from(ent.subrubros).select(subSelect).order("orden",{ascending:true}),
       ]).then(([{data:er},{data:es}]) => {
         if (er) setEntRubros(er);
-        if (es) setEntSubrubros(es);
+        if (es) setEntSubrubros(tipo==="grupo"
+          ? es.map((s:any)=>({id:s.id, nombre:s.nombre, rubro_id:s.categoria_id}))
+          : es
+        );
       });
     }
 
@@ -349,6 +354,24 @@ function NexoCrearInner() {
                 <select value={form.subrubro_id} onChange={e=>{F("subrubro_id",e.target.value);cargarSubFiltros(e.target.value);}} style={{...IS,marginBottom:"0"}}>
                   <option value="">— Todos —</option>
                   {subsDe.map(s=><option key={s.id} value={s.id}>{s.nombre}</option>)}
+                </select>
+              </>)}
+            </div>
+          )}
+
+          {tipo==="trabajo" && entRubros.length>0 && (
+            <div style={CAJA}>
+              <SL>📂 Categoría</SL>
+              <L>Rubro</L>
+              <select value={form.rubro_id} onChange={e=>{F("rubro_id",e.target.value);F("subrubro_id","");setSubFiltros([]);setFiltroVals({});}} style={{...IS,marginBottom:"12px"}}>
+                <option value="">— Elegí un rubro —</option>
+                {entRubros.map(r=><option key={r.id} value={r.id}>{r.nombre}</option>)}
+              </select>
+              {form.rubro_id && entSubrubros.filter(s=>s.rubro_id===parseInt(form.rubro_id)).length>0 && (<>
+                <L>Subrubro</L>
+                <select value={form.subrubro_id} onChange={e=>{F("subrubro_id",e.target.value);cargarSubFiltros(e.target.value);}} style={{...IS,marginBottom:"0"}}>
+                  <option value="">— Todos —</option>
+                  {entSubrubros.filter(s=>s.rubro_id===parseInt(form.rubro_id)).map(s=><option key={s.id} value={s.id}>{s.nombre}</option>)}
                 </select>
               </>)}
             </div>
@@ -643,7 +666,7 @@ function NexoCrearInner() {
                 <>
                   <SL>📂 Categoría</SL>
                   <L>Rubro</L>
-                  <select value={form.rubro_id} onChange={e=>{F("rubro_id",e.target.value);F("subrubro_id","");}} style={{...IS,marginBottom:"12px"}}>
+                  <select value={form.rubro_id} onChange={e=>{F("rubro_id",e.target.value);F("subrubro_id","");setSubFiltros([]);setFiltroVals({});}} style={{...IS,marginBottom:"12px"}}>
                     <option value="">— Elegí un rubro —</option>
                     {entRubros.map(r=><option key={r.id} value={r.id}>{r.nombre}</option>)}
                   </select>
@@ -658,6 +681,21 @@ function NexoCrearInner() {
                   )}
                 </>
               )}
+              {/* Filtros dinámicos de subcategoría (sliders block) */}
+              {subFiltros.length>0 && (<>
+                <SL>🔧 Detalles adicionales</SL>
+                <div style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600,marginBottom:"12px"}}>Completá los campos que apliquen</div>
+                {subFiltros.map((f:any)=>(
+                  <div key={f.id} style={{marginBottom:"12px"}}>
+                    {f.tipo==="boolean" && (<><L>{f.nombre}</L><div style={{display:"flex",gap:"8px"}}>{[{v:true,l:"Sí"},{v:false,l:"No"}].map(op=>(<button key={String(op.v)} onClick={()=>setFV(f.nombre,op.v)} style={{flex:1,background:filtroVals[f.nombre]===op.v?"#1a2a3a":"#f4f4f2",border:`2px solid ${filtroVals[f.nombre]===op.v?"#1a2a3a":"#e8e8e6"}`,borderRadius:"10px",padding:"8px",fontSize:"12px",fontWeight:800,color:filtroVals[f.nombre]===op.v?colorPage:"#666",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>{op.l}</button>))}</div></>)}
+                    {f.tipo==="numero" && (<><L>{f.nombre}</L><input type="number" value={filtroVals[f.nombre]||""} onChange={e=>setFV(f.nombre,e.target.value)} placeholder={f.nombre} style={IS}/></>)}
+                    {f.tipo==="rango" && (<><L>{f.nombre}</L><div style={{display:"flex",gap:"8px",alignItems:"center"}}><input type="number" value={filtroVals[f.nombre]?.desde||""} onChange={e=>setFV(f.nombre,{...filtroVals[f.nombre],desde:e.target.value})} placeholder="Desde" style={{...IS,flex:1}}/><span style={{color:"#9a9a9a",fontWeight:800}}>—</span><input type="number" value={filtroVals[f.nombre]?.hasta||""} onChange={e=>setFV(f.nombre,{...filtroVals[f.nombre],hasta:e.target.value})} placeholder="Hasta" style={{...IS,flex:1}}/></div></>)}
+                    {f.tipo==="texto" && (<><L>{f.nombre}</L><input value={filtroVals[f.nombre]||""} onChange={e=>setFV(f.nombre,e.target.value)} placeholder={f.nombre} style={IS}/></>)}
+                    {f.tipo==="opciones" && (<><L>{f.nombre}</L><select value={filtroVals[f.nombre]||""} onChange={e=>setFV(f.nombre,e.target.value)} style={IS}><option value="">— Seleccionar —</option>{(Array.isArray(f.opciones)?f.opciones:[]).map((op:string)=><option key={op} value={op}>{op}</option>)}</select></>)}
+                    {f.tipo==="moneda" && (<><L>{f.nombre}</L><select value={filtroVals[f.nombre]||""} onChange={e=>setFV(f.nombre,e.target.value)} style={IS}><option value="">— Seleccionar —</option><option value="ARS">$ ARS</option><option value="USD">USD</option><option value="EUR">EUR</option></select></>)}
+                  </div>
+                ))}
+              </>)}
               {(tipo==="empresa"||tipo==="servicio") && (<>
                 <div style={{display:"grid",gridTemplateColumns:"2fr 1fr",gap:"10px",marginBottom:"12px"}}>
                   <div><L>Precio</L><input type="number" value={form.precio} onChange={e=>F("precio",e.target.value)} placeholder="0" style={IS}/></div>

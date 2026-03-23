@@ -625,10 +625,25 @@ export default function AdminPanel() {
   };
   const guardarSocio = async (s:any) => {
     if (!s.usuario_id||!s.tipo||!s.porcentaje) { showToast("Completá todos los campos"); return; }
-    const payload = {usuario_id:s.usuario_id,tipo:s.tipo,porcentaje:parseFloat(s.porcentaje),region:s.region||null,codigo_referido:s.codigo_referido||null,activo:s.activo!==false};
-    if (s.id) { await supabase.from("socios_comerciales").update(payload).eq("id",s.id); }
-    else { await supabase.from("socios_comerciales").insert(payload); }
-    setModalSocio(null); showToast("✅ Socio guardado"); await cargarSocios();
+    const payload = {
+      usuario_id:s.usuario_id, tipo:s.tipo,
+      porcentaje:parseFloat(s.porcentaje),
+      region:s.region||null,
+      codigo_referido:s.codigo_referido||null,
+      activo:s.activo!==false
+    };
+    let error;
+    if (s.id) {
+      const res = await supabase.from("socios_comerciales").update(payload).eq("id",s.id);
+      error = res.error;
+    } else {
+      const res = await supabase.from("socios_comerciales").insert(payload);
+      error = res.error;
+    }
+    if (error) { showToast("❌ Error: " + error.message); return; }
+    setModalSocio(null);
+    showToast("✅ Socio guardado");
+    await cargarSocios();
   };
   const registrarReintegro = async () => {
     const cant = parseInt(reintegroCant);

@@ -1,7 +1,13 @@
 import { Resend } from "resend";
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = process.env.RESEND_API_KEY
+  ? new Resend(process.env.RESEND_API_KEY)
+  : null;
 
 export async function enviarEmail(to: string, subject: string, html: string) {
+  if (!resend) {
+    console.log("Email no enviado — RESEND_API_KEY no configurada");
+    return;
+  }
   try {
     await resend.emails.send({
       from: "NexoNet Argentina <notificaciones@nexonet.ar>",

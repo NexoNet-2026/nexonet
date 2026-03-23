@@ -1,16 +1,20 @@
 "use client";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
 import { supabase } from "@/lib/supabase";
 
 export default function CopyrightClaimPage() {
+  const router = useRouter();
   const [form, setForm] = useState({ name: "", email: "", description: "", url: "" });
+  const [buenaFe, setBuenaFe] = useState(false);
   const [enviado, setEnviado] = useState(false);
   const [enviando, setEnviando] = useState(false);
 
   const enviar = async () => {
     if (!form.name.trim() || !form.email.trim() || !form.description.trim()) { alert("Completar nombre, email y descripción"); return; }
+    if (!buenaFe) { alert("Debés aceptar la declaración de buena fe"); return; }
     setEnviando(true);
     const { error } = await supabase.from("copyright_claims").insert({
       claimant_name: form.name, claimant_email: form.email,
@@ -27,6 +31,7 @@ export default function CopyrightClaimPage() {
     <main style={{ paddingTop: "95px", paddingBottom: "130px", background: "#f4f4f2", minHeight: "100vh", fontFamily: "'Nunito',sans-serif" }}>
       <Header />
       <div style={{ padding: "16px", maxWidth: "500px", margin: "0 auto" }}>
+        <button onClick={()=>router.back()} style={{background:"rgba(26,42,58,0.08)",border:"1px solid rgba(26,42,58,0.2)",borderRadius:"10px",padding:"7px 13px",color:"#1a2a3a",fontSize:"13px",fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',sans-serif",marginBottom:"14px"}}>← Volver</button>
         <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: "28px", color: "#1a2a3a", letterSpacing: "1px", marginBottom: "8px" }}>
           ⚖️ Reclamo de Copyright
         </div>
@@ -58,7 +63,14 @@ export default function CopyrightClaimPage() {
               placeholder="Describí qué contenido infringe tus derechos y qué derechos tenés sobre el mismo..."
               rows={5} style={{ ...IS, resize: "vertical" }} />
 
-            <button onClick={enviar} disabled={enviando || !form.name.trim() || !form.email.trim() || !form.description.trim()}
+            <label style={{ display: "flex", alignItems: "flex-start", gap: "10px", cursor: "pointer", padding: "12px 0", marginBottom: "14px", borderTop: "1px solid #f0f0f0" }}>
+              <input type="checkbox" checked={buenaFe} onChange={e => setBuenaFe(e.target.checked)} style={{ width: "18px", height: "18px", marginTop: "2px", accentColor: "#8e44ad", flexShrink: 0 }} />
+              <span style={{ fontSize: "12px", color: "#666", fontWeight: 600, lineHeight: 1.5 }}>
+                Declaro bajo buena fe que el uso del material protegido no está autorizado por el titular de los derechos, su agente o la ley, y que la información proporcionada en este reclamo es precisa.
+              </span>
+            </label>
+
+            <button onClick={enviar} disabled={enviando || !buenaFe || !form.name.trim() || !form.email.trim() || !form.description.trim()}
               style={{ width: "100%", background: "linear-gradient(135deg,#8e44ad,#6c3483)", border: "none", borderRadius: "14px", padding: "16px", fontSize: "15px", fontWeight: 900, color: "#fff", cursor: "pointer", fontFamily: "'Nunito',sans-serif", opacity: enviando ? 0.6 : 1 }}>
               {enviando ? "⏳ Enviando..." : "📨 Enviar reclamo"}
             </button>

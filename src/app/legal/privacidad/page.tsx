@@ -1,15 +1,18 @@
 "use client";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
+import { useRouter } from "next/navigation";
 
 const S: React.CSSProperties = { fontSize: "14px", color: "#444", lineHeight: 1.8, marginBottom: "16px" };
 const H: React.CSSProperties = { fontSize: "16px", fontWeight: 900, color: "#1a2a3a", marginBottom: "8px", marginTop: "24px" };
 
 export default function PrivacidadPage() {
+  const router = useRouter();
   return (
     <main style={{ paddingTop: "95px", paddingBottom: "130px", background: "#f4f4f2", minHeight: "100vh", fontFamily: "'Nunito',sans-serif" }}>
       <Header />
       <div style={{ padding: "16px", maxWidth: "600px", margin: "0 auto" }}>
+        <button onClick={()=>router.back()} style={{background:"rgba(26,42,58,0.08)",border:"1px solid rgba(26,42,58,0.2)",borderRadius:"10px",padding:"7px 13px",color:"#1a2a3a",fontSize:"13px",fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',sans-serif",marginBottom:"14px"}}>← Volver</button>
         <div style={{ background: "#fff", borderRadius: "16px", padding: "24px", boxShadow: "0 2px 10px rgba(0,0,0,0.06)" }}>
           <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: "28px", color: "#1a2a3a", letterSpacing: "1px", marginBottom: "4px" }}>
             🔒 Política de Privacidad
@@ -47,6 +50,9 @@ export default function PrivacidadPage() {
 
           <div style={H}>10. Cambios en esta política</div>
           <p style={S}>Nos reservamos el derecho de actualizar esta política. Los cambios serán notificados y entrarán en vigencia a los 15 días de su publicación.</p>
+
+          <div style={H}>11. Contacto</div>
+          <p style={S}>Para consultas sobre privacidad: <strong>privacidad@nexonet.ar</strong>. También podés contactarnos desde tu perfil en la sección "Contactar NexoNet".</p>
         </div>
       </div>
       <BottomNav />

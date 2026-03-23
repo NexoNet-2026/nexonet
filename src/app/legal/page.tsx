@@ -2,8 +2,10 @@
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function LegalPage() {
+  const router = useRouter();
   const links = [
     { href: "/legal/terminos", emoji: "📜", titulo: "Términos y Condiciones", desc: "Reglas de uso de la plataforma" },
     { href: "/legal/privacidad", emoji: "🔒", titulo: "Política de Privacidad", desc: "Cómo manejamos tus datos" },
@@ -14,6 +16,7 @@ export default function LegalPage() {
     <main style={{ paddingTop: "95px", paddingBottom: "130px", background: "#f4f4f2", minHeight: "100vh", fontFamily: "'Nunito',sans-serif" }}>
       <Header />
       <div style={{ padding: "16px", maxWidth: "500px", margin: "0 auto" }}>
+        <button onClick={()=>router.back()} style={{background:"rgba(26,42,58,0.08)",border:"1px solid rgba(26,42,58,0.2)",borderRadius:"10px",padding:"7px 13px",color:"#1a2a3a",fontSize:"13px",fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',sans-serif",marginBottom:"14px"}}>← Volver</button>
         <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: "28px", color: "#1a2a3a", letterSpacing: "1px", marginBottom: "20px" }}>
           ⚖️ Legal
         </div>

@@ -1,11 +1,29 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import { enviarEmail, emailVencimiento } from "@/lib/email";
+import { webpush } from "@/lib/webpush";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
+
+async function enviarPush(usuario_id: string, titulo: string, mensaje: string, url?: string) {
+  try {
+    const { data: subs } = await supabase.from("push_suscripciones").select("endpoint, p256dh, auth").eq("usuario_id", usuario_id);
+    if (!subs || subs.length === 0) return;
+    const payload = JSON.stringify({ title: titulo, body: mensaje, icon: "/icons/icon-192x192.png", data: { url: url || "/" } });
+    for (const sub of subs) {
+      try {
+        await webpush.sendNotification({ endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } }, payload);
+      } catch (err: any) {
+        if (err?.statusCode === 410 || err?.statusCode === 404) {
+          await supabase.from("push_suscripciones").delete().eq("endpoint", sub.endpoint);
+        }
+      }
+    }
+  } catch (_) {}
+}
 
 const EN30D = () => new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
 const fechaEnDias = (d: number) => new Date(Date.now() + d * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
@@ -61,6 +79,7 @@ export async function GET(req: Request) {
     } else {
       await supabase.from("anuncios").update({ estado: "pausado" }).eq("id", a.id);
       await supabase.from("notificaciones").insert({ usuario_id: a.usuario_id, tipo: "sistema", leida: false, mensaje: `⚠️ Tu anuncio "${a.titulo}" fue pausado por vencimiento. Renovalo desde Mis Anuncios o escribinos: ${waLink("Hola NexoNet, quiero renovar mi anuncio " + a.titulo)}` });
+      await enviarPush(a.usuario_id, "Anuncio pausado", `Tu anuncio "${a.titulo}" fue pausado por vencimiento`, "/mis-anuncios");
       if (usuario?.email) { await enviarEmail(usuario.email, `⚠️ Anuncio pausado: ${a.titulo}`, emailVencimiento(usuario.nombre || "Usuario", "anuncio", a.titulo, 0, "https://nexonet.vercel.app/mis-anuncios")); res.emails++; }
       res.avisos++;
     }
@@ -88,6 +107,7 @@ export async function GET(req: Request) {
     } else {
       await supabase.from("nexos").update({ estado: "pausado" }).eq("id", e.id);
       await supabase.from("notificaciones").insert({ usuario_id: e.usuario_id, tipo: "sistema", leida: false, mensaje: `⚠️ Tu empresa "${e.titulo}" fue pausada por vencimiento. Renovála desde tu panel o escribinos: ${waLink("Hola NexoNet, quiero renovar mi empresa " + e.titulo)}` });
+      await enviarPush(e.usuario_id, "Empresa pausada", `Tu empresa "${e.titulo}" fue pausada por vencimiento`, `/nexo/${e.id}/admin`);
       if (usuario?.email) { await enviarEmail(usuario.email, `⚠️ Empresa pausada: ${e.titulo}`, emailVencimiento(usuario.nombre || "Usuario", "empresa", e.titulo, 0, `https://nexonet.vercel.app/nexo/${e.id}/admin`)); res.emails++; }
       res.avisos++;
     }
@@ -119,6 +139,7 @@ export async function GET(req: Request) {
     } else {
       await supabase.from("nexo_miembros").update({ estado: "vencido" }).eq("id", m.id);
       await supabase.from("notificaciones").insert({ usuario_id: m.usuario_id, tipo: "sistema", leida: false, mensaje: `⚠️ Tu membresía en "${nexo?.titulo}" venció. Recargá BIT o escribinos: ${waLink("Hola NexoNet, quiero renovar mi membresía en " + (nexo?.titulo||""))}` });
+      await enviarPush(m.usuario_id, "Membresía vencida", `Tu membresía en "${nexo?.titulo}" venció`, `/nexo/${m.nexo_id}`);
       if (usuario?.email) { await enviarEmail(usuario.email, `⚠️ Membresía vencida: ${nexo?.titulo}`, emailVencimiento(usuario.nombre || "Usuario", "membresía de grupo", nexo?.titulo || "", 0, `https://nexonet.vercel.app/nexo/${m.nexo_id}`)); res.emails++; }
       res.avisos++;
     }
@@ -160,6 +181,7 @@ export async function GET(req: Request) {
     const { data: usr } = await supabase.from("usuarios").select("email, nombre").eq("id", a.usuario_id).single();
     const url = "https://nexonet.vercel.app/mis-anuncios";
     await supabase.from("notificaciones").insert({ usuario_id: a.usuario_id, tipo: "sistema", leida: false, mensaje: `⏰ Tu anuncio "${a.titulo}" vence en ${dias} día${dias > 1 ? "s" : ""}. Renovalo desde Mis Anuncios.` });
+    await enviarPush(a.usuario_id, dias===1?"Vence mañana":"Vence en 3 días", `Tu anuncio "${a.titulo}" vence pronto`, "/mis-anuncios");
     if (usr?.email) { await enviarEmail(usr.email, `${dias === 1 ? "🔴 Vence mañana" : "🟡 Vence en 3 días"}: ${a.titulo}`, emailVencimiento(usr.nombre || "Usuario", "anuncio", a.titulo, dias, url)); res.emails++; }
     res.avisos++;
   }

@@ -9,6 +9,7 @@ export default function Header() {
   const [notifs,   setNotifs]   = useState<any[]>([]);
   const [noLeidas, setNoLeidas] = useState(0);
   const [panelOpen,setPanelOpen]= useState(false);
+  const [pushBanner, setPushBanner] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -63,6 +64,45 @@ export default function Header() {
     return () => clearInterval(interval);
   }, [userId]);
 
+  // ── Push notifications ──
+  useEffect(() => {
+    if (!userId || typeof window === "undefined" || !("serviceWorker" in navigator) || !("PushManager" in window)) return;
+    const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+    if (!vapidKey) return;
+
+    const registrarPush = async () => {
+      try {
+        const perm = Notification.permission;
+        if (perm === "denied") return;
+        if (perm === "default") { setPushBanner(true); return; }
+        // Permiso granted — registrar service worker y suscripción
+        const reg = await navigator.serviceWorker.register("/sw-push.js");
+        const sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: vapidKey,
+        });
+        const json = sub.toJSON();
+        await fetch("/api/push/suscribir", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            usuario_id: userId,
+            subscription: { endpoint: json.endpoint, keys: json.keys },
+            dispositivo: window.innerWidth < 768 ? "mobile" : "desktop",
+          }),
+        });
+        setPushBanner(false);
+      } catch (_) {}
+    };
+    registrarPush();
+  }, [userId]);
+
+  const activarPush = async () => {
+    const perm = await Notification.requestPermission();
+    if (perm === "granted") { setPushBanner(false); }
+    else { setPushBanner(false); }
+  };
+
   const cargarNotifs = async (uid: string) => {
     const { data } = await supabase
       .from("notificaciones")
@@ -111,6 +151,17 @@ export default function Header() {
 
   return (
     <div style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 100 }}>
+
+      {/* BANNER PUSH */}
+      {pushBanner && userId && (
+        <div style={{background:"linear-gradient(135deg,#d4a017,#f0c040)",padding:"8px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:"10px"}}>
+          <span style={{fontSize:"12px",fontWeight:800,color:"#1a2a3a"}}>🔔 Activá las notificaciones para no perderte nada</span>
+          <div style={{display:"flex",gap:"6px"}}>
+            <button onClick={activarPush} style={{background:"#1a2a3a",border:"none",borderRadius:"8px",padding:"5px 12px",fontSize:"11px",fontWeight:900,color:"#fff",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>Activar</button>
+            <button onClick={()=>setPushBanner(false)} style={{background:"rgba(0,0,0,0.15)",border:"none",borderRadius:"8px",padding:"5px 8px",fontSize:"11px",fontWeight:700,color:"#1a2a3a",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>✕</button>
+          </div>
+        </div>
+      )}
 
       {/* FRANJA PRINCIPAL */}
       <header style={{

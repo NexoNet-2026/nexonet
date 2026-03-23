@@ -161,6 +161,7 @@ export default function AdminPanel() {
       if (!session || session.user.id !== ADMIN_UUID) { router.push("/admin/login"); return; }
       setAuthed(true);
       cargarTodo();
+      cargarSocios();
     });
   }, []);
 
@@ -1144,6 +1145,7 @@ export default function AdminPanel() {
                     <div style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600}}>{u.codigo} · {new Date(u.created_at).toLocaleDateString("es-AR")}</div>
                   </div>
                   {u.es_promotor && <span style={S.badge("#fff","#d4a017")}>PROMOTOR</span>}
+                  {socios.some((s:any)=>s.usuario_id===u.id) && <span style={S.badge("#fff","#8e44ad")}>🤝 SOCIO</span>}
                 </div>
               ))}
             </div>
@@ -1205,6 +1207,7 @@ export default function AdminPanel() {
                       <span style={{fontSize:"14px",fontWeight:900,color:"#1a2a3a"}}>{u.nombre_usuario||"Sin nombre"}</span>
                       <span style={{fontSize:"10px",fontWeight:700,color:"#9a9a9a"}}>{u.codigo}</span>
                       {u.es_promotor && <span style={S.badge("#fff","#d4a017")}>⭐ PROMOTOR</span>}
+                      {socios.some((s:any)=>s.usuario_id===u.id) && <span style={S.badge("#fff","#8e44ad")}>🤝 SOCIO</span>}
                       {u.bloqueado   && <span style={S.badge("#fff","#e74c3c")}>🔒 BLOQUEADO</span>}
                     </div>
                     <div style={{fontSize:"12px",color:"#9a9a9a",fontWeight:600,marginTop:"2px"}}>{u.email}</div>

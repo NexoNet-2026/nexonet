@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabase";
 
 const ADMIN_UUID = "ab56253d-b92e-4b73-a19a-3cd0cd95c458";
 
-type Tab = "dashboard"|"usuarios"|"anuncios"|"grupos"|"mensajes"|"promotores"|"pagos"|"alarmas"|"config"|"contactos"|"reclamos"|"socios";
+type Tab = "dashboard"|"usuarios"|"anuncios"|"nexos"|"grupos"|"mensajes"|"promotores"|"pagos"|"alarmas"|"config"|"contactos"|"reclamos"|"socios";
 type ConfigSub = "anuncios"|"empresas"|"servicios"|"trabajo"|"grupos"|"filtros_ia"|"general";
 
 const S = {
@@ -92,6 +92,10 @@ export default function AdminPanel() {
   const [nuevaAn, setNuevaAn] = useState<any>({ titulo:"", descripcion:"", precio:"", provincia:"", ciudad:"", tipo:"conexion", flash:false, permuto:false });
   const [nuevoGr, setNuevoGr] = useState({ nombre:"", descripcion:"", categoria_id:"" });
 
+  // Nexos
+  const [nexos, setNexos] = useState<any[]>([]);
+  const [filtroNexo, setFiltroNexo] = useState("todos");
+
   // Reclamos copyright
   const [claims, setClaims] = useState<any[]>([]);
 
@@ -169,11 +173,11 @@ export default function AdminPanel() {
     setLoading(true);
     const [
       {data:usrs},{data:anuns},{data:grps},{data:msgs},{data:lqs},{data:coms},
-      {data:rubs},{data:pgs},{data:gcats},{data:gsubcats},
+      {data:rubs},{data:pgs},{data:gcats},{data:gsubcats},{data:nxs},
       {count:cu},{count:ca},{count:cg},{count:cm},
     ] = await Promise.all([
       supabase.from("usuarios").select("*").order("created_at",{ascending:false}).limit(300),
-      supabase.from("anuncios").select("*,usuarios(nombre_usuario,codigo,email)").order("created_at",{ascending:false}).limit(300),
+      supabase.from("anuncios").select("*,usuarios(nombre_usuario,codigo,email),subrubros(id,nombre)").order("created_at",{ascending:false}).limit(300),
       supabase.from("grupos").select("*,usuarios(nombre_usuario)").order("created_at",{ascending:false}).limit(100),
       supabase.from("mensajes").select("*,emisor:emisor_id(nombre_usuario),receptor:receptor_id(nombre_usuario)").order("created_at",{ascending:false}).limit(200),
       supabase.from("liquidaciones_promotor").select("*,usuarios(nombre_usuario,codigo,email)").order("created_at",{ascending:false}),
@@ -182,6 +186,7 @@ export default function AdminPanel() {
       supabase.from("pagos_mp").select("*,usuarios(nombre_usuario,codigo,email)").order("created_at",{ascending:false}).limit(200),
       supabase.from("grupo_categorias").select("*").order("orden",{ascending:true}),
       supabase.from("grupo_subcategorias").select("*").order("nombre"),
+      supabase.from("nexos").select("*,usuarios(nombre_usuario,codigo,email)").order("created_at",{ascending:false}).limit(300),
       supabase.from("usuarios").select("*",{count:"exact",head:true}),
       supabase.from("anuncios").select("*",{count:"exact",head:true}),
       supabase.from("grupos").select("*",{count:"exact",head:true}),
@@ -198,6 +203,7 @@ export default function AdminPanel() {
     setPagos(pgs||[]);
     setGrupoCats(gcats||[]);
     setGrupoSubcats(gsubcats||[]);
+    setNexos(nxs||[]);
 
     const totalBits  = (usrs||[]).reduce((a:number,u:any)=>(a+(u.bits||0)+(u.bits_free||0)),0);
     const totalPagos = (pgs||[]).reduce((a:number,p:any)=>a+(p.monto||0),0);
@@ -402,6 +408,21 @@ export default function AdminPanel() {
     const {data,error} = await supabase.from("anuncios").insert({...nuevaAn,precio:parseFloat(nuevaAn.precio)||0,usuario_id:ADMIN_UUID,estado:"activo"}).select().single();
     if (!error&&data) { setAnuncios(prev=>[data,...prev]); setNuevaAn({titulo:"",descripcion:"",precio:"",provincia:"",ciudad:"",tipo:"conexion",flash:false,permuto:false}); setModalNuevoAn(false); showToast("✅ Anuncio publicado"); }
   };
+
+  // ── Nexos ──
+  const bloquearNexo = async (n:any) => {
+    const nuevo = n.estado==="bloqueado"?"activo":"bloqueado";
+    await supabase.from("nexos").update({estado:nuevo}).eq("id",n.id);
+    setNexos(prev=>prev.map(x=>x.id===n.id?{...x,estado:nuevo}:x));
+    showToast(nuevo==="bloqueado"?"Nexo bloqueado":"Nexo activado");
+  };
+  const eliminarNexo = async (n:any) => {
+    if (!confirm(`¿Eliminar nexo "${n.titulo}"?`)) return;
+    await supabase.from("nexos").delete().eq("id",n.id);
+    setNexos(prev=>prev.filter(x=>x.id!==n.id));
+    showToast("Nexo eliminado");
+  };
+  const nexosFiltrados = nexos.filter(n=> filtroNexo==="todos" || n.tipo===filtroNexo);
 
   // ── Grupos ──
   const toggleGrupo = async (g:any) => {
@@ -912,6 +933,7 @@ export default function AdminPanel() {
     {id:"dashboard",e:"📊",l:"Panel"},
     {id:"usuarios", e:"👥",l:"Usuarios"},
     {id:"anuncios", e:"📋",l:"Anuncios"},
+    {id:"nexos",    e:"🔗",l:"Nexos"},
     {id:"grupos",   e:"🏘️",l:"Grupos"},
     {id:"mensajes", e:"💬",l:"Mensajes"},
     {id:"promotores",e:"⭐",l:"Promotores"},
@@ -1259,6 +1281,38 @@ export default function AdminPanel() {
                 </div>
               </div>
             ))}
+          </>
+        )}
+
+        {/* ══ NEXOS ═══════════════════════════════════════════════════════════ */}
+        {!loading && tab==="nexos" && (
+          <>
+            <div style={{display:"flex",gap:"6px",marginBottom:"14px",flexWrap:"wrap"}}>
+              {["todos","empresa","servicio","trabajo","grupo"].map(t=>(
+                <button key={t} onClick={()=>setFiltroNexo(t)} style={{...S.btn(filtroNexo===t?"#d4a017":"#9a9a9a",filtroNexo!==t),fontSize:"11px",padding:"6px 12px",textTransform:"capitalize"}}>{t}</button>
+              ))}
+            </div>
+            {nexosFiltrados.map(n=>(
+              <div key={n.id} style={{...S.card,borderLeft:`4px solid ${n.estado==="bloqueado"?"#e74c3c":"#27ae60"}`}}>
+                <div style={{display:"flex",alignItems:"flex-start",gap:"10px"}}>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{display:"flex",gap:"6px",flexWrap:"wrap",alignItems:"center"}}>
+                      <span style={{fontSize:"14px",fontWeight:900,color:"#1a2a3a"}}>{n.titulo||"Sin título"}</span>
+                      <span style={S.badge("#fff",n.tipo==="empresa"?"#3a7bd5":n.tipo==="servicio"?"#27ae60":n.tipo==="trabajo"?"#e67e22":"#8e44ad")}>{n.tipo}</span>
+                      {n.estado==="bloqueado" && <span style={S.badge("#fff","#e74c3c")}>🔒</span>}
+                    </div>
+                    <div style={{fontSize:"12px",color:"#9a9a9a",fontWeight:600,marginTop:"2px"}}>{n.usuarios?.nombre_usuario||"—"} · {n.ciudad||""}</div>
+                    <div style={{fontSize:"11px",color:"#bbb",marginTop:"2px"}}>Estado: {n.estado||"activo"}</div>
+                  </div>
+                </div>
+                <div style={{display:"flex",gap:"6px",marginTop:"10px",flexWrap:"wrap"}}>
+                  <button onClick={()=>router.push(`/nexos/${n.id}`)} style={S.btn("#3a7bd5",true)}>👁️ Ver</button>
+                  <button onClick={()=>bloquearNexo(n)} style={S.btn(n.estado==="bloqueado"?"#27ae60":"#e67e22",true)}>{n.estado==="bloqueado"?"✅ Activar":"🔒 Bloquear"}</button>
+                  <button onClick={()=>eliminarNexo(n)} style={S.btn("#e74c3c",true)}>🗑️ Eliminar</button>
+                </div>
+              </div>
+            ))}
+            {nexosFiltrados.length===0 && <div style={{textAlign:"center",color:"#bbb",padding:"40px",fontSize:"14px"}}>No hay nexos</div>}
           </>
         )}
 

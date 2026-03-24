@@ -84,8 +84,13 @@ export default function NexoPage() {
 
       const { data: sls } = await supabase.from("nexo_sliders")
         .select("*").eq("nexo_id", id).eq("activo",true).order("orden");
-      setpáginas(sls || []);
-      if (sls?.length) setTabActiva(sls[0].id);
+      // Inyectar chat grupal si está habilitado
+      const chatTab = n?.tipo === "grupo" && n?.config?.chat_habilitado
+        ? [{ id:"chat_grupal", titulo:"💬 Chat", tipo:"mensajes", nexo_id:id, activo:true, orden:-1 }]
+        : [];
+      const allPages = [...chatTab, ...(sls || [])];
+      setpáginas(allPages);
+      if (allPages.length) setTabActiva(allPages[0].id);
 
       if (userId) {
         const { data: mm } = await supabase.from("nexo_miembros")
@@ -439,6 +444,12 @@ export default function NexoPage() {
               )}
               {perfil && nexo?.usuario_id !== perfil?.id && (
                 <BotonDarInsignia receptorId={nexo.usuario_id} nexoId={nexo.id} sessionUserId={perfil.id} />
+              )}
+              {nexo.tipo==="grupo" && nexo.config?.chat_habilitado && (esMiembro||esAdmin) && (
+                <button onClick={()=>setTabActiva("chat_grupal")}
+                  style={{background:`${colorNexo}cc`,border:"none",borderRadius:"10px",padding:"7px 14px",fontSize:"12px",fontWeight:900,color:"#fff",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>
+                  💬 Chat
+                </button>
               )}
               {nexo.tipo==="grupo" && (
                 <div style={{display:"flex",gap:"6px"}}>

@@ -635,7 +635,8 @@ export default function NexoAdminPage() {
 
             <Caja titulo="⚙️ Permisos">
               {[
-                { k:"permitir_mensajes", l:"💬 Chat activo",          d:"Los miembros pueden escribir" },
+                { k:"chat_habilitado",   l:"💬 Chat grupal",          d:"Habilitar chat grupal visible para todos los miembros" },
+                { k:"permitir_mensajes", l:"✏️ Miembros escriben",    d:"Los miembros pueden escribir en el chat" },
                 { k:"permitir_adjuntos", l:"📎 Adjuntos en chat",     d:"Miembros pueden enviar archivos" },
                 { k:"permitir_links",    l:"🔗 Links en chat",        d:"Miembros pueden compartir URLs" },
                 { k:"solo_admins",       l:"🛡️ Solo admins publican", d:"Solo admins pueden escribir" },

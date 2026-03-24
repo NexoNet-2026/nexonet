@@ -720,6 +720,9 @@ function BuscarInner() {
                   const sinCat = (nexosPorTipo["grupos"]||[]).filter((n:any) =>
                     !n.subtipo || !allSubNames.includes((n.subtipo||"").toLowerCase())
                   );
+                  console.log("nexosPorTipo grupos:", nexosPorTipo["grupos"]);
+                  console.log("allSubNames:", allSubNames);
+                  console.log("sinCat:", sinCat);
                   if (sinCat.length === 0) return null;
                   return (
                     <div style={{marginBottom:"8px",background:"#fff",paddingBottom:"12px",borderBottom:"6px solid #f4f4f2"}}>

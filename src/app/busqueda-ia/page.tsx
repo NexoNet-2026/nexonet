@@ -71,6 +71,17 @@ export default function BusquedaIA() {
   const [ciudades,  setCiudades]  = useState<Record<string,Ciudad[]>>({});
   const [busquedas, setBusquedas] = useState<Busqueda[]>([nueva()]);
   const [loading,   setLoading]   = useState(true);
+  const [filtrosDinamicos, setFiltrosDinamicos] = useState<Record<number, any[]>>({});
+
+  const cargarFiltrosSubrubro = async (subrubroId: number) => {
+    if (filtrosDinamicos[subrubroId]) return;
+    const { data } = await supabase
+      .from("subrubro_filtros")
+      .select("*")
+      .eq("subrubro_id", subrubroId)
+      .order("orden");
+    if (data) setFiltrosDinamicos(prev => ({ ...prev, [subrubroId]: data }));
+  };
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session: s } }) => {
@@ -218,7 +229,9 @@ export default function BusquedaIA() {
             <TarjetaBusqueda key={b.id} b={b} idx={idx}
               rubros={rubros} subrubros={subrubros} provs={provs}
               ciudades={ciudades[b.provincia]||[]} bits={bits}
+              filtrosDinamicos={filtrosDinamicos}
               onCargarCiudades={cargarCiudades}
+              onCargarFiltros={cargarFiltrosSubrubro}
               onUpd={upd} onGuardar={guardar} onEliminar={eliminar} onToggleActiva={toggleActiva}
             />
           ))
@@ -234,20 +247,13 @@ export default function BusquedaIA() {
   );
 }
 
-// ── Detectar tipo de subrubro ──────────────────────────────────────────────
-function detectar(rubroNombre: string) {
-  const n = rubroNombre.toLowerCase();
-  const esVehiculo  = n.includes("auto") || n.includes("moto") || n.includes("vehic") || n.includes("camio") || n.includes("transpor");
-  const esInmueble  = n.includes("inmueble") || n.includes("propiedad") || n.includes("casa") || n.includes("depto") || n.includes("terreno") || n.includes("alquil");
-  const esElectro   = n.includes("electro") || n.includes("tecnolog") || n.includes("celular") || n.includes("comput");
-  return { esVehiculo, esInmueble, esElectro };
-}
-
 function TarjetaBusqueda({ b, idx, rubros, subrubros, provs, ciudades, bits,
-  onCargarCiudades, onUpd, onGuardar, onEliminar, onToggleActiva }: {
+  filtrosDinamicos, onCargarCiudades, onCargarFiltros, onUpd, onGuardar, onEliminar, onToggleActiva }: {
   b:Busqueda; idx:number; rubros:RubroFlat[]; subrubros:SubrubroFlat[];
   provs:Prov[]; ciudades:Ciudad[]; bits:number;
+  filtrosDinamicos:Record<number, any[]>;
   onCargarCiudades:(p:string)=>void;
+  onCargarFiltros:(id:number)=>void;
   onUpd:(id:string,field:keyof Busqueda,value:any)=>void;
   onGuardar:(b:Busqueda)=>void;
   onEliminar:(b:Busqueda)=>void;
@@ -255,8 +261,6 @@ function TarjetaBusqueda({ b, idx, rubros, subrubros, provs, ciudades, bits,
 }) {
   const sinBits = bits<=0;
   const subsDe  = b.rubro_id ? subrubros.filter(s=>s.rubro_id===b.rubro_id) : [];
-  const rubroNombre = b.rubro_id ? (rubros.find(r=>r.id===b.rubro_id)?.nombre||"") : "";
-  const { esVehiculo, esInmueble } = detectar(rubroNombre);
   const tipoInfo = TIPOS_NEXO.find(t=>t.key===b.tipo_nexo)!;
 
   return (
@@ -331,7 +335,10 @@ function TarjetaBusqueda({ b, idx, rubros, subrubros, provs, ciudades, bits,
         {b.tipo_nexo === "anuncio" && b.rubro_id && subsDe.length>0 && (
           <div>
             <L>📋 Subrubro</L>
-            <select value={b.subrubro_id||""} onChange={e=>onUpd(b.id,"subrubro_id",e.target.value?parseInt(e.target.value):null)} style={IS}>
+            <select value={b.subrubro_id||""} onChange={e=>{
+              onUpd(b.id,"subrubro_id",e.target.value?parseInt(e.target.value):null);
+              if (e.target.value) onCargarFiltros(parseInt(e.target.value));
+            }} style={IS}>
               <option value="">— Todos —</option>
               {subsDe.map(s=><option key={s.id} value={s.id}>{s.nombre}</option>)}
             </select>
@@ -437,69 +444,69 @@ function TarjetaBusqueda({ b, idx, rubros, subrubros, provs, ciudades, bits,
           </div>
         )}
 
-        {/* ── FILTROS ESPECÍFICOS DE VEHÍCULOS ── */}
-        {b.tipo_nexo==="anuncio" && esVehiculo && (<>
-          <div style={{background:"rgba(212,160,23,0.06)",border:"1px solid rgba(212,160,23,0.2)",borderRadius:"12px",padding:"12px 14px",display:"flex",flexDirection:"column",gap:"12px"}}>
-            <div style={{fontSize:"11px",fontWeight:800,color:"#d4a017",textTransform:"uppercase",letterSpacing:"0.5px"}}>🚗 Filtros de vehículo</div>
-
-            <div>
-              <L>📅 Año de fabricación</L>
-              <div style={{display:"flex",gap:"8px",alignItems:"center"}}>
-                <input value={b.anio_min} onChange={e=>onUpd(b.id,"anio_min",e.target.value)}
-                  placeholder={`Desde (${ANIO_MIN})`} type="number" min={ANIO_MIN} max={ANIO_MAX} style={{...IS,flex:1}}/>
-                <span style={{color:"#9a9a9a",fontWeight:800}}>—</span>
-                <input value={b.anio_max} onChange={e=>onUpd(b.id,"anio_max",e.target.value)}
-                  placeholder={`Hasta (${ANIO_MAX})`} type="number" min={ANIO_MIN} max={ANIO_MAX} style={{...IS,flex:1}}/>
-              </div>
+        {/* ── FILTROS DINÁMICOS DEL SUBRUBRO ── */}
+        {b.tipo_nexo==="anuncio" && b.subrubro_id && (filtrosDinamicos[b.subrubro_id]||[]).length > 0 && (
+          <div style={{background:"rgba(26,42,58,0.04)",border:"1px solid rgba(26,42,58,0.1)",borderRadius:"12px",padding:"12px 14px",display:"flex",flexDirection:"column",gap:"12px"}}>
+            <div style={{fontSize:"11px",fontWeight:800,color:"#1a2a3a",textTransform:"uppercase",letterSpacing:"0.5px"}}>
+              🔧 Filtros específicos
             </div>
-
-            <div>
-              <L>🛣️ Kilómetros</L>
-              <div style={{display:"flex",gap:"8px",alignItems:"center"}}>
-                <input value={b.km_min} onChange={e=>onUpd(b.id,"km_min",e.target.value)}
-                  placeholder="Desde KM" type="number" style={{...IS,flex:1}}/>
-                <span style={{color:"#9a9a9a",fontWeight:800}}>—</span>
-                <input value={b.km_max} onChange={e=>onUpd(b.id,"km_max",e.target.value)}
-                  placeholder="Hasta KM" type="number" style={{...IS,flex:1}}/>
+            {(filtrosDinamicos[b.subrubro_id]||[]).map((f:any) => (
+              <div key={f.id}>
+                <L>{f.nombre}</L>
+                {(f.tipo==="rango") && (
+                  <div style={{display:"flex",gap:"8px",alignItems:"center"}}>
+                    <input placeholder="Desde" type="number"
+                      value={(b as any)[`filtro_${f.id}_min`]||""}
+                      onChange={e=>onUpd(b.id,`filtro_${f.id}_min` as any,e.target.value)}
+                      style={{...IS,flex:1}}/>
+                    <span style={{color:"#9a9a9a",fontWeight:800}}>—</span>
+                    <input placeholder="Hasta" type="number"
+                      value={(b as any)[`filtro_${f.id}_max`]||""}
+                      onChange={e=>onUpd(b.id,`filtro_${f.id}_max` as any,e.target.value)}
+                      style={{...IS,flex:1}}/>
+                  </div>
+                )}
+                {(f.tipo==="numero") && (
+                  <input placeholder={f.nombre} type="number"
+                    value={(b as any)[`filtro_${f.id}`]||""}
+                    onChange={e=>onUpd(b.id,`filtro_${f.id}` as any,e.target.value)}
+                    style={IS}/>
+                )}
+                {(f.tipo==="texto") && (
+                  <input placeholder={`Ej: ${f.nombre}...`}
+                    value={(b as any)[`filtro_${f.id}`]||""}
+                    onChange={e=>onUpd(b.id,`filtro_${f.id}` as any,e.target.value)}
+                    style={IS}/>
+                )}
+                {(f.tipo==="boolean") && (
+                  <div style={{display:"flex",gap:"8px"}}>
+                    {[{v:"",l:"Indiferente"},{v:"si",l:"Sí"},{v:"no",l:"No"}].map(op=>(
+                      <button key={op.v}
+                        onClick={()=>onUpd(b.id,`filtro_${f.id}` as any,op.v)}
+                        style={{flex:1,background:(b as any)[`filtro_${f.id}`]===op.v?"#1a2a3a":"#f4f4f2",
+                          border:`2px solid ${(b as any)[`filtro_${f.id}`]===op.v?"#1a2a3a":"#e8e8e6"}`,
+                          borderRadius:"10px",padding:"8px",fontSize:"12px",fontWeight:800,
+                          color:(b as any)[`filtro_${f.id}`]===op.v?"#d4a017":"#666",
+                          cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>
+                        {op.l}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {(f.tipo==="opciones") && (
+                  <select value={(b as any)[`filtro_${f.id}`]||""}
+                    onChange={e=>onUpd(b.id,`filtro_${f.id}` as any,e.target.value)}
+                    style={IS}>
+                    <option value="">— Cualquiera —</option>
+                    {(Array.isArray(f.opciones)?f.opciones:[]).map((op:string)=>(
+                      <option key={op} value={op}>{op}</option>
+                    ))}
+                  </select>
+                )}
               </div>
-            </div>
+            ))}
           </div>
-        </>)}
-
-        {/* ── FILTROS ESPECÍFICOS DE INMUEBLES ── */}
-        {b.tipo_nexo==="anuncio" && esInmueble && (<>
-          <div style={{background:"rgba(58,123,213,0.06)",border:"1px solid rgba(58,123,213,0.2)",borderRadius:"12px",padding:"12px 14px",display:"flex",flexDirection:"column",gap:"12px"}}>
-            <div style={{fontSize:"11px",fontWeight:800,color:"#3a7bd5",textTransform:"uppercase",letterSpacing:"0.5px"}}>🏠 Filtros de inmueble</div>
-
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px"}}>
-              <div>
-                <L>🛏️ Dormitorios</L>
-                <select value={b.dormitorios} onChange={e=>onUpd(b.id,"dormitorios",e.target.value)} style={IS}>
-                  <option value="">— Cualquiera —</option>
-                  {["1","2","3","4","5+"].map(v=><option key={v} value={v}>{v}</option>)}
-                </select>
-              </div>
-              <div>
-                <L>🏠 Ambientes</L>
-                <select value={b.ambientes} onChange={e=>onUpd(b.id,"ambientes",e.target.value)} style={IS}>
-                  <option value="">— Cualquiera —</option>
-                  {["1","2","3","4","5+"].map(v=><option key={v} value={v}>{v}</option>)}
-                </select>
-              </div>
-            </div>
-
-            <div>
-              <L>📐 Metros cuadrados</L>
-              <div style={{display:"flex",gap:"8px",alignItems:"center"}}>
-                <input value={b.metros_min} onChange={e=>onUpd(b.id,"metros_min",e.target.value)}
-                  placeholder="Desde m²" type="number" style={{...IS,flex:1}}/>
-                <span style={{color:"#9a9a9a",fontWeight:800}}>—</span>
-                <input value={b.metros_max} onChange={e=>onUpd(b.id,"metros_max",e.target.value)}
-                  placeholder="Hasta m²" type="number" style={{...IS,flex:1}}/>
-              </div>
-            </div>
-          </div>
-        </>)}
+        )}
 
         {/* UBICACIÓN */}
         <div>

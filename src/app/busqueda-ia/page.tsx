@@ -112,6 +112,7 @@ export default function BusquedaIA() {
             keywords: b.keywords||"",
             marca: b.config?.marca||"", permuta: b.config?.permuta===true?"si":b.config?.permuta===false?"no":"",
             activa: b.activo, guardando: false, dbId: b.id,
+            ...(b.config?.filtros_valores || {}),
           })));
         }
         setLoading(false);
@@ -154,6 +155,9 @@ export default function BusquedaIA() {
       config:      {
         ...(b.marca ? {marca:b.marca} : {}),
         ...(b.permuta==="si" ? {permuta:true} : b.permuta==="no" ? {permuta:false} : {}),
+        filtros_valores: Object.fromEntries(
+          Object.entries(b).filter(([k,v]) => k.startsWith('filtro_') && v !== '')
+        ),
       },
     };
     if (b.dbId) {
@@ -360,67 +364,6 @@ function TarjetaBusqueda({ b, idx, rubros, subrubros, provs, ciudades, bits,
             Separadas por espacio — todas deben aparecer en la publicación
           </div>
         </div>
-
-        {/* ── FILTROS BASE PARA ANUNCIOS ── */}
-        {b.tipo_nexo==="anuncio" && (
-          <div style={{background:"rgba(26,42,58,0.04)",border:"1px solid rgba(26,42,58,0.1)",borderRadius:"12px",padding:"12px 14px",display:"flex",flexDirection:"column",gap:"12px"}}>
-            <div style={{fontSize:"11px",fontWeight:800,color:"#1a2a3a",textTransform:"uppercase",letterSpacing:"0.5px"}}>🔍 Filtros de búsqueda</div>
-
-            <div>
-              <L>💰 Rango de precio</L>
-              <div style={{display:"flex",gap:"8px",alignItems:"center"}}>
-                <input value={b.precio_min} onChange={e=>onUpd(b.id,"precio_min",e.target.value)}
-                  placeholder="Desde" type="number" style={{...IS,flex:1}}/>
-                <span style={{color:"#9a9a9a",fontWeight:800,fontSize:"13px"}}>—</span>
-                <input value={b.precio_max} onChange={e=>onUpd(b.id,"precio_max",e.target.value)}
-                  placeholder="Hasta" type="number" style={{...IS,flex:1}}/>
-                <select value={b.moneda} onChange={e=>onUpd(b.id,"moneda",e.target.value)} style={{...IS,width:"80px"}}>
-                  <option value="ARS">$ ARS</option>
-                  <option value="USD">USD</option>
-                  <option value="EUR">EUR</option>
-                </select>
-              </div>
-            </div>
-
-            <div>
-              <L>🏷️ Marca</L>
-              <input value={b.marca} onChange={e=>onUpd(b.id,"marca",e.target.value)}
-                placeholder="Ej: Toyota, Samsung, Nike..." style={IS}/>
-            </div>
-
-            <div>
-              <L>🔄 Permuta</L>
-              <div style={{display:"flex",gap:"8px"}}>
-                {[{v:"",l:"Indiferente"},{v:"si",l:"Sí"},{v:"no",l:"No"}].map(op=>(
-                  <button key={op.v} onClick={()=>onUpd(b.id,"permuta",op.v)}
-                    style={{flex:1,background:b.permuta===op.v?"#1a2a3a":"#f4f4f2",border:`2px solid ${b.permuta===op.v?"#1a2a3a":"#e8e8e6"}`,
-                    borderRadius:"10px",padding:"8px",fontSize:"12px",fontWeight:800,
-                    color:b.permuta===op.v?"#d4a017":"#666",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>
-                    {op.l}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* PRECIO — para empresas y servicios (sin anuncios, ya tienen arriba) */}
-        {(b.tipo_nexo==="empresa"||b.tipo_nexo==="servicio") && (
-          <div>
-            <L>💰 Rango de precio</L>
-            <div style={{display:"flex",gap:"8px",alignItems:"center"}}>
-              <input value={b.precio_min} onChange={e=>onUpd(b.id,"precio_min",e.target.value)}
-                placeholder="Desde" type="number" style={{...IS,flex:1}}/>
-              <span style={{color:"#9a9a9a",fontWeight:800,fontSize:"13px"}}>—</span>
-              <input value={b.precio_max} onChange={e=>onUpd(b.id,"precio_max",e.target.value)}
-                placeholder="Hasta" type="number" style={{...IS,flex:1}}/>
-              <select value={b.moneda} onChange={e=>onUpd(b.id,"moneda",e.target.value)} style={{...IS,width:"80px"}}>
-                <option value="ARS">$ ARS</option>
-                <option value="USD">USD</option>
-              </select>
-            </div>
-          </div>
-        )}
 
         {/* ── FILTROS DINÁMICOS DEL SUBRUBRO ── */}
         {b.tipo_nexo==="anuncio" && b.subrubro_id && (filtrosDinamicos[b.subrubro_id]||[]).length > 0 && (

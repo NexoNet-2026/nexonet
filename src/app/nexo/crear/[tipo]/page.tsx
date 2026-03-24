@@ -684,18 +684,30 @@ function NexoCrearInner() {
               {entRubros.length > 0 && (
                 <>
                   <SL>📂 Categoría</SL>
-                  <L>Rubro</L>
-                  <select value={form.rubro_id} onChange={e=>{F("rubro_id",e.target.value);F("subrubro_id","");setSubFiltros([]);setFiltroVals({});}} style={{...IS,marginBottom:"12px"}}>
-                    <option value="">— Elegí un rubro —</option>
-                    {entRubros.map(r=><option key={r.id} value={r.id}>{r.nombre}</option>)}
-                  </select>
-                  {form.rubro_id && entSubrubros.filter(s=>s.rubro_id===parseInt(form.rubro_id)).length > 0 && (
+                  {preRubroId ? (
+                    <div style={{display:"flex",alignItems:"center",gap:"8px",flexWrap:"wrap",marginBottom:"12px"}}>
+                      <span style={{background:`${colorPage}18`,border:`1px solid ${colorPage}40`,borderRadius:"20px",padding:"6px 14px",fontSize:"12px",fontWeight:800,color:colorPage}}>
+                        {entRubros.find(r=>String(r.id)===form.rubro_id)?.nombre || `Rubro #${form.rubro_id}`}
+                        {form.subrubro_id && ` → ${entSubrubros.find(s=>String(s.id)===form.subrubro_id)?.nombre || form.subrubro_id}`}
+                      </span>
+                      <button onClick={()=>router.push("/publicar")} style={{background:"none",border:"none",fontSize:"11px",fontWeight:700,color:"#9a9a9a",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>cambiar</button>
+                    </div>
+                  ) : (
                     <>
-                      <L>Subrubro</L>
-                      <select value={form.subrubro_id} onChange={e=>{F("subrubro_id",e.target.value);cargarSubFiltros(e.target.value);}} style={{...IS,marginBottom:"12px"}}>
-                        <option value="">— Todos —</option>
-                        {entSubrubros.filter(s=>s.rubro_id===parseInt(form.rubro_id)).map(s=><option key={s.id} value={s.id}>{s.nombre}</option>)}
+                      <L>Rubro</L>
+                      <select value={form.rubro_id} onChange={e=>{F("rubro_id",e.target.value);F("subrubro_id","");setSubFiltros([]);setFiltroVals({});}} style={{...IS,marginBottom:"12px"}}>
+                        <option value="">— Elegí un rubro —</option>
+                        {entRubros.map(r=><option key={r.id} value={r.id}>{r.nombre}</option>)}
                       </select>
+                      {form.rubro_id && entSubrubros.filter(s=>s.rubro_id===parseInt(form.rubro_id)).length > 0 && (
+                        <>
+                          <L>Subrubro</L>
+                          <select value={form.subrubro_id} onChange={e=>{F("subrubro_id",e.target.value);cargarSubFiltros(e.target.value);}} style={{...IS,marginBottom:"12px"}}>
+                            <option value="">— Todos —</option>
+                            {entSubrubros.filter(s=>s.rubro_id===parseInt(form.rubro_id)).map(s=><option key={s.id} value={s.id}>{s.nombre}</option>)}
+                          </select>
+                        </>
+                      )}
                     </>
                   )}
                 </>

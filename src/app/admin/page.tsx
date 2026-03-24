@@ -172,12 +172,11 @@ export default function AdminPanel() {
   const cargarTodo = useCallback(async () => {
     setLoading(true);
     const [
-      {data:usrs},{data:anuns},{data:grps},{data:msgs},{data:lqs},{data:coms},
+      {data:usrs},{data:grps},{data:msgs},{data:lqs},{data:coms},
       {data:rubs},{data:pgs},{data:gcats},{data:gsubcats},{data:nxs},
       {count:cu},{count:ca},{count:cg},{count:cm},
     ] = await Promise.all([
       supabase.from("usuarios").select("*").order("created_at",{ascending:false}).limit(300),
-      supabase.from("anuncios").select("*,usuarios(nombre_usuario,codigo,email)").order("created_at",{ascending:false}).limit(300),
       Promise.resolve(supabase.from("grupos").select("*,usuarios(nombre_usuario)").order("created_at",{ascending:false}).limit(100)).catch(()=>({data:null})),
       supabase.from("mensajes").select("*,emisor:emisor_id(nombre_usuario),receptor:receptor_id(nombre_usuario)").order("created_at",{ascending:false}).limit(200),
       Promise.resolve(supabase.from("liquidaciones_promotor").select("*,usuarios(nombre_usuario,codigo,email)").order("created_at",{ascending:false})).catch(()=>({data:null})),
@@ -193,8 +192,16 @@ export default function AdminPanel() {
       supabase.from("mensajes").select("*",{count:"exact",head:true}),
     ]);
 
+    // Query de anuncios independiente con log
+    const { data: anuns, error: anunError } = await supabase
+      .from("anuncios")
+      .select("*,usuarios(nombre_usuario,codigo,email)")
+      .order("created_at", { ascending: false })
+      .limit(300);
+    console.log("ANUNCIOS:", anuns?.length, anunError);
+    setAnuncios(anuns || []);
+
     setUsuarios(usrs||[]);
-    setAnuncios(anuns||[]);
     setGrupos(grps||[]);
     setMensajes(msgs||[]);
     setLiqs(lqs||[]);

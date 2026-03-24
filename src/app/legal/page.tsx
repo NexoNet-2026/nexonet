@@ -9,6 +9,7 @@ export default function LegalPage() {
   const links = [
     { href: "/legal/terminos", emoji: "📜", titulo: "Términos y Condiciones", desc: "Reglas de uso de la plataforma" },
     { href: "/legal/privacidad", emoji: "🔒", titulo: "Política de Privacidad", desc: "Cómo manejamos tus datos" },
+    { href: "/legal/cookies", emoji: "🍪", titulo: "Política de Cookies", desc: "Qué cookies usamos y por qué" },
     { href: "/legal/copyright", emoji: "⚖️", titulo: "Reclamos de Copyright", desc: "Reportar contenido que infringe derechos de autor" },
   ];
 

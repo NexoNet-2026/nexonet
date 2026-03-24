@@ -1,70 +1,64 @@
 "use client";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-const S: React.CSSProperties = { fontSize: "14px", color: "#444", lineHeight: 1.8, marginBottom: "16px" };
-const H: React.CSSProperties = { fontSize: "16px", fontWeight: 900, color: "#1a2a3a", marginBottom: "8px", marginTop: "24px" };
+const S: React.CSSProperties = { fontSize:"13px", color:"#444", lineHeight:1.8, marginBottom:"16px" };
+const H: React.CSSProperties = { fontFamily:"'Bebas Neue',sans-serif", fontSize:"18px", color:"#1a2a3a", letterSpacing:"0.5px", marginBottom:"8px", marginTop:"28px" };
 
 export default function TerminosPage() {
   const router = useRouter();
   return (
-    <main style={{ paddingTop: "95px", paddingBottom: "130px", background: "#f4f4f2", minHeight: "100vh", fontFamily: "'Nunito',sans-serif" }}>
+    <main style={{ paddingTop:"95px", paddingBottom:"130px", background:"#f4f4f2", minHeight:"100vh", fontFamily:"'Nunito',sans-serif" }}>
       <Header />
-      <div style={{ padding: "16px", maxWidth: "600px", margin: "0 auto" }}>
+      <div style={{ padding:"16px", maxWidth:"600px", margin:"0 auto" }}>
         <button onClick={()=>router.back()} style={{background:"rgba(26,42,58,0.08)",border:"1px solid rgba(26,42,58,0.2)",borderRadius:"10px",padding:"7px 13px",color:"#1a2a3a",fontSize:"13px",fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',sans-serif",marginBottom:"14px"}}>← Volver</button>
-        <div style={{ background: "#fff", borderRadius: "16px", padding: "24px", boxShadow: "0 2px 10px rgba(0,0,0,0.06)" }}>
-          <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: "28px", color: "#1a2a3a", letterSpacing: "1px", marginBottom: "4px" }}>
-            📜 Términos y Condiciones
+        <div style={{ background:"#fff", borderRadius:"16px", padding:"24px", boxShadow:"0 2px 10px rgba(0,0,0,0.06)" }}>
+          <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"28px", color:"#1a2a3a", letterSpacing:"1px", marginBottom:"4px" }}>
+            📜 Términos y Condiciones de Uso
           </div>
-          <div style={{ fontSize: "12px", color: "#9a9a9a", fontWeight: 600, marginBottom: "20px" }}>
-            Última actualización: Marzo 2026
-          </div>
+          <div style={{ fontSize:"12px", color:"#9a9a9a", fontWeight:600, marginBottom:"20px" }}>Última actualización: Marzo 2026</div>
 
-          <div style={H}>1. Aceptación de los términos</div>
-          <p style={S}>Al registrarte y utilizar NexoNet Argentina, aceptás estos términos y condiciones en su totalidad. Si no estás de acuerdo, no utilices la plataforma.</p>
+          <div style={H}>1. Aceptación</div>
+          <p style={S}>Al registrarte y usar NexoNet Argentina ("la Plataforma"), aceptás estos Términos y Condiciones. Si no los aceptás, no uses la plataforma.</p>
 
-          <div style={H}>2. Registro y cuenta</div>
-          <p style={S}>Para usar NexoNet necesitás crear una cuenta con un email válido. Cada persona puede tener una sola cuenta. Sos responsable de mantener la seguridad de tu contraseña y de toda la actividad que ocurra en tu cuenta. NexoNet se reserva el derecho de suspender o eliminar cuentas que violen estos términos.</p>
+          <div style={H}>2. Quiénes somos</div>
+          <p style={S}>NexoNet Argentina es una plataforma digital operada por Adrián Morra, monotributista, con domicilio en Roldán, provincia de Santa Fe, Argentina. Contacto: <strong>legal@nexonet.ar</strong></p>
 
-          <div style={H}>3. Sistema de BIT</div>
-          <p style={S}>Los BIT son créditos internos de la plataforma. No constituyen dinero, moneda digital ni valor monetario transferible fuera de NexoNet. Los BIT se adquieren mediante compra, promociones o actividad en la plataforma. Los BIT no son reembolsables salvo disposición legal aplicable o programa específico de reembolso. Existen tres tipos: BIT NexoNet (comprados), BIT Free (garantía) y BIT Promotor (referidos).</p>
+          <div style={H}>3. Registro y cuenta</div>
+          <p style={S}>Debés ser mayor de 18 años para registrarte. Sos responsable de mantener la confidencialidad de tu contraseña. NexoNet se reserva el derecho de suspender cuentas que violen estos términos. Está prohibido crear cuentas falsas o hacerse pasar por otra persona.</p>
 
-          <div style={H}>4. Contenido prohibido</div>
-          <p style={S}>Queda estrictamente prohibido publicar: contenido ilegal o que promueva actividades ilícitas; material sexualmente explícito o pornográfico; contenido que incite al odio, discriminación o violencia; información falsa o engañosa; spam, publicidad engañosa o esquemas piramidales; contenido que infrinja derechos de propiedad intelectual de terceros; datos personales de terceros sin su consentimiento.</p>
+          <div style={H}>4. Sistema de BIT</div>
+          <p style={S}>Los BIT son créditos virtuales dentro de la plataforma. No son dinero real ni criptomoneda. Los BIT comprados con dinero real no son reembolsables, salvo error técnico comprobable. Los BIT Free y BIT Promo no tienen valor monetario y no pueden canjearse por dinero. NexoNet puede modificar los valores y costos de BIT con previo aviso de 15 días.</p>
 
-          <div style={H}>5. Anuncios y publicaciones</div>
-          <p style={S}>Los anuncios tienen un período de vigencia de 30 días. Pueden renovarse automáticamente por 500 BIT/mes si el usuario lo configura. Los anuncios vencidos son pausados automáticamente. NexoNet se reserva el derecho de remover anuncios que violen estos términos sin previo aviso.</p>
+          <div style={H}>5. Publicaciones y contenido</div>
+          <p style={S}>Sos responsable del contenido que publicás (anuncios, nexos, mensajes, archivos). Está prohibido publicar contenido ilegal, fraudulento, ofensivo, sexual explícito o que viole derechos de terceros. NexoNet puede eliminar contenido sin previo aviso si viola estas reglas. Al publicar contenido, otorgás a NexoNet una licencia no exclusiva para mostrarlo en la plataforma.</p>
 
-          <div style={H}>6. Contenido descargable y derechos de autor</div>
-          <p style={S}>Al publicar contenido descargable en NexoNet, el usuario declara ser titular de los derechos de autor o contar con autorización expresa del titular para su distribución. NexoNet no se responsabiliza por el contenido publicado por los usuarios. Ante reclamos de derechos de autor, NexoNet actuará conforme a la legislación vigente removiendo el contenido infractor en un plazo de 72 horas hábiles.</p>
+          <div style={H}>6. Transacciones entre usuarios</div>
+          <p style={S}>NexoNet es un intermediario. Las transacciones son entre usuarios. NexoNet no garantiza la calidad, veracidad ni legalidad de los bienes o servicios publicados. Recomendamos verificar la identidad del vendedor antes de concretar una operación.</p>
 
-          <div style={H}>4. Política de reclamos de copyright</div>
-          <p style={S}>Cualquier titular de derechos puede presentar un reclamo a través de /legal/copyright. NexoNet evaluará cada reclamo y, de ser válido, removerá el contenido y notificará al publicador. Un usuario con 2 o más reclamos válidos de copyright podrá ser suspendido de la plataforma.</p>
+          <div style={H}>7. Programa NexoPromotor</div>
+          <p style={S}>Al referir usuarios, recibís el 15% en BIT Promo de cada compra que realice tu referido. El reembolso en dinero está disponible al acumular 100.000 BIT Promo, contra presentación de factura A con IVA. El valor de referencia es 1 BIT Promo = $1 ARS al momento del reembolso. NexoNet se reserva el derecho de modificar el programa con previo aviso de 30 días.</p>
 
-          <div style={H}>5. Política de reintegros</div>
-          <p style={S}>Si un contenido por el que pagaste es removido por reclamo de copyright válido, los BIT gastados serán reintegrados a tu cuenta. Los reintegros se procesan dentro de las 48 horas hábiles posteriores a la resolución del reclamo.</p>
-
-          <div style={H}>6. Grupos y nexos</div>
-          <p style={S}>La creación de grupos y nexos está sujeta al pago de BIT según las tarifas vigentes. El creador es responsable del contenido publicado en su grupo/nexo. NexoNet se reserva el derecho de suspender o eliminar grupos que violen estos términos.</p>
-
-          <div style={H}>7. Empresas</div>
-          <p style={S}>La primera empresa tiene un período de prueba de 30 días sin costo. Posterior al trial, el mantenimiento es de 10.000 BIT mensuales. Las empresas que no renueven serán pausadas automáticamente.</p>
-
-          <div style={H}>8. Conducta del usuario</div>
-          <p style={S}>Queda prohibido: publicar contenido ilegal, fraudulento o que infrinja derechos de terceros; usar la plataforma para spam o phishing; crear cuentas falsas o duplicadas; manipular el sistema de BIT de forma indebida.</p>
+          <div style={H}>8. Propiedad intelectual</div>
+          <p style={S}>El nombre NexoNet, su logo, diseño y código son propiedad de Adrián Morra. No podés copiar, reproducir ni distribuir contenido de la plataforma sin autorización.</p>
 
           <div style={H}>9. Limitación de responsabilidad</div>
-          <p style={S}>NexoNet actúa como intermediario tecnológico. No garantiza la calidad, veracidad o legalidad del contenido publicado por los usuarios. Las transacciones entre usuarios son responsabilidad exclusiva de las partes involucradas.</p>
+          <p style={S}>NexoNet no se responsabiliza por pérdidas económicas derivadas de transacciones entre usuarios. NexoNet no garantiza disponibilidad continua del servicio. En ningún caso la responsabilidad de NexoNet superará el monto pagado por el usuario en los últimos 12 meses.</p>
 
           <div style={H}>10. Modificaciones</div>
-          <p style={S}>NexoNet se reserva el derecho de modificar estos términos en cualquier momento. Los cambios serán notificados a los usuarios registrados y entrarán en vigencia a los 15 días de su publicación.</p>
+          <p style={S}>NexoNet puede modificar estos términos. Te notificaremos con 15 días de anticipación por email o notificación en la app.</p>
 
-          <div style={H}>13. Jurisdicción</div>
-          <p style={S}>Estos términos se rigen por las leyes de la República Argentina. Cualquier controversia será sometida a los tribunales ordinarios de la ciudad de Rosario, provincia de Santa Fe.</p>
+          <div style={H}>11. Jurisdicción</div>
+          <p style={S}>Estos términos se rigen por las leyes de la República Argentina. Ante cualquier disputa, las partes se someten a la jurisdicción de los tribunales ordinarios de la ciudad de Rosario, provincia de Santa Fe.</p>
 
-          <div style={H}>14. Contacto</div>
-          <p style={S}>Para consultas legales: <strong>legal@nexonet.ar</strong>. También podés contactarnos desde tu perfil en la sección "Contactar NexoNet".</p>
+          <div style={{borderTop:"1px solid #f0f0f0",paddingTop:"20px",marginTop:"28px",display:"flex",gap:"12px",flexWrap:"wrap",justifyContent:"center"}}>
+            <Link href="/legal/privacidad" style={{fontSize:"12px",fontWeight:700,color:"#3a7bd5",textDecoration:"none"}}>🔒 Privacidad</Link>
+            <Link href="/legal/cookies" style={{fontSize:"12px",fontWeight:700,color:"#3a7bd5",textDecoration:"none"}}>🍪 Cookies</Link>
+            <Link href="/legal/copyright" style={{fontSize:"12px",fontWeight:700,color:"#3a7bd5",textDecoration:"none"}}>⚖️ Copyright</Link>
+            <Link href="/" style={{fontSize:"12px",fontWeight:700,color:"#9a9a9a",textDecoration:"none"}}>🏠 Inicio</Link>
+          </div>
         </div>
       </div>
       <BottomNav />

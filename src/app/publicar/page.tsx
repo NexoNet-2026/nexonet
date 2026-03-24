@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
-
+import { supabase } from "@/lib/supabase";
 
 const TIPOS_NEXO = [
   { id:"anuncio",  emoji:"📣", titulo:"Anuncio",      desc:"Vendé, comprá o permutá lo que quieras",          color:"#d4a017", bg:"linear-gradient(135deg,#1a2a3a,#2d3d50)", border:"#d4a017", tablaRubros:"rubros", tablaSubrubros:"subrubros", fkSub:"rubro_id" },
@@ -25,15 +25,8 @@ export default function PublicarSelector() {
 
   useEffect(() => { setAnimando(false); setSeleccionado(null); setPaso("tipo"); }, []);
 
-  const tipoActual = TIPOS_NEXO.find(t => t.id === seleccionado);
-
-  const elegir = (tipoId: string, subtipoId?: string) => {
-    setAnimando(true);
-    const destino = subtipoId
-      ? `/nexo/crear/${tipoId}?subtipo=${subtipoId}`
-      : `/nexo/crear/${tipoId}`;
-    setTimeout(() => router.push(destino), 220);
-  };
+  const [tipoSel, setTipoSel] = useState<any>(null);
+  const tipoActual = tipoSel || TIPOS_NEXO.find(t => t.id === seleccionado);
 
   const elegirConCategoria = (tipoId: string, rubroId?: number, subrubroId?: number) => {
     setAnimando(true);
@@ -44,56 +37,42 @@ export default function PublicarSelector() {
     setTimeout(() => router.push(`/nexo/crear/${tipoId}${qs ? "?" + qs : ""}`), 220);
   };
 
-  const sbUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const sbKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-  const sbHeaders = { "apikey": sbKey, "Authorization": `Bearer ${sbKey}` };
-
-  const seleccionarTipo = async (tipoId: string) => {
-    const tipo = TIPOS_NEXO.find(t => t.id === tipoId);
-    if (!tipo) return;
-
-    if (tipo.tablaRubros) {
-      setCargando(true);
-      setSeleccionado(tipoId);
-      const p = new URLSearchParams(); p.set("select","id,nombre"); p.set("order","orden.asc");
-      const res = await fetch(`${sbUrl}/rest/v1/${tipo.tablaRubros}?${p.toString()}`, { headers: sbHeaders });
-      const data = await res.json();
-      console.log("Rubros cargados:", tipo.tablaRubros, data);
-      setRubros(Array.isArray(data) ? data : []);
-      setCargando(false);
-      if (!data || data.length === 0) {
-        elegir(tipoId);
-      } else {
-        setPaso("rubro");
-      }
-    } else {
-      elegir(tipoId);
+  const seleccionarTipo = async (tipo: any) => {
+    setTipoSel(tipo);
+    setSeleccionado(tipo.id);
+    setPaso("rubro");
+    setCargando(true);
+    const { data } = await (supabase as any).from(tipo.tablaRubros)
+      .select("id,nombre")
+      .order("orden", { ascending: true });
+    console.log("Rubros:", tipo.tablaRubros, data);
+    setRubros(data || []);
+    setCargando(false);
+    if (!data || data.length === 0) {
+      elegirConCategoria(tipo.id);
     }
   };
 
   const seleccionarRubro = async (rubro: any) => {
     setRubroSel(rubro);
-    const tipo = TIPOS_NEXO.find(t => t.id === seleccionado);
-    if (!tipo?.tablaSubrubros) { elegirConCategoria(seleccionado!, rubro.id); return; }
-
+    setPaso("subrubro");
     setCargando(true);
-    const fk = (tipo as any).fkSub || "rubro_id";
-    const p = new URLSearchParams(); p.set("select","id,nombre"); p.set(fk,`eq.${rubro.id}`); p.set("order","orden.asc");
-    const res = await fetch(`${sbUrl}/rest/v1/${tipo.tablaSubrubros}?${p.toString()}`, { headers: sbHeaders });
-    const data = await res.json();
-    setSubrubros(Array.isArray(data) ? data : []);
+    const fk = tipoSel?.fkSub || "rubro_id";
+    const { data } = await (supabase as any).from(tipoSel.tablaSubrubros)
+      .select("id,nombre")
+      .eq(fk, rubro.id)
+      .order("orden", { ascending: true });
+    setSubrubros(data || []);
     setCargando(false);
     if (!data || data.length === 0) {
-      elegirConCategoria(seleccionado!, rubro.id);
-    } else {
-      setPaso("subrubro");
+      elegirConCategoria(tipoSel.id, rubro.id);
     }
   };
 
   const volver = () => {
     if (paso === "subrubro") { setPaso("rubro"); setSubrubros([]); setRubroSel(null); }
-    else if (paso === "rubro") { setPaso("tipo"); setSeleccionado(null); setRubros([]); }
-    else { setSeleccionado(null); }
+    else if (paso === "rubro") { setPaso("tipo"); setSeleccionado(null); setTipoSel(null); setRubros([]); }
+    else { setSeleccionado(null); setTipoSel(null); }
   };
 
   const color = tipoActual?.color || "#d4a017";
@@ -115,7 +94,7 @@ export default function PublicarSelector() {
       {paso === "tipo" && !seleccionado && (
         <div style={{ padding:"0 16px", display:"flex", flexDirection:"column", gap:"12px", opacity:animando?0:1, transition:"opacity .2s" }}>
           {TIPOS_NEXO.map(t => (
-            <button key={t.id} onClick={() => seleccionarTipo(t.id)}
+            <button key={t.id} onClick={() => seleccionarTipo(t)}
               style={{ background:t.bg, border:`2px solid ${t.border}30`, borderRadius:"18px", padding:"20px", display:"flex", alignItems:"center", gap:"16px", cursor:"pointer", textAlign:"left", fontFamily:"'Nunito',sans-serif", transition:"transform .15s", boxShadow:"0 4px 20px rgba(0,0,0,0.3)" }}
               onMouseDown={e=>(e.currentTarget.style.transform="scale(0.98)")} onMouseUp={e=>(e.currentTarget.style.transform="scale(1)")}>
               <div style={{ width:"58px", height:"58px", borderRadius:"16px", background:`${t.color}22`, border:`2px solid ${t.color}40`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"28px", flexShrink:0 }}>{t.emoji}</div>

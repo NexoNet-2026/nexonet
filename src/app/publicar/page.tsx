@@ -123,7 +123,6 @@ export default function PublicarSelector() {
                 <button key={r.id} onClick={() => seleccionarRubro(r)}
                   style={{ background:`linear-gradient(135deg,${color}15,${color}08)`, border:`2px solid ${color}30`, borderRadius:"16px", padding:"16px 14px", cursor:"pointer", textAlign:"left", fontFamily:"'Nunito',sans-serif", display:"flex", flexDirection:"column", gap:"8px", boxShadow:"0 4px 16px rgba(0,0,0,0.25)", transition:"transform .15s" }}
                   onMouseDown={e=>(e.currentTarget.style.transform="scale(0.96)")} onMouseUp={e=>(e.currentTarget.style.transform="scale(1)")}>
-                  <div style={{ fontSize:"28px" }}>{r.emoji || "📁"}</div>
                   <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"16px", color, letterSpacing:"0.5px", lineHeight:1.1 }}>{r.nombre}</div>
                 </button>
               ))}

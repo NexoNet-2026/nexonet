@@ -177,7 +177,7 @@ export default function AdminPanel() {
       {count:cu},{count:ca},{count:cg},{count:cm},
     ] = await Promise.all([
       supabase.from("usuarios").select("*").order("created_at",{ascending:false}).limit(300),
-      supabase.from("anuncios").select("*,usuarios(nombre_usuario,codigo,email),subrubros(id,nombre)").order("created_at",{ascending:false}).limit(300),
+      supabase.from("anuncios").select("*,usuarios(nombre_usuario,codigo,email)").order("created_at",{ascending:false}).limit(300),
       supabase.from("grupos").select("*,usuarios(nombre_usuario)").order("created_at",{ascending:false}).limit(100),
       supabase.from("mensajes").select("*,emisor:emisor_id(nombre_usuario),receptor:receptor_id(nombre_usuario)").order("created_at",{ascending:false}).limit(200),
       supabase.from("liquidaciones_promotor").select("*,usuarios(nombre_usuario,codigo,email)").order("created_at",{ascending:false}),

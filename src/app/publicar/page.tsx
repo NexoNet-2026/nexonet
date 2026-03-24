@@ -52,7 +52,7 @@ export default function PublicarSelector() {
     if (tipo.tablaRubros) {
       setCargando(true);
       setSeleccionado(tipoId);
-      const { data } = await supabase.from(tipo.tablaRubros).select("id,nombre,emoji").order("orden", { ascending: true });
+      const { data } = await supabase.from(tipo.tablaRubros as any).select("id,nombre,emoji").order("orden", { ascending: true });
       setRubros(data || []);
       setCargando(false);
       if (!data || data.length === 0) {
@@ -73,7 +73,7 @@ export default function PublicarSelector() {
 
     setCargando(true);
     const fk = (tipo as any).fkSub || "rubro_id";
-    const { data } = await supabase.from(tipo.tablaSubrubros).select("id,nombre").eq(fk, rubro.id).order("orden", { ascending: true });
+    const { data } = await supabase.from(tipo.tablaSubrubros as any).select("id,nombre").eq(fk, rubro.id).order("orden", { ascending: true });
     setSubrubros(data || []);
     setCargando(false);
     if (!data || data.length === 0) {

@@ -175,6 +175,12 @@ function RegistroInner() {
             <Campo label="Contraseña *" value={form.password} onChange={v=>setForm({...form,password:v})} placeholder="Mínimo 6 caracteres" type="password"/>
             <Campo label="Confirmar contraseña *" value={form.confirmar} onChange={v=>setForm({...form,confirmar:v})} placeholder="Repetí tu contraseña" type="password"/>
 
+            <div style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600,textAlign:"center",marginBottom:"12px",lineHeight:1.6}}>
+              Al registrarte aceptás nuestros{" "}
+              <a href="/legal/terminos" target="_blank" style={{color:"#d4a017",fontWeight:800,textDecoration:"none"}}>Términos y Condiciones</a>{" "}
+              y nuestra{" "}
+              <a href="/legal/privacidad" target="_blank" style={{color:"#d4a017",fontWeight:800,textDecoration:"none"}}>Política de Privacidad</a>.
+            </div>
             <button onClick={handleRegistro} disabled={loading}
               style={{width:"100%",background:loading?"#ccc":"linear-gradient(135deg,#d4a017,#f0c040)",color:"#1a2a3a",border:"none",borderRadius:"12px",padding:"16px",fontSize:"15px",fontWeight:800,fontFamily:"'Nunito',sans-serif",cursor:loading?"not-allowed":"pointer",letterSpacing:"1px",textTransform:"uppercase" as const,marginTop:"8px",boxShadow:loading?"none":"0 4px 0 #a07810"}}>
               {loading?"Registrando...":"Crear cuenta →"}

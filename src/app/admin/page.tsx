@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabase";
 
 const ADMIN_UUID = "ab56253d-b92e-4b73-a19a-3cd0cd95c458";
 
-type Tab = "dashboard"|"usuarios"|"anuncios"|"nexos"|"grupos"|"mensajes"|"promotores"|"pagos"|"alarmas"|"config"|"contactos"|"reclamos"|"socios";
+type Tab = "dashboard"|"usuarios"|"anuncios"|"nexos"|"mensajes"|"promotores"|"pagos"|"alarmas"|"config"|"contactos"|"reclamos"|"socios";
 type ConfigSub = "anuncios"|"empresas"|"servicios"|"trabajo"|"grupos"|"filtros_ia"|"general";
 
 const S = {
@@ -934,7 +934,6 @@ export default function AdminPanel() {
     {id:"usuarios", e:"👥",l:"Usuarios"},
     {id:"anuncios", e:"📋",l:"Anuncios"},
     {id:"nexos",    e:"🔗",l:"Nexos"},
-    {id:"grupos",   e:"🏘️",l:"Grupos"},
     {id:"mensajes", e:"💬",l:"Mensajes"},
     {id:"promotores",e:"⭐",l:"Promotores"},
     {id:"pagos",    e:"💰",l:"Pagos"},
@@ -1313,25 +1312,6 @@ export default function AdminPanel() {
               </div>
             ))}
             {nexosFiltrados.length===0 && <div style={{textAlign:"center",color:"#bbb",padding:"40px",fontSize:"14px"}}>No hay nexos</div>}
-          </>
-        )}
-
-        {/* ══ GRUPOS ══════════════════════════════════════════════════════════ */}
-        {!loading && tab==="grupos" && (
-          <>
-            <button onClick={()=>setModalNuevoGr(true)} style={{...S.btn("#27ae60"),marginBottom:"14px",display:"block"}}>+ Crear grupo</button>
-            {grupos.map(g=>(
-              <div key={g.id} style={{...S.card,borderLeft:`4px solid ${g.activo?"#27ae60":"#e74c3c"}`}}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
-                  <div>
-                    <div style={{fontSize:"14px",fontWeight:900,color:"#1a2a3a"}}>{g.nombre}</div>
-                    <div style={{fontSize:"12px",color:"#9a9a9a",fontWeight:600}}>{g.usuarios?.nombre_usuario} · {g.descripcion||"Sin descripción"}</div>
-                    <div style={{fontSize:"11px",color:"#9a9a9a",marginTop:"4px"}}>👥 {g.miembros||0} miembros</div>
-                  </div>
-                  <button onClick={()=>toggleGrupo(g)} style={S.btn(g.activo?"#e74c3c":"#27ae60",true)}>{g.activo?"Desactivar":"Activar"}</button>
-                </div>
-              </div>
-            ))}
           </>
         )}
 

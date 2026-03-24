@@ -178,10 +178,10 @@ export default function AdminPanel() {
     ] = await Promise.all([
       supabase.from("usuarios").select("*").order("created_at",{ascending:false}).limit(300),
       supabase.from("anuncios").select("*,usuarios(nombre_usuario,codigo,email)").order("created_at",{ascending:false}).limit(300),
-      supabase.from("grupos").select("*,usuarios(nombre_usuario)").order("created_at",{ascending:false}).limit(100),
+      Promise.resolve(supabase.from("grupos").select("*,usuarios(nombre_usuario)").order("created_at",{ascending:false}).limit(100)).catch(()=>({data:null})),
       supabase.from("mensajes").select("*,emisor:emisor_id(nombre_usuario),receptor:receptor_id(nombre_usuario)").order("created_at",{ascending:false}).limit(200),
-      supabase.from("liquidaciones_promotor").select("*,usuarios(nombre_usuario,codigo,email)").order("created_at",{ascending:false}),
-      supabase.from("comisiones_promotor").select("*,promotor:promotor_id(nombre_usuario,codigo),origen:origen_id(nombre_usuario,codigo)").order("created_at",{ascending:false}).limit(100),
+      Promise.resolve(supabase.from("liquidaciones_promotor").select("*,usuarios(nombre_usuario,codigo,email)").order("created_at",{ascending:false})).catch(()=>({data:null})),
+      Promise.resolve(supabase.from("comisiones_promotor").select("*,promotor:promotor_id(nombre_usuario,codigo),origen:origen_id(nombre_usuario,codigo)").order("created_at",{ascending:false}).limit(100)).catch(()=>({data:null})),
       supabase.from("rubros").select("*,subrubros(id,nombre,orden)").order("orden",{ascending:true}),
       supabase.from("pagos_mp").select("*,usuarios(nombre_usuario,codigo,email)").order("created_at",{ascending:false}).limit(200),
       supabase.from("grupo_categorias").select("*").order("orden",{ascending:true}),
@@ -223,24 +223,26 @@ export default function AdminPanel() {
     setClaims(claimsData||[]);
 
     // Visitas stats
-    const hoy = new Date().toISOString().slice(0,10);
-    const hace7 = new Date(Date.now()-7*24*60*60*1000).toISOString().slice(0,10);
-    const hace30 = new Date(Date.now()-30*24*60*60*1000).toISOString().slice(0,10);
-    const hace365 = new Date(Date.now()-365*24*60*60*1000).toISOString().slice(0,10);
-    const [
-      {count:vHoy1},{count:vSem1},{count:vMes1},{count:vAnio1},
-      {count:vHoy2},{count:vSem2},{count:vMes2},{count:vAnio2},
-    ] = await Promise.all([
-      supabase.from("anuncio_visitas").select("*",{count:"exact",head:true}).gte("fecha",hoy),
-      supabase.from("anuncio_visitas").select("*",{count:"exact",head:true}).gte("fecha",hace7),
-      supabase.from("anuncio_visitas").select("*",{count:"exact",head:true}).gte("fecha",hace30),
-      supabase.from("anuncio_visitas").select("*",{count:"exact",head:true}).gte("fecha",hace365),
-      supabase.from("nexo_visitas").select("*",{count:"exact",head:true}).gte("fecha",hoy),
-      supabase.from("nexo_visitas").select("*",{count:"exact",head:true}).gte("fecha",hace7),
-      supabase.from("nexo_visitas").select("*",{count:"exact",head:true}).gte("fecha",hace30),
-      supabase.from("nexo_visitas").select("*",{count:"exact",head:true}).gte("fecha",hace365),
-    ]);
-    setVisitStats({ hoy:(vHoy1||0)+(vHoy2||0), semana:(vSem1||0)+(vSem2||0), mes:(vMes1||0)+(vMes2||0), anio:(vAnio1||0)+(vAnio2||0) });
+    try {
+      const hoy = new Date().toISOString().slice(0,10);
+      const hace7 = new Date(Date.now()-7*24*60*60*1000).toISOString().slice(0,10);
+      const hace30 = new Date(Date.now()-30*24*60*60*1000).toISOString().slice(0,10);
+      const hace365 = new Date(Date.now()-365*24*60*60*1000).toISOString().slice(0,10);
+      const [
+        {count:vHoy1},{count:vSem1},{count:vMes1},{count:vAnio1},
+        {count:vHoy2},{count:vSem2},{count:vMes2},{count:vAnio2},
+      ] = await Promise.all([
+        supabase.from("anuncio_visitas").select("*",{count:"exact",head:true}).gte("fecha",hoy),
+        supabase.from("anuncio_visitas").select("*",{count:"exact",head:true}).gte("fecha",hace7),
+        supabase.from("anuncio_visitas").select("*",{count:"exact",head:true}).gte("fecha",hace30),
+        supabase.from("anuncio_visitas").select("*",{count:"exact",head:true}).gte("fecha",hace365),
+        supabase.from("nexo_visitas").select("*",{count:"exact",head:true}).gte("fecha",hoy),
+        supabase.from("nexo_visitas").select("*",{count:"exact",head:true}).gte("fecha",hace7),
+        supabase.from("nexo_visitas").select("*",{count:"exact",head:true}).gte("fecha",hace30),
+        supabase.from("nexo_visitas").select("*",{count:"exact",head:true}).gte("fecha",hace365),
+      ]);
+      setVisitStats({ hoy:(vHoy1||0)+(vHoy2||0), semana:(vSem1||0)+(vSem2||0), mes:(vMes1||0)+(vMes2||0), anio:(vAnio1||0)+(vAnio2||0) });
+    } catch(e) { console.error("Visitas error:", e); }
 
     // Registros por mes (últimos 12)
     const meses: {mes:string;cant:number}[] = [];
@@ -265,6 +267,7 @@ export default function AdminPanel() {
 
   // ── Realtime dashboard ──
   const cargarRealtime = async () => {
+    try {
     const now5 = new Date(Date.now() - 5*60*1000).toISOString();
     const now15 = new Date(Date.now() - 15*60*1000).toISOString();
     const todayStart = new Date(); todayStart.setHours(0,0,0,0);
@@ -309,6 +312,7 @@ export default function AdminPanel() {
     setRtBits({nexo:bNexo,free:bFree,promo:bPromo,promoTotal:bPromoT});
     setRtLastUpdate(new Date());
     setRtSegs(0);
+    } catch(e) { console.error("Realtime error:", e); }
   };
 
   useEffect(() => {

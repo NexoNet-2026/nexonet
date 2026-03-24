@@ -97,6 +97,32 @@ export default function PromoterPage() {
           <StatCard label="Referidos" value={totalRefs.toLocaleString()} color="#27ae60" />
           <StatCard label="Total ganado" value={totalGanado.toLocaleString()} color="#3a7bd5" />
         </div>
+
+        {/* Solicitar reembolso */}
+        <div style={{ background:"rgba(255,255,255,0.1)", borderRadius:"14px", padding:"14px 16px", marginTop:"14px" }}>
+          {totalGanado >= 100000 ? (<>
+            <div style={{ fontSize:"13px", fontWeight:900, color:"#fff", marginBottom:"6px" }}>💸 Solicitar reembolso</div>
+            <div style={{ fontSize:"11px", color:"rgba(255,255,255,0.6)", fontWeight:600, marginBottom:"10px" }}>
+              Mínimo 100.000 BIT Promo = $100.000 ARS contra factura A + IVA
+            </div>
+            <button onClick={async()=>{
+              if(!confirm(`¿Solicitar reembolso de ${bitsPromotor.toLocaleString()} BIT Promo?`)) return;
+              await supabase.from("solicitudes_reembolso_promotor").insert({usuario_id:perfil.id,bits_cantidad:bitsPromotor,estado:"pendiente"});
+              await supabase.from("notificaciones").insert({usuario_id:perfil.id,tipo:"sistema",mensaje:`💸 Solicitud de reembolso de ${bitsPromotor.toLocaleString()} BIT Promo recibida. Te contactaremos.`,leida:false});
+              alert("✅ Solicitud enviada. Te contactaremos para coordinar el pago.");
+            }} disabled={bitsPromotor===0} style={{background:"linear-gradient(135deg,#27ae60,#1e8449)",border:"none",borderRadius:"10px",padding:"10px 18px",fontSize:"13px",fontWeight:900,color:"#fff",cursor:"pointer",fontFamily:"'Nunito',sans-serif",opacity:bitsPromotor===0?0.5:1}}>
+              💸 Solicitar reembolso de {bitsPromotor.toLocaleString()} BIT
+            </button>
+          </>) : (<>
+            <div style={{ fontSize:"13px", fontWeight:900, color:"#fff", marginBottom:"6px" }}>💸 Reembolso disponible desde 100.000 BIT</div>
+            <div style={{ background:"rgba(255,255,255,0.1)", borderRadius:"8px", height:"12px", overflow:"hidden", marginBottom:"6px" }}>
+              <div style={{ height:"100%", background:"linear-gradient(90deg,#d4a017,#f0c040)", borderRadius:"8px", width:`${Math.min(100,totalGanado/1000)}%`, transition:"width .3s" }}/>
+            </div>
+            <div style={{ fontSize:"11px", color:"rgba(255,255,255,0.5)", fontWeight:700 }}>
+              {totalGanado.toLocaleString()} / 100.000 BIT — Faltan {(100000-totalGanado).toLocaleString()} BIT
+            </div>
+          </>)}
+        </div>
       </div>
 
       {/* TABS */}
@@ -128,7 +154,7 @@ export default function PromoterPage() {
               </div>
               {[
                 { n: "1", t: "Compartí tu link", d: "Compartí tu código y link de registro" },
-                { n: "2", t: "Ganás 1.000 BIT", d: "Por cada usuario que se registre con tu código recibís 1.000 BIT Promotor automáticamente" },
+                { n: "2", t: "Ganás el 15%", d: "Recibís el 15% en BIT Promo de cada compra que haga tu referido, de por vida" },
               ].map(item => (
                 <div key={item.n} style={{ display: "flex", gap: "12px", marginBottom: "12px" }}>
                   <div style={{ width: "30px", height: "30px", borderRadius: "50%", background: "#d4a017",
@@ -208,8 +234,8 @@ export default function PromoterPage() {
                   </div>
                 </div>
                 <div style={{ textAlign: "right" }}>
-                  <div style={{ fontSize: "13px", fontWeight: 900, color: "#27ae60" }}>
-                    +1.000 BIT
+                  <div style={{ fontSize: "11px", fontWeight: 800, color: "#27ae60" }}>
+                    15% comisión
                   </div>
                 </div>
               </div>

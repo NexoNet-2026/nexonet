@@ -173,6 +173,47 @@ export async function POST(req: NextRequest) {
 
     console.log(`✅ Acreditados ${pkg.cantidad} en ${pkg.col} para usuario ${usuario_id}`);
 
+    // ── Comisión 15% al promotor referidor ──
+    try {
+      const { data: comprador } = await supabase
+        .from("usuarios")
+        .select("referido_por")
+        .eq("id", usuario_id)
+        .single();
+
+      if (comprador?.referido_por) {
+        const comision = Math.floor(pkg.cantidad * 0.15);
+        if (comision > 0) {
+          const { data: promotor } = await supabase
+            .from("usuarios")
+            .select("bits_promo, bits_promotor_total")
+            .eq("id", comprador.referido_por)
+            .single();
+
+          if (promotor) {
+            await supabase.from("usuarios").update({
+              bits_promo: (promotor.bits_promo || 0) + comision,
+              bits_promotor_total: (promotor.bits_promotor_total || 0) + comision,
+            }).eq("id", comprador.referido_por);
+
+            await supabase.from("notificaciones").insert({
+              usuario_id: comprador.referido_por,
+              tipo: "sistema",
+              mensaje: `⭐ Ganaste ${comision.toLocaleString()} BIT Promo — comisión del 15% por compra de tu referido`,
+              leida: false,
+            });
+
+            await supabase.from("log_bits_internos").insert({
+              usuario_id: comprador.referido_por,
+              cantidad: comision,
+              motivo: `Comisión 15% — referido ${usuario_id} compró ${pkg.cantidad} BIT (paquete: ${paquete})`,
+              asignado_por: usuario_id,
+            });
+          }
+        }
+      }
+    } catch (e) { console.error("Error comisión promotor:", e); }
+
     // Acreditar socios comerciales
     try {
       const { acreditarSocios } = await import("@/lib/socios");

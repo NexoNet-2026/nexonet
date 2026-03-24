@@ -313,8 +313,7 @@ export default function Header() {
         <span style={{ fontSize: "14px" }}>⭐</span>
         <span style={{ fontSize: "12px", fontWeight: 800, color: "#1a2a3a" }}>NEXO PROMOTOR</span>
         <span style={{ fontSize: "10px", color: "#1a2a3a", fontWeight: 700 }}>—</span>
-        <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "20px", color: "#1a2a3a" }}>1000</span>
-        <span style={{ fontSize: "12px", fontWeight: 800, color: "#1a2a3a" }}>BIT x usuario</span>
+        <span style={{ fontSize: "12px", fontWeight: 800, color: "#1a2a3a" }}>Ganá el 15%</span>
         <span style={{ fontSize: "12px", color: "#1a2a3a", fontWeight: 800 }}>→</span>
       </Link>
 

@@ -55,7 +55,8 @@ export default function PublicarSelector() {
     if (tipo.tablaRubros) {
       setCargando(true);
       setSeleccionado(tipoId);
-      const res = await fetch(`${sbUrl}/rest/v1/${tipo.tablaRubros}?select=id,nombre&order=orden.asc`, { headers: sbHeaders });
+      const p = new URLSearchParams(); p.set("select","id,nombre"); p.set("order","orden.asc");
+      const res = await fetch(`${sbUrl}/rest/v1/${tipo.tablaRubros}?${p.toString()}`, { headers: sbHeaders });
       const data = await res.json();
       console.log("Rubros cargados:", tipo.tablaRubros, data);
       setRubros(Array.isArray(data) ? data : []);
@@ -77,7 +78,8 @@ export default function PublicarSelector() {
 
     setCargando(true);
     const fk = (tipo as any).fkSub || "rubro_id";
-    const res = await fetch(`${sbUrl}/rest/v1/${tipo.tablaSubrubros}?select=id,nombre&${fk}=eq.${rubro.id}&order=orden.asc`, { headers: sbHeaders });
+    const p = new URLSearchParams(); p.set("select","id,nombre"); p.set(fk,`eq.${rubro.id}`); p.set("order","orden.asc");
+    const res = await fetch(`${sbUrl}/rest/v1/${tipo.tablaSubrubros}?${p.toString()}`, { headers: sbHeaders });
     const data = await res.json();
     setSubrubros(Array.isArray(data) ? data : []);
     setCargando(false);

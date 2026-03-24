@@ -57,6 +57,7 @@ export default function PublicarSelector() {
       setSeleccionado(tipoId);
       const res = await fetch(`${sbUrl}/rest/v1/${tipo.tablaRubros}?select=id,nombre,emoji&order=orden.asc`, { headers: sbHeaders });
       const data = await res.json();
+      console.log("Rubros cargados:", tipo.tablaRubros, data);
       setRubros(Array.isArray(data) ? data : []);
       setCargando(false);
       if (!data || data.length === 0) {

@@ -64,6 +64,8 @@ function NexoCrearInner() {
   const searchParams = useSearchParams();
   const tipo         = (params?.tipo as string) || "";
   const subtipo      = searchParams?.get("subtipo") || "";
+  const preRubroId   = searchParams?.get("rubro_id") || "";
+  const preSubrubroId = searchParams?.get("subrubro_id") || "";
 
   const cfg        = tipo === "grupo" ? null : CONFIG_TIPO[tipo];
   const cfgSub     = subtipo ? CONFIG_SUBTIPO[subtipo] : null;
@@ -101,7 +103,8 @@ function NexoCrearInner() {
     provincia:"", ciudad:"", direccion:"", whatsapp:"", link_externo:"",
     permuto:false, banner_url:"", avatar_url:"",
     foto1_url:"", foto2_url:"", foto3_url:"",
-    tipo_acceso:"libre", tipo_contacto:"datos", rubro_id:"", subrubro_id:"",
+    tipo_acceso:"libre", tipo_contacto:"datos",
+    rubro_id: preRubroId, subrubro_id: preSubrubroId,
     lat:"", lng:"",
   });
 
@@ -160,6 +163,9 @@ function NexoCrearInner() {
         );
       });
     }
+
+    // Pre-cargar filtros si viene subrubro_id por URL
+    if (preSubrubroId) cargarSubFiltros(preSubrubroId);
 
     const inicial = slidersDefault.map((s, i) => {
       const cat = Object.values(SLIDERS_PREDEFINIDOS).flat().find(p => p.tipo === s);
@@ -347,17 +353,27 @@ function NexoCrearInner() {
           {tipo==="anuncio" && (
             <div style={CAJA}>
               <SL>📂 Categoría</SL>
-              <L>Rubro</L>
-              <select value={form.rubro_id} onChange={e=>{F("rubro_id",e.target.value);F("subrubro_id","");}} style={{...IS,marginBottom:"12px"}}>
-                <option value="">— Elegí un rubro —</option>
-                {rubros.map(r=><option key={r.id} value={r.id}>{r.nombre}</option>)}
-              </select>
-              {form.rubro_id && subsDe.length>0 && (<>
-                <L>Subrubro</L>
-                <select value={form.subrubro_id} onChange={e=>{F("subrubro_id",e.target.value);cargarSubFiltros(e.target.value);}} style={{...IS,marginBottom:"0"}}>
-                  <option value="">— Todos —</option>
-                  {subsDe.map(s=><option key={s.id} value={s.id}>{s.nombre}</option>)}
+              {preRubroId ? (
+                <div style={{display:"flex",alignItems:"center",gap:"8px",flexWrap:"wrap"}}>
+                  <span style={{background:`${colorPage}18`,border:`1px solid ${colorPage}40`,borderRadius:"20px",padding:"6px 14px",fontSize:"12px",fontWeight:800,color:colorPage}}>
+                    {rubros.find(r=>String(r.id)===form.rubro_id)?.nombre || `Rubro #${form.rubro_id}`}
+                    {form.subrubro_id && ` → ${subsDe.find(s=>String(s.id)===form.subrubro_id)?.nombre || form.subrubro_id}`}
+                  </span>
+                  <button onClick={()=>{F("rubro_id","");F("subrubro_id","");}} style={{background:"none",border:"none",fontSize:"11px",fontWeight:700,color:"#9a9a9a",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>cambiar</button>
+                </div>
+              ) : (<>
+                <L>Rubro</L>
+                <select value={form.rubro_id} onChange={e=>{F("rubro_id",e.target.value);F("subrubro_id","");}} style={{...IS,marginBottom:"12px"}}>
+                  <option value="">— Elegí un rubro —</option>
+                  {rubros.map(r=><option key={r.id} value={r.id}>{r.nombre}</option>)}
                 </select>
+                {form.rubro_id && subsDe.length>0 && (<>
+                  <L>Subrubro</L>
+                  <select value={form.subrubro_id} onChange={e=>{F("subrubro_id",e.target.value);cargarSubFiltros(e.target.value);}} style={{...IS,marginBottom:"0"}}>
+                    <option value="">— Todos —</option>
+                    {subsDe.map(s=><option key={s.id} value={s.id}>{s.nombre}</option>)}
+                  </select>
+                </>)}
               </>)}
             </div>
           )}

@@ -672,8 +672,8 @@ function BuscarInner() {
             <div style={{transition:"opacity 0.2s ease",opacity:entLoading?0.5:1}}>
               {entLoading && entRubros.length === 0 ? (
                 <div style={{textAlign:"center",padding:"40px",color:"#9a9a9a",fontWeight:700}}>Cargando categorías...</div>
-              ) : entRubros.length > 0 ? (
-                (entRubroSel ? entRubros.filter(r=>r.id===entRubroSel) : entRubros).map(rubro => {
+              ) : entRubros.length > 0 ? (<>
+                {(entRubroSel ? entRubros.filter(r=>r.id===entRubroSel) : entRubros).map(rubro => {
                   const subs = (rubro.subrubros||[]).sort((a:any,b:any)=>(a.orden||0)-(b.orden||0));
                   const allGrupos = nexosPorTipo["grupos"]||[];
                   const subNames = subs.map((s:any)=>s.nombre.toLowerCase());
@@ -712,8 +712,29 @@ function BuscarInner() {
                       )}
                     </div>
                   );
-                })
-              ) : (
+                })}
+                {!entRubroSel && (() => {
+                  const allSubNames = entRubros.flatMap(r =>
+                    (r.subrubros||[]).map((s:any) => s.nombre.toLowerCase())
+                  );
+                  const sinCat = (nexosPorTipo["grupos"]||[]).filter((n:any) =>
+                    !n.subtipo || !allSubNames.includes((n.subtipo||"").toLowerCase())
+                  );
+                  if (sinCat.length === 0) return null;
+                  return (
+                    <div style={{marginBottom:"8px",background:"#fff",paddingBottom:"12px",borderBottom:"6px solid #f4f4f2"}}>
+                      <div style={{padding:"14px 16px 8px"}}>
+                        <span style={{fontSize:"16px",fontWeight:900,color:"#1a2a3a"}}>👥 Otros grupos →</span>
+                      </div>
+                      <div style={{display:"flex",gap:"12px",padding:"0 16px",overflowX:"auto",scrollbarWidth:"none",WebkitOverflowScrolling:"touch"}}>
+                        {sinCat.map((n:any) => (
+                          <TarjetaGrupoSlider key={n.id} nexo={n} onNavigate={()=>router.push(`/nexo/${n.id}`)} />
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
+              </>) : (
                 <div>
                   {(nexosPorTipo["grupos"]||[]).length === 0 ? (
                     <div style={{textAlign:"center",padding:"50px 20px"}}>

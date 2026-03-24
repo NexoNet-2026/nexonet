@@ -300,7 +300,7 @@ function NexoCrearInner() {
         delete payload.banner_url;
       }
 
-      const tabla = (tipo==="anuncio"||tipo==="trabajo") ? "anuncios" : "nexos";
+      const tabla = tipo==="anuncio" ? "anuncios" : "nexos";
       const { data: nexo, error } = await supabase.from(tabla).insert(payload).select().single();
       if (error) { console.error(error); alert(`Error al crear: ${error.message}`); setGuardando(false); return; }
 
@@ -313,9 +313,9 @@ function NexoCrearInner() {
         await supabase.from("nexo_miembros").insert({ nexo_id:nexo.id, usuario_id:perfil.id, rol:"creador", estado:"activo" });
       }
 
-      if (tipo==="empresa")                        window.location.href = "/mis-anuncios";
-      else if (tipo==="anuncio"||tipo==="trabajo") window.location.href = `/anuncios/${nexo.id}`;
-      else                                         router.push(`/nexo/${nexo.id}`);
+      if (tipo==="empresa")        window.location.href = "/mis-anuncios";
+      else if (tipo==="anuncio")   window.location.href = `/anuncios/${nexo.id}`;
+      else                         router.push(`/nexo/${nexo.id}`);
 
     } catch(e:any) {
       alert("Error al crear: " + (e?.message||"Intentá de nuevo"));

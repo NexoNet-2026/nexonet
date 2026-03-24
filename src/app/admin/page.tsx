@@ -768,6 +768,7 @@ export default function AdminPanel() {
 
   // ── Filtros IA ──
   const cargarFiltros = async (subId:number) => {
+    console.log("Cargando filtros para subrubro:", subId);
     setFiltroSubSel(subId);
     const {data} = await supabase.from("subrubro_filtros").select("*").eq("subrubro_id",subId).order("orden");
     setFiltrosIA(data||[]);

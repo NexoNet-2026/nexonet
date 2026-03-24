@@ -383,28 +383,6 @@ function TarjetaBusqueda({ b, idx, rubros, subrubros, provs, ciudades, bits,
             </div>
 
             <div>
-              <L>📅 Año de fabricación</L>
-              <div style={{display:"flex",gap:"8px",alignItems:"center"}}>
-                <input value={b.anio_min} onChange={e=>onUpd(b.id,"anio_min",e.target.value)}
-                  placeholder={`Desde (${ANIO_MIN})`} type="number" min={ANIO_MIN} max={ANIO_MAX} style={{...IS,flex:1}}/>
-                <span style={{color:"#9a9a9a",fontWeight:800}}>—</span>
-                <input value={b.anio_max} onChange={e=>onUpd(b.id,"anio_max",e.target.value)}
-                  placeholder={`Hasta (${ANIO_MAX})`} type="number" min={ANIO_MIN} max={ANIO_MAX} style={{...IS,flex:1}}/>
-              </div>
-            </div>
-
-            <div>
-              <L>🚗 Kilómetros</L>
-              <div style={{display:"flex",gap:"8px",alignItems:"center"}}>
-                <input value={b.km_min} onChange={e=>onUpd(b.id,"km_min",e.target.value)}
-                  placeholder="Desde KM" type="number" style={{...IS,flex:1}}/>
-                <span style={{color:"#9a9a9a",fontWeight:800}}>—</span>
-                <input value={b.km_max} onChange={e=>onUpd(b.id,"km_max",e.target.value)}
-                  placeholder="Hasta KM" type="number" style={{...IS,flex:1}}/>
-              </div>
-            </div>
-
-            <div>
               <L>🏷️ Marca</L>
               <input value={b.marca} onChange={e=>onUpd(b.id,"marca",e.target.value)}
                 placeholder="Ej: Toyota, Samsung, Nike..." style={IS}/>

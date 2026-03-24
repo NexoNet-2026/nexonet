@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Header from "@/components/Header";
 import { supabase } from "@/lib/supabase";
+import PopupCompra, { MetodoPago } from "@/components/PopupCompra";
 
 type TabAdmin = "sliders" | "miembros" | "descargas" | "info" | "config";
 
@@ -52,6 +53,7 @@ export default function NexoAdminPage() {
   const [subiendoImg,   setSubiendoImg]   = useState<string|null>(null);
   const [popupSlider,   setPopupSlider]   = useState(false);
   const [popupItem,     setPopupItem]     = useState<{slider:any}|null>(null);
+  const [popupPagoItem, setPopupPagoItem] = useState(false);
   const [popupDescarga, setPopupDescarga] = useState(false);
   const [sliderItems,   setSliderItems]   = useState<Record<string,any[]>>({});
   const [sliderAbierto, setSliderAbierto] = useState<string|null>(null);
@@ -193,18 +195,25 @@ export default function NexoAdminPage() {
   };
 
   const TIPOS_TEXTO = ["novedades","faq","testimonios","calendario","proveedores"];
+  const confirmarPagoItem = async (metodo: MetodoPago) => {
+    setPopupPagoItem(false);
+    if (metodo === "bit_free") {
+      if ((perfil?.bits_free||0) < 500) { alert("No tenés suficientes BIT Free."); return; }
+      await supabase.from("usuarios").update({ bits_free: (perfil.bits_free||0) - 500 }).eq("id", perfil.id);
+      setPerfil((p:any) => ({...p, bits_free: (p.bits_free||0) - 500}));
+    } else if (metodo === "bit_nexo") {
+      if ((perfil?.bits||0) < 500) { alert("No tenés suficientes BIT Nexo."); return; }
+      await supabase.from("usuarios").update({ bits: (perfil.bits||0) - 500 }).eq("id", perfil.id);
+      setPerfil((p:any) => ({...p, bits: (p.bits||0) - 500}));
+    } else { alert("Próximamente"); return; }
+    await agregarItem();
+  };
+
   const agregarItem = async () => {
     if (!popupItem) return;
     const esTexto = TIPOS_TEXTO.includes(popupItem.slider.tipo);
     if (!esTexto && !formItem.url) return;
     if (esTexto && !formItem.titulo && !formItem.descripcion) return;
-    // Cobrar 500 BIT por cada ítem
-    const bitsTotal = Math.max(0,perfil?.bits||0) + Math.max(0,perfil?.bits_free||0) + Math.max(0,perfil?.bits_promotor||0);
-    if (bitsTotal < 500) { alert("Necesitás 500 BIT para agregar un ítem."); return; }
-    const campo = (perfil?.bits||0) >= 500 ? "bits" : (perfil?.bits_free||0) >= 500 ? "bits_free" : "bits_promotor";
-    const valor = perfil[campo] || 0;
-    await supabase.from("usuarios").update({ [campo]: valor - 500 }).eq("id", perfil.id);
-    setPerfil((p:any) => ({ ...p, [campo]: valor - 500 }));
 
     const { data } = await supabase.from("nexo_slider_items").insert({
       slider_id: popupItem.slider.id, nexo_id:id,
@@ -834,9 +843,9 @@ export default function NexoAdminPage() {
               const esTexto = popupItem && TIPOS_TEXTO.includes(popupItem.slider.tipo);
               const habilitado = subiendoImg!=="item" && (esTexto ? (!!formItem.titulo || !!formItem.descripcion) : !!formItem.url);
               return (
-                <button onClick={agregarItem} disabled={!habilitado}
+                <button onClick={()=>setPopupPagoItem(true)} disabled={!habilitado}
                   style={{ width:"100%", background:`linear-gradient(135deg,${colorNexo}cc,${colorNexo})`, border:"none", borderRadius:"12px", padding:"14px", fontSize:"15px", fontWeight:900, color:"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif", opacity:habilitado?1:0.5, boxShadow:`0 4px 0 ${colorNexo}88` }}>
-                  ✅ Agregar al slider
+                  ✅ Agregar al slider (500 BIT)
                 </button>
               );
             })()}
@@ -982,6 +991,18 @@ export default function NexoAdminPage() {
           </div>
         );
       })()}
+
+      {popupPagoItem && (
+        <PopupCompra
+          titulo="📎 Agregar contenido al slider"
+          emoji="📎"
+          costo="500 BIT"
+          descripcion="Publicar ítem en el slider"
+          bits={{ free: Math.max(0,perfil?.bits_free||0), nexo: Math.max(0,perfil?.bits||0), promo: Math.max(0,perfil?.bits_promo||0) }}
+          onClose={() => setPopupPagoItem(false)}
+          onPagar={confirmarPagoItem}
+        />
+      )}
     </main>
   );
 }

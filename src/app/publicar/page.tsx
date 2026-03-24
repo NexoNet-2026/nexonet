@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
-import { supabase } from "@/lib/supabase";
+
 
 const TIPOS_NEXO = [
   { id:"anuncio",  emoji:"📣", titulo:"Anuncio",      desc:"Vendé, comprá o permutá lo que quieras",          color:"#d4a017", bg:"linear-gradient(135deg,#1a2a3a,#2d3d50)", border:"#d4a017", tablaRubros:"rubros", tablaSubrubros:"subrubros", fkSub:"rubro_id" },
@@ -44,19 +44,22 @@ export default function PublicarSelector() {
     setTimeout(() => router.push(`/nexo/crear/${tipoId}${qs ? "?" + qs : ""}`), 220);
   };
 
+  const sbUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const sbKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+  const sbHeaders = { "apikey": sbKey, "Authorization": `Bearer ${sbKey}` };
+
   const seleccionarTipo = async (tipoId: string) => {
     const tipo = TIPOS_NEXO.find(t => t.id === tipoId);
     if (!tipo) return;
 
-    // Cargar rubros
     if (tipo.tablaRubros) {
       setCargando(true);
       setSeleccionado(tipoId);
-      const { data } = await supabase.from(tipo.tablaRubros as any).select("id,nombre,emoji").order("orden", { ascending: true });
-      setRubros(data || []);
+      const res = await fetch(`${sbUrl}/rest/v1/${tipo.tablaRubros}?select=id,nombre,emoji&order=orden.asc`, { headers: sbHeaders });
+      const data = await res.json();
+      setRubros(Array.isArray(data) ? data : []);
       setCargando(false);
       if (!data || data.length === 0) {
-        // Sin rubros → ir directo
         elegir(tipoId);
       } else {
         setPaso("rubro");
@@ -73,8 +76,9 @@ export default function PublicarSelector() {
 
     setCargando(true);
     const fk = (tipo as any).fkSub || "rubro_id";
-    const { data } = await supabase.from(tipo.tablaSubrubros as any).select("id,nombre").eq(fk, rubro.id).order("orden", { ascending: true });
-    setSubrubros(data || []);
+    const res = await fetch(`${sbUrl}/rest/v1/${tipo.tablaSubrubros}?${fk}=eq.${rubro.id}&select=id,nombre&order=orden.asc`, { headers: sbHeaders });
+    const data = await res.json();
+    setSubrubros(Array.isArray(data) ? data : []);
     setCargando(false);
     if (!data || data.length === 0) {
       elegirConCategoria(seleccionado!, rubro.id);

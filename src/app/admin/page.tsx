@@ -1533,14 +1533,24 @@ export default function AdminPanel() {
                 {configGlobal.map((c:any)=>(
                   <div key={c.clave} style={{padding:"12px 0",borderBottom:"1px solid #f4f4f2"}}>
                     <div style={{fontSize:"10px",fontWeight:800,color:"#9a9a9a",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"4px"}}>{c.descripcion||c.clave}</div>
-                    <div style={{display:"flex",gap:"8px",alignItems:"center"}}>
-                      <input value={c.valor} onChange={e=>setConfigGlobal(prev=>prev.map(x=>x.clave===c.clave?{...x,valor:e.target.value}:x))}
-                        style={{...S.input,flex:1,marginBottom:0}} />
-                      <button onClick={()=>guardarConfigGlobal(c.clave,c.valor)} disabled={configGuardando===c.clave}
-                        style={{...S.btn("#27ae60"),padding:"8px 14px",fontSize:"12px",opacity:configGuardando===c.clave?0.6:1}}>
-                        {configGuardando===c.clave?"⏳":"💾"}
-                      </button>
-                    </div>
+                    {(c.valor==="true"||c.valor==="false") ? (
+                      <div style={{display:"flex",gap:"8px",alignItems:"center"}}>
+                        <button onClick={()=>{const nv=c.valor==="true"?"false":"true";setConfigGlobal(prev=>prev.map(x=>x.clave===c.clave?{...x,valor:nv}:x));guardarConfigGlobal(c.clave,nv);}}
+                          style={{width:"50px",height:"28px",borderRadius:"14px",border:"none",background:c.valor==="true"?"#27ae60":"#e0e0e0",position:"relative",cursor:"pointer",flexShrink:0,transition:"background .2s"}}>
+                          <div style={{width:"22px",height:"22px",borderRadius:"50%",background:"#fff",position:"absolute",top:"3px",left:c.valor==="true"?"25px":"3px",transition:"left .2s",boxShadow:"0 1px 3px rgba(0,0,0,0.25)"}}/>
+                        </button>
+                        <span style={{fontSize:"12px",fontWeight:700,color:c.valor==="true"?"#27ae60":"#e74c3c"}}>{c.valor==="true"?"Activado":"Desactivado"}</span>
+                      </div>
+                    ) : (
+                      <div style={{display:"flex",gap:"8px",alignItems:"center"}}>
+                        <input value={c.valor} onChange={e=>setConfigGlobal(prev=>prev.map(x=>x.clave===c.clave?{...x,valor:e.target.value}:x))}
+                          style={{...S.input,flex:1,marginBottom:0}} />
+                        <button onClick={()=>guardarConfigGlobal(c.clave,c.valor)} disabled={configGuardando===c.clave}
+                          style={{...S.btn("#27ae60"),padding:"8px 14px",fontSize:"12px",opacity:configGuardando===c.clave?0.6:1}}>
+                          {configGuardando===c.clave?"⏳":"💾"}
+                        </button>
+                      </div>
+                    )}
                     <div style={{fontSize:"10px",color:"#bbb",fontWeight:600,marginTop:"4px"}}>clave: {c.clave} · actualizado: {c.updated_at?new Date(c.updated_at).toLocaleDateString("es-AR"):"-"}</div>
                   </div>
                 ))}

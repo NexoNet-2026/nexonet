@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 
-type TipoAyuda = "anuncio"|"empresa"|"servicio"|"grupo"|"trabajo";
+type TipoAyuda = "anuncio"|"empresa"|"servicio"|"grupo"|"trabajo"|"busqueda_ia";
 
 type Info = {
   color:string; emoji:string; titulo:string; sub:string; costo:string;
@@ -68,6 +68,18 @@ const DATA: Record<TipoAyuda, Info> = {
       {emoji:"🔔",titulo:"Alertas de empleo",desc:"Activá la Búsqueda IA y recibí avisos de ofertas nuevas"},
       {emoji:"🏷️",titulo:"Filtros específicos",desc:"Tipo de puesto, modalidad, jornada y nivel de estudios"},
       {emoji:"🆓",titulo:"Gratis con BIT Free",desc:"Publicá tu perfil laboral sin gastar dinero real"},
+    ],
+  },
+  busqueda_ia: {
+    color:"#16a085",emoji:"🤖",titulo:"BÚSQUEDA IA",sub:"Tu alerta inteligente 24/7",
+    costo:"1 BIT por cada coincidencia encontrada · 3.000 BIT Free por mes incluidos",
+    items:[
+      {emoji:"🔔",titulo:"Notificación automática",desc:"Cada vez que aparece un anuncio con tus criterios recibís una alerta al instante"},
+      {emoji:"🎯",titulo:"Filtros exactos",desc:"Configurás marca, precio, año, km, ciudad y más — la IA busca eso puntualmente"},
+      {emoji:"⏰",titulo:"Sin revisar todos los días",desc:"El sistema trabaja 24/7 mientras vos hacés tu vida"},
+      {emoji:"📋",titulo:"Múltiples búsquedas",desc:"Guardá varias búsquedas activas al mismo tiempo para distintas necesidades"},
+      {emoji:"💡",titulo:"Solo resultados reales",desc:"Cada match consume 1 BIT — eso garantiza que el aviso es una coincidencia real"},
+      {emoji:"✅",titulo:"Activar y desactivar",desc:"Pausás una búsqueda cuando ya no la necesitás y la reactivás cuando quieras"},
     ],
   },
 };

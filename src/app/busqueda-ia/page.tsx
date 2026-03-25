@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
 import { supabase } from "@/lib/supabase";
+import AyudaPopup from "@/components/AyudaPopup";
 
 
 type RubroFlat    = { id:number; nombre:string };
@@ -247,6 +248,7 @@ export default function BusquedaIA() {
           <span style={{fontSize:"14px",fontWeight:900,color:"#d4a017"}}>Agregar nueva búsqueda</span>
         </button>
       </div>
+      <AyudaPopup tipo="busqueda_ia"/>
       <BottomNav/>
     </main>
   );

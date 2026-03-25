@@ -921,39 +921,7 @@ function NexoCrearInner() {
           }}
         />
       )}
-      <AyudaPopup
-        titulo={tipo==="empresa"?"¿Cómo funciona Empresa?":tipo==="servicio"?"¿Cómo funciona Servicio?":tipo==="trabajo"?"¿Cómo funciona Trabajo?":"¿Cómo funciona Grupo?"}
-        color={tipo==="empresa"?"#c0392b":tipo==="servicio"?"#27ae60":tipo==="trabajo"?"#8e44ad":"#3a7bd5"}
-        items={tipo==="empresa"?[
-          {emoji:"🏢",titulo:"Tu página comercial",desc:"Creás un perfil completo con logo, banner, descripción y datos de contacto."},
-          {emoji:"📸",titulo:"Sliders de contenido",desc:"Agregá galerías, productos, servicios, novedades y más. 50 BIT por slider."},
-          {emoji:"💰",titulo:"Descargas pagas",desc:"Subí catálogos, guías o fotos y cobrá en BIT. Recibís el 60% de cada venta."},
-          {emoji:"👁️",titulo:"Visitas reales",desc:"Cada visita cuesta 1 BIT al dueño. Eso garantiza que quien te visita es un usuario real."},
-          {emoji:"🤖",titulo:"Matching automático",desc:"El sistema avisa a compradores cuando publiques algo nuevo en tu empresa."},
-          {emoji:"⭐",titulo:"Primer mes gratis",desc:"Probás gratis el primer mes. Luego $10.000 BIT/mes para mantener activa tu página."},
-        ]:tipo==="servicio"?[
-          {emoji:"🛠️",titulo:"Ofrecé tus servicios",desc:"Creá un perfil profesional con descripción, zona de cobertura y datos de contacto."},
-          {emoji:"📋",titulo:"Sliders personalizados",desc:"Mostrá trabajos realizados, testimonios, galería de fotos y más."},
-          {emoji:"📍",titulo:"Alcance geográfico",desc:"Definí las ciudades y provincias donde ofrecés tu servicio."},
-          {emoji:"👁️",titulo:"Visitas reales",desc:"Solo usuarios interesados visitan tu perfil. Cada visita cuesta 1 BIT."},
-          {emoji:"🤖",titulo:"Matching automático",desc:"Cuando alguien busque tu tipo de servicio, el sistema te recomienda."},
-          {emoji:"⭐",titulo:"Primer mes gratis",desc:"Probás gratis el primer mes. Luego un costo mensual en BIT para mantener activo."},
-        ]:tipo==="trabajo"?[
-          {emoji:"💼",titulo:"Publicá tu búsqueda",desc:"Indicá qué perfil necesitás, requisitos, zona y condiciones del puesto."},
-          {emoji:"📄",titulo:"Recibí postulaciones",desc:"Los interesados te contactan directamente desde tu publicación."},
-          {emoji:"📍",titulo:"Zona específica",desc:"Elegí la provincia y ciudad para llegar a candidatos cercanos."},
-          {emoji:"🤖",titulo:"Matching inteligente",desc:"El sistema notifica a usuarios con el perfil que buscás."},
-          {emoji:"⏰",titulo:"Vigencia",desc:"Tu publicación queda activa hasta que la cierres o se cumpla el plazo."},
-          {emoji:"⭐",titulo:"Costo accesible",desc:"Publicar una búsqueda de trabajo cuesta 500 BIT."},
-        ]:[
-          {emoji:"👥",titulo:"Creá tu comunidad",desc:"Un grupo temático donde los miembros pueden compartir contenido y chatear."},
-          {emoji:"💬",titulo:"Chat grupal",desc:"Activá el chat para que los miembros se comuniquen entre sí en tiempo real."},
-          {emoji:"📸",titulo:"Contenido compartido",desc:"Los miembros pueden publicar en los sliders del grupo si les das permiso."},
-          {emoji:"🔒",titulo:"Control total",desc:"Como admin, aprobás miembros, moderás contenido y configurás el grupo."},
-          {emoji:"📍",titulo:"Alcance local",desc:"Definí la zona del grupo para atraer miembros de tu ciudad o región."},
-          {emoji:"⭐",titulo:"Gratis para empezar",desc:"Crear un grupo es gratis. Los sliders opcionales cuestan 50 BIT cada uno."},
-        ]}
-      />
+      <AyudaPopup tipo={tipo as any}/>
       <BottomNav/>
     </main>
   );

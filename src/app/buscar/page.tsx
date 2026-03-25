@@ -7,7 +7,7 @@ import { supabase } from "@/lib/supabase";
 import PopupCompra, { MetodoPago } from "@/components/PopupCompra";
 import InsigniaLogro from "@/app/_components/InsigniaLogro";
 import TarjetaNexoGlobal from "@/app/_components/TarjetaNexo";
-import AyudaPopup from "@/components/AyudaPopup";
+
 
 type Anuncio = {
   permuto?: boolean; id:number; titulo:string; precio:number; moneda:string;
@@ -932,18 +932,6 @@ function BuscarInner() {
         />
       )}
 
-      <AyudaPopup
-        titulo="¿Cómo buscar en NexoNet?"
-        color="#d4a017"
-        items={[
-          {emoji:"🔍",titulo:"Buscá por palabras",desc:"Escribí lo que necesitás y explorá anuncios, empresas, servicios y más."},
-          {emoji:"🔗",titulo:"Modo Conexión",desc:"Activá el modo conexión para encontrar publicaciones cercanas y relevantes."},
-          {emoji:"🤖",titulo:"Búsqueda IA",desc:"Configurá alertas automáticas y recibí notificaciones cuando aparezca lo que buscás."},
-          {emoji:"👥",titulo:"Grupos",desc:"Unite a grupos temáticos de tu zona para comprar, vender o compartir intereses."},
-          {emoji:"📍",titulo:"Filtros de ubicación",desc:"Filtrá por provincia y ciudad para ver solo resultados cerca tuyo."},
-          {emoji:"📂",titulo:"Rubros y subrubros",desc:"Navegá por categorías para encontrar exactamente lo que necesitás."},
-        ]}
-      />
       <BottomNav />
     </main>
   );

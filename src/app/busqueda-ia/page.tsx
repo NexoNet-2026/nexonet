@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
 import { supabase } from "@/lib/supabase";
-import AyudaPopup from "@/components/AyudaPopup";
+
 
 type RubroFlat    = { id:number; nombre:string };
 type SubrubroFlat = { id:number; nombre:string; rubro_id:number };
@@ -247,18 +247,6 @@ export default function BusquedaIA() {
           <span style={{fontSize:"14px",fontWeight:900,color:"#d4a017"}}>Agregar nueva búsqueda</span>
         </button>
       </div>
-      <AyudaPopup
-        titulo="¿Cómo funciona la Búsqueda IA?"
-        color="#16a085"
-        items={[
-          {emoji:"🤖",titulo:"Búsqueda inteligente",desc:"Configurás lo que buscás y la IA te avisa cuando aparece algo que coincide."},
-          {emoji:"🔔",titulo:"Alertas automáticas",desc:"Recibís notificaciones cuando se publica algo que matchea tu búsqueda."},
-          {emoji:"🎯",titulo:"Filtros precisos",desc:"Elegí categoría, ubicación y filtros específicos del subrubro para afinar resultados."},
-          {emoji:"📊",titulo:"Múltiples búsquedas",desc:"Podés tener varias búsquedas activas al mismo tiempo, cada una con sus filtros."},
-          {emoji:"⏸️",titulo:"Pausar y reactivar",desc:"Desactivá una búsqueda temporalmente sin perder la configuración."},
-          {emoji:"💰",titulo:"Costo por búsqueda",desc:"Activar una búsqueda automática consume BIT. Podés pausarla cuando quieras."},
-        ]}
-      />
       <BottomNav/>
     </main>
   );

@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { supabase } from "@/lib/supabase";
 import PopupCompra, { MetodoPago } from "@/components/PopupCompra";
+import AyudaPopup from "@/components/AyudaPopup";
 
 const MapaLeaflet = dynamic(() => import("@/components/MapaLeaflet"), { ssr: false });
 
@@ -399,6 +400,7 @@ function MapaInner() {
         />
       )}
 
+      <AyudaPopup tipo="mapa"/>
       <BottomNav />
     </div>
   );

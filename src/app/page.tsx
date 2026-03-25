@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
+import AyudaPopup from "@/components/AyudaPopup";
 import HeroBuscador from "@/app/_components/HeroBuscador";
 import Slider from "@/app/_components/Slider";
 import TarjetaAnuncio from "@/app/_components/TarjetaAnuncio";
@@ -104,6 +105,7 @@ export default function Home() {
         </>
       )}
 
+      <AyudaPopup tipo="general"/>
       <BottomNav />
     </main>
   );

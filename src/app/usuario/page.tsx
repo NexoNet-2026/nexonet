@@ -8,6 +8,7 @@ import { supabase } from "@/lib/supabase";
 import PopupCompra, { MetodoPago } from "@/components/PopupCompra";
 import InsigniaLogro from "@/app/_components/InsigniaLogro";
 import InsigniaReputacion from "@/app/_components/InsigniaReputacion";
+import AyudaPopup from "@/components/AyudaPopup";
 
 type Seccion = "cuenta" | "chat" | "datos" | "estadisticas" | "promotor" | "grupos" | "busquedas" | "anuncios" | "empresa" | "servicios" | "trabajo";
 
@@ -1033,6 +1034,7 @@ export default function Usuario() {
         </div>
       )}
 
+      <AyudaPopup tipo="perfil"/>
       <BottomNav />
     </main>
   );

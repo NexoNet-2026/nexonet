@@ -155,7 +155,7 @@ export default function PublicarSelector() {
         </div>
       )}
 
-      <AyudaPopup tipo={(seleccionado as any) || "anuncio"}/>
+      <AyudaPopup tipo="general"/>
       <BottomNav />
     </main>
   );

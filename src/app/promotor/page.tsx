@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
 import { supabase } from "@/lib/supabase";
+import AyudaPopup from "@/components/AyudaPopup";
 
 
 type Referido = {
@@ -245,6 +246,7 @@ export default function PromoterPage() {
         )}
       </div>
 
+      <AyudaPopup tipo="promotor"/>
       <BottomNav />
     </main>
   );

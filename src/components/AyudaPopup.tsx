@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 
-type TipoAyuda = "anuncio"|"empresa"|"servicio"|"grupo"|"trabajo"|"busqueda_ia";
+type TipoAyuda = "anuncio"|"empresa"|"servicio"|"grupo"|"trabajo"|"busqueda_ia"|"general"|"mapa"|"perfil"|"promotor";
 
 type Info = {
   color:string; emoji:string; titulo:string; sub:string; costo:string;
@@ -80,6 +80,54 @@ const DATA: Record<TipoAyuda, Info> = {
       {emoji:"📋",titulo:"Múltiples búsquedas",desc:"Guardá varias búsquedas activas al mismo tiempo para distintas necesidades"},
       {emoji:"💡",titulo:"Solo resultados reales",desc:"Cada match consume 1 BIT — eso garantiza que el aviso es una coincidencia real"},
       {emoji:"✅",titulo:"Activar y desactivar",desc:"Pausás una búsqueda cuando ya no la necesitás y la reactivás cuando quieras"},
+    ],
+  },
+  general: {
+    color:"#d4a017",emoji:"✨",titulo:"NEXONET ARGENTINA",sub:"La red social con matching inteligente",
+    costo:"Registrate gratis · 3.000 BIT Free cada mes incluidos",
+    items:[
+      {emoji:"📣",titulo:"Publicá anuncios",desc:"Vendé, comprá o permutá con matching IA automático"},
+      {emoji:"🏢",titulo:"Creá tu empresa",desc:"Página comercial completa desde $0 el primer mes"},
+      {emoji:"🛠️",titulo:"Ofrecé servicios",desc:"Que te encuentren quienes te necesitan sin pagar publicidad"},
+      {emoji:"👥",titulo:"Grupos activos",desc:"Comunidades con chat en vivo, contenido y miembros activos"},
+      {emoji:"🤖",titulo:"Búsqueda IA",desc:"Configurá filtros y recibí alertas automáticas de lo que buscás"},
+      {emoji:"⭐",titulo:"Sé Promotor",desc:"Referí usuarios y ganá el 15% de sus compras de por vida"},
+    ],
+  },
+  mapa: {
+    color:"#3a7bd5",emoji:"🗺️",titulo:"MAPA DE NEXOS",sub:"Encontrá lo que buscás cerca tuyo",
+    costo:"Gratis para explorar · 1 BIT para conectarte con un anuncio",
+    items:[
+      {emoji:"📍",titulo:"Geolocalización",desc:"Ves todos los anuncios y nexos activos en tu zona en tiempo real"},
+      {emoji:"🔍",titulo:"Filtrá por rubro",desc:"Seleccioná categorías para ver solo lo que te interesa en el mapa"},
+      {emoji:"🚗",titulo:"Calculá distancias",desc:"Sabés exactamente cuán lejos está cada publicación de vos"},
+      {emoji:"🏢",titulo:"Empresas y servicios",desc:"Encontrá comercios y profesionales activos cerca tuyo"},
+      {emoji:"👥",titulo:"Grupos cercanos",desc:"Descubrí comunidades activas en tu barrio o ciudad"},
+      {emoji:"📱",titulo:"Usá tu GPS",desc:"Activá la ubicación para centrar el mapa en donde estás ahora"},
+    ],
+  },
+  perfil: {
+    color:"#d4a017",emoji:"👤",titulo:"TU PERFIL NEXONET",sub:"Todo lo que podés hacer desde acá",
+    costo:"BIT Nexo desde $500 ARS · BIT Free: gratis cada mes",
+    items:[
+      {emoji:"🪙",titulo:"Comprá BIT Nexo",desc:"Cargá créditos para publicar, conectarte y acceder a contenido premium"},
+      {emoji:"💙",titulo:"BIT Free gratis",desc:"Recibís 3.000 BIT Free cada 30 días automáticamente sin pagar nada"},
+      {emoji:"🟢",titulo:"BIT Promo",desc:"Los ganás siendo Promotor o vendiendo contenido — se usan igual que los otros"},
+      {emoji:"🏅",titulo:"Insignias de logro",desc:"Acumulá BIT y subí de nivel: Bronce, Plata, Oro, Platino, Diamante"},
+      {emoji:"⭐",titulo:"Reputación",desc:"Otros usuarios te dan insignias de confianza, calidad y respuesta rápida"},
+      {emoji:"⚙️",titulo:"Configurá tu perfil",desc:"Editá tus datos, foto, ciudad y visibilidad de WhatsApp"},
+    ],
+  },
+  promotor: {
+    color:"#8e44ad",emoji:"⭐",titulo:"NEXO PROMOTOR",sub:"Ganá dinero real referiendo usuarios",
+    costo:"100.000 BIT Promo = $100.000 ARS · 1 BIT Promo = $1 ARS",
+    items:[
+      {emoji:"🔗",titulo:"Compartí tu link",desc:"Cada persona que se registra con tu código queda vinculada a tu cuenta para siempre"},
+      {emoji:"💰",titulo:"15% automático",desc:"Cada vez que tu referido compra BIT recibís el 15% en BIT Promo al instante"},
+      {emoji:"♾️",titulo:"De por vida",desc:"La comisión no vence — mientras tu referido compre, vos ganás"},
+      {emoji:"👥",titulo:"Sin límite de referidos",desc:"Podés referir a tantas personas como quieras, sin techo de ganancias"},
+      {emoji:"💸",titulo:"Reembolso en efectivo",desc:"Al acumular 100.000 BIT Promo podés solicitar $100.000 ARS contra factura"},
+      {emoji:"📱",titulo:"Compartí por WhatsApp",desc:"Un click y tu link llega a todos tus contactos con mensaje personalizado"},
     ],
   },
 };

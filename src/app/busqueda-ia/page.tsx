@@ -81,6 +81,7 @@ export default function BusquedaIA() {
       .from("subrubro_filtros")
       .select("*")
       .eq("subrubro_id", subrubroId)
+      .in("contexto", ["busqueda_ia", "ambos"])
       .order("orden");
     if (data) setFiltrosDinamicos(prev => ({ ...prev, [subrubroId]: data }));
   };

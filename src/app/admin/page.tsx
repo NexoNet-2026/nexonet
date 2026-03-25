@@ -775,7 +775,7 @@ export default function AdminPanel() {
   };
   const guardarFiltro = async (f:any) => {
     if (!f.nombre||!filtroSubSel) return;
-    const payload = { subrubro_id:filtroSubSel, nombre:f.nombre, tipo:f.tipo||"rango", opciones:f.opciones?JSON.parse(f.opciones):null, orden:parseInt(f.orden)||0 };
+    const payload = { subrubro_id:filtroSubSel, nombre:f.nombre, tipo:f.tipo||"rango", opciones:f.opciones?JSON.parse(f.opciones):null, orden:parseInt(f.orden)||0, contexto:f.contexto||"ambos" };
     if (f.id) {
       await supabase.from("subrubro_filtros").update(payload).eq("id",f.id);
     } else {
@@ -1592,23 +1592,44 @@ export default function AdminPanel() {
                             </div>
                             {filtroSubSel===s.id && (
                               <div style={{padding:"8px 0 8px 16px",borderBottom:"1px solid #f0f0f0",background:"#fefef8"}}>
+                                {/* ── Filtros de publicación ── */}
                                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"6px"}}>
-                                  <span style={{fontSize:"10px",fontWeight:800,color:"#d4a017",textTransform:"uppercase",letterSpacing:"0.5px"}}>Filtros de {s.nombre}</span>
-                                  <button onClick={()=>setModalFiltro({nombre:"",tipo:"rango",opciones:"",orden:filtrosIA.length})} style={{...S.btn("#27ae60",true),padding:"3px 8px",fontSize:"10px"}}>➕ Agregar</button>
+                                  <span style={{fontSize:"10px",fontWeight:800,color:"#d4a017",textTransform:"uppercase",letterSpacing:"0.5px"}}>📋 Filtros de publicación</span>
+                                  <button onClick={()=>setModalFiltro({nombre:"",tipo:"rango",opciones:"",orden:filtrosIA.length,contexto:"publicacion"})} style={{...S.btn("#27ae60",true),padding:"3px 8px",fontSize:"10px"}}>➕ Agregar</button>
                                 </div>
-                                {filtrosIA.length===0 && <div style={{fontSize:"11px",color:"#bbb",fontWeight:600,padding:"4px 0"}}>Sin filtros</div>}
-                                {(()=>{const sorted=[...filtrosIA].sort((a:any,b:any)=>(a.orden||0)-(b.orden||0));return sorted.map((f:any,fi:number)=>(
+                                {(()=>{const pub=filtrosIA.filter((f:any)=>f.contexto==="publicacion"||f.contexto==="ambos"||!f.contexto).sort((a:any,b:any)=>(a.orden||0)-(b.orden||0));
+                                  if(pub.length===0) return <div style={{fontSize:"11px",color:"#bbb",fontWeight:600,padding:"4px 0"}}>Sin filtros de publicación</div>;
+                                  return pub.map((f:any,fi:number)=>(
                                   <div key={f.id} style={{display:"flex",alignItems:"center",gap:"6px",padding:"4px 0",borderBottom:"1px solid #f8f8f6"}}>
                                     <div style={{flex:1}}>
                                       <span style={{fontSize:"12px",fontWeight:700,color:"#1a2a3a"}}>{f.nombre}</span>
                                       <span style={{fontSize:"10px",color:"#9a9a9a",fontWeight:600,marginLeft:"6px"}}>{f.tipo}{f.opciones?` · ${JSON.stringify(f.opciones)}`:""}</span>
+                                      <span style={{fontSize:"9px",color:f.contexto==="ambos"||!f.contexto?"#16a085":"#d4a017",fontWeight:800,marginLeft:"6px"}}>{f.contexto==="ambos"||!f.contexto?"AMBOS":"PUB"}</span>
                                     </div>
                                     <button onClick={()=>moverFiltroIA(f,"up")} disabled={fi===0} style={{...S.btn("#9a9a9a",true),padding:"2px 6px",opacity:fi===0?0.3:1,fontSize:"10px"}}>↑</button>
-                                    <button onClick={()=>moverFiltroIA(f,"down")} disabled={fi===sorted.length-1} style={{...S.btn("#9a9a9a",true),padding:"2px 6px",opacity:fi===sorted.length-1?0.3:1,fontSize:"10px"}}>↓</button>
+                                    <button onClick={()=>moverFiltroIA(f,"down")} disabled={fi===pub.length-1} style={{...S.btn("#9a9a9a",true),padding:"2px 6px",opacity:fi===pub.length-1?0.3:1,fontSize:"10px"}}>↓</button>
                                     <button onClick={()=>setModalFiltro({...f,opciones:f.opciones?JSON.stringify(f.opciones):""})} style={{...S.btn("#3a7bd5",true),padding:"2px 6px",fontSize:"10px"}}>✏️</button>
                                     <button onClick={()=>eliminarFiltro(f.id)} style={{...S.btn("#e74c3c",true),padding:"2px 6px",fontSize:"10px"}}>🗑️</button>
-                                  </div>
-                                ));})()}
+                                  </div>));})()}
+                                {/* ── Filtros de Búsqueda IA ── */}
+                                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:"12px",marginBottom:"6px"}}>
+                                  <span style={{fontSize:"10px",fontWeight:800,color:"#16a085",textTransform:"uppercase",letterSpacing:"0.5px"}}>🤖 Filtros de Búsqueda IA</span>
+                                  <button onClick={()=>setModalFiltro({nombre:"",tipo:"rango",opciones:"",orden:filtrosIA.length,contexto:"busqueda_ia"})} style={{...S.btn("#16a085",true),padding:"3px 8px",fontSize:"10px"}}>➕ Agregar</button>
+                                </div>
+                                {(()=>{const bia=filtrosIA.filter((f:any)=>f.contexto==="busqueda_ia"||f.contexto==="ambos"||!f.contexto).sort((a:any,b:any)=>(a.orden||0)-(b.orden||0));
+                                  if(bia.length===0) return <div style={{fontSize:"11px",color:"#bbb",fontWeight:600,padding:"4px 0"}}>Sin filtros de Búsqueda IA</div>;
+                                  return bia.map((f:any,fi:number)=>(
+                                  <div key={f.id} style={{display:"flex",alignItems:"center",gap:"6px",padding:"4px 0",borderBottom:"1px solid #f8f8f6"}}>
+                                    <div style={{flex:1}}>
+                                      <span style={{fontSize:"12px",fontWeight:700,color:"#1a2a3a"}}>{f.nombre}</span>
+                                      <span style={{fontSize:"10px",color:"#9a9a9a",fontWeight:600,marginLeft:"6px"}}>{f.tipo}{f.opciones?` · ${JSON.stringify(f.opciones)}`:""}</span>
+                                      <span style={{fontSize:"9px",color:f.contexto==="ambos"||!f.contexto?"#16a085":"#3a7bd5",fontWeight:800,marginLeft:"6px"}}>{f.contexto==="ambos"||!f.contexto?"AMBOS":"IA"}</span>
+                                    </div>
+                                    <button onClick={()=>moverFiltroIA(f,"up")} disabled={fi===0} style={{...S.btn("#9a9a9a",true),padding:"2px 6px",opacity:fi===0?0.3:1,fontSize:"10px"}}>↑</button>
+                                    <button onClick={()=>moverFiltroIA(f,"down")} disabled={fi===bia.length-1} style={{...S.btn("#9a9a9a",true),padding:"2px 6px",opacity:fi===bia.length-1?0.3:1,fontSize:"10px"}}>↓</button>
+                                    <button onClick={()=>setModalFiltro({...f,opciones:f.opciones?JSON.stringify(f.opciones):""})} style={{...S.btn("#3a7bd5",true),padding:"2px 6px",fontSize:"10px"}}>✏️</button>
+                                    <button onClick={()=>eliminarFiltro(f.id)} style={{...S.btn("#e74c3c",true),padding:"2px 6px",fontSize:"10px"}}>🗑️</button>
+                                  </div>));})()}
                               </div>
                             )}
                           </div>
@@ -2263,6 +2284,16 @@ export default function AdminPanel() {
               <div style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600,marginBottom:"10px"}}>Se guardarán como: {modalFiltro.opciones ? JSON.stringify(modalFiltro.opciones.startsWith("[")?JSON.parse(modalFiltro.opciones):modalFiltro.opciones.split(",").map((o:string)=>o.trim()).filter(Boolean)) : "[]"}</div>
             </>
           )}
+          <label style={S.label}>Contexto</label>
+          <div style={{display:"flex",gap:"8px",marginBottom:"10px"}}>
+            {[{v:"publicacion",l:"📋 Publicación",c:"#d4a017"},{v:"busqueda_ia",l:"🤖 Búsqueda IA",c:"#16a085"},{v:"ambos",l:"🔄 Ambos",c:"#3a7bd5"}].map(op=>(
+              <button key={op.v} onClick={()=>setModalFiltro({...modalFiltro,contexto:op.v})}
+                style={{flex:1,background:(modalFiltro.contexto||"ambos")===op.v?op.c:"#f4f4f2",border:`2px solid ${(modalFiltro.contexto||"ambos")===op.v?op.c:"#e8e8e6"}`,
+                  borderRadius:"10px",padding:"8px",fontSize:"11px",fontWeight:800,color:(modalFiltro.contexto||"ambos")===op.v?"#fff":"#666",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>
+                {op.l}
+              </button>
+            ))}
+          </div>
           <label style={S.label}>Orden</label>
           <input style={{...S.input,marginBottom:"16px"}} type="number" placeholder="0" value={modalFiltro.orden||""} onChange={e=>setModalFiltro({...modalFiltro,orden:e.target.value})} />
           <button onClick={()=>{

@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
 import { supabase } from "@/lib/supabase";
+import AyudaPopup from "@/components/AyudaPopup";
 
 const TIPOS_NEXO = [
   { id:"anuncio",  emoji:"📣", titulo:"Anuncio",      desc:"Vendé, comprá o permutá lo que quieras",          color:"#d4a017", bg:"linear-gradient(135deg,#1a2a3a,#2d3d50)", border:"#d4a017", tablaRubros:"rubros", tablaSubrubros:"subrubros", fkSub:"rubro_id" },
@@ -154,6 +155,18 @@ export default function PublicarSelector() {
         </div>
       )}
 
+      <AyudaPopup
+        titulo="¿Cómo publicar?"
+        color="#d4a017"
+        items={[
+          {emoji:"📣",titulo:"Elegí qué publicar",desc:"Podés crear un anuncio, empresa, servicio, búsqueda de trabajo o grupo."},
+          {emoji:"📝",titulo:"Completá los datos",desc:"Título, descripción, categoría, ubicación y fotos. Cuanto más completo, mejor."},
+          {emoji:"💰",titulo:"Costo en BIT",desc:"Publicar un anuncio cuesta 500 BIT. Los nexos tienen su propio costo según el tipo."},
+          {emoji:"🤖",titulo:"Matching automático",desc:"Tu publicación se muestra a usuarios que buscan lo que ofrecés."},
+          {emoji:"👁️",titulo:"Visitas reales",desc:"Solo usuarios verificados pueden ver tu publicación. Cada visita es genuina."},
+          {emoji:"📊",titulo:"Estadísticas",desc:"Podés ver cuántas visitas recibió tu publicación y desde dónde."},
+        ]}
+      />
       <BottomNav />
     </main>
   );

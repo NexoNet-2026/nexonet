@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
 import { supabase } from "@/lib/supabase";
+import AyudaPopup from "@/components/AyudaPopup";
 
 type Referido = {
   id: string;
@@ -244,6 +245,18 @@ export default function PromoterPage() {
         )}
       </div>
 
+      <AyudaPopup
+        titulo="¿Cómo funciona ser Promotor?"
+        color="#d4a017"
+        items={[
+          {emoji:"🤝",titulo:"Invitá amigos",desc:"Compartí tu código de promotor y ganá BIT por cada usuario que se registre con él."},
+          {emoji:"💰",titulo:"Comisión del 15%",desc:"Recibís el 15% de cada compra de BIT que hagan tus referidos."},
+          {emoji:"📊",titulo:"Panel de seguimiento",desc:"Acá ves todos tus referidos, sus compras y tus comisiones acumuladas."},
+          {emoji:"💸",titulo:"Solicitar cobro",desc:"Cuando acumulás suficiente, podés solicitar la liquidación de tus comisiones."},
+          {emoji:"📱",titulo:"Compartí fácil",desc:"Copiá tu link de referido y envialo por WhatsApp, redes o donde quieras."},
+          {emoji:"🚀",titulo:"Sin límites",desc:"No hay tope de referidos ni de comisiones. Cuantos más invitás, más ganás."},
+        ]}
+      />
       <BottomNav />
     </main>
   );

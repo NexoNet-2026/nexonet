@@ -558,6 +558,7 @@ function NexoCrearInner() {
             {guardando ? "⏳ Creando..." : tipo==="trabajo" ? "✅ Publicar búsqueda de trabajo" : "✅ Publicar anuncio"}
           </button>
         </div>
+        <AyudaPopup tipo={tipo as any}/>
         <BottomNav/>
 
         {popupConfirmar && (

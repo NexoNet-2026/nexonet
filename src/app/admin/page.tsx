@@ -771,7 +771,7 @@ export default function AdminPanel() {
     console.log("Cargando filtros para subrubro:", subId);
     setFiltroSubSel(subId);
     const {data} = await supabase.from("subrubro_filtros").select("*").eq("subrubro_id",subId).order("orden");
-    setFiltrosIA(data||[]);
+    setFiltrosIA(data||[]);  // carga todos para mostrar ambas secciones (pub + IA)
   };
   const guardarFiltro = async (f:any) => {
     if (!f.nombre||!filtroSubSel) return;
@@ -899,12 +899,12 @@ export default function AdminPanel() {
   const cargarEntFiltros = async (subId:number, tipo:string) => {
     const t = ENT_TABLES[tipo]; if (!t) return;
     setEntFiltroSubSel(subId);
-    const {data} = await supabase.from(t.filtros).select("*").eq("subrubro_id",subId).order("orden");
+    const {data} = await supabase.from(t.filtros).select("*").eq("subrubro_id",subId).in("contexto",["publicacion","ambos"]).order("orden");
     setEntFiltros(data||[]);
   };
   const guardarEntFiltro = async (f:any, tipo:string) => {
     const t = ENT_TABLES[tipo]; if (!t||!f.nombre||!entFiltroSubSel) return;
-    const payload = { subrubro_id:entFiltroSubSel, nombre:f.nombre, tipo:f.tipo||"rango", opciones:f.opciones?JSON.parse(f.opciones):null, orden:parseInt(f.orden)||0 };
+    const payload = { subrubro_id:entFiltroSubSel, nombre:f.nombre, tipo:f.tipo||"rango", opciones:f.opciones?JSON.parse(f.opciones):null, orden:parseInt(f.orden)||0, contexto:f.contexto||"publicacion" };
     if (f.id) { await supabase.from(t.filtros).update(payload).eq("id",f.id); }
     else { await supabase.from(t.filtros).insert(payload); }
     setModalEntFiltro(null);
@@ -2351,6 +2351,12 @@ export default function AdminPanel() {
               <div style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600,marginBottom:"10px"}}>Se guardarán como: {modalEntFiltro.opciones ? JSON.stringify((modalEntFiltro.opciones.startsWith("[")?JSON.parse(modalEntFiltro.opciones):modalEntFiltro.opciones.split(",").map((o:string)=>o.trim()).filter(Boolean))) : "[]"}</div>
             </>
           )}
+          <label style={S.label}>Contexto</label>
+          <select style={{...S.input,marginBottom:"10px"}} value={modalEntFiltro.contexto||"publicacion"} onChange={e=>setModalEntFiltro({...modalEntFiltro,contexto:e.target.value})}>
+            <option value="publicacion">📋 Publicación</option>
+            <option value="busqueda_ia">🤖 Búsqueda IA</option>
+            <option value="ambos">✅ Ambos</option>
+          </select>
           <label style={S.label}>Orden</label>
           <input style={{...S.input,marginBottom:"16px"}} type="number" placeholder="0" value={modalEntFiltro.orden||""} onChange={e=>setModalEntFiltro({...modalEntFiltro,orden:e.target.value})} />
           <button onClick={()=>{

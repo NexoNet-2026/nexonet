@@ -546,18 +546,20 @@ export default function AnuncioDetalle() {
                     <div style={{ background:"#fff", borderRadius:"16px", padding:"16px", boxShadow:"0 2px 10px rgba(0,0,0,0.06)" }}>
                       <div style={{ fontSize:"11px", fontWeight:800, color:"#1a2a3a", textTransform:"uppercase" as const, letterSpacing:"1px", marginBottom:"12px" }}>📋 Datos de contacto</div>
                       <div style={{ display:"flex", flexDirection:"column", gap:"8px" }}>
-                        {!anuncio.whatsapp && !usuario?.whatsapp && !usuario?.telefono && (
-                          <div style={{ textAlign:"center", padding:"16px", color:"#9a9a9a", fontSize:"13px", fontWeight:600 }}>El vendedor no cargó datos de contacto aún.</div>
-                        )}
-                        {(anuncio.whatsapp || usuario?.whatsapp) && (
-                          <div style={{ display:"flex", alignItems:"center", gap:"12px", background:"rgba(39,174,96,0.08)", border:"2px solid rgba(39,174,96,0.25)", borderRadius:"12px", padding:"12px 14px" }}>
-                            <span style={{ fontSize:"24px" }}>💬</span>
+                        {usuario?.nombre_usuario && (
+                          <div style={{ display:"flex", alignItems:"center", gap:"12px", background:"rgba(212,160,23,0.06)", border:"2px solid rgba(212,160,23,0.2)", borderRadius:"12px", padding:"12px 14px" }}>
+                            <span style={{ fontSize:"24px" }}>👤</span>
                             <div style={{ flex:1 }}>
-                              <div style={{ fontSize:"11px", fontWeight:700, color:"#27ae60", textTransform:"uppercase" as const }}>WhatsApp</div>
-                              <div style={{ fontSize:"15px", fontWeight:900, color:"#1a2a3a" }}>{anuncio.whatsapp || usuario?.whatsapp}</div>
+                              <div style={{ fontSize:"11px", fontWeight:700, color:"#d4a017", textTransform:"uppercase" as const }}>Vendedor</div>
+                              <div style={{ fontSize:"14px", fontWeight:900, color:"#1a2a3a" }}>{usuario.nombre_usuario}</div>
+                              {(usuario.ciudad || usuario.provincia) && <div style={{ fontSize:"12px", color:"#9a9a9a", fontWeight:600 }}>📍 {[usuario.ciudad, usuario.provincia].filter(Boolean).join(", ")}</div>}
                             </div>
                           </div>
                         )}
+                        {!usuario?.telefono && (
+                          <div style={{ textAlign:"center", padding:"8px", color:"#9a9a9a", fontSize:"12px", fontWeight:600 }}>Usá el botón de WhatsApp o el chat interno para contactar.</div>
+                        )}
+
                         {usuario?.telefono && (
                           <div style={{ display:"flex", alignItems:"center", gap:"12px", background:"rgba(58,123,213,0.08)", border:"2px solid rgba(58,123,213,0.2)", borderRadius:"12px", padding:"12px 14px" }}>
                             <span style={{ fontSize:"24px" }}>📞</span>

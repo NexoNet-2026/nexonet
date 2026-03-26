@@ -97,7 +97,7 @@ export default function PublicarSelector() {
       {paso === "tipo" && !seleccionado && (
         <div style={{ padding:"0 16px", display:"flex", flexDirection:"column", gap:"12px", opacity:animando?0:1, transition:"opacity .2s" }}>
           {TIPOS_NEXO.map(t => (
-            <button key={t.id} onClick={() => seleccionarTipo(t)}
+            <button key={t.id} onClick={() => { setAyudaTipo(t.id); setAyudaOpen(true); setTipoSel(t); }}
               style={{ background:t.bg, border:`2px solid ${t.border}30`, borderRadius:"18px", padding:"20px", display:"flex", alignItems:"center", gap:"16px", cursor:"pointer", textAlign:"left", fontFamily:"'Nunito',sans-serif", transition:"transform .15s", boxShadow:"0 4px 20px rgba(0,0,0,0.3)" }}
               onMouseDown={e=>(e.currentTarget.style.transform="scale(0.98)")} onMouseUp={e=>(e.currentTarget.style.transform="scale(1)")}>
               <div style={{ width:"58px", height:"58px", borderRadius:"16px", background:`${t.color}22`, border:`2px solid ${t.color}40`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"28px", flexShrink:0 }}>{t.emoji}</div>
@@ -163,7 +163,7 @@ export default function PublicarSelector() {
         </div>
       )}
 
-      <AyudaPopup tipo={ayudaTipo as any} open={ayudaOpen} onClose={()=>setAyudaOpen(false)}/>
+      <AyudaPopup tipo={ayudaTipo as any} open={ayudaOpen} onClose={()=>{ setAyudaOpen(false); if(tipoSel) seleccionarTipo(tipoSel); }}/>
       <BottomNav />
     </main>
   );

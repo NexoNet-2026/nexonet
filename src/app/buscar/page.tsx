@@ -726,7 +726,7 @@ function BuscarInner() {
                       ) : (
                         <div style={{display:"flex",gap:"12px",padding:"0 16px",overflowX:"auto",scrollbarWidth:"none",WebkitOverflowScrolling:"touch"}}>
                           {itemsFinal.map((n:any,i:number) => (
-                            <TarjetaGrupoSlider key={n.id} nexo={n} onNavigate={()=>router.push(`/nexo/${n.id}`)} />
+                            <TarjetaNexoGlobal key={n.id} nexo={n} color="#3a7bd5" onClick={()=>router.push(`/nexo/${n.id}`)} />
                           ))}
                         </div>
                       )}
@@ -748,7 +748,7 @@ function BuscarInner() {
                       </div>
                       <div style={{display:"flex",gap:"12px",padding:"0 16px",overflowX:"auto",scrollbarWidth:"none",WebkitOverflowScrolling:"touch"}}>
                         {sinCat.map((n:any) => (
-                          <TarjetaGrupoSlider key={n.id} nexo={n} onNavigate={()=>router.push(`/nexo/${n.id}`)} />
+                          <TarjetaNexoGlobal key={n.id} nexo={n} color="#3a7bd5" onClick={()=>router.push(`/nexo/${n.id}`)} />
                         ))}
                       </div>
                     </div>
@@ -773,7 +773,7 @@ function BuscarInner() {
                       </div>
                       <div style={{display:"flex",gap:"12px",padding:"0 16px",overflowX:"auto",scrollbarWidth:"none",WebkitOverflowScrolling:"touch"}}>
                         {(nexosPorTipo["grupos"]||[]).map(n => (
-                          <TarjetaGrupoSlider key={n.id} nexo={n} onNavigate={()=>router.push(`/nexo/${n.id}`)} />
+                          <TarjetaNexoGlobal key={n.id} nexo={n} color="#3a7bd5" onClick={()=>router.push(`/nexo/${n.id}`)} />
                         ))}
                       </div>
                     </div>

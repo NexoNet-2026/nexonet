@@ -546,43 +546,31 @@ export default function AnuncioDetalle() {
                     <div style={{ background:"#fff", borderRadius:"16px", padding:"16px", boxShadow:"0 2px 10px rgba(0,0,0,0.06)" }}>
                       <div style={{ fontSize:"11px", fontWeight:800, color:"#1a2a3a", textTransform:"uppercase" as const, letterSpacing:"1px", marginBottom:"12px" }}>📋 Datos de contacto</div>
                       <div style={{ display:"flex", flexDirection:"column", gap:"8px" }}>
-                        {/* Nombre siempre visible */}
-                        <div style={{ display:"flex", alignItems:"center", gap:"12px", background:"rgba(212,160,23,0.06)", border:"2px solid rgba(212,160,23,0.2)", borderRadius:"12px", padding:"12px 14px" }}>
-                          <span style={{ fontSize:"24px" }}>👤</span>
-                          <div style={{ flex:1 }}>
-                            <div style={{ fontSize:"11px", fontWeight:700, color:"#d4a017", textTransform:"uppercase" as const }}>Vendedor</div>
-                            <div style={{ fontSize:"14px", fontWeight:900, color:"#1a2a3a" }}>{usuario?.nombre_usuario}</div>
-                            {usuario?.vis_personal?.nombre_apellido && (usuario?.nombre || usuario?.apellido) && (
-                              <div style={{ fontSize:"13px", color:"#555", fontWeight:700 }}>{[usuario?.nombre, usuario?.apellido].filter(Boolean).join(" ")}</div>
-                            )}
-                          </div>
-                        </div>
-                        {/* Ubicación según visibilidad */}
-                        {(usuario?.vis_personal?.ciudad || usuario?.vis_personal?.provincia || usuario?.vis_personal?.barrio || usuario?.vis_personal?.direccion) && (
-                          <div style={{ display:"flex", alignItems:"center", gap:"12px", background:"rgba(212,160,23,0.06)", border:"2px solid rgba(212,160,23,0.15)", borderRadius:"12px", padding:"12px 14px" }}>
-                            <span style={{ fontSize:"24px" }}>📍</span>
-                            <div style={{ flex:1 }}>
-                              <div style={{ fontSize:"11px", fontWeight:700, color:"#d4a017", textTransform:"uppercase" as const }}>Ubicación</div>
-                              <div style={{ fontSize:"13px", fontWeight:800, color:"#1a2a3a" }}>
-                                {[
-                                  usuario?.vis_personal?.direccion && usuario?.direccion,
-                                  usuario?.vis_personal?.barrio && usuario?.barrio,
-                                  usuario?.vis_personal?.ciudad && usuario?.ciudad,
-                                  usuario?.vis_personal?.provincia && usuario?.provincia,
-                                ].filter(Boolean).join(", ")}
-                              </div>
-                            </div>
-                          </div>
+                        {/* nombre_usuario siempre visible */}
+                        {usuario?.nombre_usuario && (
+                          <DatoContacto emoji="👤" label="Vendedor" valor={usuario.nombre_usuario} color="#d4a017" />
                         )}
-                        {/* Teléfono */}
+                        {/* nombre y apellido según vis_personal */}
+                        {usuario?.vis_personal?.nombre_apellido && (usuario?.nombre || usuario?.apellido) && (
+                          <DatoContacto emoji="🪪" label="Nombre" valor={[usuario.nombre, usuario.apellido].filter(Boolean).join(" ")} color="#d4a017" />
+                        )}
+                        {/* whatsapp NO se muestra — solo el botón conectar */}
+                        {/* teléfono */}
                         {usuario?.telefono && (
-                          <div style={{ display:"flex", alignItems:"center", gap:"12px", background:"rgba(58,123,213,0.08)", border:"2px solid rgba(58,123,213,0.2)", borderRadius:"12px", padding:"12px 14px" }}>
-                            <span style={{ fontSize:"24px" }}>📞</span>
-                            <div style={{ flex:1 }}>
-                              <div style={{ fontSize:"11px", fontWeight:700, color:"#3a7bd5", textTransform:"uppercase" as const }}>Teléfono</div>
-                              <div style={{ fontSize:"15px", fontWeight:900, color:"#1a2a3a" }}>{usuario.telefono}</div>
-                            </div>
-                          </div>
+                          <DatoContacto emoji="📞" label="Teléfono" valor={usuario.telefono} color="#3a7bd5" />
+                        )}
+                        {/* ubicación */}
+                        {usuario?.vis_personal?.provincia && usuario?.provincia && (
+                          <DatoContacto emoji="🗺️" label="Provincia" valor={usuario.provincia} color="#8e44ad" />
+                        )}
+                        {usuario?.vis_personal?.ciudad && usuario?.ciudad && (
+                          <DatoContacto emoji="🏙️" label="Ciudad" valor={usuario.ciudad} color="#8e44ad" />
+                        )}
+                        {usuario?.vis_personal?.barrio && usuario?.barrio && (
+                          <DatoContacto emoji="🏘️" label="Barrio" valor={usuario.barrio} color="#8e44ad" />
+                        )}
+                        {usuario?.vis_personal?.direccion && usuario?.direccion && (
+                          <DatoContacto emoji="📍" label="Dirección" valor={usuario.direccion} color="#8e44ad" />
                         )}
 
                         {usuario?.telefono && (
@@ -663,6 +651,18 @@ export default function AnuncioDetalle() {
 
       <BottomNav />
     </main>
+  );
+}
+
+function DatoContacto({ emoji, label, valor, color }: { emoji:string; label:string; valor:string; color:string }) {
+  return (
+    <div style={{ display:"flex", alignItems:"center", gap:"12px", background:`${color}08`, border:`2px solid ${color}25`, borderRadius:"12px", padding:"12px 14px" }}>
+      <span style={{ fontSize:"22px" }}>{emoji}</span>
+      <div style={{ flex:1 }}>
+        <div style={{ fontSize:"11px", fontWeight:700, color, textTransform:"uppercase" as const, letterSpacing:"1px" }}>{label}</div>
+        <div style={{ fontSize:"14px", fontWeight:900, color:"#1a2a3a" }}>{valor}</div>
+      </div>
+    </div>
   );
 }
 

@@ -148,9 +148,34 @@ function setCache(val: boolean) {
   try { localStorage.setItem(CACHE_KEY, JSON.stringify({ val, ts: Date.now() })); } catch {}
 }
 
-export default function AyudaPopup({ tipo }: { tipo: TipoAyuda }) {
-  const [open, setOpen] = useState(false);
+const CTA_URLS: Record<TipoAyuda, string> = {
+  anuncio:     "/nexo/crear/anuncio",
+  empresa:     "/nexo/crear/empresa",
+  servicio:    "/nexo/crear/servicio",
+  grupo:       "/nexo/crear/grupo",
+  trabajo:     "/nexo/crear/trabajo",
+  busqueda_ia: "/busqueda-ia",
+  general:     "/publicar",
+  mapa:        "/mapa",
+  perfil:      "/usuario",
+  promotor:    "/promotor",
+};
+
+export default function AyudaPopup({
+  tipo,
+  open: openProp,
+  onClose,
+}: {
+  tipo: TipoAyuda;
+  open?: boolean;
+  onClose?: () => void;
+}) {
+  const [openInternal, setOpenInternal] = useState(false);
   const [visible, setVisible] = useState<boolean | null>(null);
+
+  const isControlled = openProp !== undefined;
+  const open = isControlled ? openProp : openInternal;
+  const close = () => { isControlled ? onClose?.() : setOpenInternal(false); };
 
   useEffect(() => {
     const cached = checkCache();
@@ -164,39 +189,41 @@ export default function AyudaPopup({ tipo }: { tipo: TipoAyuda }) {
   const d = DATA[tipo];
   if (!d) return null;
   const { color, emoji, titulo, sub, costo, items } = d;
+  const ctaUrl = CTA_URLS[tipo] || "/publicar";
 
   return (
     <>
-      {/* Botón flotante */}
-      <button onClick={() => setOpen(true)}
-        style={{position:"fixed",bottom:110,right:16,width:48,height:48,borderRadius:"50%",
-          background:color,border:"none",color:"#fff",fontSize:24,fontWeight:900,
-          fontFamily:"'Bebas Neue',sans-serif",cursor:"pointer",zIndex:200,
-          boxShadow:`0 4px 14px ${color}66`,display:"flex",alignItems:"center",justifyContent:"center"}}>
-        ?
-      </button>
+      {/* Botón flotante — solo cuando NO es controlado externamente */}
+      {!isControlled && (
+        <button onClick={() => setOpenInternal(true)}
+          style={{position:"fixed",bottom:110,right:16,width:48,height:48,borderRadius:"50%",
+            background:color,border:"none",color:"#fff",fontSize:24,fontWeight:900,
+            fontFamily:"'Bebas Neue',sans-serif",cursor:"pointer",zIndex:200,
+            boxShadow:`0 4px 14px ${color}66`,display:"flex",alignItems:"center",justifyContent:"center"}}>
+          ?
+        </button>
+      )}
 
       {open && (
-        <div onClick={() => setOpen(false)}
-          style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.55)",zIndex:9999,
-            display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+        <div onClick={close}
+          style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.75)",zIndex:99999,
+            display:"flex",flexDirection:"column",overflowY:"auto",fontFamily:"'Nunito',sans-serif"}}>
           <div onClick={e => e.stopPropagation()}
-            style={{width:"100%",maxWidth:480,maxHeight:"90vh",background:"#fff",
-              borderRadius:"24px 24px 0 0",overflowY:"auto",fontFamily:"'Nunito',sans-serif"}}>
+            style={{width:"100%",maxWidth:480,margin:"auto",background:"#fff",minHeight:"100vh"}}>
 
-            {/* ── HEADER ── */}
-            <div style={{background:`linear-gradient(135deg,${color}dd,${color})`,padding:"28px 24px 22px",textAlign:"center",position:"relative"}}>
-              <button onClick={() => setOpen(false)}
-                style={{position:"absolute",top:14,right:14,background:"rgba(255,255,255,0.2)",border:"none",
-                  borderRadius:"50%",width:32,height:32,fontSize:18,color:"#fff",cursor:"pointer",
-                  display:"flex",alignItems:"center",justifyContent:"center"}}>
+            {/* ── HEADER full ── */}
+            <div style={{background:`linear-gradient(135deg,${color}dd,${color})`,padding:"60px 24px 28px",textAlign:"center",position:"relative"}}>
+              <button onClick={close}
+                style={{position:"absolute",top:16,right:16,background:"rgba(255,255,255,0.2)",border:"none",
+                  borderRadius:"50%",width:36,height:36,fontSize:20,color:"#fff",cursor:"pointer",
+                  display:"flex",alignItems:"center",justifyContent:"center",zIndex:1}}>
                 ✕
               </button>
-              <div style={{fontSize:48,lineHeight:1,marginBottom:8}}>{emoji}</div>
-              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:28,color:"#fff",letterSpacing:2,lineHeight:1.1}}>
+              <div style={{fontSize:56,lineHeight:1,marginBottom:10}}>{emoji}</div>
+              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:32,color:"#fff",letterSpacing:2,lineHeight:1.1}}>
                 {titulo}
               </div>
-              <div style={{fontSize:13,color:"rgba(255,255,255,0.75)",fontWeight:600,marginTop:4}}>
+              <div style={{fontSize:14,color:"rgba(255,255,255,0.75)",fontWeight:600,marginTop:6}}>
                 {sub}
               </div>
             </div>
@@ -204,14 +231,14 @@ export default function AyudaPopup({ tipo }: { tipo: TipoAyuda }) {
             {/* ── BENEFICIOS grid 2 col ── */}
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr"}}>
               {items.map((it, i) => (
-                <div key={i} style={{padding:"14px 16px",
+                <div key={i} style={{padding:"16px",
                   borderBottom: i < items.length - 2 ? "1px solid #f0f0f0" : "none",
                   borderRight: i % 2 === 0 ? "1px solid #f0f0f0" : "none"}}>
-                  <div style={{fontSize:28,lineHeight:1,marginBottom:6}}>{it.emoji}</div>
-                  <div style={{fontSize:13,fontWeight:900,color,lineHeight:1.2,marginBottom:3}}>
+                  <div style={{fontSize:30,lineHeight:1,marginBottom:8}}>{it.emoji}</div>
+                  <div style={{fontSize:13,fontWeight:900,color,lineHeight:1.2,marginBottom:4}}>
                     {it.titulo}
                   </div>
-                  <div style={{fontSize:12,color:"#888",lineHeight:1.35,fontWeight:600}}>
+                  <div style={{fontSize:12,color:"#888",lineHeight:1.4,fontWeight:600}}>
                     {it.desc}
                   </div>
                 </div>
@@ -219,7 +246,7 @@ export default function AyudaPopup({ tipo }: { tipo: TipoAyuda }) {
             </div>
 
             {/* ── COSTO ── */}
-            <div style={{padding:"14px 20px"}}>
+            <div style={{padding:"16px 20px"}}>
               <div style={{background:`${color}14`,border:`1.5px solid ${color}40`,borderRadius:12,
                 padding:"14px 16px",textAlign:"center"}}>
                 <div style={{fontSize:11,fontWeight:800,color,textTransform:"uppercase",letterSpacing:0.5,marginBottom:4}}>
@@ -232,14 +259,15 @@ export default function AyudaPopup({ tipo }: { tipo: TipoAyuda }) {
             </div>
 
             {/* ── CTA ── */}
-            <div style={{padding:"0 20px 22px"}}>
-              <button onClick={() => setOpen(false)}
-                style={{width:"100%",background:`linear-gradient(135deg,${color}cc,${color})`,
-                  border:"none",borderRadius:14,padding:15,fontSize:16,fontWeight:900,
+            <div style={{padding:"0 20px 40px"}}>
+              <a href={ctaUrl}
+                style={{display:"block",width:"100%",background:`linear-gradient(135deg,${color}cc,${color})`,
+                  border:"none",borderRadius:14,padding:16,fontSize:17,fontWeight:900,
                   color:"#fff",cursor:"pointer",fontFamily:"'Nunito',sans-serif",
-                  boxShadow:`0 4px 0 ${color}88`,letterSpacing:0.5}}>
-                Empezar ahora
-              </button>
+                  boxShadow:`0 4px 0 ${color}88`,letterSpacing:0.5,textDecoration:"none",
+                  textAlign:"center",boxSizing:"border-box"}}>
+                Empezar ahora →
+              </a>
             </div>
           </div>
         </div>

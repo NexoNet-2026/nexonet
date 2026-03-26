@@ -19,6 +19,8 @@ export default function PublicarSelector() {
   const [paso, setPaso] = useState<"tipo"|"rubro"|"subrubro">("tipo");
   const [seleccionado, setSeleccionado] = useState<string|null>(null);
   const [animando, setAnimando] = useState(false);
+  const [ayudaOpen, setAyudaOpen] = useState(false);
+  const [ayudaTipo, setAyudaTipo] = useState<string>("general");
   const [rubros, setRubros] = useState<any[]>([]);
   const [subrubros, setSubrubros] = useState<any[]>([]);
   const [rubroSel, setRubroSel] = useState<any>(null);
@@ -103,7 +105,13 @@ export default function PublicarSelector() {
                 <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"22px", color:t.color, letterSpacing:"1px", lineHeight:1, marginBottom:"4px" }}>{t.titulo}</div>
                 <div style={{ fontSize:"12px", color:"rgba(255,255,255,0.5)", fontWeight:600, lineHeight:1.4 }}>{t.desc}</div>
               </div>
-              <div style={{ fontSize:"22px", color:`${t.color}80` }}>→</div>
+              <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:"6px" }}>
+                <div style={{ fontSize:"22px", color:`${t.color}80` }}>→</div>
+                <button onClick={e=>{ e.stopPropagation(); setAyudaTipo(t.id); setAyudaOpen(true); }}
+                  style={{ background:`${t.color}22`, border:`1px solid ${t.color}40`, borderRadius:"50%", width:"28px", height:"28px", fontSize:"13px", fontWeight:900, color:t.color, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Bebas Neue',sans-serif" }}>
+                  ?
+                </button>
+              </div>
             </button>
           ))}
         </div>
@@ -155,7 +163,7 @@ export default function PublicarSelector() {
         </div>
       )}
 
-      <AyudaPopup tipo={(tipoSel?.id || "general") as any}/>
+      <AyudaPopup tipo={ayudaTipo as any} open={ayudaOpen} onClose={()=>setAyudaOpen(false)}/>
       <BottomNav />
     </main>
   );

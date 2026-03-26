@@ -1007,6 +1007,10 @@ function TarjetaGrupoSlider({ nexo, onNavigate }: { nexo:Nexo; onNavigate:()=>vo
   return (
     <div onClick={onNavigate} style={{flexShrink:0,minWidth:"160px",maxWidth:"160px",width:"160px",cursor:"pointer"}}>
       <div style={{background:"#fff",borderRadius:"14px",overflow:"hidden",boxShadow:"0 2px 10px rgba(0,0,0,0.08)",border:"2px solid rgba(58,123,213,0.15)"}}>
+        <div style={{background:"#3a7bd5",padding:"3px 8px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <span style={{fontSize:"9px",fontWeight:900,color:"#fff",textTransform:"uppercase",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:"100px"}}>{(nexo as any).owner_nombre||"NexoNet"}</span>
+          <span style={{fontSize:"9px",fontWeight:800,color:"rgba(255,255,255,0.7)",textTransform:"uppercase",flexShrink:0}}>GRUPO</span>
+        </div>
         <div style={{width:"100%",height:"90px",background:"linear-gradient(135deg,#1a2a3a,#243b55)",display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden",position:"relative"}}>
           {nexo.avatar_url
             ? <img src={nexo.avatar_url} alt={nexo.titulo} style={{width:"100%",height:"100%",objectFit:"cover"}} />

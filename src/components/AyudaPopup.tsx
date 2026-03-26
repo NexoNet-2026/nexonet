@@ -178,8 +178,7 @@ export default function AyudaPopup({
   const close = () => { isControlled ? onClose?.() : setOpenInternal(false); };
 
   useEffect(() => {
-    const cached = checkCache();
-    if (cached !== null) { setVisible(cached); return; }
+    localStorage.removeItem("ayuda_popups_activos");
     Promise.resolve(supabase.from("config_global").select("valor").eq("clave","ayuda_popups_activos").single())
       .then(({ data }) => { const v = data?.valor !== "false"; setCache(v); setVisible(v); })
       .catch(() => { setCache(true); setVisible(true); });

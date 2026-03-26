@@ -26,6 +26,13 @@ export async function POST(req: NextRequest) {
       "bit_conexion_1000":      { titulo: "1.000 BIT Conexión",        precio: 1000,  tipo: "bits_conexion",   cantidad: 1000  },
       "bit_conexion_5000":      { titulo: "5.000 BIT Conexión",        precio: 5000,  tipo: "bits_conexion",   cantidad: 5000  },
       "bit_conexion_ilimitado": { titulo: "BIT Conexión Ilimitado 30 días", precio: 10000, tipo: "bits_conexion_ilim", cantidad: 99999 },
+      // BIT NexoNet (paquetes de bits)
+      "bit_500":            { titulo: "500 BIT NexoNet",           precio: 500,   tipo: "bits_nexo",       cantidad: 500   },
+      "bit_1500":           { titulo: "1.500 BIT NexoNet",         precio: 1500,  tipo: "bits_nexo",       cantidad: 1600  },
+      "bit_3000":           { titulo: "3.000 BIT NexoNet",         precio: 3000,  tipo: "bits_nexo",       cantidad: 3300  },
+      "bit_6000":           { titulo: "6.000 BIT NexoNet",         precio: 6000,  tipo: "bits_nexo",       cantidad: 6800  },
+      "bit_12000":          { titulo: "12.000 BIT NexoNet",        precio: 12000, tipo: "bits_nexo",       cantidad: 14000 },
+      "bit_30000":          { titulo: "30.000 BIT NexoNet",        precio: 30000, tipo: "bits_nexo",       cantidad: 36000 },
       // BIT Grupo
       "bit_grupo":          { titulo: "BIT Grupo",                 precio: 500,   tipo: "bits_grupo",      cantidad: 500   },
       // BIT Link

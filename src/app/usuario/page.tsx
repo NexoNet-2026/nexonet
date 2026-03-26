@@ -197,12 +197,12 @@ export default function Usuario() {
 
       const miembroNexoIds = (mgData||[]).map((m:any) => m.nexo_id).filter(Boolean);
       const { data: gruposNexos } = miembroNexoIds.length > 0
-        ? await supabase.from("nexos").select("id,titulo,avatar_url,ciudad,tipo,estado").in("id", miembroNexoIds).eq("tipo","grupo")
+        ? await supabase.from("nexos").select("id,titulo,avatar_url,ciudad,tipo,estado,vistas").in("id", miembroNexoIds).eq("tipo","grupo")
         : { data: [] };
 
       const { data: creadosData } = await supabase
         .from("nexos")
-        .select("id,titulo,avatar_url,ciudad,tipo,estado")
+        .select("id,titulo,avatar_url,ciudad,tipo,estado,vistas")
         .eq("usuario_id", session.user.id).eq("tipo","grupo");
 
       const miembroIds = new Set((gruposNexos||[]).map((g:any) => g.id));
@@ -943,7 +943,8 @@ export default function Usuario() {
                       <div style={{ fontSize:"14px", fontWeight:900, color:"#1a2a3a", marginBottom:"4px", overflow:"hidden", whiteSpace:"nowrap", textOverflow:"ellipsis" }}>{g.nombre}</div>
                     </div>
                     <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-                      <span style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:600 }}>👥 {g.miembros_count} miembro{g.miembros_count!==1?"s":""}</span>
+                      <span style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:600 }}>👥 {g.miembros_count||0} miembro{(g.miembros_count||0)!==1?"s":""}</span>
+                        {g.vistas > 0 && <span style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:600 }}>· 👁️ {g.vistas}</span>}
                       <div style={{ display:"flex", gap:"6px", alignItems:"center" }}>
                         {g.mi_estado === "pendiente" && <span style={{ background:"rgba(230,57,70,0.1)", border:"1px solid rgba(230,57,70,0.3)", borderRadius:"20px", padding:"2px 8px", fontSize:"9px", fontWeight:800, color:"#e63946" }}>⏳ Pendiente</span>}
                         <span style={{ fontSize:"13px", color:"#d4a017", fontWeight:900 }}>→</span>

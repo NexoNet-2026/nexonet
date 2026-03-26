@@ -24,7 +24,7 @@ export function useHomeData() {
           subrubros(nombre,rubros(nombre))
         `).eq("estado", "activo").order("created_at", { ascending: false }).limit(80),
         supabase.from("nexos")
-          .select("id,titulo,descripcion,tipo,subtipo,ciudad,provincia,avatar_url,config,usuario_id,usuarios(insignia_logro)")
+          .select("id,titulo,descripcion,tipo,subtipo,subrubro_id,ciudad,provincia,avatar_url,config,usuario_id,vistas,usuarios:usuario_id(insignia_logro,nombre_usuario,nombre)")
           .order("created_at", { ascending: false }).limit(120),
       ]);
 
@@ -77,7 +77,7 @@ export function useHomeData() {
         setAnuncios(mapped);
       }
 
-      let allNexos: Nexo[] = nData ? nData.map((n: any) => ({ ...n, id: String(n.id), owner_insignia_logro: n.usuarios?.insignia_logro || "ninguna" })) : [];
+      let allNexos: Nexo[] = nData ? nData.map((n: any) => ({ ...n, id: String(n.id), owner_insignia_logro: n.usuarios?.insignia_logro || "ninguna", owner_nombre: n.usuarios?.nombre_usuario || n.usuarios?.nombre || undefined })) : [];
 
       // Obtener visitas semanales de nexos
       const hace7dias = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);

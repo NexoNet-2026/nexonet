@@ -491,6 +491,7 @@ export default function AnuncioDetalle() {
                 </div>
                 <div style={{ fontSize:"12px", color:"#d4a017", fontWeight:700 }}>{usuario.codigo}</div>
                 {usuario.plan === "nexoempresa" && <div style={{ fontSize:"11px", color:"#c0392b", fontWeight:800, marginTop:"2px" }}>🏢 Empresa verificada</div>}
+                {(usuario.ciudad || usuario.provincia) && <div style={{ fontSize:"12px", color:"#9a9a9a", fontWeight:600, marginTop:"2px" }}>📍 {[usuario.ciudad, usuario.provincia].filter(Boolean).join(", ")}</div>}
                 <InsigniaReputacion contadores={repContadores} size="xs" />
               </div>
             </div>

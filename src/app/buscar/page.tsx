@@ -16,7 +16,7 @@ type Anuncio = {
   owner_whatsapp?: string; owner_insignia_logro?: string; owner_nombre?: string; tipo?: string; visitas_semana?: number;
 };
 type Nexo = {
-  id:string; titulo:string; descripcion:string; tipo:string; subtipo:string;
+  id:string; titulo:string; descripcion:string; tipo:string; subtipo:string; subrubro_id?:number;
   ciudad:string; provincia:string; avatar_url:string; banner_url:string;
   precio:number; moneda:string; usuario_id:string; miembros_count?:number;
   config?:any; visitas_semana?: number;
@@ -82,10 +82,8 @@ function BuscarInner() {
   const [anuncios, setAnuncios] = useState<Anuncio[]>([]);
   const [nexos,    setNexos]    = useState<Nexo[]>([]);
   const [subAct,   setSubAct]   = useState<Record<number,number|null>>({});
-  const [grupoCats, setGrupoCats] = useState<{id:number;nombre:string;emoji:string}[]>([]);
   const [loading,  setLoading]  = useState(true);
 
-  // Rubros/subrubros para empresas, servicios, trabajo
   const [entRubros, setEntRubros] = useState<{id:number;nombre:string;subrubros:{id:number;nombre:string}[]}[]>([]);
   const [entRubroSel, setEntRubroSel] = useState<number|null>(null);
   const [entSubSel, setEntSubSel] = useState<number|null>(null);
@@ -93,11 +91,10 @@ function BuscarInner() {
   const [entError, setEntError] = useState<string|null>(null);
 
   const [session,    setSession]    = useState<any>(null);
-  // ── FIX: trackear cada bolsillo por separado ──
   const [bitsNexo,  setBitsNexo]  = useState(0);
   const [bitsFree,  setBitsFree]  = useState(0);
   const [bitsPromo, setBitsPromo] = useState(0);
-  const bits = bitsNexo + bitsFree + bitsPromo; // total para mostrar en UI
+  const bits = bitsNexo + bitsFree + bitsPromo;
 
   const [modoConexion,   setModoConexion]   = useState(false);
   const [seleccionados,  setSeleccionados]  = useState<Set<number>>(new Set());
@@ -121,7 +118,6 @@ function BuscarInner() {
         supabase.from("usuarios").select("bits,bits_free,bits_promo").eq("id", s.user.id).single()
           .then(({ data }) => {
             if (data) {
-              // ── FIX: guardar cada bolsillo por separado ──
               setBitsNexo(Math.max(0, data.bits || 0));
               setBitsFree(Math.max(0, data.bits_free || 0));
               setBitsPromo(Math.max(0, data.bits_promo || 0));
@@ -134,9 +130,9 @@ function BuscarInner() {
   useEffect(() => {
     if (sp.get("q")) setQuery(sp.get("q")!);
     if (sp.get("tipo")) {
-  const t = sp.get("tipo") as any;
-  if (["anuncios","grupos","empresas","servicios","trabajo"].includes(t)) setTipoActivo(t);
-}
+      const t = sp.get("tipo") as any;
+      if (["anuncios","grupos","empresas","servicios","trabajo"].includes(t)) setTipoActivo(t);
+    }
     const rP = sp.get("rubro");
     const sP = sp.get("subrubro");
 
@@ -148,10 +144,9 @@ function BuscarInner() {
         .select("id,titulo,precio,moneda,ciudad,provincia,imagenes,flash,fuente,usuario_id,permuto,subrubros!inner(id,nombre,rubros!inner(id,nombre))")
         .eq("estado","activo").order("created_at",{ascending:false}).limit(200),
       supabase.from("nexos")
-        .select("id,titulo,descripcion,tipo,subtipo,ciudad,provincia,avatar_url,banner_url,precio,moneda,usuario_id,config,subrubro_id")
+        .select("id,titulo,descripcion,tipo,subtipo,subrubro_id,ciudad,provincia,avatar_url,banner_url,precio,moneda,usuario_id,config,miembros_count,usuarios:usuario_id(nombre_usuario,nombre)")
         .eq("estado","activo").order("created_at",{ascending:false}).limit(500),
     ]).then(async ([{data:pData},{data:rData},{data:sData},{data:aData},{data:nData}]) => {
-      const gData: any[] = []; const catData: any[] = [];
 
       if (pData) setProvs(pData);
 
@@ -196,7 +191,6 @@ function BuscarInner() {
             });
           }
         }
-        // Obtener visitas semanales de anuncios
         const hace7dias = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
         const anuIds = mapped.map(a => a.id);
         if (anuIds.length > 0) {
@@ -213,28 +207,14 @@ function BuscarInner() {
         setAnuncios(mapped);
       }
 
-      const nexosArr: Nexo[] = nData ? (nData as Nexo[]) : [];
-      if (catData) setGrupoCats(catData as any);
-
-      const gruposArr: Nexo[] = gData ? (gData as any[]).map((g:any) => ({
-        id:            String(g.id),
-        titulo:        g.nombre || "Sin nombre",
-        descripcion:   g.descripcion || "",
-        tipo:          "grupo",
-        subtipo:       String(g.categoria_id || ""),
-        ciudad:        g.ciudad || "",
-        provincia:     g.provincia || "",
-        avatar_url:    g.imagen || "",
-        banner_url:    g.imagen_fondo || "",
-        precio:        0,
-        moneda:        "ARS",
-        usuario_id:    g.creador_id,
-        miembros_count: g.miembros_count || 0,
-        config:        { tipo_acceso: g.pago_ingreso_admin ? "pago" : (g.config?.tipo_acceso || "libre") },
+      let allNexos: Nexo[] = nData ? (nData as any[]).map((n:any) => ({
+        ...n,
+        id: String(n.id),
+        subrubro_id: n.subrubro_id ? Number(n.subrubro_id) : null,
+        miembros_count: n.miembros_count || 0,
+        owner_nombre: n.usuarios?.nombre_usuario || n.usuarios?.nombre || undefined,
       })) : [];
-      let allNexos = [...nexosArr, ...gruposArr];
 
-      // Obtener visitas semanales de nexos
       const hace7dias2 = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
       const nxIds = allNexos.map(n => n.id);
       if (nxIds.length > 0) {
@@ -315,21 +295,19 @@ function BuscarInner() {
   const selS   = (s:SubrubroFlat) => { setRSel(rFlat.find(r=>r.id===s.rubro_id)||null); setSSel(s); setQuery(s.nombre); setDropOpen(false); };
   const togSub = (rId:number,sId:number) => setSubAct(p => ({...p,[rId]:p[rId]===sId?null:sId}));
 
-  // Cargar rubros para empresas/servicios/trabajo al cambiar tab
   useEffect(() => {
     const ENT_TABLES: Record<string,{rubros:string;subrubros:string}> = {
       empresas:  {rubros:"empresa_rubros",subrubros:"empresa_subrubros"},
       servicios: {rubros:"servicio_rubros",subrubros:"servicio_subrubros"},
       trabajo:   {rubros:"trabajo_rubros",subrubros:"trabajo_subrubros"},
     };
-    // Caso especial: grupos usa grupo_categorias/subcategorias
     if (tipoActivo === "grupos") {
       setEntLoading(true); setEntError(null);
       Promise.all([
         supabase.from("grupo_categorias").select("id,nombre,emoji,orden").eq("activo",true).order("orden",{ascending:true}),
         supabase.from("grupo_subcategorias").select("id,nombre,emoji,orden,categoria_id").eq("activo",true).order("orden",{ascending:true}),
       ]).then(([{data:rData,error:rErr},{data:sData,error:sErr}])=>{
-        if (rErr || sErr) { console.error("Error cargando categorías grupos:", rErr, sErr); setEntError(`Cat: ${rErr?.message||"ok"} | Sub: ${sErr?.message||"ok"}`); }
+        if (rErr || sErr) { setEntError(`Cat: ${rErr?.message||"ok"} | Sub: ${sErr?.message||"ok"}`); }
         const rubrosConSubs = (rData||[]).map((r:any)=>({
           ...r, subrubros: (sData||[]).filter((s:any)=>Number(s.categoria_id)===Number(r.id)),
         }));
@@ -346,10 +324,7 @@ function BuscarInner() {
       supabase.from(t.rubros).select("id,nombre").order("orden",{ascending:true}),
       supabase.from(t.subrubros).select("id,nombre,rubro_id,orden").order("orden",{ascending:true}),
     ]).then(([{data:rData,error:rErr},{data:sData,error:sErr}])=>{
-      if (rErr || sErr) {
-        console.error("Error cargando rubros:", rErr, sErr);
-        setEntError(`Rubros: ${rErr?.message||"ok"} | Subs: ${sErr?.message||"ok"}`);
-      }
+      if (rErr || sErr) setEntError(`Rubros: ${rErr?.message||"ok"} | Subs: ${sErr?.message||"ok"}`);
       const rubrosConSubs = (rData||[]).map((r:any)=>({
         ...r, subrubros: (sData||[]).filter((s:any)=>Number(s.rubro_id)===Number(r.id)),
       }));
@@ -408,23 +383,13 @@ function BuscarInner() {
     window.open(`https://wa.me/${num}?text=${msg}`, "_blank");
   };
 
-  // ── FIX: ejecutarConexion recibe el metodo y descuenta del bolsillo correcto ──
   const ejecutarConexion = async (metodo: MetodoPago) => {
     if (seleccionados.size === 0) return;
     setConectando(true);
     const ids = Array.from(seleccionados);
     const costo = ids.length;
-
-    // Verificar saldo según método
-    if (metodo === "bit_free" && bitsFree < costo) {
-      alert(`No tenés suficientes BIT FREE. Necesitás ${costo}, tenés ${bitsFree}.`);
-      setConectando(false); return;
-    }
-    if (metodo === "bit_nexo" && bitsNexo < costo) {
-      alert(`No tenés suficientes BIT Nexo. Necesitás ${costo}, tenés ${bitsNexo}.`);
-      setConectando(false); return;
-    }
-
+    if (metodo === "bit_free" && bitsFree < costo) { alert(`No tenés suficientes BIT FREE. Necesitás ${costo}, tenés ${bitsFree}.`); setConectando(false); return; }
+    if (metodo === "bit_nexo" && bitsNexo < costo) { alert(`No tenés suficientes BIT Nexo. Necesitás ${costo}, tenés ${bitsNexo}.`); setConectando(false); return; }
     const { data: anuData } = await supabase.from("anuncios").select("id,usuario_id,conexiones").in("id", ids);
     if (anuData) {
       await Promise.all(anuData.map((a:any) => supabase.from("anuncios").update({ conexiones: (a.conexiones||0)+1 }).eq("id",a.id)));
@@ -432,8 +397,6 @@ function BuscarInner() {
         usuario_id: a.usuario_id, emisor_id: session.user.id,
         anuncio_id: a.id, tipo: "conexion", mensaje: mensajeConexion
       })));
-
-      // Descontar del bolsillo correcto
       if (metodo === "bit_free") {
         await supabase.from("usuarios").update({ bits_free: bitsFree - costo }).eq("id", session.user.id);
         setBitsFree(prev => prev - costo);
@@ -441,7 +404,6 @@ function BuscarInner() {
         await supabase.from("usuarios").update({ bits: bitsNexo - costo }).eq("id", session.user.id);
         setBitsNexo(prev => prev - costo);
       }
-
       for (const a of anuData) {
         const anuncio = anuncios.find(x => x.id === a.id);
         if (anuncio?.owner_whatsapp) { abrirWA(anuncio.owner_whatsapp, anuncio.id, anuncio.titulo); break; }
@@ -591,12 +553,12 @@ function BuscarInner() {
         </div>
       </div>
 
-
       {/* CONTENIDO */}
       {loading ? (
         <div style={{textAlign:"center",padding:"40px",color:"#9a9a9a",fontWeight:700}}>Cargando...</div>
       ) : (
         <>
+          {/* ── ANUNCIOS ── */}
           {tipoActivo === "anuncios" && (
             busLibre ? (
               <div>
@@ -629,8 +591,7 @@ function BuscarInner() {
                           if (provSel) p.set("provincia", provSel);
                           if (ciudSel) p.set("ciudad", ciudSel);
                           router.push(`/categoria/${rubro.id}${p.toString()?"?"+p.toString():""}`);
-                        }}
-                          style={{fontSize:"16px",fontWeight:900,color:"#1a2a3a",background:"none",border:"none",cursor:"pointer",fontFamily:"'Nunito',sans-serif",padding:0,textAlign:"left"}}>
+                        }} style={{fontSize:"16px",fontWeight:900,color:"#1a2a3a",background:"none",border:"none",cursor:"pointer",fontFamily:"'Nunito',sans-serif",padding:0,textAlign:"left"}}>
                           {rubro.nombre} →
                         </button>
                         <span onClick={()=>{
@@ -669,76 +630,76 @@ function BuscarInner() {
             )
           )}
 
+          {/* ── GRUPOS ── */}
           {tipoActivo === "grupos" && (
             <div style={{transition:"opacity 0.2s ease",opacity:entLoading?0.5:1}}>
               {entLoading && entRubros.length === 0 ? (
                 <div style={{textAlign:"center",padding:"40px",color:"#9a9a9a",fontWeight:700}}>Cargando categorías...</div>
-              ) : entRubros.length > 0 ? (<>
-                {(entRubroSel ? entRubros.filter(r=>r.id===entRubroSel) : entRubros).map(rubro => {
-                  const subs = (rubro.subrubros||[]).sort((a:any,b:any)=>(a.orden||0)-(b.orden||0));
-                  const allGrupos = nexosPorTipo["grupos"]||[];
-                  const subNames = subs.map((s:any)=>s.nombre.toLowerCase());
-                  const itemsRubro = allGrupos.filter((n:any) => subNames.includes((n.subtipo||"").toLowerCase()));
-                  const itemsFinal = entSubSel ? itemsRubro.filter((n:any) => {
-                    const subSel = subs.find((s:any)=>s.id===entSubSel);
-                    return subSel && (n.subtipo||"").toLowerCase() === subSel.nombre.toLowerCase();
-                  }) : itemsRubro;
-                  if (itemsFinal.length === 0 && !entRubroSel && subs.length === 0) return null;
-                  return (
-                    <div key={rubro.id} style={{marginBottom:"8px",background:"#fff",paddingBottom:"12px",borderBottom:"6px solid #f4f4f2"}}>
-                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 16px 8px"}}>
-                        <button onClick={()=>{setEntRubroSel(rubro.id===entRubroSel?null:rubro.id);setEntSubSel(null);}}
-                          style={{fontSize:"16px",fontWeight:900,color:"#1a2a3a",background:"none",border:"none",cursor:"pointer",fontFamily:"'Nunito',sans-serif",padding:0,textAlign:"left"}}>
-                          {(rubro as any).emoji||"👥"} {rubro.nombre} →
-                        </button>
+              ) : entRubros.length > 0 ? (
+                <>
+                  {(entRubroSel ? entRubros.filter(r=>r.id===entRubroSel) : entRubros).map(rubro => {
+                    // FIX: usar subrubro_id (número) en vez de subtipo (texto)
+                    const subIds = (rubro.subrubros||[]).map((s:any) => Number(s.id));
+                    const allGrupos = nexosPorTipo["grupos"] || [];
+                    const itemsRubro = allGrupos.filter((n:any) => n.subrubro_id && subIds.includes(Number(n.subrubro_id)));
+                    const itemsFinal = entSubSel
+                      ? itemsRubro.filter((n:any) => Number(n.subrubro_id) === Number(entSubSel))
+                      : itemsRubro;
+
+                    if (itemsFinal.length === 0 && !entRubroSel) return null;
+                    return (
+                      <div key={rubro.id} style={{marginBottom:"8px",background:"#fff",paddingBottom:"12px",borderBottom:"6px solid #f4f4f2"}}>
+                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 16px 8px"}}>
+                          <button onClick={()=>{setEntRubroSel(rubro.id===entRubroSel?null:rubro.id);setEntSubSel(null);}}
+                            style={{fontSize:"16px",fontWeight:900,color:"#1a2a3a",background:"none",border:"none",cursor:"pointer",fontFamily:"'Nunito',sans-serif",padding:0,textAlign:"left"}}>
+                            {(rubro as any).emoji||"👥"} {rubro.nombre} →
+                          </button>
+                        </div>
+                        {(rubro.subrubros||[]).length > 0 && (
+                          <ChipsConFlechas>
+                            {(rubro.subrubros||[]).map((sub:any)=>(
+                              <button key={sub.id} onClick={()=>setEntSubSel(entSubSel===sub.id?null:sub.id)}
+                                style={{background:entSubSel===sub.id?"#1a2a3a":"#f4f4f2",border:`2px solid ${entSubSel===sub.id?"#1a2a3a":"#e8e8e6"}`,borderRadius:"20px",padding:"5px 14px",fontSize:"12px",fontWeight:700,color:entSubSel===sub.id?"#3a7bd5":"#2c2c2e",whiteSpace:"nowrap",cursor:"pointer",flexShrink:0,fontFamily:"'Nunito',sans-serif"}}>
+                                {sub.nombre}
+                              </button>
+                            ))}
+                          </ChipsConFlechas>
+                        )}
+                        {itemsFinal.length === 0 ? (
+                          <div style={{padding:"12px 16px",color:"#9a9a9a",fontSize:"13px",fontWeight:600}}>Sin grupos en esta categoría</div>
+                        ) : (
+                          <div style={{display:"flex",gap:"12px",padding:"0 16px",overflowX:"auto",scrollbarWidth:"none",WebkitOverflowScrolling:"touch"}}>
+                            {itemsFinal.map((n:any) => (
+                              <TarjetaGrupoSlider key={n.id} nexo={n} onNavigate={()=>router.push(`/nexo/${n.id}`)} />
+                            ))}
+                          </div>
+                        )}
                       </div>
-                      {subs.length > 0 && (
-                        <ChipsConFlechas>
-                          {subs.map((sub:any)=>(
-                            <button key={sub.id} onClick={()=>setEntSubSel(entSubSel===sub.id?null:sub.id)}
-                              style={{background:entSubSel===sub.id?"#1a2a3a":"#f4f4f2",border:`2px solid ${entSubSel===sub.id?"#1a2a3a":"#e8e8e6"}`,borderRadius:"20px",padding:"5px 14px",fontSize:"12px",fontWeight:700,color:entSubSel===sub.id?"#3a7bd5":"#2c2c2e",whiteSpace:"nowrap",cursor:"pointer",flexShrink:0,fontFamily:"'Nunito',sans-serif"}}>
-                              {sub.nombre}
-                            </button>
-                          ))}
-                        </ChipsConFlechas>
-                      )}
-                      {itemsFinal.length === 0 ? (
-                        <div style={{padding:"12px 16px",color:"#9a9a9a",fontSize:"13px",fontWeight:600}}>Sin grupos en esta categoría</div>
-                      ) : (
+                    );
+                  })}
+
+                  {/* Sin categoría */}
+                  {!entRubroSel && (() => {
+                    const allSubIds = entRubros.flatMap(r => (r.subrubros||[]).map((s:any) => Number(s.id)));
+                    const sinCat = (nexosPorTipo["grupos"]||[]).filter((n:any) =>
+                      !n.subrubro_id || !allSubIds.includes(Number(n.subrubro_id))
+                    );
+                    if (sinCat.length === 0) return null;
+                    return (
+                      <div style={{marginBottom:"8px",background:"#fff",paddingBottom:"12px",borderBottom:"6px solid #f4f4f2"}}>
+                        <div style={{padding:"14px 16px 8px"}}>
+                          <span style={{fontSize:"16px",fontWeight:900,color:"#1a2a3a"}}>👥 Otros grupos →</span>
+                        </div>
                         <div style={{display:"flex",gap:"12px",padding:"0 16px",overflowX:"auto",scrollbarWidth:"none",WebkitOverflowScrolling:"touch"}}>
-                          {itemsFinal.map((n:any,i:number) => (
+                          {sinCat.map((n:any) => (
                             <TarjetaGrupoSlider key={n.id} nexo={n} onNavigate={()=>router.push(`/nexo/${n.id}`)} />
                           ))}
                         </div>
-                      )}
-                    </div>
-                  );
-                })}
-                {!entRubroSel && (() => {
-                  const allSubNames = entRubros.flatMap(r =>
-                    (r.subrubros||[]).map((s:any) => s.nombre.toLowerCase())
-                  );
-                  const sinCat = (nexosPorTipo["grupos"]||[]).filter((n:any) =>
-                    !n.subtipo || !allSubNames.includes((n.subtipo||"").toLowerCase())
-                  );
-                  console.log("nexosPorTipo grupos:", nexosPorTipo["grupos"]);
-                  console.log("allSubNames:", allSubNames);
-                  console.log("sinCat:", sinCat);
-                  if (sinCat.length === 0) return null;
-                  return (
-                    <div style={{marginBottom:"8px",background:"#fff",paddingBottom:"12px",borderBottom:"6px solid #f4f4f2"}}>
-                      <div style={{padding:"14px 16px 8px"}}>
-                        <span style={{fontSize:"16px",fontWeight:900,color:"#1a2a3a"}}>👥 Otros grupos →</span>
                       </div>
-                      <div style={{display:"flex",gap:"12px",padding:"0 16px",overflowX:"auto",scrollbarWidth:"none",WebkitOverflowScrolling:"touch"}}>
-                        {sinCat.map((n:any) => (
-                          <TarjetaGrupoSlider key={n.id} nexo={n} onNavigate={()=>router.push(`/nexo/${n.id}`)} />
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })()}
-              </>) : (
+                    );
+                  })()}
+                </>
+              ) : (
                 <div>
                   {(nexosPorTipo["grupos"]||[]).length === 0 ? (
                     <div style={{textAlign:"center",padding:"50px 20px"}}>
@@ -767,48 +728,67 @@ function BuscarInner() {
             </div>
           )}
 
+          {/* ── EMPRESAS / SERVICIOS / TRABAJO ── */}
           {tipoActivo !== "anuncios" && tipoActivo !== "grupos" && (
             <div style={{transition:"opacity 0.2s ease",opacity:entLoading?0.5:1}}>
               {entLoading && entRubros.length === 0 ? (
                 <div style={{textAlign:"center",padding:"40px",color:"#9a9a9a",fontWeight:700}}>Cargando categorías...</div>
               ) : entRubros.length > 0 ? (
-                (entRubroSel ? entRubros.filter(r=>r.id===entRubroSel) : entRubros).map(rubro => {
-                  const subs = (rubro.subrubros||[]).sort((a:any,b:any)=>(a.orden||0)-(b.orden||0));
-                  const allItems = (nexosPorTipo[tipoActivo]||[]);
-                  const rubroSubIds = subs.map((s:any)=>Number(s.id));
-                  const itemsRubro = allItems.filter((n:any) => rubroSubIds.includes(Number(n.subrubro_id)));
-                  const itemsFinal = entSubSel ? itemsRubro.filter((n:any)=>Number(n.subrubro_id)===Number(entSubSel)) : itemsRubro;
-                  if (itemsFinal.length === 0 && !entRubroSel && subs.length === 0) return null;
-                  return (
-                    <div key={rubro.id} style={{marginBottom:"8px",background:"#fff",paddingBottom:"12px",borderBottom:"6px solid #f4f4f2"}}>
-                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 16px 8px"}}>
-                        <button onClick={()=>{setEntRubroSel(rubro.id===entRubroSel?null:rubro.id);setEntSubSel(null);}}
-                          style={{fontSize:"16px",fontWeight:900,color:"#1a2a3a",background:"none",border:"none",cursor:"pointer",fontFamily:"'Nunito',sans-serif",padding:0,textAlign:"left"}}>
-                          {rubro.nombre} →
-                        </button>
+                <>
+                  {(entRubroSel ? entRubros.filter(r=>r.id===entRubroSel) : entRubros).map(rubro => {
+                    const subs = (rubro.subrubros||[]).sort((a:any,b:any)=>(a.orden||0)-(b.orden||0));
+                    const allItems = (nexosPorTipo[tipoActivo]||[]);
+                    const rubroSubIds = subs.map((s:any)=>Number(s.id));
+                    const itemsRubro = allItems.filter((n:any) => rubroSubIds.includes(Number(n.subrubro_id)));
+                    const itemsFinal = entSubSel ? itemsRubro.filter((n:any)=>Number(n.subrubro_id)===Number(entSubSel)) : itemsRubro;
+                    if (itemsFinal.length === 0 && !entRubroSel && subs.length === 0) return null;
+                    return (
+                      <div key={rubro.id} style={{marginBottom:"8px",background:"#fff",paddingBottom:"12px",borderBottom:"6px solid #f4f4f2"}}>
+                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 16px 8px"}}>
+                          <button onClick={()=>{setEntRubroSel(rubro.id===entRubroSel?null:rubro.id);setEntSubSel(null);}}
+                            style={{fontSize:"16px",fontWeight:900,color:"#1a2a3a",background:"none",border:"none",cursor:"pointer",fontFamily:"'Nunito',sans-serif",padding:0,textAlign:"left"}}>
+                            {rubro.nombre} →
+                          </button>
+                        </div>
+                        {subs.length > 0 && (
+                          <ChipsConFlechas>
+                            {subs.map((sub:any)=>(
+                              <button key={sub.id} onClick={()=>setEntSubSel(entSubSel===sub.id?null:sub.id)}
+                                style={{background:entSubSel===sub.id?"#1a2a3a":"#f4f4f2",border:`2px solid ${entSubSel===sub.id?"#1a2a3a":"#e8e8e6"}`,borderRadius:"20px",padding:"5px 14px",fontSize:"12px",fontWeight:700,color:entSubSel===sub.id?colorActivo:"#2c2c2e",whiteSpace:"nowrap",cursor:"pointer",flexShrink:0,fontFamily:"'Nunito',sans-serif"}}>
+                                {sub.nombre}
+                              </button>
+                            ))}
+                          </ChipsConFlechas>
+                        )}
+                        {itemsFinal.length === 0 ? (
+                          <div style={{padding:"12px 16px",color:"#9a9a9a",fontSize:"13px",fontWeight:600}}>Sin resultados en este rubro</div>
+                        ) : (
+                          <div style={{display:"flex",gap:"12px",padding:"0 16px",overflowX:"auto",scrollbarWidth:"none"}}>
+                            {itemsFinal.map((n:any,i:number) => (
+                              <TarjetaNexoGlobal key={n.id} nexo={n} color={colorActivo} onClick={()=>router.push(`/nexo/${n.id}`)} esPrimero={i===0&&(n.visitas_semana||0)>0} />
+                            ))}
+                          </div>
+                        )}
                       </div>
-                      {subs.length > 0 && (
-                        <ChipsConFlechas>
-                          {subs.map((sub:any)=>(
-                            <button key={sub.id} onClick={()=>setEntSubSel(entSubSel===sub.id?null:sub.id)}
-                              style={{background:entSubSel===sub.id?"#1a2a3a":"#f4f4f2",border:`2px solid ${entSubSel===sub.id?"#1a2a3a":"#e8e8e6"}`,borderRadius:"20px",padding:"5px 14px",fontSize:"12px",fontWeight:700,color:entSubSel===sub.id?colorActivo:"#2c2c2e",whiteSpace:"nowrap",cursor:"pointer",flexShrink:0,fontFamily:"'Nunito',sans-serif"}}>
-                              {sub.nombre}
-                            </button>
-                          ))}
-                        </ChipsConFlechas>
-                      )}
-                      {itemsFinal.length === 0 ? (
-                        <div style={{padding:"12px 16px",color:"#9a9a9a",fontSize:"13px",fontWeight:600}}>Sin resultados en este rubro</div>
-                      ) : (
+                    );
+                  })}
+                  {/* Sin categoría */}
+                  {entRubros.length > 0 && !entRubroSel && (() => {
+                    const allSubIds = entRubros.flatMap(r=>(r.subrubros||[]).map((s:any)=>Number(s.id)));
+                    const sinCat = (nexosPorTipo[tipoActivo]||[]).filter((n:any)=>!n.subrubro_id || !allSubIds.includes(Number(n.subrubro_id)));
+                    if (sinCat.length === 0) return null;
+                    return (
+                      <div style={{marginBottom:"8px",background:"#fff",paddingBottom:"12px",borderBottom:"6px solid #f4f4f2"}}>
+                        <div style={{padding:"14px 16px 8px"}}><span style={{fontSize:"16px",fontWeight:900,color:"#1a2a3a"}}>📦 Otros</span></div>
                         <div style={{display:"flex",gap:"12px",padding:"0 16px",overflowX:"auto",scrollbarWidth:"none"}}>
-                          {itemsFinal.map((n:any,i:number) => (
-                            <TarjetaNexoGlobal key={n.id} nexo={n} color={colorActivo} onClick={()=>router.push(`/nexo/${n.id}`)} esPrimero={i===0&&(n.visitas_semana||0)>0} />
+                          {sinCat.slice(0,8).map((n:any) => (
+                            <TarjetaNexoGlobal key={n.id} nexo={n} color={colorActivo} onClick={()=>router.push(`/nexo/${n.id}`)} />
                           ))}
                         </div>
-                      )}
-                    </div>
-                  );
-                })
+                      </div>
+                    );
+                  })()}
+                </>
               ) : (
                 <div>
                   {(nexosPorTipo[tipoActivo]||[]).length === 0 ? (
@@ -830,29 +810,13 @@ function BuscarInner() {
                       </div>
                       <div style={{display:"flex",gap:"12px",padding:"0 16px",overflowX:"auto",scrollbarWidth:"none"}}>
                         {(nexosPorTipo[tipoActivo]||[]).map((n, i) => (
-                            <TarjetaNexoGlobal key={n.id} nexo={n} color={colorActivo} onClick={()=>router.push(`/nexo/${n.id}`)} esPrimero={i === 0 && (n.visitas_semana || 0) > 0} />
+                          <TarjetaNexoGlobal key={n.id} nexo={n} color={colorActivo} onClick={()=>router.push(`/nexo/${n.id}`)} esPrimero={i === 0 && (n.visitas_semana || 0) > 0} />
                         ))}
                       </div>
                     </div>
                   )}
                 </div>
               )}
-              {/* Sin categoría */}
-              {entRubros.length > 0 && !entRubroSel && (() => {
-                const allSubIds = entRubros.flatMap(r=>(r.subrubros||[]).map((s:any)=>Number(s.id)));
-                const sinCat = (nexosPorTipo[tipoActivo]||[]).filter((n:any)=>!n.subrubro_id || !allSubIds.includes(Number(n.subrubro_id)));
-                if (sinCat.length === 0) return null;
-                return (
-                  <div style={{marginBottom:"8px",background:"#fff",paddingBottom:"12px",borderBottom:"6px solid #f4f4f2"}}>
-                    <div style={{padding:"14px 16px 8px"}}><span style={{fontSize:"16px",fontWeight:900,color:"#1a2a3a"}}>📦 Otros</span></div>
-                    <div style={{display:"flex",gap:"12px",padding:"0 16px",overflowX:"auto",scrollbarWidth:"none"}}>
-                      {sinCat.slice(0,8).map((n:any) => (
-                          <TarjetaNexoGlobal key={n.id} nexo={n} color={colorActivo} onClick={()=>router.push(`/nexo/${n.id}`)} />
-                      ))}
-                    </div>
-                  </div>
-                );
-              })()}
             </div>
           )}
         </>
@@ -916,7 +880,6 @@ function BuscarInner() {
         </div>
       )}
 
-      {/* ── FIX: PopupCompra con bolsillos correctos y metodo pasado a ejecutarConexion ── */}
       {popupPago && (
         <PopupCompra
           titulo={`Conectar con ${seleccionados.size} anuncio${seleccionados.size!==1?"s":""}`}
@@ -988,9 +951,14 @@ function TarjetaAnuncio({ a, fmt, qLow, query, horizontal, modoConexion, selecci
 }
 
 function TarjetaGrupoSlider({ nexo, onNavigate }: { nexo:Nexo; onNavigate:()=>void }) {
+  const nombreCreador = (nexo as any).owner_nombre || (nexo as any).usuarios?.nombre_usuario || (nexo as any).usuarios?.nombre || "NexoNet";
   return (
     <div onClick={onNavigate} style={{flexShrink:0,minWidth:"160px",maxWidth:"160px",width:"160px",cursor:"pointer"}}>
       <div style={{background:"#fff",borderRadius:"14px",overflow:"hidden",boxShadow:"0 2px 10px rgba(0,0,0,0.08)",border:"2px solid rgba(58,123,213,0.15)"}}>
+        <div style={{background:"#3a7bd5",padding:"3px 8px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <span style={{fontSize:"9px",fontWeight:900,color:"#fff",textTransform:"uppercase",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:"100px"}}>{nombreCreador}</span>
+          <span style={{fontSize:"9px",fontWeight:800,color:"rgba(255,255,255,0.8)",textTransform:"uppercase",flexShrink:0}}>GRUPO</span>
+        </div>
         <div style={{width:"100%",height:"90px",background:"linear-gradient(135deg,#1a2a3a,#243b55)",display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden",position:"relative"}}>
           {nexo.avatar_url
             ? <img src={nexo.avatar_url} alt={nexo.titulo} style={{width:"100%",height:"100%",objectFit:"cover"}} />
@@ -1008,54 +976,6 @@ function TarjetaGrupoSlider({ nexo, onNavigate }: { nexo:Nexo; onNavigate:()=>vo
             <span style={{fontSize:"10px",color:"#9a9a9a",fontWeight:600}}>👥 {nexo.miembros_count||0}</span>
             {nexo.ciudad && <span style={{fontSize:"10px",color:"#9a9a9a",fontWeight:600}}>· {nexo.ciudad}</span>}
           </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function TarjetaNexo({ nexo, color, onNavigate, esPrimero }: { nexo:Nexo; color:string; onNavigate:()=>void; esPrimero?:boolean }) {
-  const SUBTIPO_EMOJIS: Record<string,string> = {
-    emprendimiento:"🚀", curso:"🎓", consorcio:"🏢", deportivo:"⚽",
-    estudio:"📚", venta:"🛒", artistas:"🎨", vecinos:"🏘️", generico:"✨",
-  };
-  const TIPO_EMOJIS: Record<string,string> = {
-    grupo:"👥", empresa:"🏢", servicio:"🛠️", trabajo:"💼",
-  };
-  const emoji = nexo.subtipo ? (SUBTIPO_EMOJIS[nexo.subtipo]||"✨") : (TIPO_EMOJIS[nexo.tipo]||"✨");
-  return (
-    <div onClick={onNavigate} style={{flexShrink:0,width:"160px",minWidth:"160px",cursor:"pointer",position:"relative"}}>
-      {esPrimero && (
-        <div style={{position:"absolute",top:"-6px",right:"-4px",zIndex:2,background:"linear-gradient(135deg,#ff6b00,#ff4500)",borderRadius:"8px",padding:"2px 7px",fontSize:"10px",fontWeight:900,color:"#fff",boxShadow:"0 2px 6px rgba(255,69,0,0.4)"}}>🔥</div>
-      )}
-      <div style={{background:"#fff",borderRadius:"12px",overflow:"hidden",boxShadow:"0 2px 10px rgba(0,0,0,0.08)",border:esPrimero?`2px solid #ff6b00`:`1px solid #f0f0f0`}}>
-        <div style={{background:color,padding:"3px 8px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-          <span style={{fontSize:"9px",fontWeight:900,color:"#fff",textTransform:"uppercase"}}>{nexo.tipo}</span>
-          <span style={{fontSize:"12px"}}>{emoji}</span>
-        </div>
-        <div style={{width:"100%",height:"120px",background:`linear-gradient(135deg,${color}33,${color}11)`,display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden"}}>
-          {nexo.avatar_url
-            ? <img src={nexo.avatar_url} alt={nexo.titulo} style={{width:"100%",height:"100%",objectFit:"cover"}} />
-            : <span style={{fontSize:"36px"}}>{emoji}</span>
-          }
-        </div>
-        <div style={{padding:"8px 10px 10px"}}>
-          <div style={{fontSize:"12px",fontWeight:800,color:"#1a2a3a",marginBottom:"3px",overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical" as any}}>
-            {nexo.titulo}
-          </div>
-          {nexo.descripcion && (
-            <div style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600,marginBottom:"4px",overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical" as any}}>
-              {nexo.descripcion}
-            </div>
-          )}
-          {nexo.precio && <div style={{fontSize:"14px",fontWeight:900,color}}>${nexo.precio.toLocaleString("es-AR")}</div>}
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:"2px"}}>
-            {nexo.ciudad && <span style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600}}>📍 {nexo.ciudad}</span>}
-            {nexo.tipo==="grupo" && <span style={{fontSize:"10px",color:"#9a9a9a",fontWeight:600}}>👥 {nexo.miembros_count||0}</span>}
-          </div>
-          {nexo.tipo==="grupo" && nexo.config?.tipo_acceso==="pago" && (
-            <div style={{marginTop:"3px",background:`${color}18`,color,borderRadius:"20px",padding:"2px 8px",fontSize:"10px",fontWeight:800,textAlign:"center"}}>💰 500 BIT</div>
-          )}
         </div>
       </div>
     </div>

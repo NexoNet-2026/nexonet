@@ -24,7 +24,8 @@ export function useHomeData() {
           subrubros(nombre,rubros(nombre))
         `).eq("estado", "activo").order("created_at", { ascending: false }).limit(80),
         supabase.from("nexos")
-          .select("id,titulo,descripcion,tipo,subtipo,ciudad,provincia,avatar_url,config,usuario_id,usuarios(insignia_logro)")
+          .select("id,titulo,descripcion,tipo,subtipo,subrubro_id,ciudad,provincia,avatar_url,config,usuario_id,miembros_count,usuarios:usuario_id(insignia_logro,nombre_usuario,nombre)")
+          .eq("estado", "activo")
           .order("created_at", { ascending: false }).limit(120),
       ]);
 
@@ -53,41 +54,46 @@ export function useHomeData() {
               const o = ownerMap[a.usuario_id];
               const totalBits = (o?.bits || 0) + (o?.bits_promo || 0) + (o?.bits_free || 0);
               const waVisible = o?.vis_personal?.whatsapp === true;
-              return { ...a, owner_whatsapp: (o?.whatsapp && waVisible && totalBits > 0) ? o.whatsapp : undefined, owner_insignia_logro: o?.insignia_logro || "ninguna", owner_nombre: o?.nombre_usuario || o?.nombre || undefined };
+              return {
+                ...a,
+                owner_whatsapp: (o?.whatsapp && waVisible && totalBits > 0) ? o.whatsapp : undefined,
+                owner_insignia_logro: o?.insignia_logro || "ninguna",
+                owner_nombre: o?.nombre_usuario || o?.nombre || undefined,
+              };
             });
           }
         }
-        // Obtener visitas semanales de anuncios
+
         const hace7dias = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
         const anuIds = mapped.map(a => a.id);
         if (anuIds.length > 0) {
           const { data: vData } = await supabase
-            .from("anuncio_visitas")
-            .select("anuncio_id")
-            .in("anuncio_id", anuIds)
-            .gte("fecha", hace7dias);
+            .from("anuncio_visitas").select("anuncio_id")
+            .in("anuncio_id", anuIds).gte("fecha", hace7dias);
           if (vData) {
             const conteo: Record<number, number> = {};
             vData.forEach((v: any) => { conteo[v.anuncio_id] = (conteo[v.anuncio_id] || 0) + 1; });
             mapped = mapped.map(a => ({ ...a, visitas_semana: conteo[a.id] || 0 }));
           }
         }
-        // Ordenar: más visitas primero, sin visitas al final en orden original
         mapped.sort((a, b) => (b.visitas_semana || 0) - (a.visitas_semana || 0));
         setAnuncios(mapped);
       }
 
-      let allNexos: Nexo[] = nData ? nData.map((n: any) => ({ ...n, id: String(n.id), owner_insignia_logro: n.usuarios?.insignia_logro || "ninguna" })) : [];
+      let allNexos: Nexo[] = nData ? nData.map((n: any) => ({
+        ...n,
+        id: String(n.id),
+        owner_insignia_logro: n.usuarios?.insignia_logro || "ninguna",
+        owner_nombre: n.usuarios?.nombre_usuario || n.usuarios?.nombre || undefined,
+        miembros_count: n.miembros_count || 0,
+      })) : [];
 
-      // Obtener visitas semanales de nexos
       const hace7dias = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
       const nxIds = allNexos.map(n => n.id);
       if (nxIds.length > 0) {
         const { data: nvData } = await supabase
-          .from("nexo_visitas")
-          .select("nexo_id")
-          .in("nexo_id", nxIds)
-          .gte("fecha", hace7dias);
+          .from("nexo_visitas").select("nexo_id")
+          .in("nexo_id", nxIds).gte("fecha", hace7dias);
         if (nvData) {
           const conteo: Record<string, number> = {};
           nvData.forEach((v: any) => { conteo[v.nexo_id] = (conteo[v.nexo_id] || 0) + 1; });

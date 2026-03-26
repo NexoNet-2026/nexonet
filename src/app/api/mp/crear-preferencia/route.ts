@@ -73,8 +73,8 @@ export async function POST(req: NextRequest) {
     const data = await res.json();
 
     if (!res.ok) {
-      console.error("MP Error:", data);
-      return NextResponse.json({ error: data.message || "Error MP" }, { status: 500 });
+      console.error("MP Error completo:", JSON.stringify(data));
+      return NextResponse.json({ error: data.message || "Error MP", detalle: data }, { status: 500 });
     }
 
     return NextResponse.json({

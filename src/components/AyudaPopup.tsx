@@ -211,15 +211,15 @@ export default function AyudaPopup({
             style={{width:"100%",maxWidth:480,margin:"auto",background:"#fff"}}>
 
             {/* ── HEADER full ── */}
-            <div style={{background:`linear-gradient(135deg,${color}dd,${color})`,padding:"60px 24px 28px",textAlign:"center",position:"relative"}}>
+            <div style={{background:`linear-gradient(135deg,${color}dd,${color})`,padding:"32px 20px 20px",textAlign:"center",position:"relative"}}>
               <button onClick={close}
                 style={{position:"absolute",top:16,right:16,background:"rgba(255,255,255,0.2)",border:"none",
                   borderRadius:"50%",width:36,height:36,fontSize:20,color:"#fff",cursor:"pointer",
                   display:"flex",alignItems:"center",justifyContent:"center",zIndex:1}}>
                 ✕
               </button>
-              <div style={{fontSize:56,lineHeight:1,marginBottom:10}}>{emoji}</div>
-              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:32,color:"#fff",letterSpacing:2,lineHeight:1.1}}>
+              <div style={{fontSize:36,lineHeight:1,marginBottom:6}}>{emoji}</div>
+              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:24,color:"#fff",letterSpacing:2,lineHeight:1.1}}>
                 {titulo}
               </div>
               <div style={{fontSize:14,color:"rgba(255,255,255,0.75)",fontWeight:600,marginTop:6}}>
@@ -230,10 +230,10 @@ export default function AyudaPopup({
             {/* ── BENEFICIOS grid 2 col ── */}
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr"}}>
               {items.map((it, i) => (
-                <div key={i} style={{padding:"16px",
+                <div key={i} style={{padding:"10px 12px",
                   borderBottom: i < items.length - 2 ? "1px solid #f0f0f0" : "none",
                   borderRight: i % 2 === 0 ? "1px solid #f0f0f0" : "none"}}>
-                  <div style={{fontSize:30,lineHeight:1,marginBottom:8}}>{it.emoji}</div>
+                  <div style={{fontSize:22,lineHeight:1,marginBottom:4}}>{it.emoji}</div>
                   <div style={{fontSize:13,fontWeight:900,color,lineHeight:1.2,marginBottom:4}}>
                     {it.titulo}
                   </div>
@@ -245,7 +245,7 @@ export default function AyudaPopup({
             </div>
 
             {/* ── COSTO ── */}
-            <div style={{padding:"16px 20px"}}>
+            <div style={{padding:"10px 16px"}}>
               <div style={{background:`${color}14`,border:`1.5px solid ${color}40`,borderRadius:12,
                 padding:"14px 16px",textAlign:"center"}}>
                 <div style={{fontSize:11,fontWeight:800,color,textTransform:"uppercase",letterSpacing:0.5,marginBottom:4}}>
@@ -258,7 +258,7 @@ export default function AyudaPopup({
             </div>
 
             {/* ── CTA ── */}
-            <div style={{padding:"0 20px 40px"}}>
+            <div style={{padding:"0 16px 24px"}}>
               <a href={ctaUrl}
                 style={{display:"block",width:"100%",background:`linear-gradient(135deg,${color}cc,${color})`,
                   border:"none",borderRadius:14,padding:16,fontSize:17,fontWeight:900,

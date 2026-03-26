@@ -234,6 +234,28 @@ function BuscarInner() {
       })) : [];
       let allNexos = [...nexosArr, ...gruposArr];
 
+      // Fetch miembros_count por grupo
+      const grupoIds = allNexos.filter(n => n.tipo === "grupo").map(n => n.id);
+      if (grupoIds.length > 0) {
+        const { data: mData } = await supabase.from("nexo_miembros")
+          .select("nexo_id").eq("estado","activo").in("nexo_id", grupoIds);
+        if (mData) {
+          const conteoM: Record<string,number> = {};
+          mData.forEach((m:any) => { conteoM[m.nexo_id] = (conteoM[m.nexo_id]||0)+1; });
+          allNexos = allNexos.map(n => n.tipo==="grupo" ? {...n, miembros_count: conteoM[n.id]||0} : n);
+        }
+      }
+      // Fetch owner names
+      const ownerIds = [...new Set(allNexos.map(n => n.usuario_id).filter(Boolean))];
+      if (ownerIds.length > 0) {
+        const { data: ownersN } = await supabase.from("usuarios")
+          .select("id,nombre_usuario,nombre").in("id", ownerIds);
+        if (ownersN) {
+          const ownerMapN: Record<string,any> = Object.fromEntries(ownersN.map((o:any) => [o.id, o]));
+          allNexos = allNexos.map(n => ({...n, owner_nombre: ownerMapN[n.usuario_id]?.nombre_usuario || ownerMapN[n.usuario_id]?.nombre || undefined}));
+        }
+      }
+
       // Obtener visitas semanales de nexos
       const hace7dias2 = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
       const nxIds = allNexos.map(n => n.id);
@@ -677,12 +699,9 @@ function BuscarInner() {
                 {(entRubroSel ? entRubros.filter(r=>r.id===entRubroSel) : entRubros).map(rubro => {
                   const subs = (rubro.subrubros||[]).sort((a:any,b:any)=>(a.orden||0)-(b.orden||0));
                   const allGrupos = nexosPorTipo["grupos"]||[];
-                  const subNames = subs.map((s:any)=>s.nombre.toLowerCase());
-                  const itemsRubro = allGrupos.filter((n:any) => subNames.includes((n.subtipo||"").toLowerCase()));
-                  const itemsFinal = entSubSel ? itemsRubro.filter((n:any) => {
-                    const subSel = subs.find((s:any)=>s.id===entSubSel);
-                    return subSel && (n.subtipo||"").toLowerCase() === subSel.nombre.toLowerCase();
-                  }) : itemsRubro;
+                  const subIds = subs.map((s:any) => Number(s.id));
+                  const itemsRubro = allGrupos.filter((n:any) => n.subrubro_id && subIds.includes(Number(n.subrubro_id)));
+                  const itemsFinal = entSubSel ? itemsRubro.filter((n:any) => Number(n.subrubro_id) === Number(entSubSel)) : itemsRubro;
                   if (itemsFinal.length === 0 && !entRubroSel && subs.length === 0) return null;
                   return (
                     <div key={rubro.id} style={{marginBottom:"8px",background:"#fff",paddingBottom:"12px",borderBottom:"6px solid #f4f4f2"}}>
@@ -715,15 +734,12 @@ function BuscarInner() {
                   );
                 })}
                 {!entRubroSel && (() => {
-                  const allSubNames = entRubros.flatMap(r =>
-                    (r.subrubros||[]).map((s:any) => s.nombre.toLowerCase())
+                  const allSubIds = entRubros.flatMap(r =>
+                    (r.subrubros||[]).map((s:any) => Number(s.id))
                   );
                   const sinCat = (nexosPorTipo["grupos"]||[]).filter((n:any) =>
-                    !n.subtipo || !allSubNames.includes((n.subtipo||"").toLowerCase())
+                    !n.subrubro_id || !allSubIds.includes(Number(n.subrubro_id))
                   );
-                  console.log("nexosPorTipo grupos:", nexosPorTipo["grupos"]);
-                  console.log("allSubNames:", allSubNames);
-                  console.log("sinCat:", sinCat);
                   if (sinCat.length === 0) return null;
                   return (
                     <div style={{marginBottom:"8px",background:"#fff",paddingBottom:"12px",borderBottom:"6px solid #f4f4f2"}}>

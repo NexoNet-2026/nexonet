@@ -94,6 +94,17 @@ export function useHomeData() {
           allNexos = allNexos.map(n => ({ ...n, visitas_semana: conteo[n.id] || 0 }));
         }
       }
+      // Fetch miembros_count para grupos
+      const grupoIds = allNexos.filter(n => n.tipo === "grupo").map(n => n.id);
+      if (grupoIds.length > 0) {
+        const { data: mData } = await supabase.from("nexo_miembros")
+          .select("nexo_id").eq("estado","activo").in("nexo_id", grupoIds);
+        if (mData) {
+          const conteoM: Record<string,number> = {};
+          mData.forEach((m:any) => { conteoM[m.nexo_id] = (conteoM[m.nexo_id]||0)+1; });
+          allNexos = allNexos.map(n => n.tipo==="grupo" ? {...n, miembros_count: conteoM[n.id]||0} : n);
+        }
+      }
       allNexos.sort((a, b) => (b.visitas_semana || 0) - (a.visitas_semana || 0));
       setNexos(allNexos);
       setLoading(false);

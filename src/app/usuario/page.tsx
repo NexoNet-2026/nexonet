@@ -946,6 +946,18 @@ export default function Usuario() {
                       <span style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:600 }}>👥 {g.miembros_count} miembro{g.miembros_count!==1?"s":""}</span>
                       <div style={{ display:"flex", gap:"6px", alignItems:"center" }}>
                         {g.mi_estado === "pendiente" && <span style={{ background:"rgba(230,57,70,0.1)", border:"1px solid rgba(230,57,70,0.3)", borderRadius:"20px", padding:"2px 8px", fontSize:"9px", fontWeight:800, color:"#e63946" }}>⏳ Pendiente</span>}
+                        {g.mi_rol === "creador" && (
+                          <button onClick={async (e) => {
+                            e.stopPropagation();
+                            if (!confirm(`¿Eliminar el grupo "${g.nombre}" definitivamente?`)) return;
+                            await supabase.from("nexo_miembros").delete().eq("nexo_id", g.id);
+                            await supabase.from("nexo_sliders").delete().eq("nexo_id", g.id);
+                            await supabase.from("nexos").delete().eq("id", g.id);
+                            setMisGruposData(prev => prev.filter(x => x.id !== g.id));
+                          }} style={{ background:"rgba(231,76,60,0.1)", border:"1px solid rgba(231,76,60,0.3)", borderRadius:"8px", padding:"4px 8px", fontSize:"11px", fontWeight:800, color:"#e74c3c", cursor:"pointer", fontFamily:"'Nunito',sans-serif", flexShrink:0 }}>
+                            🗑️
+                          </button>
+                        )}
                         <span style={{ fontSize:"13px", color:"#d4a017", fontWeight:900 }}>→</span>
                       </div>
                     </div>

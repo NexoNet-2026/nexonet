@@ -6,9 +6,9 @@ const ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN!;
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { paquete, usuario_id, email } = body;
+    const { paquete, paquete_id, usuario_id, email, titulo, monto, bits_nexo, bits_bonus } = body;
 
-    if (!paquete || !usuario_id) {
+    if (!usuario_id) {
       return NextResponse.json({ error: "Faltan datos" }, { status: 400 });
     }
 
@@ -45,8 +45,22 @@ export async function POST(req: NextRequest) {
       "bit_ia_ilimitado":   { titulo: "BIT Búsqueda IA Ilimitado 30 días", precio: 10000, tipo: "bits_ia_ilim", cantidad: 99999 },
     };
 
-    const pkg = PAQUETES[paquete];
-    if (!pkg) return NextResponse.json({ error: "Paquete inválido" }, { status: 400 });
+    // Soporte para llamada desde tienda (titulo+monto) o por ID de paquete
+    let pkg: { titulo: string; precio: number; tipo: string; cantidad: number };
+    const paqueteKey = paquete || paquete_id || "";
+
+    if (titulo && monto) {
+      pkg = {
+        titulo: titulo,
+        precio: monto,
+        tipo: "bits_nexo",
+        cantidad: (bits_nexo || 0) + (bits_bonus || 0),
+      };
+    } else {
+      const found = PAQUETES[paqueteKey];
+      if (!found) return NextResponse.json({ error: "Paquete inválido" }, { status: 400 });
+      pkg = found;
+    }
 
     const preference = {
       items: [{

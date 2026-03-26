@@ -208,7 +208,7 @@ export default function AyudaPopup({
           style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.75)",zIndex:99999,
             display:"flex",flexDirection:"column",overflowY:"auto",fontFamily:"'Nunito',sans-serif"}}>
           <div onClick={e => e.stopPropagation()}
-            style={{width:"100%",maxWidth:480,margin:"auto",background:"#fff",minHeight:"100vh"}}>
+            style={{width:"100%",maxWidth:480,margin:"auto",background:"#fff"}}>
 
             {/* ── HEADER full ── */}
             <div style={{background:`linear-gradient(135deg,${color}dd,${color})`,padding:"60px 24px 28px",textAlign:"center",position:"relative"}}>

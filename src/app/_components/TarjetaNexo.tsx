@@ -28,7 +28,7 @@ export default function TarjetaNexo({ nexo, onClick, esPrimero, color }: any) {
           <div style={{ display:"flex", alignItems:"center", gap:"8px", marginTop:"4px", flexWrap:"wrap" }}>
             {nexo.ciudad && <span style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:600 }}>📍 {nexo.ciudad}</span>}
             {esGrupo && <span style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:600 }}>👥 {nexo.miembros_count||0}</span>}
-            {(nexo.visitas_semana||0) > 0 && <span style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:600 }}>👁️ {nexo.visitas_semana}</span>}
+            <span style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:600 }}>👁️ {nexo.vistas||0}</span>
           </div>
         </div>
       </div>

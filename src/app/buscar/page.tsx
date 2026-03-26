@@ -1027,6 +1027,7 @@ function TarjetaGrupoSlider({ nexo, onNavigate }: { nexo:Nexo; onNavigate:()=>vo
           <div style={{display:"flex",alignItems:"center",gap:"6px"}}>
             <span style={{fontSize:"10px",color:"#9a9a9a",fontWeight:600}}>👥 {nexo.miembros_count||0}</span>
             {nexo.ciudad && <span style={{fontSize:"10px",color:"#9a9a9a",fontWeight:600}}>· {nexo.ciudad}</span>}
+            <span style={{fontSize:"10px",color:"#9a9a9a",fontWeight:600}}>👁️ {(nexo as any).vistas||0}</span>
           </div>
         </div>
       </div>

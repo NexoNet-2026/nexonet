@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useState, useRef } from "react";
+import AyudaPopup from "@/components/AyudaPopup";
 import { supabase } from "@/lib/supabase";
 
 export default function Header() {
@@ -9,6 +10,7 @@ export default function Header() {
   const [notifs,   setNotifs]   = useState<any[]>([]);
   const [noLeidas, setNoLeidas] = useState(0);
   const [panelOpen,setPanelOpen]= useState(false);
+  const [promotorPopup, setPromotorPopup] = useState(false);
   const [pushBanner, setPushBanner] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -305,17 +307,18 @@ export default function Header() {
       </header>
 
       {/* FRANJA NEXO PROMOTOR */}
-      <Link href="/promotor" style={{
+      <div onClick={() => setPromotorPopup(true)} style={{
         display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
         background: "linear-gradient(90deg, #b8860b, #d4a017, #f0c040, #d4a017, #b8860b)",
-        padding: "7px 16px", textDecoration: "none", cursor: "pointer",
+        padding: "7px 16px", cursor: "pointer",
       }}>
         <span style={{ fontSize: "14px" }}>⭐</span>
         <span style={{ fontSize: "12px", fontWeight: 800, color: "#1a2a3a" }}>NEXO PROMOTOR</span>
         <span style={{ fontSize: "10px", color: "#1a2a3a", fontWeight: 700 }}>—</span>
         <span style={{ fontSize: "12px", fontWeight: 800, color: "#1a2a3a" }}>Ganá el 15%</span>
         <span style={{ fontSize: "12px", color: "#1a2a3a", fontWeight: 800 }}>→</span>
-      </Link>
+      </div>
+      <AyudaPopup tipo="promotor" open={promotorPopup} onClose={() => setPromotorPopup(false)} />
 
     </div>
   );

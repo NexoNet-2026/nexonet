@@ -1091,6 +1091,35 @@ function MatchesBusqueda({ busquedaId }: { busquedaId: string }) {
         );
       })}
     </div>
+      {popupAnuncio && (
+        <div onClick={() => setPopupAnuncio(null)}
+          style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.65)", zIndex:999, display:"flex", alignItems:"center", justifyContent:"center", padding:"16px" }}>
+          <div onClick={e => e.stopPropagation()}
+            style={{ background:"#fff", borderRadius:"20px", padding:"24px", width:"100%", maxWidth:"420px", fontFamily:"'Nunito',sans-serif" }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:"14px" }}>
+              <div style={{ flex:1 }}>
+                <div style={{ fontSize:"11px", fontWeight:700, color:"#16a085", textTransform:"uppercase" as const, marginBottom:"4px" }}>🤖 Match encontrado</div>
+                <div style={{ fontSize:"18px", fontWeight:900, color:"#1a2a3a", lineHeight:1.2 }}>{popupAnuncio.titulo}</div>
+              </div>
+              <button onClick={() => setPopupAnuncio(null)} style={{ background:"#f4f4f2", border:"none", borderRadius:"50%", width:"32px", height:"32px", fontSize:"16px", cursor:"pointer", flexShrink:0, marginLeft:"12px" }}>✕</button>
+            </div>
+            <div style={{ fontSize:"28px", fontWeight:900, color:"#d4a017", marginBottom:"10px" }}>
+              {popupAnuncio.moneda === "USD" ? "U$D" : "$"} {popupAnuncio.precio?.toLocaleString("es-AR") || "Consultar"}
+            </div>
+            {(popupAnuncio.ciudad || popupAnuncio.provincia) && (
+              <div style={{ fontSize:"13px", color:"#9a9a9a", fontWeight:600, marginBottom:"16px" }}>
+                📍 {[popupAnuncio.ciudad, popupAnuncio.provincia].filter(Boolean).join(", ")}
+              </div>
+            )}
+            <div style={{ display:"flex", gap:"10px" }}>
+              <button onClick={() => { setPopupAnuncio(null); router.push(`/anuncios/${popupAnuncio.id}`); }}
+                style={{ flex:1, background:"linear-gradient(135deg,#1a2a3a,#243b55)", border:"none", borderRadius:"12px", padding:"13px", fontSize:"14px", fontWeight:900, color:"#d4a017", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
+                Ver anuncio completo →
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
   );
 }
 

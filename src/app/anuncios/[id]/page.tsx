@@ -91,7 +91,7 @@ export default function AnuncioDetalle() {
         .from("usuarios")
         .select("nombre_usuario, nombre, apellido, codigo, plan, whatsapp, telefono, whatsapp_empresa, telefono_empresa, direccion, ciudad, provincia, barrio, direccion_empresa, ciudad_empresa, provincia_empresa, barrio_empresa, vis_personal, vis_empresa, insignia_logro")
         .eq("id", data.usuario_id).single();
-      if (u) { setUsuario(u); setOwnerInsignia(u.insignia_logro || "ninguna"); }
+      if (u) { setUsuario(u); setOwnerInsignia(u.insignia_logro || "ninguna"); } else { console.error("Usuario null para id:", data.usuario_id); }
       if (sess?.user.id === data.usuario_id) setEsPropio(true);
 
       // Fetch reputation badges for this user

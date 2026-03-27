@@ -113,6 +113,17 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    // Notificar al usuario buscador
+    for (const a of matchesFinal) {
+      await supabase.from("notificaciones").insert({
+        usuario_id: usuario_id,
+        tipo:       "match",
+        mensaje:    `🤖 Búsqueda IA encontró un anuncio que coincide: "${a.titulo}" — ${a.ciudad || ""}`,
+        anuncio_id: a.id,
+        leida:      false,
+      });
+    }
+
     return NextResponse.json({ matches: matchesFinal, bits_consumidos: bitsAConsumir });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });

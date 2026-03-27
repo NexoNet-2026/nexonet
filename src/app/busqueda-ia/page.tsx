@@ -494,7 +494,7 @@ function TarjetaBusqueda({ b, idx, rubros, subrubros, provs, ciudades, bits,
             </button>
           </div>
 
-          <button onClick={()=>onGuardar(b)} disabled={b.guardando||sinBits}
+          <button onClick={()=>onGuardar(b)} disabled={b.guardando}
             style={{width:"100%",
               background:(b.guardando||sinBits)?"#f0f0f0":`linear-gradient(135deg,${tipoInfo.color}cc,${tipoInfo.color})`,
               border:"none",borderRadius:"12px",padding:"13px",fontSize:"14px",fontWeight:900,

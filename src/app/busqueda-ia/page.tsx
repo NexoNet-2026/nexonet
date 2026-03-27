@@ -170,14 +170,32 @@ export default function BusquedaIA() {
       const { data, error } = await supabase.from("busquedas_automaticas").insert(payload).select().single();
       if (error) { console.error("Error guardando búsqueda:", error); alert("Error al guardar la búsqueda: " + error.message); upd(b.id,"guardando",false); return; }
       if (data) upd(b.id,"dbId",data.id);
+      // Ejecutar matching con el nuevo id
+      const newDbId = data.id;
+      upd(b.id,"guardando",false);
+      alert("✅ Búsqueda guardada correctamente");
+      if (session) {
+        fetch("/api/busqueda-ia/match", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ busqueda_id: newDbId, usuario_id: session.user.id }),
+        }).then(r => r.json()).then(data => {
+          if (data.bits_consumidos > 0) {
+            setBits(prev => Math.max(0, prev - data.bits_consumidos));
+            alert(`🤖 Encontramos ${data.matches.length} anuncio${data.matches.length !== 1 ? "s" : ""} que coinciden. Se consumieron ${data.bits_consumidos} BIT.`);
+          } else {
+            alert("🤖 No encontramos anuncios nuevos que coincidan.");
+          }
+        }).catch(() => {});
+      }
+      return;
     }
     upd(b.id,"guardando",false);
     alert("✅ Búsqueda guardada correctamente");
 
-    // Ejecutar matching si está activa
-    const busqActualizada = busquedas.find(x => x.id === b.id);
-    const dbId = b.dbId || busqActualizada?.dbId;
-    if (b.activa && dbId && session) {
+    // Ejecutar matching para búsqueda existente
+    const dbId = b.dbId;
+    if (dbId && session) {
       fetch("/api/busqueda-ia/match", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

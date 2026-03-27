@@ -86,9 +86,18 @@ export async function POST(req: NextRequest) {
       notificaciones_recibidas: (b.notificaciones_recibidas||0) + bitsAConsumir,
     }).eq("id", busqueda_id);
 
-    // Enviar mensaje de chat a cada anunciante
+    // Enviar chat al anunciante solo si tiene bits_conexion > 0
     for (const a of matchesFinal) {
       if (!a.usuario_id) continue;
+      const { data: anu } = await supabase.from("anuncios")
+        .select("bits_conexion").eq("id", a.id).single();
+      if (!anu || (anu.bits_conexion || 0) <= 0) continue;
+
+      // Descontar 1 bit_conexion al anunciante
+      await supabase.from("anuncios")
+        .update({ bits_conexion: anu.bits_conexion - 1 })
+        .eq("id", a.id);
+
       await supabase.from("mensajes").insert({
         anuncio_id:  a.id,
         emisor_id:   usuario_id,

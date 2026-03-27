@@ -86,6 +86,13 @@ export async function POST(req: NextRequest) {
       notificaciones_recibidas: (b.notificaciones_recibidas||0) + bitsAConsumir,
     }).eq("id", busqueda_id);
 
+    // Obtener datos del buscador
+    const { data: buscador } = await supabase.from("usuarios")
+      .select("nombre_usuario, codigo, ciudad, provincia")
+      .eq("id", usuario_id).single();
+    const nombreBuscador = buscador?.nombre_usuario || "Un usuario";
+    const ubicBuscador = [buscador?.ciudad, buscador?.provincia].filter(Boolean).join(", ");
+
     // Enviar chat al anunciante solo si tiene bits_conexion > 0
     for (const a of matchesFinal) {
       if (!a.usuario_id) continue;
@@ -102,7 +109,7 @@ export async function POST(req: NextRequest) {
         anuncio_id:  a.id,
         emisor_id:   usuario_id,
         receptor_id: a.usuario_id,
-        texto:       `🤖 Búsqueda IA: Un usuario está interesado en tu anuncio "${a.titulo}". ¡Respondé rápido!`,
+        texto:       `🤖 Búsqueda IA: ${nombreBuscador} (${buscador?.codigo||""})${ubicBuscador ? " de " + ubicBuscador : ""} está buscando algo similar a tu anuncio "${a.titulo}". ¡Respondé rápido!`,
       });
       await supabase.from("notificaciones").insert({
         usuario_id: a.usuario_id,

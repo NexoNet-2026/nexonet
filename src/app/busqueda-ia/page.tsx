@@ -172,6 +172,7 @@ export default function BusquedaIA() {
       if (data) upd(b.id,"dbId",data.id);
     }
     upd(b.id,"guardando",false);
+    alert("✅ Búsqueda guardada correctamente");
 
     // Ejecutar matching si está activa
     const busqActualizada = busquedas.find(x => x.id === b.id);

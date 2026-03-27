@@ -89,7 +89,7 @@ export default function AnuncioDetalle() {
     if (data.usuario_id) {
       const { data: u } = await supabase
         .from("usuarios")
-        .select("nombre_usuario, nombre, apellido, codigo, plan, whatsapp, telefono, whatsapp_empresa, telefono_empresa, direccion, ciudad, provincia, barrio, direccion_empresa, ciudad_empresa, provincia_empresa, barrio_empresa, vis_personal, vis_empresa, insignia_logro")
+        .select("nombre_usuario, nombre, apellido, codigo, plan, whatsapp, telefono, whatsapp_empresa, direccion, ciudad, provincia, barrio, direccion_empresa, ciudad_empresa, provincia_empresa, barrio_empresa, vis_personal, vis_empresa, insignia_logro")
         .eq("id", data.usuario_id).single();
       if (u) { setUsuario(u); setOwnerInsignia(u.insignia_logro || "ninguna"); } else { console.error("Usuario null para id:", data.usuario_id); }
       if (sess?.user.id === data.usuario_id) setEsPropio(true);

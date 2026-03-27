@@ -114,7 +114,7 @@ export async function POST(req: NextRequest) {
       await supabase.from("notificaciones").insert({
         usuario_id: a.usuario_id,
         tipo:       "match",
-        mensaje:    `🤖 Alguien buscó algo similar a tu anuncio "${a.titulo}" y lo encontró con la IA.`,
+        mensaje:    `🤖 ${nombreBuscador} (${buscador?.codigo||""})${ubicBuscador ? " de " + ubicBuscador : ""} buscó tu anuncio "${a.titulo}" con la IA. ¡Conectate con él!`,
         anuncio_id: a.id,
         leida:      false,
       });

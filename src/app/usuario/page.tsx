@@ -859,10 +859,11 @@ export default function Usuario() {
                       <button onClick={async () => { if (!confirm("¿Eliminás esta búsqueda?")) return; await supabase.from("busquedas_automaticas").delete().eq("id", b.id); setBusquedas(prev => prev.filter(x => x.id !== b.id)); }} style={{ background:"rgba(231,76,60,0.08)", border:"1px solid rgba(231,76,60,0.2)", borderRadius:"8px", padding:"6px 10px", fontSize:"12px", color:"#e74c3c", cursor:"pointer" }}>🗑️</button>
                     </div>
                   </div>
-                  <div style={{ display:"flex", gap:"12px", fontSize:"11px", color:"#9a9a9a", fontWeight:600 }}>
+                  <div style={{ display:"flex", gap:"12px", fontSize:"11px", color:"#9a9a9a", fontWeight:600, marginBottom:"8px" }}>
                     <span>{b.activo ? "✅ Activa" : "⏸ Pausada"}</span>
                     <span>🔔 {b.notificaciones_recibidas || 0} notificaciones</span>
                   </div>
+                  <MatchesBusqueda busquedaId={b.id} />
                 </div>
               ))
             )}
@@ -1038,6 +1039,46 @@ export default function Usuario() {
       <AyudaPopup tipo="perfil"/>
       <BottomNav />
     </main>
+  );
+}
+
+function MatchesBusqueda({ busquedaId }: { busquedaId: string }) {
+  const [matches, setMatches] = useState<any[]>([]);
+  const router = useRouter();
+  useEffect(() => {
+    supabase.from("busqueda_matches")
+      .select("id,anuncio_id,bits_consumidos,created_at,anuncios(id,titulo,precio,moneda,ciudad,provincia)")
+      .eq("busqueda_id", busquedaId)
+      .order("created_at", { ascending: false })
+      .limit(10)
+      .then(({ data }) => { if (data) setMatches(data); });
+  }, [busquedaId]);
+  if (matches.length === 0) return null;
+  return (
+    <div style={{ display:"flex", flexDirection:"column", gap:"6px", marginTop:"6px" }}>
+      <div style={{ fontSize:"10px", fontWeight:800, color:"#16a085", textTransform:"uppercase", letterSpacing:"0.5px" }}>
+        🤖 {matches.length} anuncio{matches.length !== 1 ? "s" : ""} encontrado{matches.length !== 1 ? "s" : ""}
+      </div>
+      {matches.map((m:any) => {
+        const a = m.anuncios;
+        if (!a) return null;
+        return (
+          <div key={m.id} onClick={() => router.push(`/anuncios/${a.id}`)}
+            style={{ background:"rgba(22,160,133,0.06)", border:"1px solid rgba(22,160,133,0.2)", borderRadius:"10px", padding:"8px 12px", cursor:"pointer", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+            <div>
+              <div style={{ fontSize:"12px", fontWeight:800, color:"#1a2a3a" }}>{a.titulo}</div>
+              <div style={{ fontSize:"10px", color:"#9a9a9a", fontWeight:600 }}>
+                {a.moneda === "USD" ? "U$D" : "$"} {a.precio?.toLocaleString("es-AR")} · {a.ciudad}
+              </div>
+            </div>
+            <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:"2px" }}>
+              <span style={{ fontSize:"10px", color:"#e74c3c", fontWeight:700 }}>-{m.bits_consumidos} BIT</span>
+              <span style={{ fontSize:"10px", color:"#bbb", fontWeight:600 }}>{new Date(m.created_at).toLocaleDateString("es-AR")}</span>
+            </div>
+          </div>
+        );
+      })}
+    </div>
   );
 }
 

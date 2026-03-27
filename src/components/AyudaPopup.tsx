@@ -36,7 +36,7 @@ const DATA: Record<TipoAyuda, Info> = {
   },
   servicio: {
     color:"#27ae60",emoji:"🛠️",titulo:"OFRECÉ TU SERVICIO",sub:"Que te encuentren quienes te necesitan",
-    costo:"Crear perfil: gratis | Sliders de contenido: 50 BIT c/u",
+    costo:"Crear perfil: gratis | Links multimedia: 500 BIT | Adjuntos: 500 BIT",
     items:[
       {emoji:"🤖",titulo:"Te encuentran solos",desc:"El matching IA conecta tu servicio con quienes lo buscan"},
       {emoji:"🎬",titulo:"Portfolio completo",desc:"Mostrá fotos, videos y trabajos realizados"},

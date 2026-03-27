@@ -59,7 +59,7 @@ function nueva(): Busqueda {
     dormitorios: "", ambientes: "", metros_min: "", metros_max: "",
     provincia: "", ciudad: "", keywords: "",
     marca: "", permuta: "",
-    activa: false, guardando: false, dbId: null,
+    activa: true, guardando: false, dbId: null,
   };
 }
 

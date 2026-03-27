@@ -542,54 +542,28 @@ export default function AnuncioDetalle() {
               const soloChatInterno = tipoContacto === "chat";
               return (
                 <>
-                  {!soloChatInterno && (
+                  {!soloChatInterno && usuario && (
                     <div style={{ background:"#fff", borderRadius:"16px", padding:"16px", boxShadow:"0 2px 10px rgba(0,0,0,0.06)" }}>
                       <div style={{ fontSize:"11px", fontWeight:800, color:"#1a2a3a", textTransform:"uppercase" as const, letterSpacing:"1px", marginBottom:"12px" }}>📋 Datos de contacto</div>
                       <div style={{ display:"flex", flexDirection:"column", gap:"8px" }}>
-                        {/* nombre_usuario siempre visible */}
-                        {usuario?.nombre_usuario && (
-                          <DatoContacto emoji="👤" label="Vendedor" valor={usuario.nombre_usuario} color="#d4a017" />
-                        )}
-                        {/* nombre y apellido según vis_personal */}
-                        {usuario?.vis_personal?.nombre_apellido && (usuario?.nombre || usuario?.apellido) && (
+                        <DatoContacto emoji="👤" label="Vendedor" valor={usuario.nombre_usuario} color="#d4a017" />
+                        {usuario.vis_personal?.nombre_apellido && (usuario.nombre || usuario.apellido) && (
                           <DatoContacto emoji="🪪" label="Nombre" valor={[usuario.nombre, usuario.apellido].filter(Boolean).join(" ")} color="#d4a017" />
                         )}
-                        {/* whatsapp NO se muestra — solo el botón conectar */}
-                        {/* teléfono */}
-                        {usuario?.telefono && (
+                        {usuario.telefono && (
                           <DatoContacto emoji="📞" label="Teléfono" valor={usuario.telefono} color="#3a7bd5" />
                         )}
-                        {/* ubicación */}
-                        {usuario?.vis_personal?.provincia && usuario?.provincia && (
+                        {usuario.vis_personal?.provincia && usuario.provincia && (
                           <DatoContacto emoji="🗺️" label="Provincia" valor={usuario.provincia} color="#8e44ad" />
                         )}
-                        {usuario?.vis_personal?.ciudad && usuario?.ciudad && (
+                        {usuario.vis_personal?.ciudad && usuario.ciudad && (
                           <DatoContacto emoji="🏙️" label="Ciudad" valor={usuario.ciudad} color="#8e44ad" />
                         )}
-                        {usuario?.vis_personal?.barrio && usuario?.barrio && (
+                        {usuario.vis_personal?.barrio && usuario.barrio && (
                           <DatoContacto emoji="🏘️" label="Barrio" valor={usuario.barrio} color="#8e44ad" />
                         )}
-                        {usuario?.vis_personal?.direccion && usuario?.direccion && (
+                        {usuario.vis_personal?.direccion && usuario.direccion && (
                           <DatoContacto emoji="📍" label="Dirección" valor={usuario.direccion} color="#8e44ad" />
-                        )}
-
-                        {usuario?.telefono && (
-                          <div style={{ display:"flex", alignItems:"center", gap:"12px", background:"rgba(58,123,213,0.08)", border:"2px solid rgba(58,123,213,0.2)", borderRadius:"12px", padding:"12px 14px" }}>
-                            <span style={{ fontSize:"24px" }}>📞</span>
-                            <div style={{ flex:1 }}>
-                              <div style={{ fontSize:"11px", fontWeight:700, color:"#3a7bd5", textTransform:"uppercase" as const }}>Teléfono</div>
-                              <div style={{ fontSize:"15px", fontWeight:900, color:"#1a2a3a" }}>{usuario.telefono}</div>
-                            </div>
-                          </div>
-                        )}
-                        {anuncio.direccion && (
-                          <div style={{ display:"flex", alignItems:"center", gap:"12px", background:"rgba(212,160,23,0.08)", border:"2px solid rgba(212,160,23,0.2)", borderRadius:"12px", padding:"12px 14px" }}>
-                            <span style={{ fontSize:"24px" }}>📍</span>
-                            <div style={{ flex:1 }}>
-                              <div style={{ fontSize:"11px", fontWeight:700, color:"#d4a017", textTransform:"uppercase" as const }}>Dirección</div>
-                              <div style={{ fontSize:"13px", fontWeight:800, color:"#1a2a3a" }}>{anuncio.direccion}</div>
-                            </div>
-                          </div>
                         )}
                       </div>
                     </div>

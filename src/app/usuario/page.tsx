@@ -1090,7 +1090,6 @@ function MatchesBusqueda({ busquedaId }: { busquedaId: string }) {
           </div>
         );
       })}
-    </div>
       {popupAnuncio && (
         <div onClick={() => setPopupAnuncio(null)}
           style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.65)", zIndex:999, display:"flex", alignItems:"center", justifyContent:"center", padding:"16px" }}>

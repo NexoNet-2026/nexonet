@@ -1046,12 +1046,24 @@ function MatchesBusqueda({ busquedaId }: { busquedaId: string }) {
   const [matches, setMatches] = useState<any[]>([]);
   const router = useRouter();
   useEffect(() => {
-    supabase.from("busqueda_matches")
-      .select("id,anuncio_id,bits_consumidos,created_at,anuncios(id,titulo,precio,moneda,ciudad,provincia)")
-      .eq("busqueda_id", busquedaId)
-      .order("created_at", { ascending: false })
-      .limit(10)
-      .then(({ data }) => { if (data) setMatches(data); });
+    const cargar = async () => {
+      const { data: mData } = await supabase.from("busqueda_matches")
+        .select("id,anuncio_id,bits_consumidos,created_at")
+        .eq("busqueda_id", busquedaId)
+        .order("created_at", { ascending: false })
+        .limit(10);
+      if (!mData || mData.length === 0) return;
+      const anuncioIds = mData.map((m:any) => m.anuncio_id);
+      const { data: aData } = await supabase.from("anuncios")
+        .select("id,titulo,precio,moneda,ciudad,provincia")
+        .in("id", anuncioIds);
+      const merged = mData.map((m:any) => ({
+        ...m,
+        anuncio: (aData||[]).find((a:any) => a.id === m.anuncio_id),
+      }));
+      setMatches(merged);
+    };
+    cargar();
   }, [busquedaId]);
   if (matches.length === 0) return null;
   return (
@@ -1060,7 +1072,7 @@ function MatchesBusqueda({ busquedaId }: { busquedaId: string }) {
         🤖 {matches.length} anuncio{matches.length !== 1 ? "s" : ""} encontrado{matches.length !== 1 ? "s" : ""}
       </div>
       {matches.map((m:any) => {
-        const a = m.anuncios;
+        const a = m.anuncio;
         if (!a) return null;
         return (
           <div key={m.id} onClick={() => router.push(`/anuncios/${a.id}`)}

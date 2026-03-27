@@ -172,6 +172,24 @@ export default function BusquedaIA() {
       if (data) upd(b.id,"dbId",data.id);
     }
     upd(b.id,"guardando",false);
+
+    // Ejecutar matching si está activa
+    const busqActualizada = busquedas.find(x => x.id === b.id);
+    const dbId = b.dbId || busqActualizada?.dbId;
+    if (b.activa && dbId && session) {
+      fetch("/api/busqueda-ia/match", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ busqueda_id: dbId, usuario_id: session.user.id }),
+      }).then(r => r.json()).then(data => {
+        if (data.bits_consumidos > 0) {
+          setBits(prev => Math.max(0, prev - data.bits_consumidos));
+          alert(`🤖 Encontramos ${data.matches.length} anuncio${data.matches.length !== 1 ? "s" : ""} que coinciden con tu búsqueda. Se consumieron ${data.bits_consumidos} BIT.`);
+        } else {
+          alert("🤖 No encontramos anuncios nuevos que coincidan con tus filtros.");
+        }
+      }).catch(() => {});
+    }
   };
 
   const eliminar = async (b:Busqueda) => {

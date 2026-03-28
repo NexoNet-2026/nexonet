@@ -137,7 +137,7 @@ export default function ChatPage() {
       emisor_id:   session.user.id,
       anuncio_id:  anuncioId,
       tipo:        "conexion",
-      mensaje:     "💬 Nuevo mensaje sobre "" + (anuncio?.titulo || "un anuncio") + """,
+      mensaje:     `💬 Nuevo mensaje sobre "${anuncio?.titulo || "un anuncio"}"`,
       leida:       false,
     });
     setEnviando(false);

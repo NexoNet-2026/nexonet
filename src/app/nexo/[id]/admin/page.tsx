@@ -774,7 +774,7 @@ export default function NexoAdminPage() {
                 await supabase.from("nexo_descargas_pagos").delete().eq("nexo_id",id);
                 await supabase.from("nexo_descargas").delete().eq("nexo_id",id);
                 await supabase.from("nexos").delete().eq("id",id);
-                router.push("/publicar");
+                router.push("/usuario?seccion=empresa");
               }} style={{ width:"100%", background:"rgba(231,76,60,0.18)", border:"2px solid rgba(231,76,60,0.45)", borderRadius:"12px", padding:"13px", fontSize:"13px", fontWeight:900, color:"#e74c3c", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
                 🗑️ Eliminar Nexo definitivamente
               </button>

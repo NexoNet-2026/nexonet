@@ -274,16 +274,27 @@ export default function NexoAdminPage() {
 
   const accionMiembro = async (mId: string, accion: string) => {
     if (accion === "aprobar") {
-      // Al aprobar: cobrar 500 BIT al miembro, acreditar 150 BIT Promotor al dueño
       const m = miembros.find(x=>x.id===mId);
       const uid = m?.usuario_id;
       if (!uid) return;
-      const { data: mu } = await supabase.from("usuarios").select("bits,bits_free,bits_promo").eq("id",uid).single();
-      if (!mu) return;
-      const total = (mu.bits||0) + (mu.bits_free||0) + (mu.bits_promo||0);
-      if (total < 500) { alert("El miembro no tiene 500 BIT suficientes para ingresar."); return; }
-      const campo = (mu.bits_free||0) >= 500 ? "bits_free" : (mu.bits_promo||0) >= 500 ? "bits_promo" : "bits";
-      await supabase.from("usuarios").update({ [campo]: (mu[campo]||0) - 500 }).eq("id", uid);
+      const tipoAcceso = nexo?.config?.tipo_acceso || "libre";
+
+      if (tipoAcceso === "free") {
+        // Empresa paga 500 BIT por el miembro
+        const bitsEmpresa = nexo?.bits_promo || 0;
+        if (bitsEmpresa < 500) { alert("La empresa no tiene suficientes BIT Promo para cubrir el ingreso."); return; }
+        await supabase.from("nexos").update({ bits_promo: bitsEmpresa - 500 }).eq("id", id);
+        setNexo((n:any) => ({ ...n, bits_promo: bitsEmpresa - 500 }));
+      } else {
+        // Usuario paga 500 BIT (libre o solicitud)
+        const { data: mu } = await supabase.from("usuarios").select("bits,bits_free,bits_promo").eq("id",uid).single();
+        if (!mu) return;
+        const total = (mu.bits||0) + (mu.bits_free||0) + (mu.bits_promo||0);
+        if (total < 500) { alert("El miembro no tiene 500 BIT suficientes para ingresar."); return; }
+        const campo = (mu.bits_free||0) >= 500 ? "bits_free" : (mu.bits_promo||0) >= 500 ? "bits_promo" : "bits";
+        await supabase.from("usuarios").update({ [campo]: (mu[campo]||0) - 500 }).eq("id", uid);
+      }
+
       // Acreditar 150 BIT Promotor al dueño
       await supabase.from("usuarios").update({
         bits_promo: (perfil.bits_promo||0) + 150,
@@ -618,9 +629,9 @@ export default function NexoAdminPage() {
                 ¿Cómo ingresan nuevos miembros?
               </div>
               {[
-                { k:"libre",       l:"👥 Acceso libre",       d:"Cualquiera se une pagando 500 BIT. Recibís 150 BIT Promotor." },
-                { k:"pago",        l:"💰 Acceso pago",        d:"Igual que libre pero se muestra el costo claramente. 500 BIT, recibís 150 BIT Promotor." },
-                { k:"aprobacion",  l:"⏳ Con aprobación",      d:"El usuario solicita, vos aprobás. Al aprobar se le cobran 500 BIT y recibís 150 BIT Promotor." },
+                { k:"libre",    l:"🟢 Libre",                d:"El usuario paga 500 BIT para ingresar — vos recibís 150 BIT Promotor." },
+                { k:"solicitud",l:"⏳ Solicitud de acceso",  d:"El creador decide quién paga al aprobar: la empresa o el usuario." },
+                { k:"free",     l:"🎁 Free — empresa paga",  d:"La empresa absorbe el costo de 500 BIT por cada miembro que ingresa." },
               ].map(op => {
                 const actual = nexo?.config?.tipo_acceso || "libre";
                 const activo = actual === op.k;

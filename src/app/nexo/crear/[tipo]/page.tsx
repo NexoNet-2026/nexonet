@@ -841,9 +841,9 @@ function NexoCrearInner() {
             <div style={CAJA}>
               <SL>🔐 Tipo de acceso</SL>
               {[
-                {v:"libre",     e:"🟢",l:"Libre",         d:"Cualquiera puede ver y unirse"},
-                {v:"aprobacion",e:"⏳",l:"Con aprobación",d:"Vos aprobás cada nuevo miembro"},
-                {v:"pago",      e:"💰",l:"De pago",       d:"500 BIT para ingresar"},
+                {v:"libre",     e:"🟢",l:"Libre",         d:"El usuario paga 500 BIT para ingresar — vos recibís 150 BIT Promotor"},
+                {v:"solicitud", e:"⏳",l:"Solicitud de acceso",d:"El creador decide quién paga: la empresa o el usuario"},
+                {v:"free",      e:"🎁",l:"Free — empresa paga",d:"La empresa absorbe el costo — los usuarios entran gratis"},
               ].map(o=>(
                 <div key={o.v} onClick={()=>F("tipo_acceso",o.v)}
                   style={{display:"flex",gap:"12px",alignItems:"center",padding:"14px",borderRadius:"12px",border:`2px solid ${form.tipo_acceso===o.v?colorPage:"#e8e8e6"}`,background:form.tipo_acceso===o.v?`${colorPage}08`:"#fafafa",cursor:"pointer",marginBottom:"8px"}}>

@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 
-type TipoAyuda = "anuncio"|"empresa"|"servicio"|"grupo"|"trabajo"|"busqueda_ia"|"general"|"mapa"|"perfil"|"promotor"|"descarga";
+type TipoAyuda = "anuncio"|"empresa"|"servicio"|"grupo"|"trabajo"|"busqueda_ia"|"general"|"mapa"|"perfil"|"promotor"|"descarga"|"pagina";
 
 type Info = {
   color:string; emoji:string; titulo:string; sub:string; costo:string;
@@ -118,6 +118,18 @@ const DATA: Record<TipoAyuda, Info> = {
       {emoji:"⚙️",titulo:"Configurá tu perfil",desc:"Editá tus datos, foto, ciudad y visibilidad de WhatsApp"},
     ],
   },
+  pagina: {
+    color:"#3a7bd5",emoji:"📋",titulo:"CREÁ TUS PÁGINAS",sub:"Organizá el contenido de tu Nexo en secciones",
+    costo:"50 BIT por página adicional",
+    items:[
+      {emoji:"📸",titulo:"Galería de fotos",desc:"Mostrá imágenes de tus productos, servicios, instalaciones o trabajos realizados"},
+      {emoji:"🎬",titulo:"Videos",desc:"Publicá clips, presentaciones o tutoriales directamente en tu perfil"},
+      {emoji:"🛒",titulo:"Catálogo de productos",desc:"Listá tus productos con fotos, descripciones y precios en BIT"},
+      {emoji:"📢",titulo:"Novedades",desc:"Publicá actualizaciones, anuncios y noticias para mantener a tus miembros informados"},
+      {emoji:"📥",titulo:"Descargas",desc:"Ofrecé archivos gratuitos o de pago — recibís el 60% en BIT Promo por cada descarga"},
+      {emoji:"💬",titulo:"Testimonios y FAQ",desc:"Mostrá opiniones de clientes y respondé las preguntas más frecuentes de tu comunidad"},
+    ],
+  },
   descarga: {
     color:"#16a085",emoji:"📥",titulo:"SUBIR DESCARGA",sub:"Compartí contenido con tu comunidad",
     costo:"Free: gratis | Solicitud: el creador decide | Pago: vos fijás el precio — recibís 60% en BIT Promo",
@@ -172,6 +184,7 @@ const CTA_URLS: Record<TipoAyuda, string> = {
   perfil:      "/usuario",
   promotor:    "/promotor",
   descarga:    "#",
+  pagina:      "#",
 };
 
 export default function AyudaPopup({

@@ -57,6 +57,7 @@ export default function NexoAdminPage() {
   const [popupPagoItem, setPopupPagoItem] = useState(false);
   const [popupDescarga, setPopupDescarga] = useState(false);
   const [popupAyudaDescarga, setPopupAyudaDescarga] = useState(false);
+  const [popupAyudaPagina, setPopupAyudaPagina] = useState(false);
   const [sliderItems,   setSliderItems]   = useState<Record<string,any[]>>({});
   const [sliderAbierto, setSliderAbierto] = useState<string|null>(null);
   const [customTitulo,  setCustomTitulo]  = useState("");
@@ -456,10 +457,11 @@ export default function NexoAdminPage() {
           <div style={{ display:"flex", flexDirection:"column", gap:"10px" }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"4px" }}>
               <div style={{ fontSize:"11px", fontWeight:800, color:"#9a9a9a", textTransform:"uppercase", letterSpacing:"1px" }}>{sliders.length} páginas</div>
-              <button onClick={()=>setPopupSlider(true)}
+              <button onClick={()=>setPopupAyudaPagina(true)}
                 style={{ background:`${colorNexo}18`, border:`2px solid ${colorNexo}40`, borderRadius:"10px", padding:"7px 14px", fontSize:"12px", fontWeight:900, color:colorNexo, cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
                 ➕ Agregar página
               </button>
+              <AyudaPopup tipo="pagina" open={popupAyudaPagina} onClose={()=>{ setPopupAyudaPagina(false); setPopupSlider(true); }} />
             </div>
 
             {sliders.map((s, i) => (

@@ -56,6 +56,7 @@ export default function NexoAdminPage() {
   const [popupItem,     setPopupItem]     = useState<{slider:any}|null>(null);
   const [popupPagoItem, setPopupPagoItem] = useState(false);
   const [popupDescarga, setPopupDescarga] = useState(false);
+  const [popupAyudaDescarga, setPopupAyudaDescarga] = useState(false);
   const [sliderItems,   setSliderItems]   = useState<Record<string,any[]>>({});
   const [sliderAbierto, setSliderAbierto] = useState<string|null>(null);
   const [customTitulo,  setCustomTitulo]  = useState("");
@@ -539,7 +540,11 @@ export default function NexoAdminPage() {
                   style={{ background:"rgba(22,160,133,0.1)", border:"2px solid rgba(22,160,133,0.35)", borderRadius:"10px", padding:"7px 14px", fontSize:"12px", fontWeight:900, color:"#16a085", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
                   ➕ Agregar descarga
                 </button>
-                <AyudaPopup tipo="descarga" />
+                <button onClick={()=>setPopupAyudaDescarga(true)}
+                  style={{ background:"rgba(22,160,133,0.1)", border:"2px solid rgba(22,160,133,0.35)", borderRadius:"10px", padding:"7px 12px", fontSize:"12px", fontWeight:900, color:"#16a085", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
+                  ❓ Info
+                </button>
+                <AyudaPopup tipo="descarga" open={popupAyudaDescarga} onClose={()=>setPopupAyudaDescarga(false)} />
               </div>
             </div>
             <div style={{ background:"rgba(22,160,133,0.08)", border:"2px dashed rgba(22,160,133,0.3)", borderRadius:"14px", padding:"12px 14px" }}>

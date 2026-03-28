@@ -729,6 +729,28 @@ export default function NexoAdminPage() {
               )}
             </Caja>
 
+            <Caja titulo="🗺️ Visibilidad en el mapa">
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"4px 0" }}>
+                <div>
+                  <div style={{ fontSize:"13px", fontWeight:900, color:"#1a2a3a" }}>🗺️ Mostrar en el mapa</div>
+                  <div style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:600, marginTop:"2px" }}>
+                    {nexo?.mostrar_en_mapa !== false ? "Visible en el mapa de NexoNet" : "Oculto en el mapa"}
+                  </div>
+                </div>
+                <button onClick={async () => {
+                  const nuevo = nexo?.mostrar_en_mapa === false ? true : false;
+                  await supabase.from("nexos").update({ mostrar_en_mapa: nuevo }).eq("id", id);
+                  setNexo((n:any) => ({ ...n, mostrar_en_mapa: nuevo }));
+                }} style={{ width:"46px", height:"26px", borderRadius:"13px", border:"none", position:"relative",
+                  background: nexo?.mostrar_en_mapa !== false ? "#3a7bd5" : "#e0e0e0",
+                  cursor:"pointer", flexShrink:0, transition:"background .2s" }}>
+                  <div style={{ width:"20px", height:"20px", borderRadius:"50%", background:"#fff",
+                    position:"absolute", top:"3px", left: nexo?.mostrar_en_mapa !== false ? "23px" : "3px",
+                    transition:"left .2s", boxShadow:"0 1px 3px rgba(0,0,0,0.25)" }} />
+                </button>
+              </div>
+            </Caja>
+
             <div style={{ background:"linear-gradient(135deg,#2c1a1a,#4a2020)", borderRadius:"16px", padding:"18px", border:"2px solid rgba(231,76,60,0.3)" }}>
               <div style={{ fontSize:"13px", fontWeight:900, color:"#e74c3c", marginBottom:"6px" }}>⚠️ Zona peligrosa</div>
               <div style={{ fontSize:"12px", color:"#e88a8a", fontWeight:600, marginBottom:"16px" }}>Esta acción elimina el nexo, sus sliders, miembros y mensajes permanentemente.</div>

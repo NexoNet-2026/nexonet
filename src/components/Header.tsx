@@ -108,7 +108,7 @@ export default function Header() {
   const cargarNotifs = async (uid: string) => {
     const { data } = await supabase
       .from("notificaciones")
-      .select("id, tipo, mensaje, leida, created_at, anuncio_id, nexo_id")
+      .select("id, tipo, mensaje, leida, created_at, anuncio_id, nexo_id, emisor_id")
       .eq("usuario_id", uid)
       .order("created_at", { ascending: false })
       .limit(20);
@@ -262,7 +262,7 @@ export default function Header() {
                         Sin notificaciones
                       </div>
                     ) : notifs.map(n => (
-                      <a key={n.id} href={n.nexo_id ? (n.tipo==="solicitud_admin" ? `/nexo/${n.nexo_id}/admin` : `/nexo/${n.nexo_id}`) : n.anuncio_id ? `/anuncios/${n.anuncio_id}` : "/usuario"}
+                      <a key={n.id} href={n.tipo==="conexion" && n.anuncio_id && n.emisor_id ? `/chat/${n.anuncio_id}/${n.emisor_id}` : n.nexo_id ? (n.tipo==="solicitud_admin" ? `/nexo/${n.nexo_id}/admin` : `/nexo/${n.nexo_id}`) : n.anuncio_id ? `/anuncios/${n.anuncio_id}` : "/usuario"}
                         onClick={() => setPanelOpen(false)}
                         style={{
                           display: "block", padding: "11px 16px", textDecoration: "none",

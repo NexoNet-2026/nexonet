@@ -371,6 +371,7 @@ export default function AnuncioDetalle() {
       });
       await supabase.from("notificaciones").insert({
         usuario_id: uid,
+        emisor_id:  session.user.id,
         tipo:       "conexion",
         mensaje:    `💬 El vendedor de "${anuncio.titulo}" te escribió`,
         anuncio_id: anuncio.id,

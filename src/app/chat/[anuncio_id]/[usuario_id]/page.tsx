@@ -179,6 +179,13 @@ export default function ChatPage() {
 
       {/* ── MENSAJES ── */}
       <div style={{ flex:1, overflowY:"auto", padding:"170px 16px 210px", display:"flex", flexDirection:"column", gap:"4px", background:"#eae6df" }}>
+        {/* INFO CONTEXTO */}
+        {anuncio && otroUser && (
+          <div style={{ background:"rgba(255,255,255,0.8)", borderRadius:"12px", padding:"12px 16px", margin:"0 0 8px", textAlign:"center", border:"1px solid rgba(212,160,23,0.2)" }}>
+            <div style={{ fontSize:"12px", fontWeight:800, color:"#1a2a3a" }}>💬 Conversación con <span style={{ color:"#d4a017" }}>{otroUser.nombre_usuario}</span></div>
+            <div style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:600 }}>sobre el anuncio <span style={{ color:"#1a2a3a", fontWeight:800 }}>{anuncio.titulo}</span></div>
+          </div>
+        )}
         {mensajes.length === 0 && (
           <div style={{ textAlign:"center", padding:"40px 20px", color:"#9a9a9a" }}>
             <div style={{ fontSize:"40px", marginBottom:"12px" }}>💬</div>

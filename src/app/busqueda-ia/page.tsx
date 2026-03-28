@@ -115,7 +115,9 @@ export default function BusquedaIA() {
             keywords: b.keywords||"",
             marca: b.config?.marca||"", permuta: b.config?.permuta===true?"si":b.config?.permuta===false?"no":"",
             activa: b.activo, guardando: false, dbId: b.id,
-            ...(b.config?.filtros_valores || {}),
+            ...Object.fromEntries(
+              Object.entries(b.config?.filtros_valores || {}).map(([k,v]) => [k, String(v)])
+            ),
           })));
         }
         setLoading(false);

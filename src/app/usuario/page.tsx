@@ -676,21 +676,7 @@ export default function Usuario() {
               <Campo label="Apellido" valor={personal.apellido} onChange={v=>setPersonal(p=>({...p,apellido:v}))} visible={visP.nombre_apellido} onToggle={()=>toggleP("nombre_apellido")} placeholder="Tu apellido" />
               <div style={{ fontSize:"12px", color:"#9a9a9a", fontWeight:600, padding:"8px 0 4px" }}>📧 {perfil?.email}</div>
               <Campo label="WhatsApp" valor={personal.whatsapp} onChange={v=>setPersonal(p=>({...p,whatsapp:v}))} visible={visP.whatsapp} onToggle={()=>toggleP("whatsapp")} placeholder="Ej: 3492123456" icono="📱" />
-              {personal.whatsapp && (
-                <div onClick={async () => {
-                  const nuevo = !perfil?.notif_whatsapp;
-                  await supabase.from("usuarios").update({ notif_whatsapp: nuevo }).eq("id", perfil.id);
-                  setPerfil((p: any) => ({ ...p, notif_whatsapp: nuevo }));
-                }} style={{ display:"flex", alignItems:"center", gap:"12px", padding:"12px 14px", background: perfil?.notif_whatsapp ? "rgba(37,211,102,0.08)" : "#f9f9f9", borderRadius:"12px", border: perfil?.notif_whatsapp ? "2px solid #25d366" : "2px solid #e8e8e6", cursor:"pointer", marginTop:"4px" }}>
-                  <div style={{ width:"44px", height:"26px", borderRadius:"13px", background: perfil?.notif_whatsapp ? "#25d366" : "#d0d0d0", position:"relative", flexShrink:0, transition:"background .2s" }}>
-                    <div style={{ position:"absolute", top:"3px", left: perfil?.notif_whatsapp ? "21px" : "3px", width:"20px", height:"20px", borderRadius:"50%", background:"#fff", boxShadow:"0 1px 4px rgba(0,0,0,0.2)", transition:"left .2s" }} />
-                  </div>
-                  <div>
-                    <div style={{ fontSize:"13px", fontWeight:800, color: perfil?.notif_whatsapp ? "#1a7a4a" : "#1a2a3a" }}>📱 Notificaciones por WhatsApp</div>
-                    <div style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:600 }}>Recibí un WA cuando aparezca un anuncio que buscás</div>
-                  </div>
-                </div>
-              )}
+
               <Campo label="Provincia" valor={personal.provincia} onChange={v=>setPersonal(p=>({...p,provincia:v}))} visible={visP.provincia} onToggle={()=>toggleP("provincia")} placeholder="Ej: Santa Fe" icono="🗺️" />
               <Campo label="Ciudad" valor={personal.ciudad} onChange={v=>setPersonal(p=>({...p,ciudad:v}))} visible={visP.ciudad} onToggle={()=>toggleP("ciudad")} placeholder="Ej: Rosario" icono="🏙️" />
               <button onClick={geolocPersonal} disabled={gpsLoad}

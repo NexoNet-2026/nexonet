@@ -66,6 +66,11 @@ export default function AnuncioDetalle() {
   const [cargandoBit,    setCargandoBit]    = useState(false);
 
   const [popupMensaje,    setPopupMensaje]    = useState(false);
+  const [buscadores,      setBuscadores]      = useState<any[]>([]);
+  const [selBuscadores,   setSelBuscadores]   = useState<Set<string>>(new Set());
+  const [popupBuscadores, setPopupBuscadores] = useState(false);
+  const [msgBuscadores,   setMsgBuscadores]   = useState("");
+  const [enviandoMsg,     setEnviandoMsg]     = useState(false);
   const [mensajeConexion, setMensajeConexion] = useState(MENSAJES_PRESET[0]);
   const [ownerInsignia,   setOwnerInsignia]   = useState<string>("ninguna");
   const [repContadores,   setRepContadores]   = useState<Record<string,number>>({});
@@ -127,6 +132,29 @@ export default function AnuncioDetalle() {
         .eq("id", sess.user.id).single();
       if (ub) setMisBits(ub);
     }
+    // Cargar buscadores que encontraron este anuncio
+    if (sess?.user?.id === data.usuario_id) {
+      const { data: matchData } = await supabase
+        .from("busqueda_matches")
+        .select("usuario_id, created_at")
+        .eq("anuncio_id", params.id)
+        .order("created_at", { ascending: false });
+      if (matchData && matchData.length > 0) {
+        const uids = [...new Set(matchData.map((m:any) => m.usuario_id))];
+        const { data: uData } = await supabase
+          .from("usuarios")
+          .select("id, nombre_usuario, codigo, ciudad, provincia")
+          .in("id", uids);
+        if (uData) {
+          const merged = uids.map(uid => ({
+            ...uData.find((u:any) => u.id === uid),
+            ultima_busqueda: matchData.find((m:any) => m.usuario_id === uid)?.created_at,
+          }));
+          setBuscadores(merged);
+        }
+      }
+    }
+
     setLoading(false);
   };
 
@@ -277,6 +305,31 @@ export default function AnuncioDetalle() {
     }
 
     router.push(`/chat/${anuncio.id}/${anuData.usuario_id}`);
+  };
+
+  const enviarABuscadores = async () => {
+    if (!msgBuscadores.trim() || selBuscadores.size === 0 || !session) return;
+    setEnviandoMsg(true);
+    for (const uid of selBuscadores) {
+      await supabase.from("mensajes").insert({
+        anuncio_id:  anuncio.id,
+        emisor_id:   session.user.id,
+        receptor_id: uid,
+        texto:       msgBuscadores,
+      });
+      await supabase.from("notificaciones").insert({
+        usuario_id: uid,
+        tipo:       "conexion",
+        mensaje:    `💬 El vendedor de "${anuncio.titulo}" te escribió`,
+        anuncio_id: anuncio.id,
+        leida:      false,
+      });
+    }
+    setEnviandoMsg(false);
+    setPopupBuscadores(false);
+    setMsgBuscadores("");
+    setSelBuscadores(new Set());
+    alert(`✅ Mensaje enviado a ${selBuscadores.size} usuario${selBuscadores.size !== 1 ? "s" : ""}`);
   };
 
   const fmt = (precio: number, moneda: string) =>
@@ -604,6 +657,54 @@ export default function AnuncioDetalle() {
           </div>
         )}
 
+        {/* BUSCADORES */}
+        {esPropio && buscadores.length > 0 && (
+          <div style={{ background:"#fff", borderRadius:"16px", padding:"16px", boxShadow:"0 2px 10px rgba(0,0,0,0.06)" }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"12px" }}>
+              <div style={{ fontSize:"13px", fontWeight:900, color:"#1a2a3a", textTransform:"uppercase", letterSpacing:"0.5px" }}>
+                🤖 Interesados ({buscadores.length})
+              </div>
+              {selBuscadores.size > 0 && (
+                <button onClick={() => setPopupBuscadores(true)}
+                  style={{ background:"linear-gradient(135deg,#16a085,#1abc9c)", border:"none", borderRadius:"10px", padding:"6px 14px", fontSize:"12px", fontWeight:800, color:"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
+                  💬 Escribirles ({selBuscadores.size})
+                </button>
+              )}
+            </div>
+            <div style={{ display:"flex", alignItems:"center", gap:"8px", marginBottom:"10px", padding:"6px 0", borderBottom:"1px solid #f0f0f0" }}>
+              <input type="checkbox"
+                checked={selBuscadores.size === buscadores.length}
+                onChange={e => setSelBuscadores(e.target.checked ? new Set(buscadores.map((b:any) => b.id)) : new Set())}
+                style={{ width:"16px", height:"16px", cursor:"pointer" }} />
+              <span style={{ fontSize:"11px", fontWeight:700, color:"#9a9a9a" }}>Seleccionar todos</span>
+            </div>
+            {buscadores.map((b:any) => (
+              <div key={b.id} style={{ display:"flex", alignItems:"center", gap:"10px", padding:"8px 0", borderBottom:"1px solid #f8f8f8" }}>
+                <input type="checkbox"
+                  checked={selBuscadores.has(b.id)}
+                  onChange={e => {
+                    const s = new Set(selBuscadores);
+                    e.target.checked ? s.add(b.id) : s.delete(b.id);
+                    setSelBuscadores(s);
+                  }}
+                  style={{ width:"16px", height:"16px", cursor:"pointer", flexShrink:0 }} />
+                <div style={{ width:"36px", height:"36px", borderRadius:"50%", background:"linear-gradient(135deg,#d4a017,#f0c040)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"16px", flexShrink:0 }}>👤</div>
+                <div style={{ flex:1 }}>
+                  <div style={{ fontSize:"13px", fontWeight:800, color:"#1a2a3a" }}>{b.nombre_usuario}</div>
+                  <div style={{ fontSize:"10px", color:"#9a9a9a", fontWeight:600 }}>
+                    {b.codigo} {b.ciudad ? `· ${b.ciudad}` : ""} 
+                    {b.ultima_busqueda ? ` · ${new Date(b.ultima_busqueda).toLocaleDateString("es-AR")}` : ""}
+                  </div>
+                </div>
+                <button onClick={() => { setSelBuscadores(new Set([b.id])); setPopupBuscadores(true); }}
+                  style={{ background:"rgba(22,160,133,0.1)", border:"1px solid rgba(22,160,133,0.3)", borderRadius:"8px", padding:"5px 10px", fontSize:"11px", fontWeight:800, color:"#16a085", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
+                  💬
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
         {esPropio && (
           <button onClick={() => router.push("/mis-anuncios")} style={{ width:"100%", background:"linear-gradient(135deg,#1a2a3a,#243b55)", color:"#d4a017", border:"none", borderRadius:"12px", padding:"14px", fontSize:"14px", fontWeight:800, cursor:"pointer", fontFamily:"'Nunito',sans-serif", boxShadow:"0 4px 0 #0a1015" }}>
             📋 Ir a Mis Anuncios
@@ -622,6 +723,25 @@ export default function AnuncioDetalle() {
           onClose={() => setPopupCompra(false)}
           onPagar={cargarBitConexion}
         />
+      )}
+
+      {/* POPUP MENSAJE A BUSCADORES */}
+      {popupBuscadores && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.65)", zIndex:800, display:"flex", alignItems:"flex-end", justifyContent:"center" }}>
+          <div style={{ background:"#fff", borderRadius:"24px 24px 0 0", padding:"24px 20px 40px", width:"100%", maxWidth:"480px", fontFamily:"'Nunito',sans-serif" }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"16px" }}>
+              <div style={{ fontSize:"16px", fontWeight:900, color:"#1a2a3a" }}>💬 Escribirles a {selBuscadores.size} interesado{selBuscadores.size !== 1 ? "s" : ""}</div>
+              <button onClick={() => setPopupBuscadores(false)} style={{ background:"#f4f4f2", border:"none", borderRadius:"50%", width:"32px", height:"32px", fontSize:"16px", cursor:"pointer" }}>✕</button>
+            </div>
+            <textarea value={msgBuscadores} onChange={e => setMsgBuscadores(e.target.value)}
+              placeholder="Ej: Hola, vi que estás buscando algo similar. ¿Seguís interesado?"
+              style={{ width:"100%", border:"2px solid #e8e8e6", borderRadius:"12px", padding:"12px 14px", fontSize:"14px", fontFamily:"'Nunito',sans-serif", minHeight:"100px", resize:"vertical", outline:"none", boxSizing:"border-box" as const }} />
+            <button onClick={enviarABuscadores} disabled={!msgBuscadores.trim() || enviandoMsg}
+              style={{ width:"100%", marginTop:"14px", background:msgBuscadores.trim() ? "linear-gradient(135deg,#16a085,#1abc9c)" : "#e8e8e6", border:"none", borderRadius:"14px", padding:"16px", fontSize:"15px", fontWeight:900, color:msgBuscadores.trim() ? "#fff" : "#bbb", cursor:msgBuscadores.trim() ? "pointer" : "default", fontFamily:"'Nunito',sans-serif", boxShadow:msgBuscadores.trim() ? "0 4px 0 #0e6b59" : "none" }}>
+              {enviandoMsg ? "Enviando..." : `📨 Enviar mensaje`}
+            </button>
+          </div>
+        </div>
       )}
 
       <BottomNav />

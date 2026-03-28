@@ -342,10 +342,27 @@ export default function AnuncioDetalle() {
       return;
     }
     setEnviandoMsg(true);
-    // Descontar BIT del anuncio
+    // Descontar 1 BIT del anuncio por cada mensaje enviado (costo emisor)
     await supabase.from("anuncios").update({ bits_conexion: bitsAnuncio - bitsNecesarios }).eq("id", anuncio.id);
     setAnuncio((prev:any) => ({ ...prev, bits_conexion: bitsAnuncio - bitsNecesarios }));
+
     for (const uid of selBuscadores) {
+      // Descontar 1 BIT al receptor
+      const { data: receptor } = await supabase.from("usuarios")
+        .select("bits, bits_free, bits_promo").eq("id", uid).single();
+      if (receptor) {
+        const totalReceptor = (receptor.bits||0) + (receptor.bits_free||0) + (receptor.bits_promo||0);
+        if (totalReceptor >= 1) {
+          if ((receptor.bits_promo||0) >= 1) {
+            await supabase.from("usuarios").update({ bits_promo: receptor.bits_promo - 1 }).eq("id", uid);
+          } else if ((receptor.bits||0) >= 1) {
+            await supabase.from("usuarios").update({ bits: receptor.bits - 1 }).eq("id", uid);
+          } else {
+            await supabase.from("usuarios").update({ bits_free: receptor.bits_free - 1 }).eq("id", uid);
+          }
+        }
+      }
+
       await supabase.from("mensajes").insert({
         anuncio_id:  anuncio.id,
         emisor_id:   session.user.id,

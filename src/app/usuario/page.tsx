@@ -1112,10 +1112,14 @@ function MatchesBusqueda({ busquedaId }: { busquedaId: string }) {
               </div>
             )}
             <div style={{ display:"flex", gap:"10px" }}>
-              <button onClick={() => { setPopupAnuncio(null); router.push(`/anuncios/${popupAnuncio.id}`); }}
-                style={{ flex:1, background:"linear-gradient(135deg,#1a2a3a,#243b55)", border:"none", borderRadius:"12px", padding:"13px", fontSize:"14px", fontWeight:900, color:"#d4a017", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
-                Ver anuncio completo →
+              <button onClick={() => setPopupAnuncio(null)}
+                style={{ flex:1, background:"#f4f4f2", border:"none", borderRadius:"12px", padding:"13px", fontSize:"14px", fontWeight:800, color:"#666", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
+                Cerrar
               </button>
+              <a href={`/anuncios/${popupAnuncio.id}`}
+                style={{ flex:2, background:"linear-gradient(135deg,#1a2a3a,#243b55)", border:"none", borderRadius:"12px", padding:"13px", fontSize:"14px", fontWeight:900, color:"#d4a017", cursor:"pointer", fontFamily:"'Nunito',sans-serif", textDecoration:"none", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                Ver anuncio completo →
+              </a>
             </div>
           </div>
         </div>

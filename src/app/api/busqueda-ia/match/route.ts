@@ -109,7 +109,7 @@ export async function POST(req: NextRequest) {
         anuncio_id:  a.id,
         emisor_id:   usuario_id,
         receptor_id: a.usuario_id,
-        texto:       `🤖 Búsqueda IA: ${nombreBuscador} (${buscador?.codigo||""})${ubicBuscador ? " de " + ubicBuscador : ""} está buscando algo similar a tu anuncio "${a.titulo}". ¡Respondé rápido!`,
+        texto:       `🤖 Búsqueda IA: ${nombreBuscador} (${buscador?.codigo||""})${ubicBuscador ? " de " + ubicBuscador : ""} está buscando algo similar a tu anuncio "${a.titulo}". ¡Respondé rápido! Para contactarlo escribile al chat.`,
       });
       await supabase.from("notificaciones").insert({
         usuario_id: a.usuario_id,

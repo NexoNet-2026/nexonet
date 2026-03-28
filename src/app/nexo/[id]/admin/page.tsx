@@ -377,7 +377,7 @@ export default function NexoAdminPage() {
   const adminSolicitados = miembros.filter(m=>m.rol==="admin_solicitado" && m.estado==="activo");
   const activos    = miembros.filter(m=>m.estado==="activo");
   const TABS: {key:TabAdmin;emoji:string;label:string;badge?:number}[] = [
-    { key:"sliders",   emoji:"📋", label:"Sliders"   },
+    { key:"sliders",   emoji:"📋", label:"Páginas"   },
     { key:"descargas", emoji:"📥", label:"Descargas" },
     { key:"miembros",  emoji:"👥", label:"Miembros",  badge:(pendientes.length+adminSolicitados.length)||undefined },
     { key:"info",      emoji:"✏️", label:"Info"      },
@@ -413,7 +413,7 @@ export default function NexoAdminPage() {
             <div style={{ flex:1 }}>
               <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"22px", color:"#fff", letterSpacing:"1px", lineHeight:1 }}>{nexo?.titulo}</div>
               <div style={{ fontSize:"11px", color:"rgba(255,255,255,0.5)", fontWeight:600, marginTop:"3px" }}>
-                {activos.length} miembros · {sliders.length} sliders · {descargas.length} descargas
+                {activos.length} miembros · {sliders.length} páginas · {descargas.length} descargas
               </div>
             </div>
             <label style={{ background:"rgba(255,255,255,0.12)", border:"1px solid rgba(255,255,255,0.2)", borderRadius:"10px", padding:"8px 11px", color:"rgba(255,255,255,0.7)", fontSize:"11px", fontWeight:700, cursor:"pointer", flexShrink:0, textAlign:"center" }}>
@@ -442,10 +442,10 @@ export default function NexoAdminPage() {
         {tab==="sliders" && (
           <div style={{ display:"flex", flexDirection:"column", gap:"10px" }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"4px" }}>
-              <div style={{ fontSize:"11px", fontWeight:800, color:"#9a9a9a", textTransform:"uppercase", letterSpacing:"1px" }}>{sliders.length} sliders</div>
+              <div style={{ fontSize:"11px", fontWeight:800, color:"#9a9a9a", textTransform:"uppercase", letterSpacing:"1px" }}>{sliders.length} páginas</div>
               <button onClick={()=>setPopupSlider(true)}
                 style={{ background:`${colorNexo}18`, border:`2px solid ${colorNexo}40`, borderRadius:"10px", padding:"7px 14px", fontSize:"12px", fontWeight:900, color:colorNexo, cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
-                ➕ Agregar slider
+                ➕ Agregar página
               </button>
             </div>
 
@@ -754,9 +754,9 @@ export default function NexoAdminPage() {
       {popupSlider && (
         <div style={{ position:"fixed", inset:0, zIndex:500, background:"rgba(0,0,0,0.7)", display:"flex", alignItems:"flex-end" }} onClick={()=>setPopupSlider(false)}>
           <div style={{ width:"100%", background:"#fff", borderRadius:"24px 24px 0 0", padding:"22px 18px 44px", maxHeight:"80vh", overflowY:"auto", fontFamily:"'Nunito',sans-serif" }} onClick={e=>e.stopPropagation()}>
-            <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"20px", color:"#1a2a3a", letterSpacing:"1px", marginBottom:"6px" }}>➕ Tipo de slider</div>
+            <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"20px", color:"#1a2a3a", letterSpacing:"1px", marginBottom:"6px" }}>➕ Tipo de página</div>
             <div style={{ fontSize:"12px", color:"#9a9a9a", fontWeight:600, marginBottom:"14px" }}>
-              {sliders.length} sliders · 50 BIT por slider
+              {sliders.length} páginas · 50 BIT por página
             </div>
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"8px", marginBottom:"14px" }}>
               {SLIDERS_CATALOGO.map(c=>{

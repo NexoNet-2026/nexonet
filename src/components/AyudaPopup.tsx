@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 
-type TipoAyuda = "anuncio"|"empresa"|"servicio"|"grupo"|"trabajo"|"busqueda_ia"|"general"|"mapa"|"perfil"|"promotor";
+type TipoAyuda = "anuncio"|"empresa"|"servicio"|"grupo"|"trabajo"|"busqueda_ia"|"general"|"mapa"|"perfil"|"promotor"|"descarga";
 
 type Info = {
   color:string; emoji:string; titulo:string; sub:string; costo:string;
@@ -116,6 +116,18 @@ const DATA: Record<TipoAyuda, Info> = {
       {emoji:"🏅",titulo:"Insignias de logro",desc:"Acumulá BIT y subí de nivel: Bronce, Plata, Oro, Platino, Diamante"},
       {emoji:"⭐",titulo:"Reputación",desc:"Otros usuarios te dan insignias de confianza, calidad y respuesta rápida"},
       {emoji:"⚙️",titulo:"Configurá tu perfil",desc:"Editá tus datos, foto, ciudad y visibilidad de WhatsApp"},
+    ],
+  },
+  descarga: {
+    color:"#16a085",emoji:"📥",titulo:"SUBIR DESCARGA",sub:"Compartí contenido con tu comunidad",
+    costo:"Free: gratis | Solicitud: el creador decide | Pago: vos fijás el precio — recibís 60% en BIT Promo",
+    items:[
+      {emoji:"🎁",titulo:"Descarga gratuita",desc:"El usuario descarga sin costo — ideal para atraer miembros y generar confianza"},
+      {emoji:"⌛",titulo:"Solicitud de acceso",desc:"El usuario solicita la descarga y vos decidís si es gratis o le ponés un precio"},
+      {emoji:"💰",titulo:"Descarga paga",desc:"Fijás el precio en BIT — recibís el 60% en BIT Promo automáticamente al descargarse"},
+      {emoji:"🛡️",titulo:"Derechos de autor",desc:"Solo podés subir contenido que sea tuyo o del cual tenés autorización expresa de distribución"},
+      {emoji:"⚖️",titulo:"Responsabilidad total",desc:"Al subir aceptás que NexoNet no se responsabiliza por infracciones de copyright — la responsabilidad legal es tuya"},
+      {emoji:"🔒",titulo:"Contenido protegido",desc:"NexoNet puede eliminar contenido denunciado por copyright sin previo aviso y reportar al usuario infractor"},
     ],
   },
   promotor: {

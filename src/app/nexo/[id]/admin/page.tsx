@@ -4,6 +4,7 @@ import { useRouter, useParams } from "next/navigation";
 import Header from "@/components/Header";
 import { supabase } from "@/lib/supabase";
 import PopupCompra, { MetodoPago } from "@/components/PopupCompra";
+import AyudaPopup from "@/components/AyudaPopup";
 
 type TabAdmin = "sliders" | "miembros" | "descargas" | "info" | "config";
 
@@ -533,10 +534,13 @@ export default function NexoAdminPage() {
           <div style={{ display:"flex", flexDirection:"column", gap:"12px" }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
               <div style={{ fontSize:"11px", fontWeight:800, color:"#9a9a9a", textTransform:"uppercase", letterSpacing:"1px" }}>{descargas.length} archivos</div>
-              <button onClick={()=>setPopupDescarga(true)}
-                style={{ background:"rgba(22,160,133,0.1)", border:"2px solid rgba(22,160,133,0.35)", borderRadius:"10px", padding:"7px 14px", fontSize:"12px", fontWeight:900, color:"#16a085", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
-                ➕ Agregar descarga
-              </button>
+              <div style={{ display:"flex", gap:"8px" }}>
+                <button onClick={()=>setPopupDescarga(true)}
+                  style={{ background:"rgba(22,160,133,0.1)", border:"2px solid rgba(22,160,133,0.35)", borderRadius:"10px", padding:"7px 14px", fontSize:"12px", fontWeight:900, color:"#16a085", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
+                  ➕ Agregar descarga
+                </button>
+                <AyudaPopup tipo="descarga" />
+              </div>
             </div>
             <div style={{ background:"rgba(22,160,133,0.08)", border:"2px dashed rgba(22,160,133,0.3)", borderRadius:"14px", padding:"12px 14px" }}>
               <div style={{ fontSize:"11px", fontWeight:800, color:"#16a085", marginBottom:"3px" }}>💡 BIT Descarga</div>

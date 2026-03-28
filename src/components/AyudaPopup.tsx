@@ -171,6 +171,7 @@ const CTA_URLS: Record<TipoAyuda, string> = {
   mapa:        "/mapa",
   perfil:      "/usuario",
   promotor:    "/promotor",
+  descarga:    "#",
 };
 
 export default function AyudaPopup({

@@ -72,7 +72,7 @@ export default function AnuncioDetalle() {
 
   useEffect(() => { cargar(); }, [params.id]);
 
-  const volver = () => { if (window.history.length > 1) { router.back(); } else { router.push("/usuario"); } };
+  const volver = () => { router.back(); };
   const cargar = async () => {
     const { data, error } = await supabase.from("anuncios").select("*").eq("id", params.id).single();
     if (error || !data) { setLoading(false); return; }

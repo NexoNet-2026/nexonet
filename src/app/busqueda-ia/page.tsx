@@ -104,7 +104,8 @@ export default function BusquedaIA() {
         if (bData && bData.length > 0) {
           setBusquedas(bData.map((b:any) => ({
             id: uid(), tipo_nexo: b.tipo_nexo || "anuncio",
-            rubro_id: b.rubro_id || null, subrubro_id: b.subrubro_id || null,
+            subrubro_id: b.subrubro_id || null,
+            rubro_id: b.rubro_id || (b.subrubro_id ? (s2||[]).find((s:any) => s.id === b.subrubro_id)?.rubro_id || null : null),
             precio_min: b.precio_min?.toString()||"", precio_max: b.precio_max?.toString()||"",
             moneda: b.moneda||"ARS",
             km_min: b.km_min?.toString()||"", km_max: b.km_max?.toString()||"",

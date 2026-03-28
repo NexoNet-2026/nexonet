@@ -131,6 +131,15 @@ export default function ChatPage() {
       receptor_id: otroUserId,
       texto:       msg,
     });
+    // Notificar al receptor en la campanita
+    await supabase.from("notificaciones").insert({
+      usuario_id:  otroUserId,
+      emisor_id:   session.user.id,
+      anuncio_id:  anuncioId,
+      tipo:        "conexion",
+      mensaje:     "💬 Nuevo mensaje sobre "" + (anuncio?.titulo || "un anuncio") + """,
+      leida:       false,
+    });
     setEnviando(false);
     inputRef.current?.focus();
   };

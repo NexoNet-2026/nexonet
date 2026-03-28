@@ -67,6 +67,7 @@ export default function AnuncioDetalle() {
 
   const [popupMensaje,    setPopupMensaje]    = useState(false);
   const [buscadores,      setBuscadores]      = useState<any[]>([]);
+  const [visitantes,      setVisitantes]      = useState<any[]>([]);
   const [selBuscadores,   setSelBuscadores]   = useState<Set<string>>(new Set());
   const [popupBuscadores, setPopupBuscadores] = useState(false);
   const [msgBuscadores,   setMsgBuscadores]   = useState("");
@@ -132,6 +133,31 @@ export default function AnuncioDetalle() {
         .eq("id", sess.user.id).single();
       if (ub) setMisBits(ub);
     }
+    // Cargar visitantes del anuncio
+    if (sess?.user?.id === data.usuario_id) {
+      const { data: visData } = await supabase
+        .from("anuncio_visitas")
+        .select("visitante_id, fecha")
+        .eq("anuncio_id", params.id)
+        .order("fecha", { ascending: false });
+      if (visData && visData.length > 0) {
+        const uids = [...new Set(visData.map((v:any) => v.visitante_id))].filter(Boolean);
+        if (uids.length > 0) {
+          const { data: uData } = await supabase
+            .from("usuarios")
+            .select("id, nombre_usuario, codigo, ciudad, provincia")
+            .in("id", uids);
+          if (uData) {
+            const merged = uids.map(uid => ({
+              ...uData.find((u:any) => u.id === uid),
+              ultima_visita: visData.find((v:any) => v.visitante_id === uid)?.fecha,
+            })).filter((v:any) => v.nombre_usuario);
+            setVisitantes(merged);
+          }
+        }
+      }
+    }
+
     // Cargar buscadores que encontraron este anuncio
     if (sess?.user?.id === data.usuario_id) {
       const { data: matchData } = await supabase
@@ -579,6 +605,28 @@ export default function AnuncioDetalle() {
               style={{ width:"100%", background:"linear-gradient(135deg,#3a7bd5,#2962b0)", border:"none", borderRadius:"12px", padding:"13px", fontSize:"14px", fontWeight:900, color:"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif", opacity:cargandoBit?0.7:1 }}>
               {cargandoBit ? "⏳ Cargando..." : "⚡ Cargar BIT Conexión"}
             </button>
+
+            {/* VISITANTES */}
+            {visitantes.length > 0 && (
+              <div style={{ marginTop:"14px", borderTop:"1px solid rgba(58,123,213,0.2)", paddingTop:"12px" }}>
+                <div style={{ fontSize:"12px", fontWeight:900, color:"#1a2a3a", marginBottom:"10px" }}>👁️ Quienes vieron este anuncio ({visitantes.length})</div>
+                {visitantes.map((v:any) => (
+                  <div key={v.id} style={{ display:"flex", alignItems:"center", gap:"8px", padding:"6px 0", borderBottom:"1px solid rgba(58,123,213,0.1)" }}>
+                    <div style={{ width:"32px", height:"32px", borderRadius:"50%", background:"linear-gradient(135deg,#8e44ad,#9b59b6)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"14px", flexShrink:0 }}>👤</div>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontSize:"12px", fontWeight:800, color:"#1a2a3a" }}>{v.nombre_usuario}</div>
+                      <div style={{ fontSize:"10px", color:"#9a9a9a", fontWeight:600 }}>
+                        {v.codigo}{v.ciudad ? ` · ${v.ciudad}` : ""}{v.ultima_visita ? ` · ${new Date(v.ultima_visita).toLocaleDateString("es-AR")}` : ""}
+                      </div>
+                    </div>
+                    <button onClick={() => { setSelBuscadores(new Set([v.id])); setPopupBuscadores(true); }}
+                      style={{ background:"rgba(142,68,173,0.1)", border:"1px solid rgba(142,68,173,0.3)", borderRadius:"8px", padding:"4px 8px", fontSize:"11px", fontWeight:800, color:"#8e44ad", cursor:"pointer", fontFamily:"'Nunito',sans-serif", flexShrink:0 }}>
+                      💬
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
 
             {/* INTERESADOS */}
             {buscadores.length > 0 && (

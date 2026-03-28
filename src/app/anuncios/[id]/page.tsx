@@ -579,6 +579,51 @@ export default function AnuncioDetalle() {
               style={{ width:"100%", background:"linear-gradient(135deg,#3a7bd5,#2962b0)", border:"none", borderRadius:"12px", padding:"13px", fontSize:"14px", fontWeight:900, color:"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif", opacity:cargandoBit?0.7:1 }}>
               {cargandoBit ? "⏳ Cargando..." : "⚡ Cargar BIT Conexión"}
             </button>
+
+            {/* INTERESADOS */}
+            {buscadores.length > 0 && (
+              <div style={{ marginTop:"14px", borderTop:"1px solid rgba(58,123,213,0.2)", paddingTop:"12px" }}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"10px" }}>
+                  <div style={{ fontSize:"12px", fontWeight:900, color:"#1a2a3a" }}>🤖 Interesados ({buscadores.length})</div>
+                  {selBuscadores.size > 0 && (
+                    <button onClick={() => setPopupBuscadores(true)}
+                      style={{ background:"linear-gradient(135deg,#16a085,#1abc9c)", border:"none", borderRadius:"8px", padding:"5px 12px", fontSize:"11px", fontWeight:800, color:"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
+                      💬 Escribirles ({selBuscadores.size})
+                    </button>
+                  )}
+                </div>
+                <div style={{ display:"flex", alignItems:"center", gap:"8px", marginBottom:"8px" }}>
+                  <input type="checkbox"
+                    checked={selBuscadores.size === buscadores.length && buscadores.length > 0}
+                    onChange={e => setSelBuscadores(e.target.checked ? new Set(buscadores.map((b:any) => b.id)) : new Set())}
+                    style={{ width:"15px", height:"15px", cursor:"pointer" }} />
+                  <span style={{ fontSize:"11px", fontWeight:700, color:"#9a9a9a" }}>Seleccionar todos</span>
+                </div>
+                {buscadores.map((b:any) => (
+                  <div key={b.id} style={{ display:"flex", alignItems:"center", gap:"8px", padding:"6px 0", borderBottom:"1px solid rgba(58,123,213,0.1)" }}>
+                    <input type="checkbox"
+                      checked={selBuscadores.has(b.id)}
+                      onChange={e => {
+                        const s = new Set(selBuscadores);
+                        e.target.checked ? s.add(b.id) : s.delete(b.id);
+                        setSelBuscadores(s);
+                      }}
+                      style={{ width:"15px", height:"15px", cursor:"pointer", flexShrink:0 }} />
+                    <div style={{ width:"32px", height:"32px", borderRadius:"50%", background:"linear-gradient(135deg,#d4a017,#f0c040)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"14px", flexShrink:0 }}>👤</div>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontSize:"12px", fontWeight:800, color:"#1a2a3a" }}>{b.nombre_usuario}</div>
+                      <div style={{ fontSize:"10px", color:"#9a9a9a", fontWeight:600 }}>
+                        {b.codigo}{b.ciudad ? ` · ${b.ciudad}` : ""}{b.ultima_busqueda ? ` · ${new Date(b.ultima_busqueda).toLocaleDateString("es-AR")}` : ""}
+                      </div>
+                    </div>
+                    <button onClick={() => { setSelBuscadores(new Set([b.id])); setPopupBuscadores(true); }}
+                      style={{ background:"rgba(22,160,133,0.1)", border:"1px solid rgba(22,160,133,0.3)", borderRadius:"8px", padding:"4px 8px", fontSize:"11px", fontWeight:800, color:"#16a085", cursor:"pointer", fontFamily:"'Nunito',sans-serif", flexShrink:0 }}>
+                      💬
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -654,54 +699,6 @@ export default function AnuncioDetalle() {
                 🗺️ Ver en mapa
               </button>
             )}
-          </div>
-        )}
-
-        {/* BUSCADORES */}
-        {esPropio && buscadores.length > 0 && (
-          <div style={{ background:"#fff", borderRadius:"16px", padding:"16px", boxShadow:"0 2px 10px rgba(0,0,0,0.06)" }}>
-            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"12px" }}>
-              <div style={{ fontSize:"13px", fontWeight:900, color:"#1a2a3a", textTransform:"uppercase", letterSpacing:"0.5px" }}>
-                🤖 Interesados ({buscadores.length})
-              </div>
-              {selBuscadores.size > 0 && (
-                <button onClick={() => setPopupBuscadores(true)}
-                  style={{ background:"linear-gradient(135deg,#16a085,#1abc9c)", border:"none", borderRadius:"10px", padding:"6px 14px", fontSize:"12px", fontWeight:800, color:"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
-                  💬 Escribirles ({selBuscadores.size})
-                </button>
-              )}
-            </div>
-            <div style={{ display:"flex", alignItems:"center", gap:"8px", marginBottom:"10px", padding:"6px 0", borderBottom:"1px solid #f0f0f0" }}>
-              <input type="checkbox"
-                checked={selBuscadores.size === buscadores.length}
-                onChange={e => setSelBuscadores(e.target.checked ? new Set(buscadores.map((b:any) => b.id)) : new Set())}
-                style={{ width:"16px", height:"16px", cursor:"pointer" }} />
-              <span style={{ fontSize:"11px", fontWeight:700, color:"#9a9a9a" }}>Seleccionar todos</span>
-            </div>
-            {buscadores.map((b:any) => (
-              <div key={b.id} style={{ display:"flex", alignItems:"center", gap:"10px", padding:"8px 0", borderBottom:"1px solid #f8f8f8" }}>
-                <input type="checkbox"
-                  checked={selBuscadores.has(b.id)}
-                  onChange={e => {
-                    const s = new Set(selBuscadores);
-                    e.target.checked ? s.add(b.id) : s.delete(b.id);
-                    setSelBuscadores(s);
-                  }}
-                  style={{ width:"16px", height:"16px", cursor:"pointer", flexShrink:0 }} />
-                <div style={{ width:"36px", height:"36px", borderRadius:"50%", background:"linear-gradient(135deg,#d4a017,#f0c040)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"16px", flexShrink:0 }}>👤</div>
-                <div style={{ flex:1 }}>
-                  <div style={{ fontSize:"13px", fontWeight:800, color:"#1a2a3a" }}>{b.nombre_usuario}</div>
-                  <div style={{ fontSize:"10px", color:"#9a9a9a", fontWeight:600 }}>
-                    {b.codigo} {b.ciudad ? `· ${b.ciudad}` : ""} 
-                    {b.ultima_busqueda ? ` · ${new Date(b.ultima_busqueda).toLocaleDateString("es-AR")}` : ""}
-                  </div>
-                </div>
-                <button onClick={() => { setSelBuscadores(new Set([b.id])); setPopupBuscadores(true); }}
-                  style={{ background:"rgba(22,160,133,0.1)", border:"1px solid rgba(22,160,133,0.3)", borderRadius:"8px", padding:"5px 10px", fontSize:"11px", fontWeight:800, color:"#16a085", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
-                  💬
-                </button>
-              </div>
-            ))}
           </div>
         )}
 

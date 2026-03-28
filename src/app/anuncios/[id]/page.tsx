@@ -335,7 +335,16 @@ export default function AnuncioDetalle() {
 
   const enviarABuscadores = async () => {
     if (!msgBuscadores.trim() || selBuscadores.size === 0 || !session) return;
+    const bitsNecesarios = selBuscadores.size;
+    const bitsAnuncio = anuncio.bits_conexion ?? 0;
+    if (bitsAnuncio < bitsNecesarios) {
+      alert(`⚠️ Necesitás ${bitsNecesarios} BIT Conexión para enviar a ${bitsNecesarios} usuario${bitsNecesarios !== 1 ? "s" : ""}. Tu anuncio tiene ${bitsAnuncio} BIT.`);
+      return;
+    }
     setEnviandoMsg(true);
+    // Descontar BIT del anuncio
+    await supabase.from("anuncios").update({ bits_conexion: bitsAnuncio - bitsNecesarios }).eq("id", anuncio.id);
+    setAnuncio((prev:any) => ({ ...prev, bits_conexion: bitsAnuncio - bitsNecesarios }));
     for (const uid of selBuscadores) {
       await supabase.from("mensajes").insert({
         anuncio_id:  anuncio.id,
@@ -609,9 +618,32 @@ export default function AnuncioDetalle() {
             {/* VISITANTES */}
             {visitantes.length > 0 && (
               <div style={{ marginTop:"14px", borderTop:"1px solid rgba(58,123,213,0.2)", paddingTop:"12px" }}>
-                <div style={{ fontSize:"12px", fontWeight:900, color:"#1a2a3a", marginBottom:"10px" }}>👁️ Quienes vieron este anuncio ({visitantes.length})</div>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"10px" }}>
+                  <div style={{ fontSize:"12px", fontWeight:900, color:"#1a2a3a" }}>👁️ Quienes vieron este anuncio ({visitantes.length})</div>
+                  {selBuscadores.size > 0 && (
+                    <button onClick={() => setPopupBuscadores(true)}
+                      style={{ background:"linear-gradient(135deg,#8e44ad,#9b59b6)", border:"none", borderRadius:"8px", padding:"5px 12px", fontSize:"11px", fontWeight:800, color:"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
+                      💬 Escribirles ({selBuscadores.size}) — {selBuscadores.size} BIT
+                    </button>
+                  )}
+                </div>
+                <div style={{ display:"flex", alignItems:"center", gap:"8px", marginBottom:"8px" }}>
+                  <input type="checkbox"
+                    checked={selBuscadores.size === visitantes.length && visitantes.length > 0}
+                    onChange={e => setSelBuscadores(e.target.checked ? new Set(visitantes.map((v:any) => v.id)) : new Set())}
+                    style={{ width:"15px", height:"15px", cursor:"pointer" }} />
+                  <span style={{ fontSize:"11px", fontWeight:700, color:"#9a9a9a" }}>Seleccionar todos</span>
+                </div>
                 {visitantes.map((v:any) => (
                   <div key={v.id} style={{ display:"flex", alignItems:"center", gap:"8px", padding:"6px 0", borderBottom:"1px solid rgba(58,123,213,0.1)" }}>
+                    <input type="checkbox"
+                      checked={selBuscadores.has(v.id)}
+                      onChange={e => {
+                        const s = new Set(selBuscadores);
+                        e.target.checked ? s.add(v.id) : s.delete(v.id);
+                        setSelBuscadores(s);
+                      }}
+                      style={{ width:"15px", height:"15px", cursor:"pointer", flexShrink:0 }} />
                     <div style={{ width:"32px", height:"32px", borderRadius:"50%", background:"linear-gradient(135deg,#8e44ad,#9b59b6)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"14px", flexShrink:0 }}>👤</div>
                     <div style={{ flex:1, minWidth:0 }}>
                       <div style={{ fontSize:"12px", fontWeight:800, color:"#1a2a3a" }}>{v.nombre_usuario}</div>

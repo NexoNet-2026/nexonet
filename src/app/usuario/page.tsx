@@ -1044,6 +1044,7 @@ export default function Usuario() {
 
 function MatchesBusqueda({ busquedaId }: { busquedaId: string }) {
   const [matches, setMatches] = useState<any[]>([]);
+  const [popupAnuncio, setPopupAnuncio] = useState<any>(null);
   const router = useRouter();
   useEffect(() => {
     const cargar = async () => {

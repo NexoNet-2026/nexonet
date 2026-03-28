@@ -1119,6 +1119,7 @@ function MatchesBusqueda({ busquedaId }: { busquedaId: string }) {
           </div>
         </div>
       )}
+    </div>
   );
 }
 

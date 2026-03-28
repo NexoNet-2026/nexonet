@@ -36,7 +36,7 @@ const DATA: Record<TipoAyuda, Info> = {
   },
   servicio: {
     color:"#27ae60",emoji:"🛠️",titulo:"OFRECÉ TU SERVICIO",sub:"Que te encuentren quienes te necesitan",
-    costo:"Crear perfil: gratis | Links multimedia: 500 BIT | Adjuntos: 500 BIT",
+    costo:"Publicar anuncio: 500 BIT | Links multimedia: 500 BIT | Adjuntos: 500 BIT",
     items:[
       {emoji:"🤖",titulo:"Te encuentran solos",desc:"El matching IA conecta tu servicio con quienes lo buscan"},
       {emoji:"🎬",titulo:"Portfolio completo",desc:"Mostrá fotos, videos y trabajos realizados"},
@@ -259,14 +259,13 @@ export default function AyudaPopup({
 
             {/* ── CTA ── */}
             <div style={{padding:"0 16px 24px"}}>
-              <a href={ctaUrl}
-                style={{display:"block",width:"100%",background:`linear-gradient(135deg,${color}cc,${color})`,
+              <button onClick={close}
+                style={{width:"100%",background:`linear-gradient(135deg,${color}cc,${color})`,
                   border:"none",borderRadius:14,padding:16,fontSize:17,fontWeight:900,
                   color:"#fff",cursor:"pointer",fontFamily:"'Nunito',sans-serif",
-                  boxShadow:`0 4px 0 ${color}88`,letterSpacing:0.5,textDecoration:"none",
-                  textAlign:"center",boxSizing:"border-box"}}>
+                  boxShadow:`0 4px 0 ${color}88`,letterSpacing:0.5}}>
                 Empezar ahora →
-              </a>
+              </button>
             </div>
           </div>
         </div>

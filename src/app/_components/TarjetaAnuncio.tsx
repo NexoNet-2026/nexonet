@@ -4,7 +4,6 @@ import InsigniaLogro from "./InsigniaLogro";
 
 export default function TarjetaAnuncio({ a, esPrimero }: { a: Anuncio; esPrimero?: boolean }) {
   const fuente = FUENTES[a.fuente] || FUENTES.nexonet;
-  const tieneWA = !!a.owner_whatsapp;
   return (
     <a href={`/anuncios/${a.id}`} style={{ textDecoration: "none", flexShrink: 0, width: "190px", display: "block", position: "relative" }}>
       {esPrimero && (
@@ -18,7 +17,7 @@ export default function TarjetaAnuncio({ a, esPrimero }: { a: Anuncio; esPrimero
           <div style={{ display: "flex", gap: "4px", alignItems: "center" }}>
             {a.flash && <span style={{ background: "#1a2a3a", color: "#d4a017", fontSize: "9px", fontWeight: 900, padding: "1px 6px", borderRadius: "6px" }}>⚡</span>}
             {a.permuto && <span style={{ background: "#8e44ad", color: "#fff", fontSize: "9px", fontWeight: 900, padding: "1px 6px", borderRadius: "6px" }}>🔄</span>}
-            <div style={{ width: "14px", height: "14px", borderRadius: "50%", background: tieneWA ? "#25d366" : "rgba(0,0,0,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "8px", opacity: tieneWA ? 1 : 0.3 }}>📱</div>
+
           </div>
         </div>
         <div style={{ width: "100%", height: "120px", background: "#e8e8e6", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>

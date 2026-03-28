@@ -5,8 +5,9 @@ import Header from "@/components/Header";
 import { supabase } from "@/lib/supabase";
 import PopupCompra, { MetodoPago } from "@/components/PopupCompra";
 import AyudaPopup from "@/components/AyudaPopup";
+import PlantillasMensaje from "@/components/nexo/PlantillasMensaje";
 
-type TabAdmin = "sliders" | "miembros" | "descargas" | "info" | "config";
+type TabAdmin = "sliders" | "miembros" | "descargas" | "info" | "config" | "plantillas";
 
 const SLIDER_EMOJIS: Record<string,string> = {
   galeria:"📸", videos:"🎬", documentos:"📄", descargas:"📥", productos:"🛒",
@@ -393,6 +394,7 @@ export default function NexoAdminPage() {
   const TABS: {key:TabAdmin;emoji:string;label:string;badge?:number}[] = [
     { key:"sliders",   emoji:"📋", label:"Páginas"   },
     { key:"descargas", emoji:"📥", label:"Descargas" },
+    { key:"plantillas", emoji:"✉️", label:"Mensajes" },
     { key:"miembros",  emoji:"👥", label:"Miembros",  badge:(pendientes.length+adminSolicitados.length)||undefined },
     { key:"info",      emoji:"✏️", label:"Info"      },
     { key:"config",    emoji:"⚙️", label:"Config"    },
@@ -412,6 +414,10 @@ export default function NexoAdminPage() {
               ← Volver
             </button>
             <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"20px", color:colorNexo, letterSpacing:"1px" }}>Panel Admin</div>
+            <button onClick={()=>router.push(`/nexo/${id}/stats`)}
+              style={{ background:"rgba(255,255,255,0.15)", border:"1px solid rgba(255,255,255,0.25)", borderRadius:"10px", padding:"7px 13px", color:"#fff", fontSize:"13px", fontWeight:700, cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
+              📊 Stats
+            </button>
             <div style={{ marginLeft:"auto", background:`${colorNexo}cc`, borderRadius:"20px", padding:"4px 12px", fontSize:"11px", fontWeight:900, color:"#fff" }}>👑 Creador</div>
           </div>
           <div style={{ display:"flex", alignItems:"center", gap:"12px" }}>
@@ -579,6 +585,14 @@ export default function NexoAdminPage() {
             ))}
             {descargas.length===0 && <EmptyCard emoji="📥" texto="Sin descargas todavía" sub="Subí archivos gratuitos o de pago" />}
           </div>
+        )}
+
+        {tab==="plantillas" && (
+          <PlantillasMensaje
+            nexoId={id}
+            usuarioId={perfil?.id}
+            color={colorNexo}
+          />
         )}
 
         {/* ══ MIEMBROS ══ */}

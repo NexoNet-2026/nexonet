@@ -1,0 +1,37 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx next:*)",
+      "Bash(npx tsc:*)",
+      "Bash(find /c/Users/Usuario/Desktop/nexonet -type f \\\\\\(-name *.sql -o -name schema* -o -name *migration* \\\\\\))",
+      "Bash(find /c/Users/Usuario/Desktop/nexonet -type f \\\\\\(-name README* -o -name *.md -o -name SCHEMA* \\\\\\))",
+      "Bash(grep -r \"columns\\\\|fields\\\\|schema\" /c/Users/Usuario/Desktop/nexonet --include=*.ts --include=*.tsx --include=*.json)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(grep -r \"visita\\\\|visit\" /c/Users/Usuario/Desktop/nexonet/src --include=*.ts --include=*.tsx)",
+      "Bash(find /c/Users/Usuario/Desktop/nexonet -name *.sql -o -name schema* -o -name *migration*)",
+      "Bash(grep -n \"config\" /c/Users/Usuario/Desktop/nexonet/src/app/nexo/[id]/admin/page.tsx)",
+      "Bash(grep -n \"tipo_acceso\\\\|plan\" /c/Users/Usuario/Desktop/nexonet/src/app/nexo/crear/[tipo]/page.tsx)",
+      "Bash(grep -r \"visita\\\\|visit\\\\|view\" /c/Users/Usuario/Desktop/nexonet/src --include=*.tsx --include=*.ts)",
+      "Bash(find /c/Users/Usuario/Desktop/nexonet/src/app -type f \\\\\\(-name *empresa* -o -name *servicio* -o -name *trabajo* \\\\\\))",
+      "Bash(grep -r \"anuncio_visitas\\\\|anuncio_visit\" /c/Users/Usuario/Desktop/nexonet --include=*.ts --include=*.tsx --include=*.js --include=*.sql)",
+      "Bash(find /c/Users/Usuario/Desktop/nexonet -type f \\\\\\(-name *.md -o -name *.txt -o -name supabase* -o -name database* \\\\\\))",
+      "Bash(grep:*)",
+      "Bash(find /c/Users/Usuario/Desktop/nexonet -type f -name *.sql -o -name *schema* -o -name *migration*)",
+      "Bash(find /c/Users/Usuario/Desktop/nexonet -type f \\\\\\(-name *.sql -o -name schema* -o -name database* \\\\\\))",
+      "Bash(npx eslint:*)",
+      "Bash(find /c/Users/Usuario/Desktop/nexonet/src/app/nexo/crear -type f -name *.tsx)",
+      "Bash(wc:*)",
+      "Bash(find /c/Users/Usuario/Desktop/nexonet -path */supabase/* -type f)",
+      "Bash(npm install:*)",
+      "Bash(npx web-push:*)",
+      "Bash(is excessively deep\" causado por nombres de tabla dinámicos.:*)",
+      "Bash(y nuestra Política de Privacidad\" con links a /legal/*.:*)",
+      "Bash(git:*)",
+      "Bash(python:*)",
+      "Bash(node -e \"if\\(typeof localStorage!==''undefined''\\) localStorage.removeItem\\(''ayuda_popups_activos''\\); console.log\\(''done''\\)\")",
+      "Bash(CONTEXT.md:*)"
+    ]
+  }
+}

@@ -6,6 +6,7 @@ import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
 import { supabase } from "@/lib/supabase";
 import PopupCompra, { MetodoPago } from "@/components/PopupCompra";
+import FlashEnvio from "@/components/nexo/FlashEnvio";
 import InsigniaLogro from "@/app/_components/InsigniaLogro";
 import InsigniaReputacion from "@/app/_components/InsigniaReputacion";
 import BotonDarInsignia from "@/app/_components/BotonDarInsignia";
@@ -189,6 +190,8 @@ export default function NexoPage() {
   const [solicitandoAdmin, setSolicitandoAdmin] = useState(false);
   const [popupUnirse, setPopupUnirse] = useState(false);
   const [popupPagoAdmin, setPopupPagoAdmin] = useState(false);
+  const [flashOpen, setFlashOpen] = useState(false);
+  const [flashItem, setFlashItem] = useState<any>(null);
   const colorNexo = TIPO_COLORES[nexo?.tipo] || "#d4a017";
   const emojiNexo = nexo?.subtipo ? SUBTIPO_EMOJIS[nexo.subtipo] : TIPO_EMOJIS[nexo?.tipo] || "✨";
 
@@ -385,6 +388,14 @@ export default function NexoPage() {
                   ⚙️ Admin
                 </button>
               )}
+              {esAdmin && (
+                <button onClick={() => setFlashOpen(true)}
+                  style={{ background: "linear-gradient(135deg,#e67e22,#d35400)", border: "none",
+                    borderRadius: "10px", padding: "8px 12px", fontSize: "12px", fontWeight: 900,
+                    color: "#fff", cursor: "pointer", fontFamily: "'Nunito',sans-serif" }}>
+                  ⚡ Flash
+                </button>
+              )}
               {!esAdmin && !miMiembro && nexo.tipo==="grupo" && (
                 <button onClick={unirse}
                   style={{ background:`${colorNexo}cc`, border:"none", borderRadius:"10px", padding:"8px 12px", fontSize:"12px", fontWeight:900, color:"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
@@ -556,6 +567,7 @@ export default function NexoPage() {
           onVisor={setVisor}
           onPagarDescarga={setPopupPagoDescarga}
           onAbrirDescarga={abrirDescarga}
+          onFlash={(item: any) => { setFlashItem(item); setFlashOpen(true); }}
           bottomRef={bottomRef}
           colorNexo={colorNexo}
         />}
@@ -630,6 +642,18 @@ export default function NexoPage() {
         />
       )}
 
+      {flashOpen && perfil && (
+        <FlashEnvio
+          nexoId={id}
+          nexoTitulo={nexo.titulo}
+          usuarioId={perfil.id}
+          color={colorNexo}
+          perfil={perfil}
+          itemContexto={flashItem ? { id: flashItem.id, titulo: flashItem.titulo, url: flashItem.url, tipo: "adjunto" } : undefined}
+          onClose={() => { setFlashOpen(false); setFlashItem(null); }}
+        />
+      )}
+
       <BottomNav />
     </main>
   );
@@ -642,7 +666,7 @@ const SLIDER_EMOJIS: Record<string,string> = {
   mensajes:"💬", chat:"💬", personalizado:"✨",
 };
 
-function SliderContenido({ slider, items, mensajes, perfil, nexo, esAdmin, esMiembro, descargasPagadas, pagandoDescarga, miembros, texto, setTexto, enviando, onEnviar, onVisor, onPagarDescarga, onAbrirDescarga, bottomRef, colorNexo }: any) {
+function SliderContenido({ slider, items, mensajes, perfil, nexo, esAdmin, esMiembro, descargasPagadas, pagandoDescarga, miembros, texto, setTexto, enviando, onEnviar, onVisor, onPagarDescarga, onAbrirDescarga, onFlash, bottomRef, colorNexo }: any) {
   const tipo = slider.tipo;
 
   // CHAT
@@ -741,6 +765,14 @@ function SliderContenido({ slider, items, mensajes, perfil, nexo, esAdmin, esMie
                   <div style={{ textAlign:"center", fontSize:"13px", fontWeight:700, color:"#9a9a9a", padding:"10px", background:"#f4f4f2", borderRadius:"12px" }}>
                     🔒 Unite al grupo para descargar
                   </div>
+                )}
+                {esAdmin && (
+                  <button onClick={() => onFlash(item)}
+                    style={{ marginTop: "8px", width: "100%", background: "linear-gradient(135deg,#e67e22,#d35400)",
+                      border: "none", borderRadius: "12px", padding: "10px", fontSize: "13px", fontWeight: 900,
+                      color: "#fff", cursor: "pointer", fontFamily: "'Nunito',sans-serif" }}>
+                    ⚡ Flash a este archivo
+                  </button>
                 )}
               </div>
             </div>

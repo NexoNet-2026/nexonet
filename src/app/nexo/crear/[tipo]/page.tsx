@@ -320,7 +320,7 @@ function NexoCrearInner() {
         await supabase.from("nexo_miembros").insert({ nexo_id:nexo.id, usuario_id:perfil.id, rol:"creador", estado:"activo" });
       }
 
-      if (tipo==="empresa")        window.location.href = "/mis-anuncios";
+      if (tipo==="empresa")        router.push(`/nexo/${nexo.id}/admin`);
       else if (tipo==="anuncio")   window.location.href = `/anuncios/${nexo.id}`;
       else                         router.push(`/nexo/${nexo.id}`);
 

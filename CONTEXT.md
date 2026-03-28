@@ -26,33 +26,47 @@
 
 ---
 
-## Estado funcional — ✅ Resuelto
+## Estado funcional — ✅ Resuelto esta sesión
 
-- Tarjetas unificadas: TarjetaNexo (home + buscar) y TarjetaAnuncio con visitas
-- AyudaPopup: fullscreen, se abre al tocar tipo en publicar y franja promotor en header
+- Tarjetas unificadas: TarjetaNexo (home + buscar) con visitas totales
+- TarjetaAnuncio con visitas_semana, sin indicador WhatsApp
+- AyudaPopup: fullscreen, controlable externamente, CTA continúa flujo de rubros
+- AyudaPopup tipos: anuncio, empresa, servicio, grupo, trabajo, busqueda_ia, general, mapa, perfil, promotor, descarga, pagina
+- Popup "Crear páginas": gratis crear, 500 BIT por archivo/link
+- Popup "Agregar descarga": tipos free/solicitud/pago, aviso copyright
 - MercadoPago: crear-preferencia acepta titulo+monto desde tienda
-- Datos vendedor en anuncio según vis_personal (sin mostrar WhatsApp)
-- Búsqueda IA: matching al guardar, notifica al buscador en campanita, lista de resultados en perfil → Búsquedas con popup de anuncio
-- Anunciante recibe chat cuando alguien lo busca con IA (solo si tiene bits_conexion)
-- Panel BIT Conexión en anuncio muestra: visitantes del anuncio + interesados IA, con checkboxes para enviar mensajes
-- Costo de mensajes: 1 BIT del anuncio (emisor) + 1 BIT del receptor por mensaje
+- Datos vendedor en anuncio según vis_personal (sin WhatsApp)
+- Panel BIT Conexión en anuncio: visitantes + interesados IA con checkboxes y mensajes
+- Costo mensajes: 1 BIT anuncio (emisor) + 1 BIT receptor
+- Búsqueda IA: matching al guardar, notifica campanita, lista en perfil → Búsquedas
+- Chat: notificación en campanita al recibir mensaje, link al anuncio en contexto
+- Notificación conexion lleva al chat (con emisor_id)
+- Toggle mostrar/ocultar en mapa para anuncios y nexos
+- Eliminación nexo redirige a perfil sección empresa
+- Panel admin nexo: sliders renombrados a "páginas"
+- 3 tipos de acceso: libre (usuario paga), solicitud (creador elige quién paga), free (empresa paga)
+- Crear empresa redirige a panel admin del nexo
+- RLS configuradas: anuncio_visitas, busqueda_matches
+- FK busqueda_matches ON DELETE CASCADE
 - Toggle notificaciones WhatsApp eliminado de mis-anuncios y usuario
-- RLS en anuncio_visitas y busqueda_matches configuradas correctamente
-- Tabla busqueda_matches con columna config agregada
 
-## Tablas nuevas esta sesión
-- `busqueda_matches` (id uuid, busqueda_id uuid, usuario_id uuid, anuncio_id integer, bits_consumidos integer, created_at)
-- RLS en `anuncio_visitas`: INSERT auth.uid()=visitante_id, SELECT dueño del anuncio
-- RLS en `busqueda_matches`: SELECT auth.uid()=usuario_id
+## Tablas nuevas / modificadas
+
+- `busqueda_matches` (id uuid, busqueda_id uuid, usuario_id uuid, anuncio_id integer, bits_consumidos integer)
+- `anuncios.mostrar_en_mapa` boolean DEFAULT true
+- `nexos.mostrar_en_mapa` boolean DEFAULT true
+- `busquedas_automaticas.config` jsonb
+- `notificaciones.emisor_id` uuid
 
 ## Reglas de trabajo con Claude
 
 1. Siempre archivos completos, nunca snippets parciales.
 2. Siempre incluir comandos Git junto a cada cambio.
 3. Respuestas directas. Sin explicaciones largas si no se piden.
-4. Antes de tocar código, pedir el archivo si no lo tenés.
+4. Pedir el archivo antes de tocar código si no lo tenés en contexto.
 5. Grupos se guardan en tabla nexos (tipo=grupo).
 6. miembros_count no existe en nexos — se cuenta desde nexo_miembros en runtime.
+7. telefono_empresa NO existe en tabla usuarios.
 
 ---
 

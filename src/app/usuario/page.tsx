@@ -1048,11 +1048,13 @@ function MatchesBusqueda({ busquedaId }: { busquedaId: string }) {
   const router = useRouter();
   useEffect(() => {
     const cargar = async () => {
-      const { data: mData } = await supabase.from("busqueda_matches")
+      console.log("Cargando matches para busqueda:", busquedaId);
+      const { data: mData, error: mErr } = await supabase.from("busqueda_matches")
         .select("id,anuncio_id,bits_consumidos,created_at")
         .eq("busqueda_id", busquedaId)
         .order("created_at", { ascending: false })
         .limit(10);
+      console.log("Matches resultado:", mData, mErr);
       if (!mData || mData.length === 0) return;
       const anuncioIds = mData.map((m:any) => m.anuncio_id);
       const { data: aData } = await supabase.from("anuncios")

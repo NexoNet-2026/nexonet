@@ -378,7 +378,7 @@ export default function AnuncioDetalle() {
             ? <img src={imagenes[imgActiva]} alt={anuncio.titulo} style={{ width:"100%", height:"auto", maxHeight:"420px", objectFit:"contain" }} />
             : <span style={{ fontSize:"80px" }}>📦</span>}
         </div>
-        <button onClick={volver} style={{ position:"absolute", top:"44px", left:"12px", background:"rgba(0,0,0,0.5)", border:"none", borderRadius:"50%", width:"36px", height:"36px", color:"#fff", fontSize:"18px", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>←</button>
+        <button onClick={volver} style={{ position:"absolute", top:"44px", left:"12px", background:"rgba(212,160,23,0.9)", border:"none", borderRadius:"20px", padding:"6px 14px", color:"#1a2a3a", fontSize:"13px", fontWeight:800, cursor:"pointer", display:"flex", alignItems:"center", gap:"4px", fontFamily:"'Nunito',sans-serif" }}>← Volver</button>
         {esPropio && (
           <button onClick={() => setEditando(true)} style={{ position:"absolute", top:"44px", right:"12px", background:"rgba(212,160,23,0.85)", border:"none", borderRadius:"20px", padding:"6px 14px", fontSize:"12px", fontWeight:800, color:"#1a2a3a", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>✏️ Editar</button>
         )}

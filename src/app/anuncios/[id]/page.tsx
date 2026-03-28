@@ -148,7 +148,9 @@ export default function AnuncioDetalle() {
             .select("id, nombre_usuario, codigo, ciudad, provincia")
             .in("id", uids);
           if (uData) {
-            const merged = uids.map(uid => ({
+            const merged = uids
+              .filter(uid => uid !== data.usuario_id)
+              .map(uid => ({
               ...uData.find((u:any) => u.id === uid),
               ultima_visita: visData.find((v:any) => v.visitante_id === uid)?.fecha,
             })).filter((v:any) => v.nombre_usuario);

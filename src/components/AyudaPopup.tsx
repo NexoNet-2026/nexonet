@@ -120,7 +120,7 @@ const DATA: Record<TipoAyuda, Info> = {
   },
   pagina: {
     color:"#3a7bd5",emoji:"📋",titulo:"CREÁ TUS PÁGINAS",sub:"Organizá el contenido de tu Nexo en secciones",
-    costo:"50 BIT por página adicional",
+    costo:"Crear páginas: gratis | Subir archivo o link a una página: 500 BIT c/u",
     items:[
       {emoji:"📸",titulo:"Galería de fotos",desc:"Mostrá imágenes de tus productos, servicios, instalaciones o trabajos realizados"},
       {emoji:"🎬",titulo:"Videos",desc:"Publicá clips, presentaciones o tutoriales directamente en tu perfil"},

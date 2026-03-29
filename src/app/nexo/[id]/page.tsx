@@ -7,6 +7,7 @@ import BottomNav from "@/components/BottomNav";
 import { supabase } from "@/lib/supabase";
 import PopupCompra, { MetodoPago } from "@/components/PopupCompra";
 import FlashEnvio from "@/components/nexo/FlashEnvio";
+import { isNexoAbierto } from "@/lib/horarios";
 import InsigniaLogro from "@/app/_components/InsigniaLogro";
 import InsigniaReputacion from "@/app/_components/InsigniaReputacion";
 import BotonDarInsignia from "@/app/_components/BotonDarInsignia";
@@ -48,6 +49,8 @@ export default function NexoPage() {
   const [popupPagoDescarga, setPopupPagoDescarga] = useState<any>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const tabBarRef = useRef<HTMLDivElement>(null);
+  const [horarios, setHorarios] = useState<any[]>([]);
+  const [abierto, setAbierto] = useState<boolean | null>(null);
 
   useEffect(() => {
     const cargar = async () => {
@@ -146,6 +149,16 @@ export default function NexoPage() {
       }
 
       setCargando(false);
+      // Fetch horarios para empresa/servicio
+      if (n?.tipo === "empresa" || n?.tipo === "servicio") {
+        const { data: hs } = await supabase.from("nexo_horarios")
+          .select("dia, hora_desde, hora_hasta, cerrado")
+          .eq("nexo_id", id).order("dia");
+        if (hs && hs.length > 0) {
+          setHorarios(hs);
+          setAbierto(isNexoAbierto(hs));
+        }
+      }
       supabase.from("config_global").select("valor").eq("clave","whatsapp_soporte").single().then(({data})=>{if(data?.valor)setWaSoporte(data.valor);});
     };
     cargar();
@@ -374,6 +387,17 @@ export default function NexoPage() {
                 {nexo.ciudad && <span>📍 {nexo.ciudad}</span>}
                 {nexo.precio && <span style={{ color:colorNexo, fontWeight:800 }}>$ {parseFloat(nexo.precio).toLocaleString("es-AR")} {nexo.moneda}</span>}
                 {nexo.tipo==="grupo" && <span>👥 {miembros.length} miembro{miembros.length!==1?"s":""}</span>}
+                {(nexo.tipo === "empresa" || nexo.tipo === "servicio") && abierto !== null && (
+                  <span style={{
+                    background: abierto ? "rgba(0,255,136,0.15)" : "rgba(255,34,68,0.15)",
+                    border: `1.5px solid ${abierto ? "#00ff88" : "#ff2244"}`,
+                    color: abierto ? "#00ff88" : "#ff4466",
+                    borderRadius: "20px", padding: "2px 10px",
+                    fontSize: "11px", fontWeight: 900,
+                  }}>
+                    {abierto ? "● ABIERTO" : "● CERRADO"}
+                  </span>
+                )}
               </div>
               {nexo.usuarios && (
                 <div style={{ fontSize:"11px", color:"rgba(255,255,255,0.45)", fontWeight:600, marginTop:"4px" }}>
@@ -478,6 +502,10 @@ export default function NexoPage() {
           </div>
         </div>
       </div>
+
+      {(nexo.tipo === "empresa" || nexo.tipo === "servicio") && horarios.length > 0 && (
+        <HorariosWidget horarios={horarios} abierto={abierto} color={colorNexo} />
+      )}
 
       {/* BANNER PAGO ADMIN PENDIENTE */}
       {miMiembro?.rol === "admin_pago_pendiente" && (
@@ -874,6 +902,64 @@ function SliderContenido({ slider, items, mensajes, perfil, nexo, esAdmin, esMie
               {item.url && <a href={item.url} target="_blank" rel="noopener noreferrer" style={{ display:"inline-block", marginTop:"8px", fontSize:"12px", fontWeight:700, color:colorNexo, textDecoration:"none" }}>🔗 Ver más</a>}
             </div>
           ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const DIAS_LABELS = ["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"];
+
+function HorariosWidget({ horarios, abierto, color }: { horarios: any[]; abierto: boolean | null; color: string }) {
+  const [expandido, setExpandido] = useState(false);
+  const hoy = (new Date().getDay() + 6) % 7;
+  const horarioHoy = horarios.find(h => h.dia === hoy);
+
+  return (
+    <div style={{ background:"#fff", borderBottom:`3px solid ${abierto ? "#00ff88" : abierto === false ? "#ff2244" : "#e8e8e6"}`, padding:"12px 16px", fontFamily:"'Nunito',sans-serif" }}>
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", cursor:"pointer" }} onClick={() => setExpandido(e => !e)}>
+        <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
+          <span style={{
+            background: abierto ? "rgba(0,255,136,0.12)" : "rgba(255,34,68,0.12)",
+            border: `1.5px solid ${abierto ? "#00ff88" : "#ff2244"}`,
+            color: abierto ? "#00cc66" : "#ff2244",
+            borderRadius: "20px", padding: "3px 12px",
+            fontSize: "12px", fontWeight: 900,
+          }}>
+            {abierto ? "● Abierto ahora" : "● Cerrado ahora"}
+          </span>
+          {horarioHoy && !horarioHoy.cerrado && (
+            <span style={{ fontSize:"12px", fontWeight:700, color:"#9a9a9a" }}>
+              {horarioHoy.hora_desde?.slice(0,5)} – {horarioHoy.hora_hasta?.slice(0,5)}
+            </span>
+          )}
+        </div>
+        <span style={{ fontSize:"12px", color:"#9a9a9a", fontWeight:700 }}>{expandido ? "▲" : "▼ Ver horarios"}</span>
+      </div>
+
+      {expandido && (
+        <div style={{ marginTop:"12px", display:"flex", flexDirection:"column", gap:"6px" }}>
+          {DIAS_LABELS.map((dia, i) => {
+            const h = horarios.find(x => x.dia === i);
+            const esHoy = i === hoy;
+            return (
+              <div key={i} style={{
+                display:"flex", alignItems:"center", justifyContent:"space-between",
+                padding:"7px 10px", borderRadius:"10px",
+                background: esHoy ? `${color}10` : "transparent",
+                border: esHoy ? `1.5px solid ${color}40` : "1.5px solid transparent",
+              }}>
+                <span style={{ fontSize:"12px", fontWeight: esHoy ? 900 : 700, color: esHoy ? "#1a2a3a" : "#555", width:"32px" }}>{dia}</span>
+                {!h || h.cerrado ? (
+                  <span style={{ fontSize:"12px", fontWeight:700, color:"#e74c3c" }}>Cerrado</span>
+                ) : (
+                  <span style={{ fontSize:"12px", fontWeight:700, color:"#27ae60" }}>
+                    {h.hora_desde?.slice(0,5)} – {h.hora_hasta?.slice(0,5)}
+                  </span>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

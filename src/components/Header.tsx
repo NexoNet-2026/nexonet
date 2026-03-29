@@ -249,7 +249,7 @@ export default function Header() {
                     display: "flex", justifyContent: "space-between", alignItems: "center",
                   }}>
                     <span style={{ fontSize: "14px", fontWeight: 900, color: "#1a2a3a" }}>🔔 Notificaciones</span>
-                    <Link href="/usuario" onClick={() => setPanelOpen(false)}
+                    <Link href="/notificaciones" onClick={() => setPanelOpen(false)}
                       style={{ fontSize: "11px", fontWeight: 700, color: "#d4a017", textDecoration: "none" }}>
                       Ver todas →
                     </Link>

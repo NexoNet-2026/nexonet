@@ -23,7 +23,7 @@ export default function BottomNav() {
   ];
 
   return (
-    <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 100 }}>
+    <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 50 }}>
 
       {/* FRANJA LOGIN — solo si NO está logueado */}
       {!logueado && (

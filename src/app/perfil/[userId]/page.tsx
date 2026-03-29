@@ -77,12 +77,12 @@ export default function PerfilPublico() {
   }, [userId]);
 
   const INSIGNIAS = [
-    { min:0, max:99, nombre:"Nuevo", emoji:"🌱", color:"#6a8aaa" },
-    { min:100, max:499, nombre:"Bronce", emoji:"🥉", color:"#cd7f32" },
-    { min:500, max:999, nombre:"Plata", emoji:"🥈", color:"#a0a0a0" },
-    { min:1000, max:4999, nombre:"Oro", emoji:"🥇", color:"#d4a017" },
-    { min:5000, max:9999, nombre:"Platino", emoji:"💎", color:"#8e44ad" },
-    { min:10000, max:Infinity, nombre:"Diamante", emoji:"👑", color:"#e74c3c" },
+    { min: 0,       max: 99999,    nombre: "Nuevo",    emoji: "🌱", color: "#6a8aaa" },
+    { min: 100000,  max: 499999,   nombre: "Bronce",   emoji: "🥉", color: "#cd7f32" },
+    { min: 500000,  max: 999999,   nombre: "Plata",    emoji: "🥈", color: "#a0a0a0" },
+    { min: 1000000, max: 1999999,  nombre: "Oro",      emoji: "🥇", color: "#d4a017" },
+    { min: 2000000, max: 4999999,  nombre: "Platino",  emoji: "💎", color: "#8e44ad" },
+    { min: 5000000, max: Infinity, nombre: "Diamante", emoji: "👑", color: "#e74c3c" },
   ];
   const bitsAcum = perfil?.bits_totales_acumulados || 0;
   const insignia = INSIGNIAS.find(i => bitsAcum >= i.min && bitsAcum <= i.max) || INSIGNIAS[0];

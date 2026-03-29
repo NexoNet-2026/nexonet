@@ -231,10 +231,10 @@ export default function AyudaPopup({
 
       {open && (
         <div onClick={close}
-          style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.75)",zIndex:99999,
+          style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.75)",zIndex:300,
             display:"flex",flexDirection:"column",overflowY:"auto",fontFamily:"'Nunito',sans-serif"}}>
           <div onClick={e => e.stopPropagation()}
-            style={{width:"100%",maxWidth:480,margin:"auto",background:"#fff"}}>
+            style={{width:"100%",maxWidth:480,margin:"auto",background:"#fff",position:"relative",zIndex:301}}>
 
             {/* ── HEADER full ── */}
             <div style={{background:`linear-gradient(135deg,${color}dd,${color})`,padding:"32px 20px 20px",textAlign:"center",position:"relative"}}>

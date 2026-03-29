@@ -543,7 +543,7 @@ export default function NexoPage() {
       )}
 
       {/* BANNER RENOVACIÓN EMPRESA */}
-      {nexo?.tipo==="empresa" && nexo?.usuario_id===perfil?.id && nexo?.siguiente_pago && (() => {
+      {(nexo?.tipo==="empresa" || nexo?.tipo==="servicio") && nexo?.usuario_id===perfil?.id && nexo?.siguiente_pago && (() => {
         const ahora = new Date();
         const sigPago = new Date(nexo.siguiente_pago);
         const diasRest = Math.ceil((sigPago.getTime() - ahora.getTime()) / (1000*60*60*24));
@@ -563,7 +563,8 @@ export default function NexoPage() {
               </div>
               <button onClick={async()=>{
                 setRenovando(true);
-                const res = await fetch("/api/empresa/renovar",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({nexo_id:nexo.id,usuario_id:perfil.id})});
+                const endpoint = nexo?.tipo === "servicio" ? "/api/servicio/renovar" : "/api/empresa/renovar";
+                const res = await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({nexo_id:nexo.id,usuario_id:perfil.id})});
                 const data = await res.json();
                 if (data.ok) {
                   setNexo((n:any)=>({...n,siguiente_pago:data.siguiente_pago,estado:"activo"}));

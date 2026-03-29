@@ -124,10 +124,13 @@ function NexoCrearInner() {
       const { data: u } = await supabase.from("usuarios").select("*").eq("id", session.user.id).single();
       setPerfil(u);
       if (u?.whatsapp) setForm(f => ({ ...f, whatsapp: u.whatsapp }));
-      // Check if user already had an empresa before
-      const { count } = await supabase.from("nexos").select("id", { count: "exact", head: true })
-        .eq("usuario_id", session.user.id).eq("tipo", "empresa");
-      setEsPrimeraEmpresa((count || 0) === 0);
+      // Check if user already had an empresa/servicio before
+      const tipoCheck = tipo === "empresa" ? "empresa" : tipo === "servicio" ? "servicio" : null;
+      if (tipoCheck) {
+        const { count } = await supabase.from("nexos").select("id", { count: "exact", head: true })
+          .eq("usuario_id", session.user.id).eq("tipo", tipoCheck);
+        setEsPrimeraEmpresa((count || 0) === 0);
+      }
     });
 
     Promise.all([
@@ -294,7 +297,7 @@ function NexoCrearInner() {
         }
       }
 
-      if (tipo==="empresa") {
+      if (tipo==="empresa" || tipo==="servicio") {
         const en30dias = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
         payload.trial_hasta = esPrimeraEmpresa ? en30dias : null;
         payload.siguiente_pago = en30dias;
@@ -636,7 +639,7 @@ function NexoCrearInner() {
         {paso===1 && (
           <div style={{display:"flex",flexDirection:"column",gap:"14px"}}>
 
-            {tipo==="empresa" && !pagoBITEmpresa && esPrimeraEmpresa === true && (
+            {(tipo==="empresa" || tipo==="servicio") && !pagoBITEmpresa && esPrimeraEmpresa === true && (
               <div style={{background:"linear-gradient(135deg,#1a3a2a,#204a30)",borderRadius:"16px",padding:"20px",border:"2px solid rgba(39,174,96,0.4)"}}>
                 <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"20px",color:"#27ae60",letterSpacing:"1px",marginBottom:"8px"}}>🏢 ¡Tu primera empresa es GRATIS!</div>
                 <div style={{fontSize:"13px",color:"#8abba0",fontWeight:600,lineHeight:1.6,marginBottom:"16px"}}>
@@ -650,7 +653,7 @@ function NexoCrearInner() {
               </div>
             )}
 
-            {tipo==="empresa" && !pagoBITEmpresa && esPrimeraEmpresa === false && (
+            {(tipo==="empresa" || tipo==="servicio") && !pagoBITEmpresa && esPrimeraEmpresa === false && (
               <div style={{background:"linear-gradient(135deg,#2c1a1a,#4a2020)",borderRadius:"16px",padding:"20px",border:"2px solid rgba(192,57,43,0.4)"}}>
                 <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"20px",color:"#e74c3c",letterSpacing:"1px",marginBottom:"8px"}}>🏢 Nexo Empresa</div>
                 <div style={{fontSize:"13px",color:"#e88a8a",fontWeight:600,lineHeight:1.6,marginBottom:"16px"}}>
@@ -677,14 +680,14 @@ function NexoCrearInner() {
               </div>
             )}
 
-            {tipo==="empresa" && pagoBITEmpresa && (
+            {(tipo==="empresa" || tipo==="servicio") && pagoBITEmpresa && (
               <div style={{background:"rgba(39,174,96,0.1)",border:"2px solid rgba(39,174,96,0.3)",borderRadius:"12px",padding:"12px 16px",display:"flex",alignItems:"center",gap:"10px"}}>
                 <span style={{fontSize:"20px"}}>✅</span>
                 <div style={{fontSize:"13px",fontWeight:800,color:"#27ae60"}}>{esPrimeraEmpresa ? "Trial 30 días activado — ¡creá tu empresa!" : "Plan Empresa activado"}</div>
               </div>
             )}
 
-            <div style={{...CAJA, opacity:tipo==="empresa"&&!pagoBITEmpresa?0.4:1, pointerEvents:tipo==="empresa"&&!pagoBITEmpresa?"none" as any:"auto"}}>
+            <div style={{...CAJA, opacity:(tipo==="empresa"||tipo==="servicio")&&!pagoBITEmpresa?0.4:1, pointerEvents:(tipo==="empresa"||tipo==="servicio")&&!pagoBITEmpresa?"none" as any:"auto"}}>
               <SL>📝 Información básica</SL>
               <L>Nombre / Título *</L>
               <input value={form.titulo} onChange={e=>F("titulo",e.target.value)}
@@ -767,7 +770,7 @@ function NexoCrearInner() {
               </>)}
             </div>
 
-            <div style={{...CAJA, opacity:tipo==="empresa"&&!pagoBITEmpresa?0.4:1, pointerEvents:tipo==="empresa"&&!pagoBITEmpresa?"none" as any:"auto"}}>
+            <div style={{...CAJA, opacity:(tipo==="empresa"||tipo==="servicio")&&!pagoBITEmpresa?0.4:1, pointerEvents:(tipo==="empresa"||tipo==="servicio")&&!pagoBITEmpresa?"none" as any:"auto"}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"12px"}}>
                 <SL style={{margin:0}}>📍 Ubicación</SL>
                 <button onClick={gps} disabled={gpsLoad} style={{background:`${colorPage}18`,border:`2px solid ${colorPage}40`,borderRadius:"10px",padding:"6px 12px",fontSize:"12px",fontWeight:800,color:colorPage,cursor:gpsLoad?"wait":"pointer",fontFamily:"'Nunito',sans-serif",opacity:gpsLoad?0.6:1}}>
@@ -791,7 +794,7 @@ function NexoCrearInner() {
               {form.lat && <div style={{marginTop:"8px",fontSize:"11px",color:"#27ae60",fontWeight:700}}>✅ Ubicación GPS detectada</div>}
             </div>
 
-            <div style={{...CAJA, opacity:tipo==="empresa"&&!pagoBITEmpresa?0.4:1, pointerEvents:tipo==="empresa"&&!pagoBITEmpresa?"none" as any:"auto"}}>
+            <div style={{...CAJA, opacity:(tipo==="empresa"||tipo==="servicio")&&!pagoBITEmpresa?0.4:1, pointerEvents:(tipo==="empresa"||tipo==="servicio")&&!pagoBITEmpresa?"none" as any:"auto"}}>
               <SL>📱 Contacto</SL>
               <L>WhatsApp</L>
               <input value={form.whatsapp} onChange={e=>F("whatsapp",e.target.value)} placeholder="Ej: 3412345678" style={IS}/>
@@ -876,7 +879,7 @@ function NexoCrearInner() {
             <div style={{display:"flex",gap:"10px"}}>
               <button onClick={()=>setPaso(2)} style={{flex:1,...BTN2}}>← Volver</button>
               <button onClick={() => {
-                if (tipo === "empresa") { crear(); return; }
+                if (tipo === "empresa" || tipo === "servicio") { crear(); return; }
                 const totalBits = (perfil?.bits_free||0) + (perfil?.bits||0) + (perfil?.bits_promo||0);
                 if (totalBits < 500) { alert(`Necesitás 500 BIT para crear este Nexo. Tenés ${totalBits} BIT.`); return; }
                 setPopupConfirmar(true);

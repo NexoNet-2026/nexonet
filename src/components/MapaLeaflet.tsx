@@ -111,11 +111,32 @@ export default function MapaLeaflet({
   onSeleccionar: (a: Anuncio) => void;
   centrarEn?: [number, number] | null;
 }) {
+  useEffect(() => {
+    const style = document.createElement("style");
+    style.id = "nexo-marker-glow";
+    style.innerHTML = `
+      .marker-abierto {
+        filter: drop-shadow(0 0 8px #00ff88) drop-shadow(0 0 16px #00ff88) drop-shadow(0 0 24px #00cc66) !important;
+        overflow: visible !important;
+      }
+      .marker-cerrado {
+        filter: drop-shadow(0 0 8px #ff0033) drop-shadow(0 0 16px #ff0033) drop-shadow(0 0 24px #cc0022) !important;
+        overflow: visible !important;
+      }
+      .marker-abierto > div, .marker-cerrado > div {
+        overflow: visible !important;
+      }
+    `;
+    if (!document.getElementById("nexo-marker-glow")) {
+      document.head.appendChild(style);
+    }
+    return () => {
+      const existing = document.getElementById("nexo-marker-glow");
+      if (existing) existing.remove();
+    };
+  }, []);
+
   return (
-    <><style>{`
-      .marker-abierto { filter: drop-shadow(0 0 6px #00ff88) drop-shadow(0 0 12px #00ff88); }
-      .marker-cerrado { filter: drop-shadow(0 0 6px #ff2244) drop-shadow(0 0 12px #ff2244); }
-    `}</style>
     <MapContainer
       center={[-31.2532, -61.4875]}
       zoom={8}
@@ -141,6 +162,5 @@ export default function MapaLeaflet({
         />
       ))}
     </MapContainer>
-    </>
   );
 }

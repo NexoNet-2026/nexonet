@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabase";
 import PopupCompra, { MetodoPago } from "@/components/PopupCompra";
 import InsigniaLogro from "@/app/_components/InsigniaLogro";
 import TarjetaNexoGlobal from "@/app/_components/TarjetaNexo";
+import { isNexoAbierto } from "@/lib/horarios";
 
 
 type Anuncio = {
@@ -270,6 +271,24 @@ function BuscarInner() {
         }
       }
       allNexos.sort((a, b) => (b.visitas_semana || 0) - (a.visitas_semana || 0));
+      // Fetch horarios para empresa/servicio y calcular abierto
+      const esEmpServIds = allNexos.filter(n => n.tipo === "empresa" || n.tipo === "servicio").map(n => n.id);
+      if (esEmpServIds.length > 0) {
+        const { data: horariosData } = await supabase.from("nexo_horarios").select("nexo_id, dia, hora_desde, hora_hasta, cerrado").in("nexo_id", esEmpServIds);
+        if (horariosData) {
+          const horarioMap: Record<string, any[]> = {};
+          horariosData.forEach((h: any) => {
+            if (!horarioMap[h.nexo_id]) horarioMap[h.nexo_id] = [];
+            horarioMap[h.nexo_id].push(h);
+          });
+          allNexos = allNexos.map(n => {
+            if (n.tipo !== "empresa" && n.tipo !== "servicio") return n;
+            const hs = horarioMap[n.id];
+            if (!hs || hs.length === 0) return n;
+            return { ...n, abierto: isNexoAbierto(hs) };
+          });
+        }
+      }
       setNexos(allNexos);
       setLoading(false);
     });
@@ -818,7 +837,7 @@ function BuscarInner() {
                       ) : (
                         <div style={{display:"flex",gap:"12px",padding:"0 16px",overflowX:"auto",scrollbarWidth:"none"}}>
                           {itemsFinal.map((n:any,i:number) => (
-                            <TarjetaNexoGlobal key={n.id} nexo={n} color={colorActivo} onClick={()=>router.push(`/nexo/${n.id}`)} esPrimero={i===0&&(n.visitas_semana||0)>0} />
+                            <TarjetaNexoGlobal key={n.id} nexo={n} color={colorActivo} onClick={()=>router.push(`/nexo/${n.id}`)} esPrimero={i===0&&(n.visitas_semana||0)>0} abierto={(n as any).abierto} />
                           ))}
                         </div>
                       )}
@@ -846,7 +865,7 @@ function BuscarInner() {
                       </div>
                       <div style={{display:"flex",gap:"12px",padding:"0 16px",overflowX:"auto",scrollbarWidth:"none"}}>
                         {(nexosPorTipo[tipoActivo]||[]).map((n, i) => (
-                            <TarjetaNexoGlobal key={n.id} nexo={n} color={colorActivo} onClick={()=>router.push(`/nexo/${n.id}`)} esPrimero={i === 0 && (n.visitas_semana || 0) > 0} />
+                            <TarjetaNexoGlobal key={n.id} nexo={n} color={colorActivo} onClick={()=>router.push(`/nexo/${n.id}`)} esPrimero={i === 0 && (n.visitas_semana || 0) > 0} abierto={(n as any).abierto} />
                         ))}
                       </div>
                     </div>
@@ -863,7 +882,7 @@ function BuscarInner() {
                     <div style={{padding:"14px 16px 8px"}}><span style={{fontSize:"16px",fontWeight:900,color:"#1a2a3a"}}>📦 Otros</span></div>
                     <div style={{display:"flex",gap:"12px",padding:"0 16px",overflowX:"auto",scrollbarWidth:"none"}}>
                       {sinCat.slice(0,8).map((n:any) => (
-                          <TarjetaNexoGlobal key={n.id} nexo={n} color={colorActivo} onClick={()=>router.push(`/nexo/${n.id}`)} />
+                          <TarjetaNexoGlobal key={n.id} nexo={n} color={colorActivo} onClick={()=>router.push(`/nexo/${n.id}`)} abierto={(n as any).abierto} />
                       ))}
                     </div>
                   </div>

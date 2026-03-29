@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
+import { isNexoAbierto } from "@/lib/horarios";
 import type { Anuncio, Nexo, Rubro, Subrubro } from "@/app/_lib/home-constants";
 
 export function useHomeData() {
@@ -106,6 +107,20 @@ export function useHomeData() {
         }
       }
       allNexos.sort((a, b) => (b.visitas_semana || 0) - (a.visitas_semana || 0));
+      const esEmpServIdsHome = allNexos.filter((n: any) => n.tipo === "empresa" || n.tipo === "servicio").map((n: any) => n.id);
+      if (esEmpServIdsHome.length > 0) {
+        const { data: horariosHome } = await supabase.from("nexo_horarios").select("nexo_id, dia, hora_desde, hora_hasta, cerrado").in("nexo_id", esEmpServIdsHome);
+        if (horariosHome) {
+          const hMap: Record<string, any[]> = {};
+          horariosHome.forEach((h: any) => { if (!hMap[h.nexo_id]) hMap[h.nexo_id] = []; hMap[h.nexo_id].push(h); });
+          allNexos = allNexos.map((n: any) => {
+            if (n.tipo !== "empresa" && n.tipo !== "servicio") return n;
+            const hs = hMap[n.id];
+            if (!hs || !hs.length) return n;
+            return { ...n, abierto: isNexoAbierto(hs) };
+          });
+        }
+      }
       setNexos(allNexos);
       setLoading(false);
     };

@@ -7,10 +7,11 @@ import dynamic from "next/dynamic";
 import { supabase } from "@/lib/supabase";
 import PopupCompra, { MetodoPago } from "@/components/PopupCompra";
 import AyudaPopup from "@/components/AyudaPopup";
+import { isNexoAbierto } from "@/lib/horarios";
 
 const MapaLeaflet = dynamic(() => import("@/components/MapaLeaflet"), { ssr: false });
 
-type Anuncio = { id:number; titulo:string; precio:number; moneda:string; rubro:string; imagenes:string[]; lat:number; lng:number; ciudad:string; provincia:string; flash:boolean; subrubro_id:number; usuario_id:string };
+type Anuncio = { id:number; titulo:string; precio:number; moneda:string; rubro:string; imagenes:string[]; lat:number; lng:number; ciudad:string; provincia:string; flash:boolean; subrubro_id:number; usuario_id:string; tipo?: string; avatar_url?: string; abierto?: boolean };
 type RubroFlat = { id:number; nombre:string };
 type SubrubroFlat = { id:number; nombre:string; rubro_id:number };
 
@@ -38,6 +39,8 @@ function MapaInner() {
   );
   const inputRef = useRef<HTMLInputElement>(null);
   const dropRef  = useRef<HTMLDivElement>(null);
+  const [tiposFiltro, setTiposFiltro] = useState<Set<string>>(new Set(["anuncio","empresa","servicio","grupo","trabajo"]));
+  const [nexos, setNexos] = useState<any[]>([]);
 
   const [session,        setSession]        = useState<any>(null);
   const [bits,           setBits]           = useState(0);
@@ -72,7 +75,8 @@ function MapaInner() {
       supabase.from("anuncios")
         .select("id,titulo,precio,moneda,imagenes,flash,ciudad,provincia,lat,lng,subrubro_id,usuario_id")
         .eq("estado","activo").not("lat","is",null).not("lng","is",null),
-    ]).then(([{data:rData},{data:aData}]) => {
+      supabase.from("nexos").select("id,titulo,precio,moneda,avatar_url,lat,lng,ciudad,provincia,tipo,usuario_id").eq("estado","activo").not("lat","is",null).not("lng","is",null),
+    ]).then(async ([{data:rData},{data:aData},{data:nData}]) => {
       if (rData) {
         const rf = rData.map((r:any) => ({id:r.id,nombre:r.nombre}));
         const sf = rData.flatMap((r:any) => (r.subrubros||[]).map((s:any) => ({id:s.id,nombre:s.nombre,rubro_id:r.id})));
@@ -103,6 +107,37 @@ function MapaInner() {
           if (target) setAnuncioSel(target);
         }
       }
+      if (nData) {
+        const nexoIds = (nData as any[]).filter((n:any) => n.tipo === "empresa" || n.tipo === "servicio").map((n:any) => n.id);
+        let horariosMap: Record<string, any[]> = {};
+        if (nexoIds.length > 0) {
+          const { data: hData } = await supabase.from("nexo_horarios").select("nexo_id,dia,hora_desde,hora_hasta,cerrado").in("nexo_id", nexoIds);
+          if (hData) {
+            hData.forEach((h: any) => { if (!horariosMap[h.nexo_id]) horariosMap[h.nexo_id] = []; horariosMap[h.nexo_id].push(h); });
+          }
+        }
+        const nexosMapped = (nData as any[]).map((n: any) => ({
+          id: n.id,
+          titulo: n.titulo,
+          precio: n.precio || 0,
+          moneda: n.moneda || "ARS",
+          rubro: n.tipo,
+          imagenes: n.avatar_url ? [n.avatar_url] : [],
+          lat: n.lat,
+          lng: n.lng,
+          ciudad: n.ciudad || "",
+          provincia: n.provincia || "",
+          flash: false,
+          subrubro_id: 0,
+          usuario_id: n.usuario_id,
+          tipo: n.tipo,
+          avatar_url: n.avatar_url,
+          abierto: (n.tipo === "empresa" || n.tipo === "servicio") && horariosMap[n.id]?.length > 0
+            ? isNexoAbierto(horariosMap[n.id])
+            : undefined,
+        }));
+        setNexos(nexosMapped);
+      }
       setLoading(false);
     });
   }, []);
@@ -123,14 +158,17 @@ function MapaInner() {
   const selR  = (r:RubroFlat)    => { setRSel(r); setSSel(null); setQuery(r.nombre); setDropOpen(false); };
   const selS  = (s:SubrubroFlat) => { setRSel(rFlat.find(r=>r.id===s.rubro_id)||null); setSSel(s); setQuery(s.nombre); setDropOpen(false); };
 
-  const anunciosFiltrados = anuncios.filter(a => {
-    if (session && a.usuario_id === session?.user.id) return false;
-    if (sSel) { if (a.subrubro_id!==sSel.id) return false; }
-    else if (rSel) { if (!sFlat.filter(s=>s.rubro_id===rSel.id).map(s=>s.id).includes(a.subrubro_id)) return false; }
-    if (paramProvincia && a.provincia?.toLowerCase() !== paramProvincia.toLowerCase()) return false;
-    if (paramCiudad && a.ciudad?.toLowerCase() !== paramCiudad.toLowerCase()) return false;
-    return true;
-  });
+  const anunciosFiltrados = [
+    ...(tiposFiltro.has("anuncio") ? anuncios.filter(a => {
+      if (session && a.usuario_id === session?.user.id) return false;
+      if (sSel) { if (a.subrubro_id !== sSel.id) return false; }
+      else if (rSel) { if (!sFlat.filter(s => s.rubro_id === rSel.id).map(s => s.id).includes(a.subrubro_id)) return false; }
+      if (paramProvincia && a.provincia?.toLowerCase() !== paramProvincia.toLowerCase()) return false;
+      if (paramCiudad && a.ciudad?.toLowerCase() !== paramCiudad.toLowerCase()) return false;
+      return true;
+    }) : []),
+    ...nexos.filter(n => tiposFiltro.has(n.tipo || "")),
+  ] as any[];
 
   const fmt = (p:number,m:string) => !p?"Consultar":`${m==="USD"?"U$D":"$"} ${p.toLocaleString("es-AR")}`;
 
@@ -272,8 +310,32 @@ function MapaInner() {
         )}
       </div>
 
+      {/* FILTROS TIPO */}
+      <div style={{position:"fixed",top: modoConexion ? "260px" : "228px",left:0,right:0,zIndex:98,padding:"6px 12px",background:"linear-gradient(135deg,#1a2a3a,#243b55)",display:"flex",gap:"6px",overflowX:"auto",scrollbarWidth:"none"}}>
+        {[
+          {key:"anuncio",  emoji:"📣", label:"Anuncios",  color:"#d4a017"},
+          {key:"empresa",  emoji:"🏢", label:"Empresas",  color:"#c0392b"},
+          {key:"servicio", emoji:"🛠️", label:"Servicios", color:"#27ae60"},
+          {key:"grupo",    emoji:"👥", label:"Grupos",    color:"#3a7bd5"},
+          {key:"trabajo",  emoji:"💼", label:"Trabajo",   color:"#8e44ad"},
+        ].map(t => {
+          const activo = tiposFiltro.has(t.key);
+          return (
+            <button key={t.key} onClick={() => {
+              setTiposFiltro(prev => {
+                const s = new Set(prev);
+                s.has(t.key) ? s.delete(t.key) : s.add(t.key);
+                return s;
+              });
+            }} style={{flexShrink:0,background:activo?`${t.color}30`:"rgba(255,255,255,0.06)",border:`2px solid ${activo?t.color:"rgba(255,255,255,0.15)"}`,borderRadius:"20px",padding:"5px 12px",fontSize:"11px",fontWeight:800,color:activo?t.color:"rgba(255,255,255,0.4)",cursor:"pointer",fontFamily:"'Nunito',sans-serif",display:"flex",alignItems:"center",gap:"4px"}}>
+              {t.emoji} {t.label}
+            </button>
+          );
+        })}
+      </div>
+
       {/* MAPA */}
-      <div style={{position:"fixed",top: modoConexion ? "210px" : "178px",left:0,right:0,bottom:modoConexion?"190px":"130px"}}>
+      <div style={{position:"fixed",top: modoConexion ? "300px" : "268px",left:0,right:0,bottom:modoConexion?"190px":"130px"}}>
         {loading ? (
           <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100%",background:"#f4f4f2",fontSize:"14px",fontWeight:700,color:"#9a9a9a"}}>Cargando anuncios...</div>
         ) : (
@@ -297,7 +359,7 @@ function MapaInner() {
             </div>
             <div style={{display:"flex",flexDirection:"column",gap:"4px",alignSelf:"flex-start"}}>
               <button onClick={()=>setAnuncioSel(null)} style={{background:"none",border:"none",fontSize:"16px",cursor:"pointer",color:"#9a9a9a"}}>✕</button>
-              <a href={`/anuncios/${anuncioSel.id}`} style={{background:"#d4a017",color:"#1a2a3a",border:"none",borderRadius:"8px",padding:"4px 8px",fontSize:"11px",fontWeight:800,textDecoration:"none",textAlign:"center"}}>Ver →</a>
+              <a href={anuncioSel.tipo && anuncioSel.tipo !== "anuncio" ? `/nexo/${anuncioSel.id}` : `/anuncios/${anuncioSel.id}`} style={{background:"#d4a017",color:"#1a2a3a",border:"none",borderRadius:"8px",padding:"4px 8px",fontSize:"11px",fontWeight:800,textDecoration:"none",textAlign:"center"}}>Ver →</a>
               {session && (
                 <button onClick={()=>{
                   toggleSeleccion(anuncioSel.id);
@@ -311,7 +373,7 @@ function MapaInner() {
 
         <div style={{position:"absolute",bottom:0,left:0,right:0,background:"#fff",padding:"8px 16px",display:"flex",justifyContent:"space-between",alignItems:"center",borderTop:"1px solid #e8e8e6",zIndex:999}}>
           <span style={{fontSize:"13px",fontWeight:700,color:"#666"}}>
-            📍 {anunciosFiltrados.length} anuncio{anunciosFiltrados.length!==1?"s":""} en el mapa
+            📍 {anunciosFiltrados.length} resultado{anunciosFiltrados.length!==1?"s":""} en el mapa
             {modoConexion && seleccionados.size>0 && <span style={{color:"#d4a017",marginLeft:"8px"}}>· {seleccionados.size} seleccionado{seleccionados.size!==1?"s":""}</span>}
           </span>
           <a href="/buscar" style={{fontSize:"12px",fontWeight:700,color:"#d4a017",textDecoration:"none"}}>Ver en lista →</a>

@@ -8,6 +8,7 @@ import { supabase } from "@/lib/supabase";
 import PopupCompra, { MetodoPago } from "@/components/PopupCompra";
 import FlashEnvio from "@/components/nexo/FlashEnvio";
 import { isNexoAbierto } from "@/lib/horarios";
+import ResenaWidget, { EstrellasMini } from "@/components/nexo/ResenaWidget";
 import InsigniaLogro from "@/app/_components/InsigniaLogro";
 import InsigniaReputacion from "@/app/_components/InsigniaReputacion";
 import BotonDarInsignia from "@/app/_components/BotonDarInsignia";
@@ -51,6 +52,8 @@ export default function NexoPage() {
   const tabBarRef = useRef<HTMLDivElement>(null);
   const [horarios, setHorarios] = useState<any[]>([]);
   const [abierto, setAbierto] = useState<boolean | null>(null);
+  const [promedioResenas, setPromedioResenas] = useState(0);
+  const [cantResenas, setCantResenas] = useState(0);
 
   useEffect(() => {
     const cargar = async () => {
@@ -92,7 +95,10 @@ export default function NexoPage() {
       const chatTab = n?.tipo === "grupo" && n?.config?.chat_habilitado
         ? [{ id:"chat_grupal", titulo:"💬 Chat", tipo:"mensajes", nexo_id:id, activo:true, orden:-1 }]
         : [];
-      const allPages = [...chatTab, ...(sls || [])];
+      const resenaTab = (n?.tipo === "empresa" || n?.tipo === "servicio")
+        ? [{ id:"resenas_tab", titulo:"⭐ Reseñas", tipo:"resenas", nexo_id:id, activo:true, orden:999 }]
+        : [];
+      const allPages = [...chatTab, ...(sls || []), ...resenaTab];
       setpáginas(allPages);
       if (allPages.length) setTabActiva(allPages[0].id);
 
@@ -157,6 +163,16 @@ export default function NexoPage() {
         if (hs && hs.length > 0) {
           setHorarios(hs);
           setAbierto(isNexoAbierto(hs));
+        }
+      }
+      // Fetch promedio reseñas
+      if (n?.tipo === "empresa" || n?.tipo === "servicio") {
+        const { data: resData } = await supabase.from("nexo_resenas")
+          .select("rating").eq("nexo_id", id);
+        if (resData && resData.length > 0) {
+          const prom = resData.reduce((acc: number, r: any) => acc + r.rating, 0) / resData.length;
+          setPromedioResenas(prom);
+          setCantResenas(resData.length);
         }
       }
       supabase.from("config_global").select("valor").eq("clave","whatsapp_soporte").single().then(({data})=>{if(data?.valor)setWaSoporte(data.valor);});
@@ -397,6 +413,9 @@ export default function NexoPage() {
                   }}>
                     {abierto ? "● ABIERTO" : "● CERRADO"}
                   </span>
+                )}
+                {(nexo.tipo === "empresa" || nexo.tipo === "servicio") && cantResenas > 0 && (
+                  <EstrellasMini rating={promedioResenas} count={cantResenas} />
                 )}
               </div>
               {nexo.usuarios && (
@@ -691,7 +710,7 @@ const SLIDER_EMOJIS: Record<string,string> = {
   galeria:"📸", videos:"🎬", documentos:"📄", descargas:"📥", productos:"🛒",
   novedades:"📢", proveedores:"🏭", faq:"❓", facturas:"🧾", calendario:"📅",
   equipo:"👤", servicios:"🛠️", portfolio:"🎨", testimonios:"💬", certificados:"🏅",
-  mensajes:"💬", chat:"💬", personalizado:"✨",
+  mensajes:"💬", chat:"💬", personalizado:"✨", resenas:"⭐",
 };
 
 function SliderContenido({ slider, items, mensajes, perfil, nexo, esAdmin, esMiembro, descargasPagadas, pagandoDescarga, miembros, texto, setTexto, enviando, onEnviar, onVisor, onPagarDescarga, onAbrirDescarga, onFlash, bottomRef, colorNexo }: any) {
@@ -808,6 +827,10 @@ function SliderContenido({ slider, items, mensajes, perfil, nexo, esAdmin, esMie
         })}
       </div>
     );
+  }
+
+  if (tipo === "resenas") {
+    return <ResenaWidget nexoId={nexo.id} perfil={perfil} color={colorNexo} />;
   }
 
   // MIEMBROS

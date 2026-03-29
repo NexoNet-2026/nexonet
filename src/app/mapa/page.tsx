@@ -311,7 +311,7 @@ function MapaInner() {
       </div>
 
       {/* FILTROS TIPO */}
-      <div style={{position:"fixed",top: modoConexion ? "290px" : "258px",left:0,right:0,zIndex:98,padding:"6px 12px",background:"linear-gradient(135deg,#1a2a3a,#243b55)",display:"flex",gap:"6px",overflowX:"auto",scrollbarWidth:"none"}}>
+      <div style={{position:"fixed",top: modoConexion ? "222px" : "190px",left:0,right:0,zIndex:98,padding:"6px 12px",background:"linear-gradient(135deg,#1a2a3a,#243b55)",display:"flex",gap:"6px",overflowX:"auto",scrollbarWidth:"none"}}>
         {[
           {key:"anuncio",  emoji:"📣", label:"Anuncios",  color:"#d4a017"},
           {key:"empresa",  emoji:"🏢", label:"Empresas",  color:"#c0392b"},
@@ -335,7 +335,7 @@ function MapaInner() {
       </div>
 
       {/* MAPA */}
-      <div style={{position:"fixed",top: modoConexion ? "340px" : "308px",left:0,right:0,bottom:modoConexion?"190px":"130px"}}>
+      <div style={{position:"fixed",top: modoConexion ? "272px" : "240px",left:0,right:0,bottom:modoConexion?"190px":"130px"}}>
         {loading ? (
           <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100%",background:"#f4f4f2",fontSize:"14px",fontWeight:700,color:"#9a9a9a"}}>Cargando anuncios...</div>
         ) : (

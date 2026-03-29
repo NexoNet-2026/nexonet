@@ -941,7 +941,7 @@ export default function Usuario() {
                 </div>
               ))
             )}
-            <button onClick={()=>router.push("/nexo/crear/grupo")} style={{ background:"rgba(212,160,23,0.08)", border:"2px dashed rgba(212,160,23,0.4)", borderRadius:"16px", padding:"16px", fontSize:"13px", fontWeight:800, color:"#d4a017", cursor:"pointer", fontFamily:"'Nunito',sans-serif", display:"flex", alignItems:"center", justifyContent:"center", gap:"8px" }}>
+            <button onClick={()=>router.push("/publicar")} style={{ background:"rgba(212,160,23,0.08)", border:"2px dashed rgba(212,160,23,0.4)", borderRadius:"16px", padding:"16px", fontSize:"13px", fontWeight:800, color:"#d4a017", cursor:"pointer", fontFamily:"'Nunito',sans-serif", display:"flex", alignItems:"center", justifyContent:"center", gap:"8px" }}>
               ➕ Crear nuevo grupo
             </button>
           </div>

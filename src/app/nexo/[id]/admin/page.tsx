@@ -6,8 +6,9 @@ import { supabase } from "@/lib/supabase";
 import PopupCompra, { MetodoPago } from "@/components/PopupCompra";
 import AyudaPopup from "@/components/AyudaPopup";
 import PlantillasMensaje from "@/components/nexo/PlantillasMensaje";
+import HorariosAdmin from "@/components/nexo/HorariosAdmin";
 
-type TabAdmin = "sliders" | "miembros" | "descargas" | "info" | "config" | "plantillas";
+type TabAdmin = "sliders" | "miembros" | "descargas" | "info" | "config" | "plantillas" | "horarios";
 
 const SLIDER_EMOJIS: Record<string,string> = {
   galeria:"📸", videos:"🎬", documentos:"📄", descargas:"📥", productos:"🛒",
@@ -395,6 +396,7 @@ export default function NexoAdminPage() {
     { key:"sliders",   emoji:"📋", label:"Páginas"   },
     { key:"descargas", emoji:"📥", label:"Descargas" },
     { key:"plantillas", emoji:"✉️", label:"Mensajes" },
+    ...(["empresa","servicio"].includes(nexo?.tipo) ? [{ key:"horarios" as TabAdmin, emoji:"🕐", label:"Horarios" }] : []),
     { key:"miembros",  emoji:"👥", label:"Miembros",  badge:(pendientes.length+adminSolicitados.length)||undefined },
     { key:"info",      emoji:"✏️", label:"Info"      },
     { key:"config",    emoji:"⚙️", label:"Config"    },
@@ -593,6 +595,10 @@ export default function NexoAdminPage() {
             usuarioId={perfil?.id}
             color={colorNexo}
           />
+        )}
+
+        {tab==="horarios" && (
+          <HorariosAdmin nexoId={id} color={colorNexo} />
         )}
 
         {/* ══ MIEMBROS ══ */}

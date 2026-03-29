@@ -380,7 +380,7 @@ export default function Usuario() {
           <div style={{ background:"#fff", borderRadius:"16px", padding:"40px 20px", textAlign:"center", boxShadow:"0 2px 8px rgba(0,0,0,0.06)" }}>
             <div style={{ fontSize:"40px", marginBottom:"12px" }}>{emoji}</div>
             <div style={{ fontSize:"15px", fontWeight:800, color:"#1a2a3a", marginBottom:"20px" }}>No tenés {label} creados</div>
-            <button onClick={()=>router.push(`/nexo/crear/${tipo}`)}
+            <button onClick={()=>router.push(`/publicar`)}
               style={{ background:`linear-gradient(135deg,${color}cc,${color})`, border:"none", borderRadius:"12px", padding:"12px 24px", fontSize:"13px", fontWeight:900, color:"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
               ➕ {labelCrear}
             </button>
@@ -412,7 +412,7 @@ export default function Usuario() {
             </div>
           ))
         )}
-        <button onClick={()=>router.push(`/nexo/crear/${tipo}`)}
+        <button onClick={()=>router.push(`/publicar`)}
           style={{ background:"rgba(212,160,23,0.08)", border:"2px dashed rgba(212,160,23,0.4)", borderRadius:"16px", padding:"16px", fontSize:"13px", fontWeight:800, color:"#d4a017", cursor:"pointer", fontFamily:"'Nunito',sans-serif", display:"flex", alignItems:"center", justifyContent:"center", gap:"8px" }}>
           ➕ {labelCrear}
         </button>

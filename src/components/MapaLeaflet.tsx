@@ -28,10 +28,14 @@ const TIPO_EMOJI: Record<string, string> = {
   grupo:    "👥",
 };
 
-const crearIcono = (flash: boolean, tipo?: string, avatarUrl?: string) => {
+const crearIcono = (flash: boolean, tipo?: string, avatarUrl?: string, abierto?: boolean) => {
   const color  = TIPO_COLOR[tipo||"anuncio"] || "#d4a017";
-  const borde  = flash ? "#f0c040" : "#fff";
-  const sombra = flash ? `0 0 12px ${color}99, 0 4px 12px rgba(0,0,0,0.4)` : "0 4px 12px rgba(0,0,0,0.3)";
+  const borde  = abierto === true ? "#00ff88" : abierto === false ? "#ff2244" : flash ? "#f0c040" : "#fff";
+  const sombra = abierto === true
+    ? "0 0 18px #00ff8899, 0 0 8px #00ff8866, 0 4px 12px rgba(0,0,0,0.4)"
+    : abierto === false
+    ? "0 0 18px #ff224499, 0 0 8px #ff224466, 0 4px 12px rgba(0,0,0,0.4)"
+    : flash ? `0 0 12px ${color}99, 0 4px 12px rgba(0,0,0,0.4)` : "0 4px 12px rgba(0,0,0,0.3)";
   const emoji  = TIPO_EMOJI[tipo||"anuncio"] || "📣";
 
   const interiorHtml = avatarUrl
@@ -75,6 +79,7 @@ export type Anuncio = {
   flash: boolean;
   tipo?: string;
   avatar_url?: string;
+  abierto?: boolean;
 };
 
 function FitBounds({ anuncios }: { anuncios: Anuncio[] }) {
@@ -132,7 +137,7 @@ export default function MapaLeaflet({
         <Marker
           key={a.id}
           position={[a.lat, a.lng]}
-          icon={crearIcono(a.flash, a.tipo, a.avatar_url)}
+          icon={crearIcono(a.flash, a.tipo, a.avatar_url, a.abierto)}
           eventHandlers={{ click: () => onSeleccionar(a) }}
         />
       ))}

@@ -1,6 +1,6 @@
 "use client";
 
-export default function TarjetaNexo({ nexo, onClick, esPrimero, color }: any) {
+export default function TarjetaNexo({ nexo, onClick, esPrimero, color, abierto }: any) {
   const colorTipo = color || "#3a7bd5";
   const esGrupo = nexo.tipo === "grupo";
   const nombreCreador = nexo.owner_nombre || nexo.usuarios?.nombre_usuario || nexo.usuarios?.nombre || "NexoNet";
@@ -9,12 +9,14 @@ export default function TarjetaNexo({ nexo, onClick, esPrimero, color }: any) {
       {esPrimero && (
         <div style={{ position:"absolute", top:"-6px", right:"-4px", zIndex:2, background:"linear-gradient(135deg,#ff6b00,#ff4500)", borderRadius:"8px", padding:"2px 7px", fontSize:"10px", fontWeight:900, color:"#fff" }}>🔥</div>
       )}
-      <div style={{ background:"#fff", borderRadius:"14px", overflow:"hidden", boxShadow:"0 2px 10px rgba(0,0,0,0.08)", border:"1px solid #f0f0f0" }}>
+      <div style={{ background:"#fff", borderRadius:"14px", overflow:"hidden", boxShadow: abierto === true ? "0 0 16px #00ff8855, 0 2px 10px rgba(0,0,0,0.08)" : abierto === false ? "0 0 16px #ff224433, 0 2px 10px rgba(0,0,0,0.08)" : "0 2px 10px rgba(0,0,0,0.08)", border: abierto === true ? "2px solid #00ff88" : abierto === false ? "2px solid #ff2244" : "1px solid #f0f0f0" }}>
         <div style={{ background:colorTipo, padding:"4px 8px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
           <span style={{ fontSize:"10px", fontWeight:900, color:"#fff", textTransform:"uppercase", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", maxWidth:"120px" }}>
             {nombreCreador}
           </span>
           <span style={{ fontSize:"9px", fontWeight:800, color:"rgba(255,255,255,0.8)", textTransform:"uppercase", flexShrink:0 }}>{nexo.tipo}</span>
+          {abierto === true && <span style={{ fontSize:"9px", fontWeight:900, color:"#00ff88", marginLeft:"4px", background:"rgba(0,255,136,0.15)", borderRadius:"4px", padding:"1px 5px" }}>● ABIERTO</span>}
+          {abierto === false && <span style={{ fontSize:"9px", fontWeight:900, color:"#ff6688", marginLeft:"4px", background:"rgba(255,34,68,0.15)", borderRadius:"4px", padding:"1px 5px" }}>● CERRADO</span>}
         </div>
         <div style={{ height:"120px", background:"#e8e8e6", overflow:"hidden", display:"flex", alignItems:"center", justifyContent:"center" }}>
           {nexo.avatar_url

@@ -423,12 +423,6 @@ export default function NexoPage() {
                   Creado por <span style={{ color:"rgba(255,255,255,0.75)", fontWeight:800 }}>{nexo.usuarios.nombre || nexo.usuarios.nombre_usuario || "---"}</span>
                 </div>
               )}
-              {nexo.usuarios && perfil && nexo.usuario_id !== perfil.id && (
-                <button onClick={() => router.push(`/chat/${nexo.usuario_id}?nexo=${nexo.id}`)}
-                  style={{ marginTop:"6px", background:"rgba(255,255,255,0.12)", border:"1px solid rgba(255,255,255,0.25)", borderRadius:"10px", padding:"6px 12px", fontSize:"11px", fontWeight:800, color:"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
-                  💬 Enviar mensaje
-                </button>
-              )}
             </div>
             <div style={{ display:"flex", flexDirection:"column", gap:"6px", flexShrink:0 }}>
               {esAdmin && (

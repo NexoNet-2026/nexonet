@@ -45,23 +45,29 @@ const crearIcono = (flash: boolean, tipo?: string, avatarUrl?: string, abierto?:
   return L.divIcon({
     html: `
       <div style="
-        background: ${color};
-        border: 3px solid ${borde};
-        border-radius: 50% 50% 50% 0;
-        transform: rotate(-45deg);
-        width: 42px; height: 42px;
-        display: flex; align-items: center; justify-content: center;
-        box-shadow: ${sombra};
-        overflow: hidden;
         position: relative;
+        width: 48px; height: 48px;
+        display: flex; align-items: center; justify-content: center;
+        ${abierto === true ? "filter: drop-shadow(0 0 8px #00ff88) drop-shadow(0 0 16px #00ff8866);" : abierto === false ? "filter: drop-shadow(0 0 8px #ff2244) drop-shadow(0 0 16px #ff224466);" : flash ? `filter: drop-shadow(0 0 6px ${color}99);` : ""}
       ">
-        ${interiorHtml}
+        <div style="
+          background: ${color};
+          border: 3px solid ${borde};
+          border-radius: 50% 50% 50% 0;
+          transform: rotate(-45deg);
+          width: 42px; height: 42px;
+          display: flex; align-items: center; justify-content: center;
+          overflow: hidden;
+          position: relative;
+        ">
+          ${interiorHtml}
+        </div>
       </div>
     `,
     className: "",
-    iconSize:    [42, 42],
-    iconAnchor:  [21, 42],
-    popupAnchor: [0, -44],
+    iconSize:    [48, 48],
+    iconAnchor:  [24, 48],
+    popupAnchor: [0, -50],
   });
 };
 

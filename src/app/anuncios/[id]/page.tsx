@@ -595,7 +595,7 @@ export default function AnuncioDetalle() {
               </div>
               <div style={{ flex:1 }}>
                 <div style={{ display:"flex", alignItems:"center", gap:"8px", flexWrap:"wrap" }}>
-                  <span style={{ fontSize:"15px", fontWeight:800, color:"#1a2a3a" }}>{usuario.nombre_usuario}</span>
+                  <span onClick={() => router.push(`/perfil/${anuncio.usuario_id}`)} style={{ fontSize:"15px", fontWeight:800, color:"#1a2a3a", cursor:"pointer", textDecoration:"underline", textDecorationColor:"rgba(212,160,23,0.4)" }}>{usuario.nombre_usuario}</span>
                   <InsigniaLogro nivel={ownerInsignia} size="xs" />
                 </div>
                 <div style={{ fontSize:"12px", color:"#d4a017", fontWeight:700 }}>{usuario.codigo}</div>

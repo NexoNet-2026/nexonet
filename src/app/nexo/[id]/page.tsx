@@ -420,7 +420,7 @@ export default function NexoPage() {
               </div>
               {nexo.usuarios && (
                 <div style={{ fontSize:"11px", color:"rgba(255,255,255,0.45)", fontWeight:600, marginTop:"4px" }}>
-                  Creado por <span style={{ color:"rgba(255,255,255,0.75)", fontWeight:800 }}>{nexo.usuarios.nombre || nexo.usuarios.nombre_usuario || "---"}</span>
+                  Creado por <span onClick={() => router.push(`/perfil/${nexo.usuario_id}`)} style={{ color:"rgba(255,255,255,0.75)", fontWeight:800, cursor:"pointer", textDecoration:"underline", textDecorationColor:"rgba(255,255,255,0.3)" }}>{nexo.usuarios.nombre || nexo.usuarios.nombre_usuario || "---"}</span>
                 </div>
               )}
             </div>

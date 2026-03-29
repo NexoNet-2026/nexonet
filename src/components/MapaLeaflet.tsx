@@ -31,25 +31,45 @@ const TIPO_EMOJI: Record<string, string> = {
 const crearIcono = (flash: boolean, tipo?: string, avatarUrl?: string, abierto?: boolean) => {
   const color  = TIPO_COLOR[tipo||"anuncio"] || "#d4a017";
   const borde  = abierto === true ? "#00ff88" : abierto === false ? "#ff2244" : flash ? "#f0c040" : "#fff";
-  const sombra = abierto === true
-    ? "0 0 18px #00ff8899, 0 0 8px #00ff8866, 0 4px 12px rgba(0,0,0,0.4)"
-    : abierto === false
-    ? "0 0 18px #ff224499, 0 0 8px #ff224466, 0 4px 12px rgba(0,0,0,0.4)"
-    : flash ? `0 0 12px ${color}99, 0 4px 12px rgba(0,0,0,0.4)` : "0 4px 12px rgba(0,0,0,0.3)";
   const emoji  = TIPO_EMOJI[tipo||"anuncio"] || "📣";
+  const glowColor = abierto === true ? "#00ff88" : abierto === false ? "#ff2244" : null;
 
   const interiorHtml = avatarUrl
     ? `<img src="${avatarUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50% 50% 50% 0;transform:rotate(45deg);" onerror="this.style.display='none';this.nextSibling.style.display='block'"/><span style="display:none;transform:rotate(45deg);font-size:16px;">${emoji}</span>`
     : `<span style="transform:rotate(45deg);font-size:18px;">${emoji}</span>`;
 
+  const glowStyle = glowColor
+    ? `box-shadow: 0 0 0 3px ${glowColor}, 0 0 12px 4px ${glowColor}, 0 0 24px 8px ${glowColor}66;`
+    : flash
+    ? `box-shadow: 0 0 12px ${color}99, 0 4px 12px rgba(0,0,0,0.4);`
+    : `box-shadow: 0 4px 12px rgba(0,0,0,0.3);`;
+
+  const pulseHtml = glowColor ? `
+    <div style="
+      position: absolute;
+      top: -6px; left: -6px;
+      width: 54px; height: 54px;
+      border-radius: 50% 50% 50% 0;
+      transform: rotate(-45deg);
+      background: transparent;
+      border: 3px solid ${glowColor};
+      opacity: 0.7;
+      animation: nexo-pulse 1.8s ease-in-out infinite;
+      pointer-events: none;
+    "></div>
+    <style>
+      @keyframes nexo-pulse {
+        0%   { transform: rotate(-45deg) scale(1);   opacity: 0.7; }
+        50%  { transform: rotate(-45deg) scale(1.25); opacity: 0.2; }
+        100% { transform: rotate(-45deg) scale(1);   opacity: 0.7; }
+      }
+    </style>
+  ` : "";
+
   return L.divIcon({
     html: `
-      <div style="
-        position: relative;
-        width: 48px; height: 48px;
-        display: flex; align-items: center; justify-content: center;
-        ${abierto === true ? "filter: drop-shadow(0 0 8px #00ff88) drop-shadow(0 0 16px #00ff8866);" : abierto === false ? "filter: drop-shadow(0 0 8px #ff2244) drop-shadow(0 0 16px #ff224466);" : flash ? `filter: drop-shadow(0 0 6px ${color}99);` : ""}
-      ">
+      <div style="position:relative; width:42px; height:42px;">
+        ${pulseHtml}
         <div style="
           background: ${color};
           border: 3px solid ${borde};
@@ -57,6 +77,7 @@ const crearIcono = (flash: boolean, tipo?: string, avatarUrl?: string, abierto?:
           transform: rotate(-45deg);
           width: 42px; height: 42px;
           display: flex; align-items: center; justify-content: center;
+          ${glowStyle}
           overflow: hidden;
           position: relative;
         ">
@@ -65,9 +86,9 @@ const crearIcono = (flash: boolean, tipo?: string, avatarUrl?: string, abierto?:
       </div>
     `,
     className: "",
-    iconSize:    [48, 48],
-    iconAnchor:  [24, 48],
-    popupAnchor: [0, -50],
+    iconSize:    [54, 54],
+    iconAnchor:  [21, 42],
+    popupAnchor: [0, -44],
   });
 };
 

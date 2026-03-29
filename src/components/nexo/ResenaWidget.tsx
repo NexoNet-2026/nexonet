@@ -64,7 +64,7 @@ export default function ResenaWidget({ nexoId, perfil, color }: Props) {
     const todas = data || [];
     setResenas(todas);
     if (perfil) {
-      const mia = todas.find(r => r.usuario_id === perfil.id);
+      const mia = todas.find((r: any) => r.usuario_id === perfil.id);
       if (mia) { setMiResena(mia); setRating(mia.rating); setComentario(mia.comentario || ""); }
     }
     setCargando(false);
@@ -79,18 +79,14 @@ export default function ResenaWidget({ nexoId, perfil, color }: Props) {
       const { data } = await supabase.from("nexo_resenas")
         .update({ rating, comentario: comentario.trim() || null })
         .eq("id", miResena.id).select("*, usuarios(nombre_usuario, avatar_url)").single();
-      if (data) {
-        setMiResena(data);
-        setResenas(prev => prev.map(r => r.id === data.id ? data : r));
-      }
+      if (data) { setMiResena(data); setResenas(prev => prev.map(r => r.id === data.id ? data : r)); }
     } else {
       const { data } = await supabase.from("nexo_resenas")
         .insert({ nexo_id: nexoId, usuario_id: perfil.id, rating, comentario: comentario.trim() || null })
         .select("*, usuarios(nombre_usuario, avatar_url)").single();
       if (data) { setMiResena(data); setResenas(prev => [data, ...prev]); }
     }
-    setGuardando(false);
-    setEditando(false);
+    setGuardando(false); setEditando(false);
   };
 
   const eliminar = async () => {
@@ -109,8 +105,6 @@ export default function ResenaWidget({ nexoId, perfil, color }: Props) {
 
   return (
     <div style={{ fontFamily: "'Nunito',sans-serif", display: "flex", flexDirection: "column", gap: "12px" }}>
-
-      {/* RESUMEN */}
       <div style={{ background: "#fff", borderRadius: "16px", padding: "18px", boxShadow: "0 2px 10px rgba(0,0,0,0.06)" }}>
         <div style={{ display: "flex", gap: "20px", alignItems: "center" }}>
           <div style={{ textAlign: "center", flexShrink: 0 }}>
@@ -118,9 +112,7 @@ export default function ResenaWidget({ nexoId, perfil, color }: Props) {
               {resenas.length > 0 ? promedio.toFixed(1) : "—"}
             </div>
             <Estrellas rating={Math.round(promedio)} size={14} />
-            <div style={{ fontSize: "11px", color: "#9a9a9a", fontWeight: 600, marginTop: "4px" }}>
-              {resenas.length} reseña{resenas.length !== 1 ? "s" : ""}
-            </div>
+            <div style={{ fontSize: "11px", color: "#9a9a9a", fontWeight: 600, marginTop: "4px" }}>{resenas.length} reseña{resenas.length !== 1 ? "s" : ""}</div>
           </div>
           <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "5px" }}>
             {distribucion.map(d => (
@@ -130,19 +122,18 @@ export default function ResenaWidget({ nexoId, perfil, color }: Props) {
                 <div style={{ flex: 1, height: "6px", background: "#f0f0f0", borderRadius: "3px", overflow: "hidden" }}>
                   <div style={{ width: `${d.pct}%`, height: "100%", background: `linear-gradient(90deg,${color}cc,${color})`, borderRadius: "3px", transition: "width .4s" }} />
                 </div>
-                <span style={{ fontSize: "10px", fontWeight: 700, color: "#9a9a9a", width: "16px", textAlign: "right" }}>{d.count}</span>
+                <span style={{ fontSize: "10px", fontWeight: 700, color: "#9a9a9a", width: "16px", textAlign: "right" as const }}>{d.count}</span>
               </div>
             ))}
           </div>
         </div>
       </div>
 
-      {/* FORMULARIO */}
       {perfil && (
         <div style={{ background: "#fff", borderRadius: "16px", padding: "16px", boxShadow: "0 2px 10px rgba(0,0,0,0.06)" }}>
           {miResena && !editando ? (
             <div>
-              <div style={{ fontSize: "12px", fontWeight: 800, color: "#9a9a9a", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "10px" }}>Tu reseña</div>
+              <div style={{ fontSize: "12px", fontWeight: 800, color: "#9a9a9a", textTransform: "uppercase" as const, letterSpacing: "1px", marginBottom: "10px" }}>Tu reseña</div>
               <Estrellas rating={miResena.rating} size={18} />
               {miResena.comentario && <div style={{ fontSize: "13px", color: "#555", fontWeight: 600, marginTop: "8px", lineHeight: 1.5 }}>{miResena.comentario}</div>}
               <div style={{ display: "flex", gap: "8px", marginTop: "12px" }}>
@@ -152,7 +143,7 @@ export default function ResenaWidget({ nexoId, perfil, color }: Props) {
             </div>
           ) : (
             <div>
-              <div style={{ fontSize: "12px", fontWeight: 800, color: "#9a9a9a", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "12px" }}>
+              <div style={{ fontSize: "12px", fontWeight: 800, color: "#9a9a9a", textTransform: "uppercase" as const, letterSpacing: "1px", marginBottom: "12px" }}>
                 {miResena ? "Editar reseña" : "Escribí una reseña"}
               </div>
               <Estrellas rating={rating} size={28} interactivo onSelect={setRating} />
@@ -175,10 +166,9 @@ export default function ResenaWidget({ nexoId, perfil, color }: Props) {
         </div>
       )}
 
-      {/* LISTA */}
       {resenas.filter(r => r.usuario_id !== perfil?.id).length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-          <div style={{ fontSize: "11px", fontWeight: 800, color: "#9a9a9a", textTransform: "uppercase", letterSpacing: "1px" }}>
+          <div style={{ fontSize: "11px", fontWeight: 800, color: "#9a9a9a", textTransform: "uppercase" as const, letterSpacing: "1px" }}>
             Opiniones ({resenas.filter(r => r.usuario_id !== perfil?.id).length})
           </div>
           {(expandido ? resenas : resenas.slice(0, 3)).filter(r => r.usuario_id !== perfil?.id).map(r => (

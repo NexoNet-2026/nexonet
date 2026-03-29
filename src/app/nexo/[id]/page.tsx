@@ -424,24 +424,24 @@ export default function NexoPage() {
                 </div>
               )}
             </div>
-            <div style={{ display:"flex", flexDirection:"column", gap:"6px", flexShrink:0 }}>
+            <div style={{ display:"flex", flexDirection:"column", gap:"6px", flexShrink:0, maxWidth:"120px" }}>
               {esAdmin && (
                 <button onClick={()=>router.push(`/nexo/${id}/admin`)}
-                  style={{ background:`${colorNexo}cc`, border:"none", borderRadius:"10px", padding:"8px 12px", fontSize:"12px", fontWeight:900, color:nexo.tipo==="anuncio"?"#1a2a3a":"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
+                  style={{ background:`${colorNexo}cc`, border:"none", borderRadius:"10px", padding:"7px 8px", fontSize:"11px", fontWeight:900, color:nexo.tipo==="anuncio"?"#1a2a3a":"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
                   ⚙️ Admin
                 </button>
               )}
               {esAdmin && (
                 <button onClick={() => setFlashOpen(true)}
                   style={{ background: "linear-gradient(135deg,#e67e22,#d35400)", border: "none",
-                    borderRadius: "10px", padding: "8px 12px", fontSize: "12px", fontWeight: 900,
+                    borderRadius: "10px", padding: "7px 8px", fontSize: "11px", fontWeight: 900,
                     color: "#fff", cursor: "pointer", fontFamily: "'Nunito',sans-serif" }}>
                   ⚡ Flash
                 </button>
               )}
               {!esAdmin && !miMiembro && nexo.tipo==="grupo" && (
                 <button onClick={unirse}
-                  style={{ background:`${colorNexo}cc`, border:"none", borderRadius:"10px", padding:"8px 12px", fontSize:"12px", fontWeight:900, color:"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
+                  style={{ background:`${colorNexo}cc`, border:"none", borderRadius:"10px", padding:"7px 8px", fontSize:"11px", fontWeight:900, color:"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
                   {nexo.config?.tipo_acceso==="aprobacion"?"⏳ Solicitar ingreso":"👥 Unirse (500 BIT)"}
                 </button>
               )}
@@ -506,7 +506,7 @@ export default function NexoPage() {
                 </button>
               )}
               {nexo.tipo==="grupo" && (
-                <div style={{display:"flex",gap:"6px"}}>
+                <div style={{display:"flex",gap:"6px",flexWrap:"wrap"}}>
                   <button onClick={()=>{navigator.clipboard.writeText(`https://nexonet.vercel.app/nexo/${nexo.id}?ref=invite`);alert("✅ Link copiado");}}
                     style={{background:"rgba(58,123,213,0.1)",border:"1px solid rgba(58,123,213,0.3)",borderRadius:"10px",padding:"7px 12px",fontSize:"11px",fontWeight:800,color:"#3a7bd5",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>
                     🔗 Copiar link

@@ -1,6 +1,6 @@
 "use client";
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
 import { supabase } from "@/lib/supabase";
@@ -15,7 +15,16 @@ const TIPOS_NEXO = [
 ];
 
 export default function PublicarSelector() {
+  return (
+    <Suspense fallback={<div style={{paddingTop:"95px",textAlign:"center",color:"#9a9a9a",fontFamily:"'Nunito',sans-serif"}}>Cargando...</div>}>
+      <PublicarSelectorInner />
+    </Suspense>
+  );
+}
+
+function PublicarSelectorInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [paso, setPaso] = useState<"tipo"|"rubro"|"subrubro">("tipo");
   const [seleccionado, setSeleccionado] = useState<string|null>(null);
   const [animando, setAnimando] = useState(false);
@@ -26,7 +35,18 @@ export default function PublicarSelector() {
   const [rubroSel, setRubroSel] = useState<any>(null);
   const [cargando, setCargando] = useState(false);
 
-  useEffect(() => { setAnimando(false); setSeleccionado(null); setPaso("tipo"); }, []);
+  useEffect(() => {
+    setAnimando(false); setSeleccionado(null); setPaso("tipo");
+    const tipoParam = searchParams.get("tipo");
+    if (tipoParam) {
+      const tipoEncontrado = TIPOS_NEXO.find(t => t.id === tipoParam);
+      if (tipoEncontrado) {
+        setAyudaTipo(tipoParam);
+        setAyudaOpen(true);
+        setTipoSel(tipoEncontrado);
+      }
+    }
+  }, []);
 
   const [tipoSel, setTipoSel] = useState<any>(null);
   const tipoActual = tipoSel || TIPOS_NEXO.find(t => t.id === seleccionado);

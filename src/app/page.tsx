@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
@@ -10,11 +10,30 @@ import TarjetaAnuncio from "@/app/_components/TarjetaAnuncio";
 import TarjetaNexo from "@/app/_components/TarjetaNexo";
 import TarjetaVacia from "@/app/_components/TarjetaVacia";
 import { useHomeData } from "@/app/_hooks/useHomeData";
+import { supabase } from "@/lib/supabase";
+import OnboardingPopup from "@/components/OnboardingPopup";
 
 export default function Home() {
   const router = useRouter();
   const { anuncios, nexos, rubros, subrubros, loading } = useHomeData();
   const [soloPermuto, setSoloPermuto] = useState(false);
+  const [perfilHome, setPerfilHome] = useState<any>(null);
+  const [mostrarOnboarding, setMostrarOnboarding] = useState(false);
+
+  useEffect(() => {
+    const verificar = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      const { data: u } = await supabase.from("usuarios")
+        .select("id,nombre_usuario,codigo,onboarding_completado")
+        .eq("id", session.user.id).single();
+      if (u) {
+        setPerfilHome(u);
+        if (!u.onboarding_completado) setMostrarOnboarding(true);
+      }
+    };
+    verificar();
+  }, []);
 
   const anuFiltrados = soloPermuto ? anuncios.filter(a => a.permuto) : anuncios;
   const recientes = anuFiltrados.slice(0, 12);
@@ -106,6 +125,12 @@ export default function Home() {
       )}
 
       <AyudaPopup tipo="general"/>
+      {mostrarOnboarding && perfilHome && (
+        <OnboardingPopup
+          perfil={perfilHome}
+          onClose={() => setMostrarOnboarding(false)}
+        />
+      )}
       <BottomNav />
     </main>
   );

@@ -597,7 +597,7 @@ export default function MisAnuncios() {
         )}
 
         {puedeCrear ? (
-          <button onClick={() => window.location.href="/nexo/crear/anuncio"}
+          <button onClick={() => window.location.href="/publicar?tipo=anuncio"}
             style={{ background:"#fff", borderRadius:"16px", padding:"20px", border:"2px dashed rgba(212,160,23,0.5)",
                      display:"flex", alignItems:"center", gap:"16px", cursor:"pointer", width:"100%",
                      boxShadow:"0 2px 10px rgba(0,0,0,0.06)" }}>

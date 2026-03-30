@@ -138,7 +138,7 @@ export function useHomeData() {
           const sliderIds = slidersData.map((s: any) => s.id);
           const { data: itemsData } = await supabase
             .from("nexo_slider_items")
-            .select("id,slider_id,titulo,descripcion,imagen_url,precio,moneda,tipo_item,link_externo,created_at")
+            .select("id,slider_id,titulo,descripcion,url,miniatura_url,precio_bits,created_at")
             .in("slider_id", sliderIds)
             .order("created_at", { ascending: false })
             .limit(60);

@@ -87,12 +87,12 @@ export default function Home() {
                 {items.map((item: any) => (
                   <div key={item.id} onClick={() => router.push(`/nexo/${item.nexo_id}`)}
                     style={{ width:"160px", flexShrink:0, background:"#fff", borderRadius:"16px", overflow:"hidden", boxShadow:"0 2px 10px rgba(0,0,0,0.08)", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
-                    <div style={{ height:"100px", background: item.imagen_url ? `url(${item.imagen_url}) center/cover` : "linear-gradient(135deg,#1a2a3a,#243b55)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"32px" }}>
-                      {!item.imagen_url && emojis[tipo]}
+                    <div style={{ height:"100px", background: item.miniatura_url ? `url(${item.miniatura_url}) center/cover` : "linear-gradient(135deg,#1a2a3a,#243b55)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"32px" }}>
+                      {!item.miniatura_url && emojis[tipo]}
                     </div>
                     <div style={{ padding:"10px" }}>
                       <div style={{ fontSize:"12px", fontWeight:800, color:"#1a2a3a", marginBottom:"4px", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{item.titulo}</div>
-                      {item.precio > 0 && <div style={{ fontSize:"13px", fontWeight:900, color:"#d4a017" }}>${item.precio.toLocaleString("es-AR")}</div>}
+                      {item.precio_bits > 0 && <div style={{ fontSize:"13px", fontWeight:900, color:"#d4a017" }}>{item.precio_bits} BIT</div>}
                       <div style={{ fontSize:"10px", color:"#9a9a9a", fontWeight:600, marginTop:"4px", display:"flex", alignItems:"center", gap:"4px" }}>
                         {item.nexo_avatar && <img src={item.nexo_avatar} style={{ width:"14px", height:"14px", borderRadius:"50%", objectFit:"cover" }} />}
                         <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{item.nexo_titulo}</span>

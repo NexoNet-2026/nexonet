@@ -612,112 +612,55 @@ export default function AnuncioDetalle() {
           </div>
         )}
 
-        {/* PANEL DUEÑO — cargar BIT Conexión */}
+        {/* PANEL DUEÑO — configuración conexiones */}
         {esPropio && (
           <div style={{ background:"rgba(58,123,213,0.06)", border:"2px solid rgba(58,123,213,0.25)", borderRadius:"16px", padding:"16px" }}>
-            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"10px" }}>
+            <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"18px", color:"#1a2a3a", letterSpacing:"1px", marginBottom:"8px" }}>⚙️ Configuración de conexiones</div>
+            <div style={{ fontSize:"12px", color:"#9a9a9a", fontWeight:600, marginBottom:"14px" }}>Límite máximo de conexiones que puede recibir este anuncio</div>
+            <div style={{ display:"flex", alignItems:"center", gap:"10px", marginBottom:"14px" }}>
+              <input
+                type="number"
+                min={1}
+                defaultValue={anuncio.limite_conexiones ?? 500}
+                onBlur={async (e) => {
+                  const val = parseInt(e.target.value);
+                  if (!isNaN(val) && val > 0) {
+                    await supabase.from("anuncios").update({ limite_conexiones: val }).eq("id", anuncio.id);
+                    setAnuncio((prev: any) => ({ ...prev, limite_conexiones: val }));
+                  }
+                }}
+                style={{ width:"100px", border:"2px solid rgba(58,123,213,0.4)", borderRadius:"10px", padding:"8px 12px", fontSize:"16px", fontWeight:800, color:"#1a2a3a", fontFamily:"'Nunito',sans-serif", outline:"none", textAlign:"center" }}
+              />
               <div>
-                <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"18px", color:"#1a2a3a", letterSpacing:"1px" }}>🔗 BIT Conexión de este anuncio</div>
-                <div style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:600, marginTop:"2px" }}>BIT para conexiones masivas y búsqueda IA</div>
-              </div>
-              <div style={{ textAlign:"right" }}>
-                <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"32px", color: tieneBits ? "#3a7bd5" : "#e74c3c", letterSpacing:"1px" }}>{anuncio.bits_conexion ?? 0}</div>
-                <div style={{ fontSize:"10px", color:"#9a9a9a", fontWeight:700 }}>disponibles</div>
+                <div style={{ fontSize:"13px", fontWeight:800, color:"#1a2a3a" }}>BIT máximos de conexión</div>
+                <div style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:600 }}>Recibidas: {anuncio.conexiones_recibidas ?? 0} / {anuncio.limite_conexiones ?? 500}</div>
               </div>
             </div>
-            {!tieneBits && (
-              <div style={{ background:"rgba(231,76,60,0.08)", borderRadius:"10px", padding:"10px 12px", fontSize:"12px", fontWeight:700, color:"#e74c3c", marginBottom:"10px" }}>
-                ⚠️ Sin BIT — los buscadores no pueden ver tus datos de contacto
-              </div>
-            )}
-            <button onClick={() => setPopupCompra(true)} disabled={cargandoBit}
-              style={{ width:"100%", background:"linear-gradient(135deg,#3a7bd5,#2962b0)", border:"none", borderRadius:"12px", padding:"13px", fontSize:"14px", fontWeight:900, color:"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif", opacity:cargandoBit?0.7:1 }}>
-              {cargandoBit ? "⏳ Cargando..." : "⚡ Cargar BIT Conexión"}
-            </button>
+            <div style={{ background:"rgba(58,123,213,0.08)", borderRadius:"10px", padding:"10px 12px", fontSize:"12px", fontWeight:600, color:"#3a7bd5", marginBottom:"14px" }}>
+              💡 Cada conexión descuenta 1 BIT tuyo y 1 BIT del que se conecta. Al llegar al límite, el anuncio deja de recibir conexiones.
+            </div>
 
             {/* VISITANTES */}
             {visitantes.length > 0 && (
-              <div style={{ marginTop:"14px", borderTop:"1px solid rgba(58,123,213,0.2)", paddingTop:"12px" }}>
+              <div style={{ borderTop:"1px solid rgba(58,123,213,0.2)", paddingTop:"12px" }}>
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"10px" }}>
                   <div style={{ fontSize:"12px", fontWeight:900, color:"#1a2a3a" }}>👁️ Quienes vieron este anuncio ({visitantes.length})</div>
                   {selBuscadores.size > 0 && (
                     <button onClick={() => setPopupBuscadores(true)}
                       style={{ background:"linear-gradient(135deg,#8e44ad,#9b59b6)", border:"none", borderRadius:"8px", padding:"5px 12px", fontSize:"11px", fontWeight:800, color:"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
-                      💬 Escribirles ({selBuscadores.size}) — {selBuscadores.size} BIT
-                    </button>
-                  )}
-                </div>
-                <div style={{ display:"flex", alignItems:"center", gap:"8px", marginBottom:"8px" }}>
-                  <input type="checkbox"
-                    checked={selBuscadores.size === visitantes.length && visitantes.length > 0}
-                    onChange={e => setSelBuscadores(e.target.checked ? new Set(visitantes.map((v:any) => v.id)) : new Set())}
-                    style={{ width:"15px", height:"15px", cursor:"pointer" }} />
-                  <span style={{ fontSize:"11px", fontWeight:700, color:"#9a9a9a" }}>Seleccionar todos</span>
-                </div>
-                {visitantes.map((v:any) => (
-                  <div key={v.id} style={{ display:"flex", alignItems:"center", gap:"8px", padding:"6px 0", borderBottom:"1px solid rgba(58,123,213,0.1)" }}>
-                    <input type="checkbox"
-                      checked={selBuscadores.has(v.id)}
-                      onChange={e => {
-                        const s = new Set(selBuscadores);
-                        e.target.checked ? s.add(v.id) : s.delete(v.id);
-                        setSelBuscadores(s);
-                      }}
-                      style={{ width:"15px", height:"15px", cursor:"pointer", flexShrink:0 }} />
-                    <div style={{ width:"32px", height:"32px", borderRadius:"50%", background:"linear-gradient(135deg,#8e44ad,#9b59b6)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"14px", flexShrink:0 }}>👤</div>
-                    <div style={{ flex:1, minWidth:0 }}>
-                      <div style={{ fontSize:"12px", fontWeight:800, color:"#1a2a3a" }}>{v.nombre_usuario}</div>
-                      <div style={{ fontSize:"10px", color:"#9a9a9a", fontWeight:600 }}>
-                        {v.codigo}{v.ciudad ? ` · ${v.ciudad}` : ""}{v.ultima_visita ? ` · ${new Date(v.ultima_visita).toLocaleDateString("es-AR")}` : ""}
-                      </div>
-                    </div>
-                    <button onClick={() => { setSelBuscadores(new Set([v.id])); setPopupBuscadores(true); }}
-                      style={{ background:"rgba(142,68,173,0.1)", border:"1px solid rgba(142,68,173,0.3)", borderRadius:"8px", padding:"4px 8px", fontSize:"11px", fontWeight:800, color:"#8e44ad", cursor:"pointer", fontFamily:"'Nunito',sans-serif", flexShrink:0 }}>
-                      💬
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* INTERESADOS */}
-            {buscadores.length > 0 && (
-              <div style={{ marginTop:"14px", borderTop:"1px solid rgba(58,123,213,0.2)", paddingTop:"12px" }}>
-                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"10px" }}>
-                  <div style={{ fontSize:"12px", fontWeight:900, color:"#1a2a3a" }}>🤖 Interesados ({buscadores.length})</div>
-                  {selBuscadores.size > 0 && (
-                    <button onClick={() => setPopupBuscadores(true)}
-                      style={{ background:"linear-gradient(135deg,#16a085,#1abc9c)", border:"none", borderRadius:"8px", padding:"5px 12px", fontSize:"11px", fontWeight:800, color:"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
                       💬 Escribirles ({selBuscadores.size})
                     </button>
                   )}
                 </div>
-                <div style={{ display:"flex", alignItems:"center", gap:"8px", marginBottom:"8px" }}>
-                  <input type="checkbox"
-                    checked={selBuscadores.size === buscadores.length && buscadores.length > 0}
-                    onChange={e => setSelBuscadores(e.target.checked ? new Set(buscadores.map((b:any) => b.id)) : new Set())}
-                    style={{ width:"15px", height:"15px", cursor:"pointer" }} />
-                  <span style={{ fontSize:"11px", fontWeight:700, color:"#9a9a9a" }}>Seleccionar todos</span>
-                </div>
-                {buscadores.map((b:any) => (
-                  <div key={b.id} style={{ display:"flex", alignItems:"center", gap:"8px", padding:"6px 0", borderBottom:"1px solid rgba(58,123,213,0.1)" }}>
-                    <input type="checkbox"
-                      checked={selBuscadores.has(b.id)}
-                      onChange={e => {
-                        const s = new Set(selBuscadores);
-                        e.target.checked ? s.add(b.id) : s.delete(b.id);
-                        setSelBuscadores(s);
-                      }}
-                      style={{ width:"15px", height:"15px", cursor:"pointer", flexShrink:0 }} />
-                    <div style={{ width:"32px", height:"32px", borderRadius:"50%", background:"linear-gradient(135deg,#d4a017,#f0c040)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"14px", flexShrink:0 }}>👤</div>
+                {visitantes.map((v:any) => (
+                  <div key={v.id} style={{ display:"flex", alignItems:"center", gap:"8px", padding:"6px 0", borderBottom:"1px solid rgba(58,123,213,0.1)" }}>
+                    <div style={{ width:"32px", height:"32px", borderRadius:"50%", background:"linear-gradient(135deg,#8e44ad,#9b59b6)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"14px", flexShrink:0 }}>👤</div>
                     <div style={{ flex:1, minWidth:0 }}>
-                      <div style={{ fontSize:"12px", fontWeight:800, color:"#1a2a3a" }}>{b.nombre_usuario}</div>
-                      <div style={{ fontSize:"10px", color:"#9a9a9a", fontWeight:600 }}>
-                        {b.codigo}{b.ciudad ? ` · ${b.ciudad}` : ""}{b.ultima_busqueda ? ` · ${new Date(b.ultima_busqueda).toLocaleDateString("es-AR")}` : ""}
-                      </div>
+                      <div style={{ fontSize:"12px", fontWeight:800, color:"#1a2a3a" }}>{v.nombre_usuario}</div>
+                      <div style={{ fontSize:"10px", color:"#9a9a9a", fontWeight:600 }}>{v.codigo}{v.ciudad ? ` · ${v.ciudad}` : ""}</div>
                     </div>
-                    <button onClick={() => { setSelBuscadores(new Set([b.id])); setPopupBuscadores(true); }}
-                      style={{ background:"rgba(22,160,133,0.1)", border:"1px solid rgba(22,160,133,0.3)", borderRadius:"8px", padding:"4px 8px", fontSize:"11px", fontWeight:800, color:"#16a085", cursor:"pointer", fontFamily:"'Nunito',sans-serif", flexShrink:0 }}>
+                    <button onClick={() => { setSelBuscadores(new Set([v.id])); setPopupBuscadores(true); }}
+                      style={{ background:"rgba(142,68,173,0.1)", border:"1px solid rgba(142,68,173,0.3)", borderRadius:"8px", padding:"4px 8px", fontSize:"11px", fontWeight:800, color:"#8e44ad", cursor:"pointer", fontFamily:"'Nunito',sans-serif", flexShrink:0 }}>
                       💬
                     </button>
                   </div>
@@ -776,13 +719,64 @@ export default function AnuncioDetalle() {
                       </div>
                     </div>
                   )}
-                  {!soloChatInterno && (anuncio.whatsapp || usuario?.whatsapp) && (
-                    <button onClick={() => setPopupMensaje(true)} disabled={conectando}
-                      style={{ width:"100%", background:"linear-gradient(135deg,#27ae60,#1e8449)", border:"none", borderRadius:"14px", padding:"16px", fontSize:"15px", fontWeight:900, color:"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif", boxShadow:"0 4px 0 #155a2e", display:"flex", alignItems:"center", justifyContent:"center", gap:"10px", opacity:conectando?0.7:1 }}>
-                      <span style={{ fontSize:"20px" }}>🔗</span>
-                      <span>{conectando ? "Conectando..." : "Conectar por WhatsApp — gratis"}</span>
-                    </button>
-                  )}
+                  {!soloChatInterno && (() => {
+                    const limiteAlcanzado = (anuncio.conexiones_recibidas ?? 0) >= (anuncio.limite_conexiones ?? 500);
+                    return (
+                      <button onClick={async () => {
+                        if (limiteAlcanzado) { alert("Este anuncio alcanzó su límite de conexiones."); return; }
+                        if (!session?.user?.id) { router.push("/login"); return; }
+                        setConectando(true);
+                        // Verificar y descontar BIT del que se conecta (escalonado: free -> nexo -> promo)
+                        const { data: miData } = await supabase.from("usuarios").select("bits,bits_free,bits_promo").eq("id", session.user.id).single();
+                        if (!miData) { setConectando(false); return; }
+                        const totalMio = (miData.bits_free||0) + (miData.bits||0) + (miData.bits_promo||0);
+                        if (totalMio < 1) { alert("Necesitás al menos 1 BIT para conectarte."); setConectando(false); return; }
+                        // Descontar 1 BIT escalonado al receptor (yo)
+                        let nf = miData.bits_free||0, nn = miData.bits||0, np = miData.bits_promo||0;
+                        if (nf >= 1) nf -= 1;
+                        else if (nn >= 1) nn -= 1;
+                        else np -= 1;
+                        await supabase.from("usuarios").update({ bits_free: nf, bits: nn, bits_promo: np }).eq("id", session.user.id);
+                        // Descontar 1 BIT escalonado al dueño del anuncio
+                        const { data: duData } = await supabase.from("usuarios").select("bits,bits_free,bits_promo").eq("id", anuncio.usuario_id).single();
+                        if (duData) {
+                          let df = duData.bits_free||0, dn = duData.bits||0, dp = duData.bits_promo||0;
+                          if (df >= 1) df -= 1;
+                          else if (dn >= 1) dn -= 1;
+                          else if (dp >= 1) dp -= 1;
+                          await supabase.from("usuarios").update({ bits_free: df, bits: dn, bits_promo: dp }).eq("id", anuncio.usuario_id);
+                        }
+                        // Incrementar conexiones
+                        await supabase.from("anuncios").update({
+                          conexiones: (anuncio.conexiones || 0) + 1,
+                          conexiones_recibidas: (anuncio.conexiones_recibidas || 0) + 1,
+                        }).eq("id", anuncio.id);
+                        // Notificación al dueño
+                        await supabase.from("notificaciones").insert({
+                          usuario_id: anuncio.usuario_id, emisor_id: session.user.id,
+                          anuncio_id: anuncio.id, tipo: "conexion", mensaje: mensajeConexion, leida: false,
+                        });
+                        // Mensaje interno
+                        await supabase.from("mensajes").insert({
+                          anuncio_id: anuncio.id, emisor_id: session.user.id,
+                          receptor_id: anuncio.usuario_id, texto: mensajeConexion,
+                        });
+                        setConectando(false);
+                        // Abrir WhatsApp si tiene número
+                        const { data: vendedor } = await supabase.from("usuarios").select("whatsapp,whatsapp_empresa").eq("id", anuncio.usuario_id).single();
+                        const numeroWA = vendedor?.whatsapp_empresa || vendedor?.whatsapp;
+                        if (numeroWA) {
+                          const texto = encodeURIComponent(`Hola! Te contacto por tu anuncio "${anuncio.titulo}" en NexoNet.\n\n${mensajeConexion}`);
+                          window.open(`https://wa.me/54${numeroWA}?text=${texto}`, "_blank");
+                        }
+                        router.push(`/chat/${anuncio.usuario_id}?anuncio=${anuncio.id}`);
+                      }} disabled={conectando || limiteAlcanzado}
+                        style={{ width:"100%", background: limiteAlcanzado ? "#e8e8e6" : "linear-gradient(135deg,#27ae60,#1e8449)", border:"none", borderRadius:"14px", padding:"16px", fontSize:"15px", fontWeight:900, color: limiteAlcanzado ? "#9a9a9a" : "#fff", cursor: limiteAlcanzado ? "not-allowed" : "pointer", fontFamily:"'Nunito',sans-serif", boxShadow: limiteAlcanzado ? "none" : "0 4px 0 #155a2e", display:"flex", alignItems:"center", justifyContent:"center", gap:"10px", opacity:conectando?0.7:1 }}>
+                        <span style={{ fontSize:"20px" }}>🔗</span>
+                        <span>{conectando ? "Conectando..." : limiteAlcanzado ? "Límite de conexiones alcanzado" : "Conectar — 1 BIT"}</span>
+                      </button>
+                    );
+                  })()}
                   <button onClick={() => {
                     if (!session?.user?.id) { router.push("/login"); return; }
                     router.push(`/chat/${anuncio.usuario_id}?anuncio=${anuncio.id}`);

@@ -87,8 +87,8 @@ export default function Home() {
                 {items.map((item: any) => (
                   <div key={item.id} onClick={() => router.push(`/nexo/${item.nexo_id}`)}
                     style={{ width:"160px", flexShrink:0, background:"#fff", borderRadius:"16px", overflow:"hidden", boxShadow:"0 2px 10px rgba(0,0,0,0.08)", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
-                    <div style={{ height:"100px", background: item.miniatura_url ? `url(${item.miniatura_url}) center/cover` : "linear-gradient(135deg,#1a2a3a,#243b55)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"32px" }}>
-                      {!item.miniatura_url && emojis[tipo]}
+                    <div style={{ height:"100px", background: (item.miniatura_url||item.url) ? `url(${item.miniatura_url||item.url}) center/cover` : "linear-gradient(135deg,#1a2a3a,#243b55)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"32px" }}>
+                      {!(item.miniatura_url||item.url) && emojis[tipo]}
                     </div>
                     <div style={{ padding:"10px" }}>
                       <div style={{ fontSize:"12px", fontWeight:800, color:"#1a2a3a", marginBottom:"4px", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{item.titulo}</div>

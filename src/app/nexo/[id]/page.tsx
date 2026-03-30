@@ -1,7 +1,7 @@
 // v3 - fix esAdmin y hero padding
 "use client";
 import { useState, useEffect, useRef } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
 import { supabase } from "@/lib/supabase";
@@ -27,6 +27,8 @@ const SUBTIPO_EMOJIS: Record<string,string> = {
 export default function NexoPage() {
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
+  const sliderParam = searchParams?.get("slider");
   const id     = params?.id as string;
 
   const [nexo,      setNexo]      = useState<any>(null);
@@ -375,6 +377,21 @@ export default function NexoPage() {
   if (cargando) return <main style={{ paddingTop:"95px", textAlign:"center", color:"#9a9a9a", fontFamily:"'Nunito',sans-serif" }}>Cargando...</main>;
   if (!nexo)    return <main style={{ paddingTop:"95px", textAlign:"center", color:"#9a9a9a", fontFamily:"'Nunito',sans-serif" }}>Nexo no encontrado</main>;
 
+  useEffect(() => {
+    if (!sliderParam || páginas.length === 0) return;
+    const target = páginas.find(s => s.tipo === sliderParam);
+    if (target) setTabActiva(target.id);
+    const intentar = (intentos: number) => {
+      const el = document.getElementById(`slider-${sliderParam}`);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+      } else if (intentos > 0) {
+        setTimeout(() => intentar(intentos - 1), 400);
+      }
+    };
+    setTimeout(() => intentar(5), 600);
+  }, [sliderParam, páginas]);
+
   const sliderActual = páginas.find(s=>s.id===tabActiva);
   const esChat       = sliderActual?.tipo === "mensajes" || sliderActual?.tipo === "chat";
 
@@ -628,7 +645,7 @@ export default function NexoPage() {
       </div>
 
       {/* CONTENIDO DEL SLIDER */}
-      <div style={{ padding: esChat ? "0" : "14px", maxWidth:"600px", margin:"0 auto" }}>
+      <div id={sliderActual ? `slider-${sliderActual.tipo}` : undefined} style={{ padding: esChat ? "0" : "14px", maxWidth:"600px", margin:"0 auto" }}>
         {sliderActual && <SliderContenido
           slider={sliderActual}
           items={items[tabActiva]||[]}

@@ -85,7 +85,7 @@ export default function Home() {
             return (
               <Slider key={tipo} titulo={`${emojis[tipo]} ${labels[tipo]}`} acento="#d4a017" verTodos="/buscar">
                 {items.map((item: any) => (
-                  <div key={item.id} onClick={() => router.push(`/nexo/${item.nexo_id}`)}
+                  <div key={item.id} onClick={() => router.push(`/nexo/${item.nexo_id}?slider=${item.slider_tipo}`)}
                     style={{ width:"160px", flexShrink:0, background:"#fff", borderRadius:"16px", overflow:"hidden", boxShadow:"0 2px 10px rgba(0,0,0,0.08)", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
                     <div style={{ height:"100px", background: (item.miniatura_url||item.url) ? `url(${item.miniatura_url||item.url}) center/cover` : "linear-gradient(135deg,#1a2a3a,#243b55)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"32px" }}>
                       {!(item.miniatura_url||item.url) && emojis[tipo]}

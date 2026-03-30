@@ -787,6 +787,32 @@ export default function NexoAdminPage() {
               </div>
             </Caja>
 
+            <div style={{ background:"rgba(58,123,213,0.06)", border:"2px solid rgba(58,123,213,0.25)", borderRadius:"16px", padding:"16px", marginTop:"14px" }}>
+              <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"18px", color:"#1a2a3a", letterSpacing:"1px", marginBottom:"8px" }}>⚙️ Límite de conexiones</div>
+              <div style={{ fontSize:"12px", color:"#9a9a9a", fontWeight:600, marginBottom:"14px" }}>Máximo de conexiones que puede recibir este nexo</div>
+              <div style={{ display:"flex", alignItems:"center", gap:"10px", marginBottom:"10px" }}>
+                <input
+                  type="number"
+                  min={1}
+                  defaultValue={nexo?.limite_conexiones ?? 500}
+                  onBlur={async (e) => {
+                    const val = parseInt(e.target.value);
+                    if (!isNaN(val) && val > 0) {
+                      await supabase.from("nexos").update({ limite_conexiones: val }).eq("id", id);
+                    }
+                  }}
+                  style={{ width:"100px", border:"2px solid rgba(58,123,213,0.4)", borderRadius:"10px", padding:"8px 12px", fontSize:"16px", fontWeight:800, color:"#1a2a3a", fontFamily:"'Nunito',sans-serif", outline:"none", textAlign:"center" }}
+                />
+                <div>
+                  <div style={{ fontSize:"13px", fontWeight:800, color:"#1a2a3a" }}>BIT máximos</div>
+                  <div style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:600 }}>Recibidas: {nexo?.conexiones_recibidas ?? 0} / {nexo?.limite_conexiones ?? 500}</div>
+                </div>
+              </div>
+              <div style={{ background:"rgba(58,123,213,0.08)", borderRadius:"10px", padding:"10px 12px", fontSize:"12px", fontWeight:600, color:"#3a7bd5" }}>
+                💡 Cada conexión descuenta 1 BIT de ambas partes. Al llegar al límite se pausan las conexiones automáticamente.
+              </div>
+            </div>
+
             <div style={{ background:"linear-gradient(135deg,#2c1a1a,#4a2020)", borderRadius:"16px", padding:"18px", border:"2px solid rgba(231,76,60,0.3)" }}>
               <div style={{ fontSize:"13px", fontWeight:900, color:"#e74c3c", marginBottom:"6px" }}>⚠️ Zona peligrosa</div>
               <div style={{ fontSize:"12px", color:"#e88a8a", fontWeight:600, marginBottom:"16px" }}>Esta acción elimina el nexo, sus sliders, miembros y mensajes permanentemente.</div>

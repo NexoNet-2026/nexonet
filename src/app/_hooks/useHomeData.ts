@@ -10,6 +10,7 @@ export function useHomeData() {
   const [rubros,    setRubros]    = useState<Rubro[]>([]);
   const [subrubros, setSubrubros] = useState<Subrubro[]>([]);
   const [loading,   setLoading]   = useState(true);
+  const [nexoItems, setNexoItems] = useState<any[]>([]);
 
   useEffect(() => {
     const cargar = async () => {
@@ -122,10 +123,51 @@ export function useHomeData() {
         }
       }
       setNexos(allNexos);
+
+      // Fetch items recientes de sliders de nexos (novedades, productos, descargas, videos, galeria)
+      const nexoIdsConSlider = allNexos.filter(n => ["empresa","servicio","grupo"].includes(n.tipo)).map(n => n.id);
+      if (nexoIdsConSlider.length > 0) {
+        const { data: slidersData } = await supabase
+          .from("nexo_sliders")
+          .select("id,nexo_id,tipo,titulo")
+          .in("nexo_id", nexoIdsConSlider)
+          .eq("activo", true)
+          .in("tipo", ["novedades","productos","descargas","videos","galeria"]);
+
+        if (slidersData && slidersData.length > 0) {
+          const sliderIds = slidersData.map((s: any) => s.id);
+          const { data: itemsData } = await supabase
+            .from("nexo_slider_items")
+            .select("id,slider_id,titulo,descripcion,imagen_url,precio,moneda,tipo_item,link_externo,created_at")
+            .in("slider_id", sliderIds)
+            .order("created_at", { ascending: false })
+            .limit(60);
+
+          if (itemsData) {
+            const sliderMap: Record<string, any> = Object.fromEntries(slidersData.map((s: any) => [s.id, s]));
+            const nexoMap: Record<string, any> = Object.fromEntries(allNexos.map((n: any) => [n.id, n]));
+            const itemsMapped = itemsData.map((item: any) => {
+              const slider = sliderMap[item.slider_id];
+              const nexo = slider ? nexoMap[slider.nexo_id] : null;
+              return {
+                ...item,
+                slider_tipo: slider?.tipo,
+                slider_titulo: slider?.titulo,
+                nexo_id: slider?.nexo_id,
+                nexo_titulo: nexo?.titulo,
+                nexo_tipo: nexo?.tipo,
+                nexo_avatar: nexo?.avatar_url,
+              };
+            }).filter((i: any) => i.nexo_id);
+            setNexoItems(itemsMapped);
+          }
+        }
+      }
+
       setLoading(false);
     };
     cargar();
   }, []);
 
-  return { anuncios, nexos, rubros, subrubros, loading };
+  return { anuncios, nexos, rubros, subrubros, loading, nexoItems };
 }

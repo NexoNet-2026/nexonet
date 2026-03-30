@@ -1,6 +1,6 @@
 // v3 - fix esAdmin y hero padding
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
@@ -25,6 +25,14 @@ const SUBTIPO_EMOJIS: Record<string,string> = {
 };
 
 export default function NexoPage() {
+  return (
+    <Suspense fallback={<div style={{paddingTop:"95px",textAlign:"center",fontFamily:"'Nunito',sans-serif",color:"#9a9a9a"}}>Cargando...</div>}>
+      <NexoPageInner />
+    </Suspense>
+  );
+}
+
+function NexoPageInner() {
   const router = useRouter();
   const params = useParams();
   const searchParams = useSearchParams();

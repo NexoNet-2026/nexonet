@@ -21,38 +21,62 @@ export async function POST(req: NextRequest) {
     const saldoTotal = (u.bits||0) + (u.bits_free||0) + (u.bits_promo||0);
     if (saldoTotal <= 0) return NextResponse.json({ error: "Sin BIT disponibles" }, { status: 400 });
 
-    // Buscar anuncios que matchean
-    let query = supabase.from("anuncios").select("id,titulo,precio,moneda,ciudad,provincia,usuario_id,created_at")
-      .eq("estado", "activo");
+    // Buscar publicaciones según tipo
+    let matchesFinal: any[] = [];
 
-    if (b.subrubro_id) query = query.eq("subrubro_id", b.subrubro_id);
-    if (b.precio_min)  query = query.gte("precio", b.precio_min);
-    if (b.precio_max)  query = query.lte("precio", b.precio_max);
-    if (b.ciudad)      query = query.ilike("ciudad", `%${b.ciudad}%`);
-    if (b.provincia)   query = query.ilike("provincia", `%${b.provincia}%`);
-    if (b.moneda)      query = query.eq("moneda", b.moneda);
-    if (b.keywords) {
-      const words = b.keywords.trim().split(/\s+/);
-      for (const w of words) {
-        query = query.ilike("titulo", `%${w}%`);
+    if (b.tipo_nexo === "anuncio" || !b.tipo_nexo) {
+      // Buscar en anuncios
+      let query = supabase.from("anuncios").select("id,titulo,precio,moneda,ciudad,provincia,usuario_id,created_at")
+        .eq("estado", "activo");
+
+      if (b.subrubro_id) query = query.eq("subrubro_id", b.subrubro_id);
+      if (b.precio_min)  query = query.gte("precio", b.precio_min);
+      if (b.precio_max)  query = query.lte("precio", b.precio_max);
+      if (b.ciudad)      query = query.ilike("ciudad", `%${b.ciudad}%`);
+      if (b.provincia)   query = query.ilike("provincia", `%${b.provincia}%`);
+      if (b.moneda)      query = query.eq("moneda", b.moneda);
+      if (b.keywords) {
+        const words = b.keywords.trim().split(/\s+/);
+        for (const w of words) query = query.ilike("titulo", `%${w}%`);
       }
+
+      const { data: yaMatcheados } = await supabase.from("busqueda_matches")
+        .select("anuncio_id").eq("busqueda_id", busqueda_id);
+      const excluir = (yaMatcheados||[]).map((m:any) => m.anuncio_id);
+      if (excluir.length > 0) query = query.not("id", "in", `(${excluir.join(",")})`);
+      query = query.neq("usuario_id", usuario_id);
+
+      const { data: anuncios } = await query.limit(20);
+      matchesFinal = anuncios || [];
+
+    } else {
+      // Buscar en nexos (empresa, servicio, grupo, trabajo)
+      let query = supabase.from("nexos").select("id,titulo,precio,moneda,ciudad,provincia,usuario_id,created_at,tipo")
+        .eq("estado", "activo")
+        .eq("tipo", b.tipo_nexo);
+
+      if (b.ciudad)    query = query.ilike("ciudad", `%${b.ciudad}%`);
+      if (b.provincia) query = query.ilike("provincia", `%${b.provincia}%`);
+      if (b.keywords) {
+        const words = b.keywords.trim().split(/\s+/);
+        for (const w of words) query = query.ilike("titulo", `%${w}%`);
+      }
+
+      const { data: yaMatcheados } = await supabase.from("busqueda_matches")
+        .select("anuncio_id").eq("busqueda_id", busqueda_id);
+      const excluir = (yaMatcheados||[]).map((m:any) => m.anuncio_id);
+      if (excluir.length > 0) query = query.not("id", "in", `(${excluir.join(",")})`);
+      query = query.neq("usuario_id", usuario_id);
+
+      const { data: nexos } = await query.limit(20);
+      matchesFinal = nexos || [];
     }
 
-    // Excluir anuncios ya matcheados para esta búsqueda
-    const { data: yaMatcheados } = await supabase.from("busqueda_matches")
-      .select("anuncio_id").eq("busqueda_id", busqueda_id);
-    const excluir = (yaMatcheados||[]).map((m:any) => m.anuncio_id);
-    if (excluir.length > 0) query = query.not("id", "in", `(${excluir.join(",")})`);
-
-    // Excluir anuncios propios
-    query = query.neq("usuario_id", usuario_id);
-
-    const { data: anuncios } = await query.limit(20);
-    if (!anuncios || anuncios.length === 0) return NextResponse.json({ matches: [], bits_consumidos: 0 });
+    if (matchesFinal.length === 0) return NextResponse.json({ matches: [], bits_consumidos: 0 });
 
     // Limitar por saldo disponible
-    const matchesPosibles = Math.min(anuncios.length, saldoTotal);
-    const matchesFinal = anuncios.slice(0, matchesPosibles);
+    const matchesPosibles = Math.min(matchesFinal.length, saldoTotal);
+    matchesFinal = matchesFinal.slice(0, matchesPosibles);
     const bitsAConsumir = matchesFinal.length;
 
     // Insertar matches
@@ -96,14 +120,15 @@ export async function POST(req: NextRequest) {
     // Enviar chat al anunciante solo si tiene bits_conexion > 0
     for (const a of matchesFinal) {
       if (!a.usuario_id) continue;
-      const { data: anu } = await supabase.from("anuncios")
-        .select("bits_conexion").eq("id", a.id).single();
-      if (!anu || (anu.bits_conexion || 0) <= 0) continue;
-
-      // Descontar 1 bit_conexion al anunciante
-      await supabase.from("anuncios")
-        .update({ bits_conexion: anu.bits_conexion - 1 })
-        .eq("id", a.id);
+      // Solo descontar bits_conexion para anuncios
+      if (b.tipo_nexo === "anuncio" || !b.tipo_nexo) {
+        const { data: anu } = await supabase.from("anuncios")
+          .select("bits_conexion").eq("id", a.id).single();
+        if (!anu || (anu.bits_conexion || 0) <= 0) continue;
+        await supabase.from("anuncios")
+          .update({ bits_conexion: anu.bits_conexion - 1 })
+          .eq("id", a.id);
+      }
 
       await supabase.from("mensajes").insert({
         anuncio_id:  a.id,
@@ -114,7 +139,7 @@ export async function POST(req: NextRequest) {
       await supabase.from("notificaciones").insert({
         usuario_id: a.usuario_id,
         tipo:       "match",
-        mensaje:    `🤖 ${nombreBuscador} (${buscador?.codigo||""})${ubicBuscador ? " de " + ubicBuscador : ""} buscó tu anuncio "${a.titulo}" con la IA. ¡Conectate con él!`,
+        mensaje:    `🤖 ${nombreBuscador} (${buscador?.codigo||""})${ubicBuscador ? " de " + ubicBuscador : ""} encontró tu publicación "${a.titulo}" con la búsqueda IA. ¡Conectate!`,
         anuncio_id: a.id,
         leida:      false,
       });

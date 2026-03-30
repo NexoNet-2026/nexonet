@@ -83,7 +83,7 @@ export default function Home() {
             const items = nexoItems.filter((i: any) => i.slider_tipo === tipo);
             if (items.length === 0) return null;
             return (
-              <Slider key={tipo} titulo={`${emojis[tipo]} ${labels[tipo]}`} acento="#d4a017">
+              <Slider key={tipo} titulo={`${emojis[tipo]} ${labels[tipo]}`} acento="#d4a017" verTodos="/buscar">
                 {items.map((item: any) => (
                   <div key={item.id} onClick={() => router.push(`/nexo/${item.nexo_id}`)}
                     style={{ width:"160px", flexShrink:0, background:"#fff", borderRadius:"16px", overflow:"hidden", boxShadow:"0 2px 10px rgba(0,0,0,0.08)", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>

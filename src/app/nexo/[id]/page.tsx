@@ -382,9 +382,6 @@ function NexoPageInner() {
     setPagandoDescarga(null);
   };
 
-  if (cargando) return <main style={{ paddingTop:"95px", textAlign:"center", color:"#9a9a9a", fontFamily:"'Nunito',sans-serif" }}>Cargando...</main>;
-  if (!nexo)    return <main style={{ paddingTop:"95px", textAlign:"center", color:"#9a9a9a", fontFamily:"'Nunito',sans-serif" }}>Nexo no encontrado</main>;
-
   useEffect(() => {
     if (!sliderParam || páginas.length === 0) return;
     const target = páginas.find(s => s.tipo === sliderParam);
@@ -399,6 +396,9 @@ function NexoPageInner() {
     };
     setTimeout(() => intentar(5), 600);
   }, [sliderParam, páginas]);
+
+  if (cargando) return <main style={{ paddingTop:"95px", textAlign:"center", color:"#9a9a9a", fontFamily:"'Nunito',sans-serif" }}>Cargando...</main>;
+  if (!nexo)    return <main style={{ paddingTop:"95px", textAlign:"center", color:"#9a9a9a", fontFamily:"'Nunito',sans-serif" }}>Nexo no encontrado</main>;
 
   const sliderActual = páginas.find(s=>s.id===tabActiva);
   const esChat       = sliderActual?.tipo === "mensajes" || sliderActual?.tipo === "chat";

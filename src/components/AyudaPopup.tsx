@@ -36,14 +36,14 @@ const DATA: Record<TipoAyuda, Info> = {
   },
   servicio: {
     color:"#27ae60",emoji:"🛠️",titulo:"OFRECÉ TU SERVICIO",sub:"Que te encuentren quienes te necesitan",
-    costo:"Publicar anuncio: 500 BIT | Links multimedia: 500 BIT | Adjuntos: 500 BIT",
+    costo:"Primer mes GRATIS · Luego 10.000 BIT/mes acreditados como BIT Nexo",
     items:[
       {emoji:"🤖",titulo:"Te encuentran solos",desc:"El matching IA conecta tu servicio con quienes lo buscan"},
       {emoji:"🎬",titulo:"Portfolio completo",desc:"Mostrá fotos, videos y trabajos realizados"},
       {emoji:"💬",titulo:"Testimonios",desc:"Tus clientes dejan opiniones visibles en tu perfil"},
       {emoji:"📥",titulo:"Vendé tu conocimiento",desc:"Cobrá por descargas: presupuestos, guías, tutoriales"},
-      {emoji:"📍",titulo:"Local o nacional",desc:"Aparecés en búsquedas de tu ciudad o todo el país"},
-      {emoji:"🆓",titulo:"Sin costo de publicidad",desc:"Pagás solo cuando alguien se conecta con vos"},
+      {emoji:"⭐",titulo:"Primer mes gratis",desc:"Probás sin costo el primer mes completo"},
+      {emoji:"🪙",titulo:"BIT Nexo incluidos",desc:"Los 10.000 BIT del abono mensual se acreditan en tu cuenta para usar en la plataforma"},
     ],
   },
   grupo: {

@@ -303,6 +303,8 @@ function NexoCrearInner() {
         payload.trial_hasta = esPrimeraEmpresa ? en30dias : null;
         payload.siguiente_pago = en30dias;
         payload.plan_mensual_bits = 10000;
+        if ((form as any).tipo_factura) payload.config = { ...payload.config, tipo_factura: (form as any).tipo_factura };
+        if ((form as any).personal_asegurado) payload.config = { ...payload.config, personal_asegurado: true };
       }
 
       if (tipo==="anuncio"||tipo==="trabajo") {
@@ -768,6 +770,23 @@ function NexoCrearInner() {
                 {subiendoImg && <div style={{textAlign:"center",fontSize:"12px",color:"#9a9a9a",marginBottom:"8px"}}>⏳ Subiendo imagen...</div>}
                 <L>Link externo (opcional)</L>
                 <input value={form.link_externo} onChange={e=>F("link_externo",e.target.value)} placeholder="https://..." style={{...IS,marginBottom:"12px"}}/>
+                <SL>🧾 Facturación y personal</SL>
+                <L>Tipo de factura</L>
+                <select value={(form as any).tipo_factura||""} onChange={e=>F("tipo_factura",e.target.value)} style={{...IS,marginBottom:"12px"}}>
+                  <option value="">— No especificado —</option>
+                  <option value="A">Factura A</option>
+                  <option value="B">Factura B</option>
+                  <option value="C">Factura C</option>
+                  <option value="ABC">A, B y C</option>
+                </select>
+                <div style={{display:"flex",alignItems:"center",gap:"10px",marginBottom:"12px",padding:"12px 14px",borderRadius:"12px",border:"2px solid #e8e8e6",cursor:"pointer",background:(form as any).personal_asegurado?"rgba(39,174,96,0.06)":"#fafafa"}}
+                  onClick={()=>F("personal_asegurado",!(form as any).personal_asegurado)}>
+                  <input type="checkbox" checked={!!(form as any).personal_asegurado} onChange={()=>{}} style={{width:"18px",height:"18px",accentColor:"#27ae60"}}/>
+                  <div>
+                    <div style={{fontSize:"13px",fontWeight:900,color:"#1a2a3a"}}>👷 Personal asegurado</div>
+                    <div style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600}}>Contamos con seguro de trabajo para nuestro personal</div>
+                  </div>
+                </div>
               </>)}
             </div>
 
@@ -791,8 +810,11 @@ function NexoCrearInner() {
                 </select>
               </>)}
               <L>Dirección {tipo==="empresa"?"del local":"(opcional)"}</L>
-              <input value={form.direccion} onChange={e=>F("direccion",e.target.value)} placeholder="Ej: San Martín 1234, local 3" style={{...IS,marginBottom:"0"}}/>
-              {form.lat && <div style={{marginTop:"8px",fontSize:"11px",color:"#27ae60",fontWeight:700}}>✅ Ubicación GPS detectada</div>}
+              <input value={form.direccion} onChange={e=>F("direccion",e.target.value)} placeholder="Ej: San Martín 1234, local 3" style={{...IS,marginBottom:"8px"}}/>
+              <button onClick={gps} disabled={gpsLoad} style={{width:"100%",background:"rgba(39,174,96,0.1)",border:"2px solid rgba(39,174,96,0.3)",borderRadius:"10px",padding:"10px",fontSize:"13px",fontWeight:800,color:"#27ae60",cursor:gpsLoad?"wait":"pointer",fontFamily:"'Nunito',sans-serif",display:"flex",alignItems:"center",justifyContent:"center",gap:"8px",opacity:gpsLoad?0.6:1,marginBottom:"0"}}>
+                {gpsLoad?"⏳ Detectando ubicación...":"📍 Geolocalizar mi ubicación"}
+              </button>
+              {form.lat && <div style={{marginTop:"8px",fontSize:"11px",color:"#27ae60",fontWeight:700}}>✅ Coordenadas GPS guardadas ({parseFloat(form.lat).toFixed(4)}, {parseFloat(form.lng).toFixed(4)})</div>}
             </div>
 
             <div style={{...CAJA, opacity:(tipo==="empresa"||tipo==="servicio")&&!pagoBITEmpresa?0.4:1, pointerEvents:(tipo==="empresa"||tipo==="servicio")&&!pagoBITEmpresa?"none" as any:"auto"}}>

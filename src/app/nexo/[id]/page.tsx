@@ -768,7 +768,7 @@ const SLIDER_EMOJIS: Record<string,string> = {
   galeria:"📸", videos:"🎬", documentos:"📄", descargas:"📥", productos:"🛒",
   novedades:"📢", proveedores:"🏭", faq:"❓", facturas:"🧾", calendario:"📅",
   equipo:"👤", servicios:"🛠️", portfolio:"🎨", testimonios:"💬", certificados:"🏅",
-  mensajes:"💬", chat:"💬", personalizado:"✨", resenas:"⭐",
+  mensajes:"💬", chat:"💬", personalizado:"✨", resenas:"⭐", clientes:"🤝",
 };
 
 function SliderContenido({ slider, items, mensajes, perfil, nexo, esAdmin, esMiembro, descargasPagadas, pagandoDescarga, miembros, texto, setTexto, enviando, onEnviar, onVisor, onPagarDescarga, onAbrirDescarga, onFlash, bottomRef, colorNexo }: any) {
@@ -973,7 +973,7 @@ function SliderContenido({ slider, items, mensajes, perfil, nexo, esAdmin, esMie
           ))}
         </div>
       )}
-      {(tipo==="novedades"||tipo==="faq"||tipo==="testimonios"||tipo==="personalizado"||tipo==="calendario"||tipo==="proveedores") && (
+      {(tipo==="novedades"||tipo==="faq"||tipo==="testimonios"||tipo==="personalizado"||tipo==="calendario"||tipo==="proveedores"||tipo==="clientes") && (
         <div style={{ display:"flex", flexDirection:"column", gap:"10px" }}>
           {items.map((item:any)=>(
             <div key={item.id} style={{ background:"#fff", borderRadius:"14px", padding:"16px", boxShadow:"0 2px 8px rgba(0,0,0,0.06)" }}>

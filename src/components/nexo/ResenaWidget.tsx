@@ -15,6 +15,7 @@ interface Props {
   nexoId: string;
   perfil: any;
   color: string;
+  usuarioIdNexo?: string;
 }
 
 function Estrellas({ rating, size = 16, interactivo = false, onSelect }: { rating: number; size?: number; interactivo?: boolean; onSelect?: (r: number) => void }) {
@@ -45,7 +46,7 @@ export function EstrellasMini({ rating, count }: { rating: number; count: number
   );
 }
 
-export default function ResenaWidget({ nexoId, perfil, color }: Props) {
+export default function ResenaWidget({ nexoId, perfil, color, usuarioIdNexo }: Props) {
   const [resenas, setResenas] = useState<Resena[]>([]);
   const [miResena, setMiResena] = useState<Resena | null>(null);
   const [cargando, setCargando] = useState(true);
@@ -129,7 +130,7 @@ export default function ResenaWidget({ nexoId, perfil, color }: Props) {
         </div>
       </div>
 
-      {perfil && (
+      {perfil && perfil.id !== usuarioIdNexo && (
         <div style={{ background: "#fff", borderRadius: "16px", padding: "16px", boxShadow: "0 2px 10px rgba(0,0,0,0.06)" }}>
           {miResena && !editando ? (
             <div>

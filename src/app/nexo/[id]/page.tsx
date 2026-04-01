@@ -888,7 +888,7 @@ function SliderContenido({ slider, items, mensajes, perfil, nexo, esAdmin, esMie
   }
 
   if (tipo === "resenas") {
-    return <ResenaWidget nexoId={nexo.id} perfil={perfil} color={colorNexo} />;
+    return <ResenaWidget nexoId={nexo.id} perfil={perfil} color={colorNexo} usuarioIdNexo={nexo.usuario_id} />;
   }
 
   // MIEMBROS

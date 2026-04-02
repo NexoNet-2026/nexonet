@@ -28,7 +28,18 @@ export default function Login() {
       }
       setLoading(false); return;
     }
-    router.push("/");
+    // Verificar si es admin del sistema
+    const { data: { session: sess } } = await supabase.auth.getSession();
+    if (sess?.user?.id) {
+      const { data: u } = await supabase.from("usuarios").select("es_admin_sistema").eq("id", sess.user.id).single();
+      if (u?.es_admin_sistema) {
+        router.push("/admin");
+      } else {
+        router.push("/");
+      }
+    } else {
+      router.push("/");
+    }
   };
 
   const handleRecuperar = async () => {

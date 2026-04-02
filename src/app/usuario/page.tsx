@@ -797,6 +797,26 @@ export default function Usuario() {
                 <div style={{ fontSize:"12px", color:"#8a9aaa", fontWeight:600, marginBottom:"4px" }}>Tu código de promotor</div>
                 <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"28px", color:"#d4a017", letterSpacing:"4px" }}>{perfil?.codigo||"---"}</div>
               </div>
+              <div style={{ display:"flex", gap:"8px", marginTop:"8px" }}>
+                <button onClick={async () => {
+                  const link = `${window.location.origin}/registro?ref=${perfil.codigo}`;
+                  if (navigator.share) {
+                    await navigator.share({ title:"Unite a NexoNet", text:`Registrate en NexoNet con mi código ${perfil.codigo} y empezá con 3.000 BIT gratis 🎁`, url: link });
+                  } else {
+                    await navigator.clipboard.writeText(link);
+                    alert("✅ Link copiado");
+                  }
+                }} style={{ flex:1, background:"linear-gradient(135deg,#d4a017,#f0c040)", border:"none", borderRadius:"12px", padding:"12px", fontSize:"13px", fontWeight:900, color:"#1a2a3a", cursor:"pointer", fontFamily:"'Nunito',sans-serif", display:"flex", alignItems:"center", justifyContent:"center", gap:"8px" }}>
+                  📤 Compartir mi link de referido
+                </button>
+                <button onClick={async () => {
+                  const link = `${window.location.origin}/registro?ref=${perfil.codigo}`;
+                  await navigator.clipboard.writeText(link);
+                  alert("✅ Link copiado");
+                }} style={{ background:"rgba(212,160,23,0.15)", border:"2px solid rgba(212,160,23,0.4)", borderRadius:"12px", padding:"12px 16px", fontSize:"13px", fontWeight:800, color:"#d4a017", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
+                  🔗
+                </button>
+              </div>
               <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"36px", color:"#f0c040", marginBottom:"4px" }}>
                 {(perfil?.bits_promotor||0).toLocaleString()} BIT
               </div>

@@ -220,7 +220,12 @@ export default function AdminPanel() {
     const hace7  = new Date(Date.now()-7*24*60*60*1000).toISOString();
     const activos30 = (usrs||[]).filter((u:any)=>u.last_seen&&u.last_seen>=hace30).length;
     const activos7  = (usrs||[]).filter((u:any)=>u.last_seen&&u.last_seen>=hace7).length;
-    setStats({ usuarios:cu||0, anuncios:ca||0, grupos:cg||0, mensajes:cm||0, bits:totalBits, pagos:totalPagos, activos30, activos7 });
+    const bots = (usrs||[]).filter((u:any) => u.es_bot || u.is_interno).length;
+    const reales = (usrs||[]).filter((u:any) => !u.es_bot && !u.is_interno).length;
+    const conBitFree = (usrs||[]).filter((u:any) => (u.bits_free||0) > 0).length;
+    const conBitNexo = (usrs||[]).filter((u:any) => (u.bits||0) > 0).length;
+    const conBitPromo = (usrs||[]).filter((u:any) => (u.bits_promo||0) > 0).length;
+    setStats({ usuarios:cu||0, usuariosReales:reales, bots, conBitFree, conBitNexo, conBitPromo, anuncios:(anuns||[]).length, grupos:cg||0, mensajes:cm||0, bits:totalBits, pagos:totalPagos, activos30, activos7 });
 
     const {data:cfg} = await supabase.from("config").select("*").eq("clave","alarmas").single();
     if (cfg) setAlarmas(JSON.parse(cfg.valor||"{}"));

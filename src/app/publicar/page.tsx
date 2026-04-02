@@ -34,6 +34,7 @@ function PublicarSelectorInner() {
   const [subrubros, setSubrubros] = useState<any[]>([]);
   const [rubroSel, setRubroSel] = useState<any>(null);
   const [cargando, setCargando] = useState(false);
+  const [sugerencia, setSugerencia] = useState("");
 
   useEffect(() => {
     setAnimando(false); setSeleccionado(null); setPaso("tipo");
@@ -157,41 +158,30 @@ function PublicarSelectorInner() {
               ))}
             </div>
           )}
-          <div style={{ marginTop:"16px", borderTop:"1px solid rgba(255,255,255,0.1)", paddingTop:"16px" }}>
-            <div style={{ fontSize:"12px", fontWeight:700, color:"rgba(255,255,255,0.45)", marginBottom:"10px", textAlign:"center" }}>
-              ¿No encontrás tu categoría?
+          {!cargando && (
+            <div style={{ marginTop:"16px", borderTop:"1px solid rgba(255,255,255,0.1)", paddingTop:"16px" }}>
+              <div style={{ fontSize:"12px", fontWeight:700, color:"rgba(255,255,255,0.45)", marginBottom:"10px", textAlign:"center" }}>
+                ¿No encontrás tu categoría?
+              </div>
+              <div style={{ display:"flex", gap:"8px" }}>
+                <input type="text" value={sugerencia} onChange={e => setSugerencia(e.target.value)}
+                  placeholder="Sugerí una nueva categoría..."
+                  style={{ flex:1, border:"2px solid rgba(255,255,255,0.2)", borderRadius:"12px", padding:"10px 14px", fontSize:"13px", fontFamily:"'Nunito',sans-serif", outline:"none", background:"rgba(255,255,255,0.08)", color:"#fff" }}
+                />
+                <button onClick={async () => {
+                  if (!sugerencia.trim()) return;
+                  const { data: { session } } = await supabase.auth.getSession();
+                  if (!session) { alert("Iniciá sesión para sugerir"); return; }
+                  await supabase.from("sugerencias_categorias").insert({ usuario_id: session.user.id, tipo: tipoSel?.id || "", rubro_sugerido: sugerencia.trim() });
+                  await supabase.from("notificaciones").insert({ usuario_id: "ab56253d-b92e-4b73-a19a-3cd0cd95c458", tipo: "sistema", mensaje: `💡 Nueva sugerencia de categoría: "${sugerencia.trim()}" para tipo ${tipoSel?.titulo || ""}`, leida: false });
+                  setSugerencia("");
+                  alert("✅ Sugerencia enviada. ¡Gracias!");
+                }} style={{ background:"rgba(212,160,23,0.3)", border:"2px solid rgba(212,160,23,0.5)", borderRadius:"12px", padding:"10px 16px", fontSize:"13px", fontWeight:800, color:"#d4a017", cursor:"pointer", fontFamily:"'Nunito',sans-serif", whiteSpace:"nowrap" }}>
+                  Sugerir →
+                </button>
+              </div>
             </div>
-            <div style={{ display:"flex", gap:"8px" }}>
-              <input
-                type="text"
-                placeholder="Sugerí una nueva categoría..."
-                id="sugerencia-rubro"
-                style={{ flex:1, border:"2px solid rgba(255,255,255,0.2)", borderRadius:"12px", padding:"10px 14px", fontSize:"13px", fontFamily:"'Nunito',sans-serif", outline:"none", background:"rgba(255,255,255,0.08)", color:"#fff" }}
-              />
-              <button onClick={async () => {
-                const input = document.getElementById("sugerencia-rubro") as HTMLInputElement;
-                const val = input?.value?.trim();
-                if (!val) return;
-                const { data: { session } } = await supabase.auth.getSession();
-                if (!session) { alert("Iniciá sesión para sugerir"); return; }
-                await supabase.from("sugerencias_categorias").insert({
-                  usuario_id: session.user.id,
-                  tipo: tipoSel?.id || "",
-                  rubro_sugerido: val,
-                });
-                await supabase.from("notificaciones").insert({
-                  usuario_id: "ab56253d-b92e-4b73-a19a-3cd0cd95c458",
-                  tipo: "sistema",
-                  mensaje: `💡 Nueva sugerencia de categoría: "${val}" para tipo ${tipoSel?.titulo || ""}`,
-                  leida: false,
-                });
-                input.value = "";
-                alert("✅ Sugerencia enviada. ¡Gracias! La revisaremos pronto.");
-              }} style={{ background:"rgba(212,160,23,0.3)", border:"2px solid rgba(212,160,23,0.5)", borderRadius:"12px", padding:"10px 16px", fontSize:"13px", fontWeight:800, color:"#d4a017", cursor:"pointer", fontFamily:"'Nunito',sans-serif", whiteSpace:"nowrap" }}>
-                Sugerir →
-              </button>
-            </div>
-          </div>
+          )}
         </div>
       )}
 
@@ -215,42 +205,30 @@ function PublicarSelectorInner() {
               ))}
             </div>
           )}
-          <div style={{ marginTop:"16px", borderTop:"1px solid rgba(255,255,255,0.1)", paddingTop:"16px" }}>
-            <div style={{ fontSize:"12px", fontWeight:700, color:"rgba(255,255,255,0.45)", marginBottom:"10px", textAlign:"center" }}>
-              ¿No encontrás tu subcategoría?
+          {!cargando && (
+            <div style={{ marginTop:"16px", borderTop:"1px solid rgba(255,255,255,0.1)", paddingTop:"16px" }}>
+              <div style={{ fontSize:"12px", fontWeight:700, color:"rgba(255,255,255,0.45)", marginBottom:"10px", textAlign:"center" }}>
+                ¿No encontrás tu subcategoría?
+              </div>
+              <div style={{ display:"flex", gap:"8px" }}>
+                <input type="text" value={sugerencia} onChange={e => setSugerencia(e.target.value)}
+                  placeholder="Sugerí una nueva subcategoría..."
+                  style={{ flex:1, border:"2px solid rgba(255,255,255,0.2)", borderRadius:"12px", padding:"10px 14px", fontSize:"13px", fontFamily:"'Nunito',sans-serif", outline:"none", background:"rgba(255,255,255,0.08)", color:"#fff" }}
+                />
+                <button onClick={async () => {
+                  if (!sugerencia.trim()) return;
+                  const { data: { session } } = await supabase.auth.getSession();
+                  if (!session) { alert("Iniciá sesión para sugerir"); return; }
+                  await supabase.from("sugerencias_categorias").insert({ usuario_id: session.user.id, tipo: tipoSel?.id || "", rubro_sugerido: rubroSel?.nombre || "", subrubro_sugerido: sugerencia.trim() });
+                  await supabase.from("notificaciones").insert({ usuario_id: "ab56253d-b92e-4b73-a19a-3cd0cd95c458", tipo: "sistema", mensaje: `💡 Nueva sugerencia de subcategoría: "${sugerencia.trim()}" en ${rubroSel?.nombre || ""} para tipo ${tipoSel?.titulo || ""}`, leida: false });
+                  setSugerencia("");
+                  alert("✅ Sugerencia enviada. ¡Gracias!");
+                }} style={{ background:"rgba(212,160,23,0.3)", border:"2px solid rgba(212,160,23,0.5)", borderRadius:"12px", padding:"10px 16px", fontSize:"13px", fontWeight:800, color:"#d4a017", cursor:"pointer", fontFamily:"'Nunito',sans-serif", whiteSpace:"nowrap" }}>
+                  Sugerir →
+                </button>
+              </div>
             </div>
-            <div style={{ display:"flex", gap:"8px" }}>
-              <input
-                type="text"
-                placeholder="Sugerí una nueva subcategoría..."
-                id="sugerencia-subrubro"
-                style={{ flex:1, border:"2px solid rgba(255,255,255,0.2)", borderRadius:"12px", padding:"10px 14px", fontSize:"13px", fontFamily:"'Nunito',sans-serif", outline:"none", background:"rgba(255,255,255,0.08)", color:"#fff" }}
-              />
-              <button onClick={async () => {
-                const input = document.getElementById("sugerencia-subrubro") as HTMLInputElement;
-                const val = input?.value?.trim();
-                if (!val) return;
-                const { data: { session } } = await supabase.auth.getSession();
-                if (!session) { alert("Iniciá sesión para sugerir"); return; }
-                await supabase.from("sugerencias_categorias").insert({
-                  usuario_id: session.user.id,
-                  tipo: tipoSel?.id || "",
-                  rubro_sugerido: rubroSel?.nombre || "",
-                  subrubro_sugerido: val,
-                });
-                await supabase.from("notificaciones").insert({
-                  usuario_id: "ab56253d-b92e-4b73-a19a-3cd0cd95c458",
-                  tipo: "sistema",
-                  mensaje: `💡 Nueva sugerencia de subcategoría: "${val}" en ${rubroSel?.nombre || ""} para tipo ${tipoSel?.titulo || ""}`,
-                  leida: false,
-                });
-                input.value = "";
-                alert("✅ Sugerencia enviada. ¡Gracias! La revisaremos pronto.");
-              }} style={{ background:"rgba(212,160,23,0.3)", border:"2px solid rgba(212,160,23,0.5)", borderRadius:"12px", padding:"10px 16px", fontSize:"13px", fontWeight:800, color:"#d4a017", cursor:"pointer", fontFamily:"'Nunito',sans-serif", whiteSpace:"nowrap" }}>
-                Sugerir →
-              </button>
-            </div>
-          </div>
+          )}
         </div>
       )}
 

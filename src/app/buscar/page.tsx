@@ -210,7 +210,13 @@ function BuscarInner() {
             mapped = mapped.map(a => ({ ...a, visitas_semana: conteo[a.id] || 0 }));
           }
         }
-        mapped.sort((a, b) => (b.visitas_semana || 0) - (a.visitas_semana || 0));
+        const ahoraB = Date.now();
+        mapped.sort((a, b) => {
+          const esNuevoA = (a as any).created_at && (ahoraB - new Date((a as any).created_at).getTime()) < 48 * 60 * 60 * 1000 ? 1 : 0;
+          const esNuevoB = (b as any).created_at && (ahoraB - new Date((b as any).created_at).getTime()) < 48 * 60 * 60 * 1000 ? 1 : 0;
+          if (esNuevoB !== esNuevoA) return esNuevoB - esNuevoA;
+          return (b.visitas_semana || 0) - (a.visitas_semana || 0);
+        });
         setAnuncios(mapped);
       }
 
@@ -270,7 +276,13 @@ function BuscarInner() {
           allNexos = allNexos.map(n => ({ ...n, visitas_semana: conteo[n.id] || 0 }));
         }
       }
-      allNexos.sort((a, b) => (b.visitas_semana || 0) - (a.visitas_semana || 0));
+      const ahoraNexosB = Date.now();
+        allNexos.sort((a, b) => {
+          const esNuevoA = (a as any).created_at && (ahoraNexosB - new Date((a as any).created_at).getTime()) < 48 * 60 * 60 * 1000 ? 1 : 0;
+          const esNuevoB = (b as any).created_at && (ahoraNexosB - new Date((b as any).created_at).getTime()) < 48 * 60 * 60 * 1000 ? 1 : 0;
+          if (esNuevoB !== esNuevoA) return esNuevoB - esNuevoA;
+          return (b.visitas_semana || 0) - (a.visitas_semana || 0);
+        });
       // Fetch horarios para empresa/servicio y calcular abierto
       const esEmpServIds = allNexos.filter(n => n.tipo === "empresa" || n.tipo === "servicio").map(n => n.id);
       if (esEmpServIds.length > 0) {

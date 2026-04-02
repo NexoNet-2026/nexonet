@@ -75,7 +75,13 @@ export function useHomeData() {
           }
         }
         // Ordenar: más visitas primero, sin visitas al final en orden original
-        mapped.sort((a, b) => (b.visitas_semana || 0) - (a.visitas_semana || 0));
+        const ahora = Date.now();
+        mapped.sort((a, b) => {
+          const esNuevoA = a.created_at && (ahora - new Date(a.created_at).getTime()) < 48 * 60 * 60 * 1000 ? 1 : 0;
+          const esNuevoB = b.created_at && (ahora - new Date(b.created_at).getTime()) < 48 * 60 * 60 * 1000 ? 1 : 0;
+          if (esNuevoB !== esNuevoA) return esNuevoB - esNuevoA;
+          return (b.visitas_semana || 0) - (a.visitas_semana || 0);
+        });
         setAnuncios(mapped);
       }
 
@@ -107,7 +113,13 @@ export function useHomeData() {
           allNexos = allNexos.map(n => n.tipo==="grupo" ? {...n, miembros_count: conteoM[n.id]||0} : n);
         }
       }
-      allNexos.sort((a, b) => (b.visitas_semana || 0) - (a.visitas_semana || 0));
+      const ahoraNexos = Date.now();
+        allNexos.sort((a: any, b: any) => {
+          const esNuevoA = a.created_at && (ahoraNexos - new Date(a.created_at).getTime()) < 48 * 60 * 60 * 1000 ? 1 : 0;
+          const esNuevoB = b.created_at && (ahoraNexos - new Date(b.created_at).getTime()) < 48 * 60 * 60 * 1000 ? 1 : 0;
+          if (esNuevoB !== esNuevoA) return esNuevoB - esNuevoA;
+          return (b.visitas_semana || 0) - (a.visitas_semana || 0);
+        });
       const esEmpServIdsHome = allNexos.filter((n: any) => n.tipo === "empresa" || n.tipo === "servicio").map((n: any) => n.id);
       if (esEmpServIdsHome.length > 0) {
         const { data: horariosHome } = await supabase.from("nexo_horarios").select("nexo_id, dia, hora_desde, hora_hasta, cerrado").in("nexo_id", esEmpServIdsHome);

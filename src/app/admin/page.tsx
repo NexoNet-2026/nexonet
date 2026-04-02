@@ -161,8 +161,10 @@ export default function AdminPanel() {
   const showToast = (msg:string) => { setToast(msg); setTimeout(()=>setToast(""),3000); };
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session || session.user.id !== ADMIN_UUID) { router.push("/admin/login"); return; }
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (!session) { router.push("/login"); return; }
+      const { data: u } = await supabase.from("usuarios").select("es_admin_sistema").eq("id", session.user.id).single();
+      if (!u?.es_admin_sistema) { router.push("/"); return; }
       setAuthed(true);
       cargarTodo();
       cargarSocios();

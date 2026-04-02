@@ -733,7 +733,7 @@ function BuscarInner() {
                   const subIds = subs.map((s:any) => Number(s.id));
                   const itemsRubro = allGrupos.filter((n:any) => n.subrubro_id && subIds.includes(Number(n.subrubro_id)));
                   const itemsFinal = entSubSel ? itemsRubro.filter((n:any) => Number(n.subrubro_id) === Number(entSubSel)) : itemsRubro;
-                  if (itemsFinal.length === 0 && !entRubroSel && subs.length === 0) return null;
+                  if (itemsFinal.length === 0 && !entRubroSel) return null;
                   return (
                     <div key={rubro.id} style={{marginBottom:"8px",background:"#fff",paddingBottom:"12px",borderBottom:"6px solid #f4f4f2"}}>
                       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 16px 8px"}}>
@@ -825,7 +825,7 @@ function BuscarInner() {
                   const rubroSubIds = subs.map((s:any)=>Number(s.id));
                   const itemsRubro = allItems.filter((n:any) => rubroSubIds.includes(Number(n.subrubro_id)));
                   const itemsFinal = entSubSel ? itemsRubro.filter((n:any)=>Number(n.subrubro_id)===Number(entSubSel)) : itemsRubro;
-                  if (itemsFinal.length === 0 && !entRubroSel && subs.length === 0) return null;
+                  if (itemsFinal.length === 0 && !entRubroSel) return null;
                   return (
                     <div key={rubro.id} style={{marginBottom:"8px",background:"#fff",paddingBottom:"12px",borderBottom:"6px solid #f4f4f2"}}>
                       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 16px 8px"}}>

@@ -989,7 +989,7 @@ function TarjetaAnuncio({ a, fmt, qLow, query, horizontal, modoConexion, selecci
           {seleccionado && <span style={{color:"#fff",fontWeight:900}}>✓</span>}
         </div>
       )}
-      <a href={modoConexion ? undefined : `/anuncios/${a.id}`} style={{textDecoration:"none",display:"block"}} onClick={e=>modoConexion&&e.preventDefault()}>
+      <a href={modoConexion ? undefined : (session?.user?.id && a.usuario_id === session.user.id ? "/mis-anuncios" : `/anuncios/${a.id}`)} style={{textDecoration:"none",display:"block"}} onClick={e=>modoConexion&&e.preventDefault()}>
         <div style={{background:"#fff",borderRadius:"14px",overflow:"hidden",boxShadow:"0 2px 10px rgba(0,0,0,0.08)",border:esPrimero?"2px solid #ff6b00":"1px solid #f0f0f0"}}>
           <div style={{background:f.color,padding:"3px 8px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
             <span style={{fontSize:"9px",fontWeight:900,color:f.texto,textTransform:"uppercase"}}>{a.owner_nombre||f.label}</span>

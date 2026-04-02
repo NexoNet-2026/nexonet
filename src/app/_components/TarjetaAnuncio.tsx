@@ -2,10 +2,10 @@
 import { FUENTES, formatPrecio, type Anuncio } from "@/app/_lib/home-constants";
 import InsigniaLogro from "./InsigniaLogro";
 
-export default function TarjetaAnuncio({ a, esPrimero }: { a: Anuncio; esPrimero?: boolean }) {
+export default function TarjetaAnuncio({ a, esPrimero, onClick }: { a: Anuncio; esPrimero?: boolean; onClick?: () => void }) {
   const fuente = FUENTES[a.fuente] || FUENTES.nexonet;
   return (
-    <a href={`/anuncios/${a.id}`} style={{ textDecoration: "none", flexShrink: 0, width: "190px", display: "block", position: "relative" }}>
+    <a href={onClick ? undefined : `/anuncios/${a.id}`} onClick={onClick ? (e) => { e.preventDefault(); onClick(); } : undefined} style={{ textDecoration: "none", flexShrink: 0, width: "190px", display: "block", position: "relative", cursor: "pointer" }}>
       {esPrimero && (
         <div style={{ position: "absolute", top: "-6px", right: "-4px", zIndex: 2, background: "linear-gradient(135deg,#ff6b00,#ff4500)", borderRadius: "8px", padding: "2px 7px", fontSize: "10px", fontWeight: 900, color: "#fff", boxShadow: "0 2px 6px rgba(255,69,0,0.4)" }}>
           🔥

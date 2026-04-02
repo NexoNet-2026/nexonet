@@ -73,7 +73,7 @@ export default function Home() {
       ) : (
         <>
           <Slider titulo="🕐 Recién publicados" acento="#d4a017" verTodos="/buscar" onTituloClick={() => router.push("/buscar")}>
-            {recientes.map((a, i) => <TarjetaAnuncio key={a.id} a={a} esPrimero={i === 0 && (a.visitas_semana || 0) > 0} />)}
+            {recientes.map((a, i) => <TarjetaAnuncio key={a.id} a={a} esPrimero={i === 0 && (a.visitas_semana || 0) > 0} onClick={perfilHome?.id && a.usuario_id === perfilHome.id ? () => router.push("/mis-anuncios") : undefined} />)}
           </Slider>
 
           {/* ITEMS DE NEXOS */}

@@ -76,7 +76,7 @@ export function useHomeData() {
         }
         // Ordenar: más visitas primero, sin visitas al final en orden original
         const ahora = Date.now();
-        mapped.sort((a, b) => {
+        mapped.sort((a: any, b: any) => {
           const esNuevoA = a.created_at && (ahora - new Date(a.created_at).getTime()) < 48 * 60 * 60 * 1000 ? 1 : 0;
           const esNuevoB = b.created_at && (ahora - new Date(b.created_at).getTime()) < 48 * 60 * 60 * 1000 ? 1 : 0;
           if (esNuevoB !== esNuevoA) return esNuevoB - esNuevoA;

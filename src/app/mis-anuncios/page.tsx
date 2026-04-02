@@ -893,8 +893,8 @@ export default function MisAnuncios() {
       )}
 
       {popupFlash && (
-        <PopupCompra titulo="Promo Flash" emoji="⚡" costo="$500 / $2.000 / $5.000 / $10.000"
-          descripcion="Destacá en barrio · ciudad · provincia · país"
+        <PopupCompra titulo="Envío Flash" emoji="⚡" costo="$500 / $2.000 / $5.000 / $10.000"
+          descripcion="Enviá un mensaje flash a usuarios de NexoNet"
           bits={{ free: bitsFree, nexo: bitsNexo, promo: bitsPromo }}
           onClose={() => setPopupFlash(null)}
           onPagar={async () => { setPopupFlash(null); alert("Próximamente"); }} />

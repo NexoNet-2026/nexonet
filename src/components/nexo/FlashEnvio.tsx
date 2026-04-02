@@ -70,6 +70,15 @@ export default function FlashEnvio({ nexoId, nexoTitulo, usuarioId, color, perfi
     await supabase.from("usuarios").update({ bits: saldoBIT - costoBIT }).eq("id",usuarioId);
     const notifs = destinatarios.map(u=>({ usuario_id:u.id, tipo:"flash", mensaje:`⚡ ${nexoTitulo}: ${mensajeFinal}`, leida:false, nexo_id:nexoId, emisor_id:usuarioId }));
     for (let i=0;i<notifs.length;i+=100) await supabase.from("notificaciones").insert(notifs.slice(i,i+100));
+    // Bump al tope: actualizar updated_at del nexo/anuncio para que aparezca primero
+    // Verificar si es un anuncio o un nexo
+    const { data: esAnuncio } = await supabase.from("anuncios").select("id").eq("id", nexoId).maybeSingle();
+    if (esAnuncio) {
+      await supabase.from("anuncios").update({ created_at: new Date().toISOString() }).eq("id", nexoId);
+    } else {
+      await supabase.from("nexos").update({ created_at: new Date().toISOString() }).eq("id", nexoId);
+    }
+
     await supabase.from("nexo_flash_envios").insert({ nexo_id:nexoId, emisor_id:usuarioId, plantilla_id:plantillaSeleccionada?.id||null, item_id:itemContexto?.id||null, item_url:(incluirLink||plantillaSeleccionada?.incluir_link)?itemContexto?.url||null:null, mensaje:mensajeFinal, filtro:filtros, cantidad_destinatarios:destinatarios.length, bits_consumidos:costoBIT });
     setEnviado(true); setEnviando(false);
   };

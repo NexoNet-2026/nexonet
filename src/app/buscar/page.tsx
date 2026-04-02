@@ -653,7 +653,7 @@ function BuscarInner() {
                   </div>
                 ) : (
                   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"12px",padding:"8px 16px 16px"}}>
-                    {resTxt.map((a,i)=><TarjetaAnuncio key={a.id} a={a} fmt={fmt} qLow={qLow} query={query} modoConexion={modoConexion} seleccionado={seleccionados.has(a.id)} onToggle={()=>toggleSeleccion(a.id)} esPrimero={i===0&&(a.visitas_semana||0)>0} />)}
+                    {resTxt.map((a,i)=><TarjetaAnuncio key={a.id} a={a} fmt={fmt} qLow={qLow} query={query} modoConexion={modoConexion} seleccionado={seleccionados.has(a.id)} onToggle={()=>toggleSeleccion(a.id)} esPrimero={i===0&&(a.visitas_semana||0)>0} session={session} router={router} />)}
                   </div>
                 )}
               </div>
@@ -692,7 +692,7 @@ function BuscarInner() {
                         <div style={{padding:"12px 16px",color:"#9a9a9a",fontSize:"13px",fontWeight:600}}>Sin anuncios{ubiActiva?` en ${barrSel||ciudSel||provSel}`:""}</div>
                       ) : (
                         <div style={{display:"flex",gap:"12px",padding:"0 16px",overflowX:"auto",scrollbarWidth:"none"}}>
-                          {items.map((a,i)=><TarjetaAnuncio key={a.id} a={a} fmt={fmt} horizontal modoConexion={modoConexion} seleccionado={seleccionados.has(a.id)} onToggle={()=>toggleSeleccion(a.id)} esPrimero={i===0&&(a.visitas_semana||0)>0} />)}
+                          {items.map((a,i)=><TarjetaAnuncio key={a.id} a={a} fmt={fmt} horizontal modoConexion={modoConexion} seleccionado={seleccionados.has(a.id)} onToggle={()=>toggleSeleccion(a.id)} esPrimero={i===0&&(a.visitas_semana||0)>0} session={session} router={router} />)}
                         </div>
                       )}
                     </div>
@@ -702,7 +702,7 @@ function BuscarInner() {
                   <div style={{marginBottom:"8px",background:"#fff",paddingBottom:"12px",borderBottom:"6px solid #f4f4f2"}}>
                     <div style={{padding:"14px 16px 8px"}}><span style={{fontSize:"16px",fontWeight:900,color:"#1a2a3a"}}>📦 Otros</span></div>
                     <div style={{display:"flex",gap:"12px",padding:"0 16px",overflowX:"auto",scrollbarWidth:"none"}}>
-                      {anuSinCategoria.slice(0,8).map(a=><TarjetaAnuncio key={a.id} a={a} fmt={fmt} horizontal modoConexion={modoConexion} seleccionado={seleccionados.has(a.id)} onToggle={()=>toggleSeleccion(a.id)} />)}
+                      {anuSinCategoria.slice(0,8).map(a=><TarjetaAnuncio key={a.id} a={a} fmt={fmt} horizontal modoConexion={modoConexion} seleccionado={seleccionados.has(a.id)} onToggle={()=>toggleSeleccion(a.id)} session={session} router={router} />)}
                     </div>
                   </div>
                 )}
@@ -972,9 +972,9 @@ function BuscarInner() {
   );
 }
 
-function TarjetaAnuncio({ a, fmt, qLow, query, horizontal, modoConexion, seleccionado, onToggle, esPrimero }: {
+function TarjetaAnuncio({ a, fmt, qLow, query, horizontal, modoConexion, seleccionado, onToggle, esPrimero, session, router }: {
   a:Anuncio; fmt:(p:number,m:string)=>string; qLow?:string; query?:string;
-  horizontal?:boolean; modoConexion:boolean; seleccionado:boolean; onToggle:()=>void; esPrimero?:boolean;
+  horizontal?:boolean; modoConexion:boolean; seleccionado:boolean; onToggle:()=>void; esPrimero?:boolean; session?:any; router?:any;
 }) {
   const f = F[a.fuente]||F.nexonet;
   const tieneWA = !!a.owner_whatsapp;
@@ -989,7 +989,7 @@ function TarjetaAnuncio({ a, fmt, qLow, query, horizontal, modoConexion, selecci
           {seleccionado && <span style={{color:"#fff",fontWeight:900}}>✓</span>}
         </div>
       )}
-      <a href={modoConexion ? undefined : (a.usuario_id === session?.user?.id ? "/mis-anuncios" : `/anuncios/${a.id}`)} style={{textDecoration:"none",display:"block"}} onClick={e=>modoConexion&&e.preventDefault()}>
+      <a href={modoConexion ? undefined : `/anuncios/${a.id}`} style={{textDecoration:"none",display:"block"}} onClick={e => { if (modoConexion) { e.preventDefault(); } else if (a.usuario_id === session?.user?.id && router) { e.preventDefault(); router.push("/mis-anuncios"); } }}>
         <div style={{background:"#fff",borderRadius:"14px",overflow:"hidden",boxShadow:"0 2px 10px rgba(0,0,0,0.08)",border:esPrimero?"2px solid #ff6b00":"1px solid #f0f0f0"}}>
           <div style={{background:f.color,padding:"3px 8px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
             <span style={{fontSize:"9px",fontWeight:900,color:f.texto,textTransform:"uppercase"}}>{a.owner_nombre||f.label}</span>

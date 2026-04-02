@@ -362,20 +362,51 @@ export default function AdminPanel() {
     showToast("✅ Usuario eliminado correctamente");
   };
   const asignarBit = async () => {
-    if (!modalBit||!bitCant) return;
+    if (!modalBit || !bitCant) return;
     const cant = parseInt(bitCant);
-    if (isNaN(cant)) return;
-    const actual = modalBit[bitTipo]||0;
-    // Recalcular insignia de logro
-    const acumulado = (modalBit.bits_totales_acumulados||0) + cant;
-    const NIVELES_LOGRO: [string,number][] = [["diamante",20000000],["platino",10000000],["oro",5000000],["plata",1000000],["bronce",100000],["ninguna",0]];
-    const insignia = NIVELES_LOGRO.find(([,min]) => acumulado >= min)?.[0] || "ninguna";
-    await supabase.from("usuarios").update({[bitTipo]:actual+cant, bits_totales_acumulados:acumulado, insignia_logro:insignia}).eq("id",modalBit.id);
-    setUsuarios(prev=>prev.map(x=>x.id===modalBit.id?{...x,[bitTipo]:actual+cant,bits_totales_acumulados:acumulado,insignia_logro:insignia}:x));
-    if (bitNota) await supabase.from("notificaciones").insert({usuario_id:modalBit.id,tipo:"sistema",mensaje:`💰 Admin acreditó ${cant} ${bitTipo.toUpperCase()} — ${bitNota}`,leida:false});
+    if (isNaN(cant) || cant === 0) return;
+
+    const colMap: Record<string, string> = {
+      bits:       "bits",
+      bits_free:  "bits_free",
+      bits_promo: "bits_promo",
+    };
+    const col = colMap[bitTipo] || "bits_free";
+    const actual = modalBit[col] || 0;
+    const nuevo = Math.max(0, actual + cant);
+
+    const { error } = await supabase
+      .from("usuarios")
+      .update({ [col]: nuevo })
+      .eq("id", modalBit.id);
+
+    if (error) {
+      alert("❌ Error al guardar: " + error.message);
+      return;
+    }
+
+    // Log de la transacción
+    await supabase.from("log_bits_internos").insert({
+      usuario_id: modalBit.id,
+      tipo: cant > 0 ? "credito_admin" : "debito_admin",
+      cantidad: cant,
+      concepto: bitNota || (cant > 0 ? "Acreditación manual" : "Débito manual"),
+      moneda: col,
+    }).then(() => {});
+
+    // Notificación al usuario
+    if (bitNota) {
+      await supabase.from("notificaciones").insert({
+        usuario_id: modalBit.id,
+        tipo: "sistema",
+        mensaje: `${cant > 0 ? "💰 Recibiste" : "💸 Se debitaron"} ${Math.abs(cant)} ${col.toUpperCase().replace("_", " ")}${bitNota ? ` — ${bitNota}` : ""}`,
+        leida: false,
+      });
+    }
+
+    setUsuarios(prev => prev.map(x => x.id === modalBit.id ? { ...x, [col]: nuevo } : x));
     setModalBit(null); setBitCant(""); setBitNota("");
-    showToast(`✅ ${cant} ${bitTipo} acreditados`);
-    await cargarTodo();
+    showToast(`✅ ${Math.abs(cant)} ${col} ${cant > 0 ? "acreditados" : "debitados"} (saldo: ${nuevo})`);
   };
   const resetPassword = async () => {
     if (!modalPassword || !nuevaPass.trim()) return;

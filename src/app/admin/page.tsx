@@ -216,7 +216,11 @@ export default function AdminPanel() {
 
     const totalBits  = (usrs||[]).reduce((a:number,u:any)=>(a+(u.bits||0)+(u.bits_free||0)),0);
     const totalPagos = (pgs||[]).reduce((a:number,p:any)=>a+(p.monto||0),0);
-    setStats({ usuarios:cu||0, anuncios:ca||0, grupos:cg||0, mensajes:cm||0, bits:totalBits, pagos:totalPagos });
+    const hace30 = new Date(Date.now()-30*24*60*60*1000).toISOString();
+    const hace7  = new Date(Date.now()-7*24*60*60*1000).toISOString();
+    const activos30 = (usrs||[]).filter((u:any)=>u.last_seen&&u.last_seen>=hace30).length;
+    const activos7  = (usrs||[]).filter((u:any)=>u.last_seen&&u.last_seen>=hace7).length;
+    setStats({ usuarios:cu||0, anuncios:ca||0, grupos:cg||0, mensajes:cm||0, bits:totalBits, pagos:totalPagos, activos30, activos7 });
 
     const {data:cfg} = await supabase.from("config").select("*").eq("clave","alarmas").single();
     if (cfg) setAlarmas(JSON.parse(cfg.valor||"{}"));
@@ -1009,12 +1013,12 @@ export default function AdminPanel() {
         {!loading && tab==="dashboard" && (
           <>
             <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"10px",marginBottom:"14px"}}>
-              <StatBox n={String(stats.usuarios||0)} l="Usuarios" e="👥" />
-              <StatBox n={String(stats.anuncios||0)} l="Anuncios" e="📋" c="#3a7bd5" />
-              <StatBox n={String(stats.grupos||0)}   l="Grupos"   e="🏘️" c="#27ae60" />
-              <StatBox n={String(stats.mensajes||0)} l="Mensajes" e="💬" c="#8e44ad" />
+              <StatBox n={String(stats.usuarios||0)} l="Registrados" e="👥" />
+              <StatBox n={String((stats as any).activos30||0)} l="Activos 30d" e="🟢" c="#27ae60" />
+              <StatBox n={String((stats as any).activos7||0)}  l="Activos 7d"  e="⚡" c="#3a7bd5" />
+              <StatBox n={String(stats.anuncios||0)} l="Anuncios" e="📋" c="#d4a017" />
               <StatBox n={`$${((stats.pagos||0)/1000).toFixed(0)}K`} l="Recaudado" e="💰" c="#e67e22" />
-              <StatBox n={String(stats.bits||0)}     l="BIT circulando" e="🪙" c="#d4a017" />
+              <StatBox n={String(stats.bits||0)}     l="BIT circulando" e="🪙" c="#8e44ad" />
             </div>
 
             {/* ── EN TIEMPO REAL ── */}

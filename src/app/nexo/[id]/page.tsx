@@ -427,6 +427,16 @@ function NexoPageInner() {
               <div style={{ fontSize:"12px", color:"rgba(255,255,255,0.65)", fontWeight:600, marginTop:"4px", display:"flex", gap:"12px", flexWrap:"wrap" }}>
                 {nexo.ciudad && <span>📍 {nexo.ciudad}</span>}
                 {nexo.precio && <span style={{ color:colorNexo, fontWeight:800 }}>$ {parseFloat(nexo.precio).toLocaleString("es-AR")} {nexo.moneda}</span>}
+                {(nexo.tipo === "empresa" || nexo.tipo === "servicio") && nexo.config?.tipo_factura && (
+                  <span style={{ background:"rgba(212,160,23,0.15)", border:"1px solid rgba(212,160,23,0.4)", borderRadius:"20px", padding:"2px 10px", fontSize:"11px", fontWeight:800, color:"#d4a017" }}>
+                    🧾 Factura {nexo.config.tipo_factura}
+                  </span>
+                )}
+                {(nexo.tipo === "empresa" || nexo.tipo === "servicio") && nexo.config?.personal_asegurado && (
+                  <span style={{ background:"rgba(39,174,96,0.15)", border:"1px solid rgba(39,174,96,0.4)", borderRadius:"20px", padding:"2px 10px", fontSize:"11px", fontWeight:800, color:"#27ae60" }}>
+                    👷 Personal asegurado
+                  </span>
+                )}
                 {nexo.tipo==="grupo" && <span>👥 {miembros.length} miembro{miembros.length!==1?"s":""}</span>}
                 {(nexo.tipo === "empresa" || nexo.tipo === "servicio") && abierto !== null && (
                   <span style={{

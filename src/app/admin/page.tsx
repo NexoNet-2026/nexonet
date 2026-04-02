@@ -1043,12 +1043,15 @@ export default function AdminPanel() {
         {!loading && tab==="dashboard" && (
           <>
             <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"10px",marginBottom:"14px"}}>
-              <StatBox n={String(stats.usuarios||0)} l="Registrados" e="👥" />
-              <StatBox n={String((stats as any).activos30||0)} l="Activos 30d" e="🟢" c="#27ae60" />
-              <StatBox n={String((stats as any).activos7||0)}  l="Activos 7d"  e="⚡" c="#3a7bd5" />
-              <StatBox n={String(stats.anuncios||0)} l="Anuncios" e="📋" c="#d4a017" />
+              <StatBox n={String((stats as any).usuariosReales||0)}  l="Usuarios reales"  e="👤" c="#3a7bd5" />
+              <StatBox n={String((stats as any).bots||0)}             l="Bots internos"    e="🤖" c="#8e44ad" />
+              <StatBox n={String(stats.usuarios||0)}         l="Total registrados" e="👥" />
+              <StatBox n={String((stats as any).conBitFree||0)}       l="Con BIT Free"     e="💙" c="#2980b9" />
+              <StatBox n={String((stats as any).conBitNexo||0)}       l="Con BIT Nexo"     e="💛" c="#d4a017" />
+              <StatBox n={String((stats as any).conBitPromo||0)}      l="Con BIT Promo"    e="🟢" c="#27ae60" />
+              <StatBox n={String(stats.anuncios||0)}         l="Anuncios"         e="📋" c="#d4a017" />
               <StatBox n={`$${((stats.pagos||0)/1000).toFixed(0)}K`} l="Recaudado" e="💰" c="#e67e22" />
-              <StatBox n={String(stats.bits||0)}     l="BIT circulando" e="🪙" c="#8e44ad" />
+              <StatBox n={String(stats.bits||0)}             l="BIT circulando"   e="🪙" c="#8e44ad" />
             </div>
 
             {/* ── EN TIEMPO REAL ── */}

@@ -19,6 +19,7 @@ export default function Header() {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
         setUserId(session.user.id);
+        supabase.from("usuarios").update({ last_seen: new Date().toISOString() }).eq("id", session.user.id);
         const { data } = await supabase
           .from("usuarios")
           .select("nombre_usuario, codigo")

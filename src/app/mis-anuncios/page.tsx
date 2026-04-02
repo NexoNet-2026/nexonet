@@ -310,12 +310,16 @@ export default function MisAnuncios() {
                   </a>
                 </div>
               )}
-              <div style={{ display:"flex", gap:"8px", padding:"0 14px 12px" }}>
+              <div style={{ display:"flex", gap:"8px", padding:"0 14px 12px", flexWrap:"wrap" }}>
                 <button onClick={() => router.push(`/anuncios/${a.id}`)} style={Btn("#f4f4f2","#1a2a3a","none")}>
                   👁️ Ver
                 </button>
                 <button onClick={() => abrirEdicion(a)} style={Btn("rgba(212,160,23,0.1)","#d4a017","1px solid rgba(212,160,23,0.3)")}>
                   ✏️ Editar
+                </button>
+                <button onClick={() => setPopupFlash(a.id)}
+                  style={Btn("linear-gradient(135deg,#e67e22,#d35400)","#fff","none")}>
+                  ⚡ Flash
                 </button>
                 <button onClick={() => toggleEstado(a)}
                   style={Btn(
@@ -323,7 +327,7 @@ export default function MisAnuncios() {
                     activo ? "#e74c3c" : "#27ae60",
                     activo ? "1px solid rgba(231,76,60,0.3)" : "1px solid rgba(39,174,96,0.3)"
                   )}>
-                  {activo ? "⏸ Pausar" : "▶️ Activar"}
+                  {activo ? "⏸" : "▶️"}
                 </button>
                 <button onClick={() => eliminarAnuncio(a.id)}
                   style={{ background:"rgba(231,76,60,0.08)", border:"1px solid rgba(231,76,60,0.2)",

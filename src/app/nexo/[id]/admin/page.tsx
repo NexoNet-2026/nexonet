@@ -302,12 +302,13 @@ export default function NexoAdminPage() {
         await supabase.from("usuarios").update({ [campo]: (mu[campo]||0) - 500 }).eq("id", uid);
       }
 
-      // Acreditar 150 BIT Promotor al dueño
+      // Acreditar BIT Promotor al dueño (30% NAN / 20% resto)
+      const comAprobar = perfil.id === "ab56253d-b92e-4b73-a19a-3cd0cd95c458" ? 150 : 100;
       await supabase.from("usuarios").update({
-        bits_promo: (perfil.bits_promo||0) + 150,
-        bits_promotor_total: (perfil.bits_promotor_total||0) + 150,
+        bits_promo: (perfil.bits_promo||0) + comAprobar,
+        bits_promotor_total: (perfil.bits_promotor_total||0) + comAprobar,
       }).eq("id", perfil.id);
-      setPerfil((p:any)=>({...p, bits_promo:(p.bits_promo||0)+150}));
+      setPerfil((p:any)=>({...p, bits_promo:(p.bits_promo||0)+comAprobar}));
       await supabase.from("nexo_miembros").update({ estado:"activo", bits_pagados:500 }).eq("id",mId);
       setMiembros(prev=>prev.map(x=>x.id===mId?{...x,estado:"activo",bits_pagados:500}:x));
       return;
@@ -317,14 +318,15 @@ export default function NexoAdminPage() {
       return;
     }
     if (accion === "hacer_admin") {
-      // Creador asigna admin: creador paga 500 BIT, recibe 150 BIT Promotor
+      // Creador asigna admin: creador paga 500 BIT, recibe comisión (30% NAN / 20% resto)
+      const comHacerAdmin = perfil.id === "ab56253d-b92e-4b73-a19a-3cd0cd95c458" ? 150 : 100;
       if ((perfil?.bits||0) < 500) { alert("Necesitás 500 BIT para asignar admin."); return; }
       await supabase.from("usuarios").update({
         bits: (perfil.bits||0)-500,
-        bits_promo: (perfil.bits_promo||0)+150,
-        bits_promotor_total: (perfil.bits_promotor_total||0)+150,
+        bits_promo: (perfil.bits_promo||0)+comHacerAdmin,
+        bits_promotor_total: (perfil.bits_promotor_total||0)+comHacerAdmin,
       }).eq("id", perfil.id);
-      setPerfil((p:any)=>({...p, bits:(p.bits||0)-500, bits_promo:(p.bits_promo||0)+150}));
+      setPerfil((p:any)=>({...p, bits:(p.bits||0)-500, bits_promo:(p.bits_promo||0)+comHacerAdmin}));
       await supabase.from("nexo_miembros").update({ rol:"admin" }).eq("id",mId);
       setMiembros(prev=>prev.map(x=>x.id===mId?{...x,rol:"admin"}:x));
       return;
@@ -695,7 +697,7 @@ export default function NexoAdminPage() {
                 ¿Cómo ingresan nuevos miembros?
               </div>
               {[
-                { k:"libre",    l:"🟢 Libre",                d:"El usuario paga 500 BIT para ingresar — vos recibís 150 BIT Promotor." },
+                { k:"libre",    l:"🟢 Libre",                d:"El usuario paga 500 BIT para ingresar — vos recibís BIT Promotor." },
                 { k:"solicitud",l:"⏳ Solicitud de acceso",  d:"El creador decide quién paga al aprobar: la empresa o el usuario." },
                 { k:"free",     l:"🎁 Free — empresa paga",  d:"La empresa absorbe el costo de 500 BIT por cada miembro que ingresa." },
               ].map(op => {
@@ -1045,12 +1047,13 @@ export default function NexoAdminPage() {
             await supabase.from("nexos").update({ bits_promo:(nexo.bits_promo||0)-500 }).eq("id",id);
             setNexo((n:any)=>({...n,bits_promo:(n.bits_promo||0)-500}));
           }
-          // Acreditar 150 BIT Promo al admin que aprueba
+          // Acreditar BIT Promo al admin que aprueba (30% NAN / 20% resto)
+          const comApAdmin = perfil.id === "ab56253d-b92e-4b73-a19a-3cd0cd95c458" ? 150 : 100;
           await supabase.from("usuarios").update({
-            bits_promo:(perfil.bits_promo||0)+150,
-            bits_promotor_total:(perfil.bits_promotor_total||0)+150,
+            bits_promo:(perfil.bits_promo||0)+comApAdmin,
+            bits_promotor_total:(perfil.bits_promotor_total||0)+comApAdmin,
           }).eq("id",perfil.id);
-          setPerfil((p:any)=>({...p,bits_promo:(p.bits_promo||0)+150}));
+          setPerfil((p:any)=>({...p,bits_promo:(p.bits_promo||0)+comApAdmin}));
           await supabase.from("nexo_miembros").update({ rol:"admin" }).eq("id",mId);
           setMiembros(prev=>prev.map(x=>x.id===mId?{...x,rol:"admin"}:x));
           if (m?.usuario_id) await supabase.from("notificaciones").insert({
@@ -1104,7 +1107,7 @@ export default function NexoAdminPage() {
                   <button onClick={()=>aprobarConPago("grupo")} style={{ width:"100%", background:"linear-gradient(135deg,#3a7bd5,#2962b0)", border:"none", borderRadius:"14px", padding:"14px", fontSize:"14px", fontWeight:900, color:"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
                     💰 BIT Promo del grupo ({nexo?.bits_promo||0} disponibles)
                   </button>
-                  <div style={{ fontSize:"10px", color:"#9a9a9a", fontWeight:600, textAlign:"center" }}>En todos los casos recibís 150 BIT Promo</div>
+                  <div style={{ fontSize:"10px", color:"#9a9a9a", fontWeight:600, textAlign:"center" }}>En todos los casos recibís BIT Promo</div>
                 </div>
               ) : (
                 <button onClick={rechazar}

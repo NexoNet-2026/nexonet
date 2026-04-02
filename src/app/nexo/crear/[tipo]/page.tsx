@@ -864,7 +864,7 @@ function NexoCrearInner() {
             <div style={CAJA}>
               <SL>🔐 Tipo de acceso</SL>
               {[
-                {v:"libre",     e:"🟢",l:"Libre",         d:"El usuario paga 500 BIT para ingresar — vos recibís 150 BIT Promotor"},
+                {v:"libre",     e:"🟢",l:"Libre",         d:"El usuario paga 500 BIT para ingresar — vos recibís BIT Promotor"},
                 {v:"solicitud", e:"⏳",l:"Solicitud de acceso",d:"El creador decide quién paga: la empresa o el usuario"},
                 {v:"free",      e:"🎁",l:"Free — empresa paga",d:"La empresa absorbe el costo — los usuarios entran gratis"},
               ].map(o=>(

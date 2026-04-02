@@ -101,8 +101,9 @@ function RegistroInner() {
 
     if (insertError) { setError("Error guardando perfil: " + insertError.message); setLoading(false); return; }
 
-    // Acreditar 1000 BIT Promotor al promotor que refirió
+    // Acreditar BIT Promotor al promotor que refirió (30% NAN / 20% resto)
     if (referidoPor) {
+      const bitsBienvenida = referidoPor === "ab56253d-b92e-4b73-a19a-3cd0cd95c458" ? 1500 : 1000;
       const { data: promotor } = await supabase
         .from("usuarios")
         .select("bits_promotor, bits_promotor_total")
@@ -110,8 +111,8 @@ function RegistroInner() {
         .single();
       if (promotor) {
         await supabase.from("usuarios").update({
-          bits_promotor:       (promotor.bits_promotor || 0) + 1000,
-          bits_promotor_total: (promotor.bits_promotor_total || 0) + 1000,
+          bits_promotor:       (promotor.bits_promotor || 0) + bitsBienvenida,
+          bits_promotor_total: (promotor.bits_promotor_total || 0) + bitsBienvenida,
           es_promotor:         true,
         }).eq("id", referidoPor);
       }

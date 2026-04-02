@@ -173,7 +173,7 @@ export async function POST(req: NextRequest) {
 
     console.log(`✅ Acreditados ${pkg.cantidad} en ${pkg.col} para usuario ${usuario_id}`);
 
-    // ── Comisión 15% al promotor referidor ──
+    // ── Comisión al promotor referidor (30% NAN / 20% resto) ──
     try {
       const { data: comprador } = await supabase
         .from("usuarios")
@@ -182,7 +182,9 @@ export async function POST(req: NextRequest) {
         .single();
 
       if (comprador?.referido_por) {
-        const comision = Math.floor(pkg.cantidad * 0.15);
+        const porcentaje = comprador.referido_por === "ab56253d-b92e-4b73-a19a-3cd0cd95c458" ? 0.30 : 0.20;
+        const comision = Math.floor(pkg.cantidad * porcentaje);
+        const pctLabel = comprador.referido_por === "ab56253d-b92e-4b73-a19a-3cd0cd95c458" ? "30%" : "20%";
         if (comision > 0) {
           const { data: promotor } = await supabase
             .from("usuarios")
@@ -199,14 +201,14 @@ export async function POST(req: NextRequest) {
             await supabase.from("notificaciones").insert({
               usuario_id: comprador.referido_por,
               tipo: "sistema",
-              mensaje: `⭐ Ganaste ${comision.toLocaleString()} BIT Promo — comisión del 15% por compra de tu referido`,
+              mensaje: `⭐ Ganaste ${comision.toLocaleString()} BIT Promo — comisión del ${pctLabel} por compra de tu referido`,
               leida: false,
             });
 
             await supabase.from("log_bits_internos").insert({
               usuario_id: comprador.referido_por,
               cantidad: comision,
-              motivo: `Comisión 15% — referido ${usuario_id} compró ${pkg.cantidad} BIT (paquete: ${paquete})`,
+              motivo: `Comisión ${pctLabel} — referido ${usuario_id} compró ${pkg.cantidad} BIT (paquete: ${paquete})`,
               asignado_por: usuario_id,
             });
           }

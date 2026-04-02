@@ -46,7 +46,7 @@ export default function MisAnuncios() {
 
   const [popupPlan,   setPopupPlan]   = useState(false);
   const [popupBits,   setPopupBits]   = useState(false);
-  const [popupBitsCx, setPopupBitsCx] = useState<string | null>(null);
+
   const [popupLink,   setPopupLink]   = useState<string | null>(null);
   const [popupAdj,    setPopupAdj]    = useState<string | null>(null);
   const [flashAnuncio, setFlashAnuncio] = useState<Anuncio | null>(null);
@@ -550,43 +550,6 @@ export default function MisAnuncios() {
                   )}
                 </div>
 
-                {/* BIT CONEXIÓN */}
-                <div style={{ background:"rgba(58,123,213,0.06)", border:"2px solid rgba(58,123,213,0.2)",
-                               borderRadius:"12px", padding:"12px 14px" }}>
-                  <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"6px" }}>
-                    <div style={{ display:"flex", alignItems:"center", gap:"8px" }}>
-                      <span style={{ fontSize:"18px" }}>🔗</span>
-                      <div>
-                        <div style={{ fontSize:"12px", fontWeight:900, color:"#1a2a3a" }}>BIT Conexión</div>
-                        <div style={{ fontSize:"10px", color:"#9a9a9a", fontWeight:600 }}>
-                          Saldo para recibir conexiones en este anuncio
-                        </div>
-                      </div>
-                    </div>
-                    <div style={{ textAlign:"right" }}>
-                      <div style={{ fontSize:"22px", fontWeight:900,
-                                     color: (a.bits_conexion ?? 0) > 0 ? "#3a7bd5" : "#e74c3c",
-                                     fontFamily:"'Bebas Neue',sans-serif", letterSpacing:"1px" }}>
-                        {a.bits_conexion ?? 0}
-                      </div>
-                      <div style={{ fontSize:"9px", color:"#9a9a9a", fontWeight:700 }}>BIT disponibles</div>
-                    </div>
-                  </div>
-                  {(a.bits_conexion ?? 0) === 0 && (
-                    <div style={{ background:"rgba(231,76,60,0.08)", borderRadius:"8px",
-                                   padding:"6px 10px", marginBottom:"8px",
-                                   fontSize:"11px", fontWeight:700, color:"#e74c3c" }}>
-                      ⚠️ Sin saldo — este anuncio no recibe conexiones automáticas
-                    </div>
-                  )}
-                  <button onClick={() => setPopupBitsCx(a.id)}
-                    style={{ width:"100%", background:"linear-gradient(135deg,#3a7bd5,#2962b0)",
-                             border:"none", borderRadius:"10px", padding:"10px",
-                             fontSize:"13px", fontWeight:900, color:"#fff",
-                             cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
-                    ⚡ Cargar BIT Conexión
-                  </button>
-                </div>
               </div>
             </div>
           );
@@ -866,32 +829,6 @@ export default function MisAnuncios() {
           }} />
       )}
 
-      {popupBitsCx && (
-        <PopupCompra titulo="Cargar BIT Conexión" emoji="🔗" costo="500 BIT / $500"
-          descripcion="Cada buscador que vea tus datos consume 1 BIT"
-          bits={{ free: bitsFree, nexo: bitsNexo, promo: bitsPromo }}
-          onClose={() => setPopupBitsCx(null)}
-          onPagar={async (metodo: MetodoPago) => {
-            const id = popupBitsCx;
-            const anuncio = anuncios.find(a => a.id === id);
-            const actual  = anuncio?.bits_conexion ?? 0;
-            const paquete = 500;
-            if (metodo === "bit_free") {
-              if (bitsFree < paquete) { alert("No tenés suficientes BIT FREE."); return; }
-              await supabase.from("anuncios").update({ bits_conexion: actual + paquete }).eq("id", id);
-              await supabase.from("usuarios").update({ bits_free: bitsFree - paquete }).eq("id", session?.user?.id);
-              setPerfil((p:any) => ({ ...p, bits_free: bitsFree - paquete }));
-              setAnuncios(prev => prev.map(a => a.id === id ? { ...a, bits_conexion: actual + paquete } : a));
-            } else if (metodo === "bit_nexo") {
-              if (bitsNexo < paquete) { alert("No tenés suficientes BIT Nexo."); return; }
-              await supabase.from("anuncios").update({ bits_conexion: actual + paquete }).eq("id", id);
-              await supabase.from("usuarios").update({ bits: bitsNexo - paquete }).eq("id", session?.user?.id);
-              setPerfil((p:any) => ({ ...p, bits: bitsNexo - paquete }));
-              setAnuncios(prev => prev.map(a => a.id === id ? { ...a, bits_conexion: actual + paquete } : a));
-            } else { alert("Próximamente"); }
-            setPopupBitsCx(null);
-          }} />
-      )}
 
       {flashAnuncio && perfil && (
         <FlashEnvio

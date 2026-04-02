@@ -12,21 +12,22 @@ export async function POST(req: Request) {
       { auth: { autoRefreshToken: false, persistSession: false } }
     );
 
-    // Limpiar dependencias en orden
-    await supabase.from("notificaciones").delete().eq("usuario_id", usuario_id);
-    await supabase.from("push_suscripciones").delete().eq("usuario_id", usuario_id);
-    await supabase.from("nexo_miembros").delete().eq("usuario_id", usuario_id);
-    await supabase.from("log_bits_internos").delete().eq("usuario_id", usuario_id);
-    await supabase.from("busquedas_automaticas").delete().eq("usuario_id", usuario_id);
-    await supabase.from("insignias_reputacion").delete().eq("usuario_id", usuario_id);
+    // 1. Limpiar anuncios y sus dependencias
+    const { data: anunciosUser } = await supabase.from("anuncios").select("id").eq("usuario_id", usuario_id);
+    if (anunciosUser?.length) {
+      const ids = anunciosUser.map(a => a.id);
+      await supabase.from("anuncio_visitas").delete().in("anuncio_id", ids);
+      await supabase.from("busqueda_matches").delete().in("anuncio_id", ids);
+    }
     await supabase.from("anuncios").delete().eq("usuario_id", usuario_id);
 
-    // Limpiar nexos y sus dependencias
+    // 2. Limpiar nexos y sus dependencias
     const { data: nexosUser } = await supabase.from("nexos").select("id").eq("usuario_id", usuario_id);
     if (nexosUser?.length) {
       const ids = nexosUser.map(n => n.id);
       await supabase.from("nexo_mensajes").delete().in("nexo_id", ids);
       await supabase.from("nexo_miembros").delete().in("nexo_id", ids);
+      await supabase.from("nexo_visitas").delete().in("nexo_id", ids);
       await supabase.from("nexo_slider_items").delete().in("nexo_id", ids);
       await supabase.from("nexo_sliders").delete().in("nexo_id", ids);
       await supabase.from("nexo_descargas_pagos").delete().in("nexo_id", ids);
@@ -34,18 +35,45 @@ export async function POST(req: Request) {
       await supabase.from("nexos").delete().eq("usuario_id", usuario_id);
     }
 
-    // Eliminar de tabla usuarios
+    // 3. Limpiar resto de tablas relacionadas al usuario
+    const tablas = [
+      "notificaciones",
+      "mensajes",
+      "push_suscripciones",
+      "nexo_miembros",
+      "log_bits_internos",
+      "busquedas_automaticas",
+      "busqueda_matches",
+      "insignias_reputacion",
+      "comisiones_promotor",
+      "pagos_mp",
+      "sesiones_log",
+      "usuarios_conectados",
+      "anuncio_visitas",
+      "nexo_visitas",
+      "bits_promo_descargas",
+      "contactos_nexonet",
+      "socios_comerciales",
+    ];
+    for (const tabla of tablas) {
+      await supabase.from(tabla).delete().eq("usuario_id", usuario_id);
+    }
+
+    // También limpiar mensajes donde es emisor o receptor
+    await supabase.from("mensajes").delete().eq("emisor_id", usuario_id);
+    await supabase.from("mensajes").delete().eq("receptor_id", usuario_id);
+    await supabase.from("notificaciones").delete().eq("emisor_id", usuario_id);
+    await supabase.from("comisiones_promotor").delete().eq("promotor_id", usuario_id);
+    await supabase.from("comisiones_promotor").delete().eq("origen_id", usuario_id);
+
+    // 4. Eliminar de tabla usuarios
     await supabase.from("usuarios").delete().eq("id", usuario_id);
 
-    // Eliminar de auth.users
+    // 5. Eliminar de auth.users
     const { error: authError } = await supabase.auth.admin.deleteUser(usuario_id);
 
-    // "User not found" significa que ya fue eliminado de auth — no es error fatal
-    if (authError && !authError.message.includes("User not found") && !authError.message.includes("not found")) {
-      return NextResponse.json({
-        error: authError.message,
-        details: JSON.stringify(authError),
-      }, { status: 500 });
+    if (authError && !authError.message.includes("not found")) {
+      return NextResponse.json({ error: authError.message }, { status: 500 });
     }
 
     return NextResponse.json({ ok: true });

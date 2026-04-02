@@ -113,11 +113,18 @@ function NexoCrearInner() {
   const F = (k:string, v:any) => setForm(f => ({...f, [k]:v}));
   const cargarSubFiltros = async (subId:string) => {
     if (!subId) { setSubFiltros([]); setFiltroVals({}); return; }
+    const FILTROS_TABLE: Record<string,string> = {
+      anuncio:  "subrubro_filtros",
+      empresa:  "empresa_filtros",
+      servicio: "servicio_filtros",
+      trabajo:  "trabajo_filtros",
+      grupo:    "subrubro_filtros",
+    };
+    const tabla = FILTROS_TABLE[tipo] || "subrubro_filtros";
     const { data } = await supabase
-      .from("subrubro_filtros")
+      .from(tabla)
       .select("*")
       .eq("subrubro_id", parseInt(subId))
-      .in("contexto", ["publicacion", "ambos"])
       .order("orden", { ascending: true });
     setSubFiltros(data || []);
     setFiltroVals({});

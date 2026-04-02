@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import PopupCompra, { MetodoPago } from "@/components/PopupCompra";
+import FlashEnvio from "@/components/nexo/FlashEnvio";
 const LINK_PLATAFORMAS = [
   { nombre:"YouTube",   emoji:"▶️",  color:"#ff0000" },
   { nombre:"Instagram", emoji:"📸",  color:"#e1306c" },
@@ -48,7 +49,7 @@ export default function MisAnuncios() {
   const [popupBitsCx, setPopupBitsCx] = useState<string | null>(null);
   const [popupLink,   setPopupLink]   = useState<string | null>(null);
   const [popupAdj,    setPopupAdj]    = useState<string | null>(null);
-  const [popupFlash,  setPopupFlash]  = useState<string | null>(null);
+  const [flashAnuncio, setFlashAnuncio] = useState<Anuncio | null>(null);
 
   const [editando,    setEditando]    = useState<Anuncio | null>(null);
   const [editForm,    setEditForm]    = useState({ titulo: "", descripcion: "", precio: "", moneda: "ARS", permuto: false });
@@ -317,7 +318,7 @@ export default function MisAnuncios() {
                 <button onClick={() => abrirEdicion(a)} style={Btn("rgba(212,160,23,0.1)","#d4a017","1px solid rgba(212,160,23,0.3)")}>
                   ✏️ Editar
                 </button>
-                <button onClick={() => setPopupFlash(a.id)}
+                <button onClick={() => setFlashAnuncio(a)}
                   style={Btn("linear-gradient(135deg,#e67e22,#d35400)","#fff","none")}>
                   ⚡ Flash
                 </button>
@@ -892,12 +893,15 @@ export default function MisAnuncios() {
           }} />
       )}
 
-      {popupFlash && (
-        <PopupCompra titulo="Envío Flash" emoji="⚡" costo="$500 / $2.000 / $5.000 / $10.000"
-          descripcion="Enviá un mensaje flash a usuarios de NexoNet"
-          bits={{ free: bitsFree, nexo: bitsNexo, promo: bitsPromo }}
-          onClose={() => setPopupFlash(null)}
-          onPagar={async () => { setPopupFlash(null); alert("Próximamente"); }} />
+      {flashAnuncio && perfil && (
+        <FlashEnvio
+          nexoId={flashAnuncio.id}
+          nexoTitulo={flashAnuncio.titulo}
+          usuarioId={perfil.id}
+          color="#e67e22"
+          perfil={perfil}
+          onClose={() => setFlashAnuncio(null)}
+        />
       )}
 
       <BottomNav />

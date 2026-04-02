@@ -561,7 +561,7 @@ export default function NexoAdminPage() {
             <div style={{ background:"rgba(22,160,133,0.08)", border:"2px dashed rgba(22,160,133,0.3)", borderRadius:"14px", padding:"12px 14px" }}>
               <div style={{ fontSize:"11px", fontWeight:800, color:"#16a085", marginBottom:"3px" }}>💡 BIT Descarga</div>
               <div style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:600, lineHeight:1.6 }}>
-                Cuando un miembro paga para descargar: vos recibís el <strong style={{ color:"#16a085" }}>60% BIT Promotor</strong> y NexoNet retiene el <strong>40%</strong>.
+                Cuando un miembro paga para descargar: vos recibís el <strong style={{ color:"#16a085" }}>90% BIT Promotor</strong> y NexoNet retiene el <strong>10%</strong>.
               </div>
             </div>
             {descargas.map((d:any) => (
@@ -580,7 +580,7 @@ export default function NexoAdminPage() {
                     <div style={{ fontSize:"14px", fontWeight:900, color:"#1a2a3a", marginBottom:"2px" }}>{d.titulo}</div>
                     {d.descripcion && <div style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:600 }}>{d.descripcion}</div>}
                     <div style={{ fontSize:"11px", color:"#27ae60", fontWeight:800, marginTop:"4px" }}>
-                      💰 {Math.floor((d.precio_bits||0)*0.6)} BIT Promotor por descarga
+                      💰 {Math.floor((d.precio_bits||0)*0.9)} BIT Promotor por descarga
                     </div>
                   </div>
                   <div style={{ display:"flex", flexDirection:"column", gap:"6px" }}>
@@ -957,7 +957,7 @@ export default function NexoAdminPage() {
                 </div>
                 {parseInt(formItem.precio_bits)>0 ? (
                   <div style={{ background:"rgba(22,160,133,0.08)", borderRadius:"10px", padding:"10px 14px", marginBottom:"12px", fontSize:"12px", fontWeight:700, color:"#16a085" }}>
-                    El usuario paga {formItem.precio_bits} BIT — recibís <strong>{Math.floor(parseInt(formItem.precio_bits)*0.6)} BIT Promotor</strong> (60%)
+                    El usuario paga {formItem.precio_bits} BIT — recibís <strong>{Math.floor(parseInt(formItem.precio_bits)*0.9)} BIT Promotor</strong> (90%)
                   </div>
                 ) : (
                   <div style={{ background:"rgba(39,174,96,0.08)", borderRadius:"10px", padding:"10px 14px", marginBottom:"12px", fontSize:"12px", fontWeight:800, color:"#27ae60" }}>
@@ -999,7 +999,7 @@ export default function NexoAdminPage() {
             </div>
             {parseInt(formDesc.precio_bits)>0 ? (
               <div style={{ background:"rgba(22,160,133,0.08)", borderRadius:"10px", padding:"10px 14px", marginBottom:"12px", fontSize:"12px", fontWeight:700, color:"#16a085" }}>
-                El usuario paga {formDesc.precio_bits} BIT — vos recibís <strong>{Math.floor(parseInt(formDesc.precio_bits)*0.6)} BIT Promotor</strong> (60%)
+                El usuario paga {formDesc.precio_bits} BIT — vos recibís <strong>{Math.floor(parseInt(formDesc.precio_bits)*0.9)} BIT Promotor</strong> (90%)
               </div>
             ) : (
               <div style={{ background:"rgba(39,174,96,0.08)", borderRadius:"10px", padding:"10px 14px", marginBottom:"12px", fontSize:"12px", fontWeight:800, color:"#27ae60" }}>

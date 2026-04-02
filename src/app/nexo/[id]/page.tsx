@@ -345,8 +345,8 @@ function NexoPageInner() {
       if (e1) { console.error("Error descontando BIT:", e1); alert("Error al descontar BIT: " + e1.message); setPagandoDescarga(null); return; }
       setPerfil((p: any) => ({ ...p, bits: saldo - costo }));
 
-      // Acreditar 60% BIT Promotor al creador del nexo
-      const bitsCreador = Math.floor(costo * 0.6);
+      // Acreditar 90% BIT Promotor al creador del nexo
+      const bitsCreador = Math.floor(costo * 0.9);
       const bitsNexonet = costo - bitsCreador;
       const { data: duenio, error: e2 } = await supabase.from("usuarios").select("bits_promo,bits_promotor_total").eq("id", nexo.usuario_id).single();
       if (e2) console.error("Error leyendo dueño:", e2);

@@ -27,7 +27,7 @@ const DATA: Record<TipoAyuda, Info> = {
     costo:"Primer mes GRATIS · Luego 10.000 BIT/mes",
     items:[
       {emoji:"🖼️",titulo:"Logo y banner",desc:"Personalizá tu perfil con imagen de marca"},
-      {emoji:"📸",titulo:"Sliders de contenido",desc:"Galería, productos, servicios, novedades y más"},
+      {emoji:"📸",titulo:"Páginas de contenido",desc:"Galería, productos, servicios, novedades y más"},
       {emoji:"📥",titulo:"Descargas pagas",desc:"Vendé catálogos y guías — recibís 90% en BIT Promo"},
       {emoji:"👁️",titulo:"Visitas reales",desc:"Cada visita cuesta 1 BIT al dueño, garantiza tráfico real"},
       {emoji:"🤖",titulo:"Matching automático",desc:"Compradores que buscan tu rubro te encuentran solos"},

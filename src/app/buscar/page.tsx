@@ -673,7 +673,7 @@ function BuscarInner() {
               <>
                 {rubrosM.map(rubro => {
                   const items = getAnus(rubro);
-                  if (ubiActiva && !rSel && items.length===0) return null;
+                  if (items.length===0) return null;
                   return (
                     <div key={rubro.id} style={{marginBottom:"8px",background:"#fff",paddingBottom:"12px",borderBottom:"6px solid #f4f4f2"}}>
                       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 16px 8px"}}>

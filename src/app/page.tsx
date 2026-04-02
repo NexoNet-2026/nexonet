@@ -132,12 +132,10 @@ export default function Home() {
 
           {sections.map(s => {
             const items = nexosByTipo[s.tipo] || [];
+            if (items.length === 0) return null;
             return (
               <Slider key={s.tipo} titulo={s.titulo} acento={s.acento} verTodos={`/buscar?tipo=${s.tipo}`} onTituloClick={() => router.push(`/buscar?tipo=${s.tipo}`)}>
-                {items.length > 0
-                  ? items.map((n, i) => <TarjetaNexo key={n.id} nexo={n} color={s.acento} onClick={() => router.push(s.nexoUrl(n.id))} esPrimero={i === 0 && (n.visitas_semana || 0) > 0} abierto={(n as any).abierto} />)
-                  : [<TarjetaVacia key="vacia" emoji={s.emoji} texto={s.textoVacio} color={s.acento} onClick={() => router.push(s.crearUrl)} />]
-                }
+                {items.map((n, i) => <TarjetaNexo key={n.id} nexo={n} color={s.acento} onClick={() => router.push(s.nexoUrl(n.id))} esPrimero={i === 0 && (n.visitas_semana || 0) > 0} abierto={(n as any).abierto} />)}
               </Slider>
             );
           })}

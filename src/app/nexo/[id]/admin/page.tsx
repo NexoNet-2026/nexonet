@@ -69,7 +69,9 @@ export default function NexoAdminPage() {
   const [formInfo, setFormInfo] = useState({
     titulo:"", descripcion:"", precio:"", ciudad:"", provincia:"",
     whatsapp:"", link_externo:"", banner_url:"", avatar_url:"",
+    lat:"", lng:"", direccion:"",
   });
+  const [gpsLoad, setGpsLoad] = useState(false);
   const [formItem, setFormItem] = useState({ titulo:"", descripcion:"", url:"", tipo:"imagen", precio_bits:"0" });
   const [formDesc, setFormDesc] = useState({ titulo:"", descripcion:"", url:"", tipo_archivo:"pdf", precio_bits:"10", rights:false });
 
@@ -88,7 +90,7 @@ export default function NexoAdminPage() {
         miRol?.rol === "creador" || miRol?.rol === "admin" || miRol?.rol === "admin_pago_pendiente" || miRol?.rol === "moderador";
       if (!tieneAcceso) { router.push(`/nexo/${id}`); return; }
       setNexo(n);
-      setFormInfo({ titulo:n.titulo||"", descripcion:n.descripcion||"", precio:n.precio||"", ciudad:n.ciudad||"", provincia:n.provincia||"", whatsapp:n.whatsapp||"", link_externo:n.link_externo||"", banner_url:n.banner_url||"", avatar_url:n.avatar_url||"" });
+      setFormInfo({ titulo:n.titulo||"", descripcion:n.descripcion||"", precio:n.precio||"", ciudad:n.ciudad||"", provincia:n.provincia||"", whatsapp:n.whatsapp||"", link_externo:n.link_externo||"", banner_url:n.banner_url||"", avatar_url:n.avatar_url||"", lat:n.lat?.toString()||"", lng:n.lng?.toString()||"", direccion:n.direccion||"" });
 
       const [{ data: sls }, { data: mbs }, { data: desc }] = await Promise.all([
         supabase.from("nexo_sliders").select("*").eq("nexo_id",id).order("orden"),
@@ -362,10 +364,13 @@ export default function NexoAdminPage() {
       precio:       formInfo.precio?parseFloat(formInfo.precio):null,
       ciudad:       formInfo.ciudad||null,
       provincia:    formInfo.provincia||null,
+      direccion:    formInfo.direccion||null,
       whatsapp:     formInfo.whatsapp||null,
       link_externo: formInfo.link_externo||null,
       banner_url:   formInfo.banner_url||null,
       avatar_url:   formInfo.avatar_url||null,
+      lat:          formInfo.lat ? parseFloat(formInfo.lat) : null,
+      lng:          formInfo.lng ? parseFloat(formInfo.lng) : null,
     }).eq("id",id);
     setGuardando(false);
     alert("✅ Guardado");
@@ -637,6 +642,42 @@ export default function NexoAdminPage() {
               <Campo label="WhatsApp"     valor={formInfo.whatsapp}     onChange={v=>setFormInfo(f=>({...f,whatsapp:v}))} />
               <Campo label="Link externo" valor={formInfo.link_externo} onChange={v=>setFormInfo(f=>({...f,link_externo:v}))} />
               {nexo?.tipo!=="grupo" && <Campo label="Precio" valor={String(formInfo.precio)} onChange={v=>setFormInfo(f=>({...f,precio:v}))} tipo="number" />}
+              {(nexo?.tipo==="empresa" || nexo?.tipo==="servicio") && (<>
+                <Campo label="Dirección postal" valor={formInfo.direccion} onChange={v=>setFormInfo(f=>({...f,direccion:v}))} />
+                <div style={{ marginBottom:"12px" }}>
+                  <div style={{ fontSize:"11px", fontWeight:800, color:"#9a9a9a", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"6px" }}>📍 Ubicación en el mapa</div>
+                  <button onClick={async () => {
+                    if (!navigator.geolocation) { alert("GPS no disponible"); return; }
+                    setGpsLoad(true);
+                    navigator.geolocation.getCurrentPosition(async pos => {
+                      const lat = pos.coords.latitude.toString();
+                      const lng = pos.coords.longitude.toString();
+                      setFormInfo(f => ({ ...f, lat, lng }));
+                      try {
+                        const r = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=es`);
+                        const d = await r.json();
+                        const dir = [d.address?.road, d.address?.house_number].filter(Boolean).join(" ");
+                        if (dir) setFormInfo(f => ({ ...f, direccion: dir }));
+                      } catch {}
+                      setGpsLoad(false);
+                    }, () => { alert("No se pudo acceder al GPS"); setGpsLoad(false); });
+                  }} disabled={gpsLoad}
+                    style={{ width:"100%", background:"rgba(39,174,96,0.1)", border:"2px solid rgba(39,174,96,0.3)", borderRadius:"10px", padding:"11px", fontSize:"13px", fontWeight:800, color:"#27ae60", cursor:"pointer", fontFamily:"'Nunito',sans-serif", display:"flex", alignItems:"center", justifyContent:"center", gap:"8px", opacity:gpsLoad?0.6:1 }}>
+                    {gpsLoad ? "⏳ Detectando..." : "📍 Geolocalizar mi ubicación"}
+                  </button>
+                  {formInfo.lat && (
+                    <div style={{ marginTop:"8px", fontSize:"11px", fontWeight:700, color:"#27ae60" }}>
+                      ✅ Coordenadas: {parseFloat(formInfo.lat).toFixed(5)}, {parseFloat(formInfo.lng).toFixed(5)}
+                    </div>
+                  )}
+                  {formInfo.lat && (
+                    <button onClick={() => setFormInfo(f => ({ ...f, lat:"", lng:"" }))}
+                      style={{ marginTop:"6px", background:"none", border:"none", fontSize:"11px", fontWeight:700, color:"#e74c3c", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
+                      ✕ Quitar ubicación del mapa
+                    </button>
+                  )}
+                </div>
+              </>)}
             </Caja>
             <button onClick={guardarInfo} disabled={guardando}
               style={{ width:"100%", background:`linear-gradient(135deg,${colorNexo}cc,${colorNexo})`, border:"none", borderRadius:"12px", padding:"14px", fontSize:"15px", fontWeight:900, color:"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif", boxShadow:`0 4px 0 ${colorNexo}88` }}>

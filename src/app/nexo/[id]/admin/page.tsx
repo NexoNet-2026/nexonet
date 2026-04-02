@@ -641,7 +641,7 @@ export default function NexoAdminPage() {
               </div>
               <Campo label="WhatsApp"     valor={formInfo.whatsapp}     onChange={v=>setFormInfo(f=>({...f,whatsapp:v}))} />
               <Campo label="Link externo" valor={formInfo.link_externo} onChange={v=>setFormInfo(f=>({...f,link_externo:v}))} />
-              {nexo?.tipo!=="grupo" && <Campo label="Precio" valor={String(formInfo.precio)} onChange={v=>setFormInfo(f=>({...f,precio:v}))} tipo="number" />}
+              {nexo?.tipo==="grupo" || nexo?.tipo==="empresa" || nexo?.tipo==="servicio" ? null : <Campo label="Precio" valor={String(formInfo.precio)} onChange={v=>setFormInfo(f=>({...f,precio:v}))} tipo="number" />}
               {(nexo?.tipo==="empresa" || nexo?.tipo==="servicio") && (<>
                 <Campo label="Dirección postal" valor={formInfo.direccion} onChange={v=>setFormInfo(f=>({...f,direccion:v}))} />
                 <div style={{ marginBottom:"12px" }}>

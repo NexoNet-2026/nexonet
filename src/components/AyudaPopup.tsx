@@ -91,7 +91,7 @@ const DATA: Record<TipoAyuda, Info> = {
       {emoji:"🛠️",titulo:"Ofrecé servicios",desc:"Que te encuentren quienes te necesitan sin pagar publicidad"},
       {emoji:"👥",titulo:"Grupos activos",desc:"Comunidades con chat en vivo, contenido y miembros activos"},
       {emoji:"🤖",titulo:"Búsqueda IA",desc:"Configurá filtros y recibí alertas automáticas de lo que buscás"},
-      {emoji:"⭐",titulo:"Sé Promotor",desc:"Referí usuarios y ganá el 15% de sus compras de por vida"},
+      {emoji:"⭐",titulo:"Sé Promotor",desc:"Referí usuarios y ganá el 20% de sus compras de por vida"},
     ],
   },
   mapa: {
@@ -147,7 +147,7 @@ const DATA: Record<TipoAyuda, Info> = {
     costo:"100.000 BIT Promo = $100.000 ARS · 1 BIT Promo = $1 ARS",
     items:[
       {emoji:"🔗",titulo:"Compartí tu link",desc:"Cada persona que se registra con tu código queda vinculada a tu cuenta para siempre"},
-      {emoji:"💰",titulo:"15% automático",desc:"Cada vez que tu referido compra BIT recibís el 15% en BIT Promo al instante"},
+      {emoji:"💰",titulo:"20% automático",desc:"Cada vez que tu referido compra BIT recibís el 20% en BIT Promo al instante"},
       {emoji:"♾️",titulo:"De por vida",desc:"La comisión no vence — mientras tu referido compre, vos ganás"},
       {emoji:"👥",titulo:"Sin límite de referidos",desc:"Podés referir a tantas personas como quieras, sin techo de ganancias"},
       {emoji:"💸",titulo:"Reembolso en efectivo",desc:"Al acumular 100.000 BIT Promo podés solicitar $100.000 ARS contra factura"},

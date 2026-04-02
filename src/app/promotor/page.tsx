@@ -156,7 +156,7 @@ export default function PromoterPage() {
               </div>
               {[
                 { n: "1", t: "Compartí tu link", d: "Compartí tu código y link de registro" },
-                { n: "2", t: "Ganás el 15%", d: "Recibís el 15% en BIT Promo de cada compra que haga tu referido, de por vida" },
+                { n: "2", t: "Ganás el 20%", d: "Recibís el 20% en BIT Promo de cada compra que haga tu referido, de por vida" },
               ].map(item => (
                 <div key={item.n} style={{ display: "flex", gap: "12px", marginBottom: "12px" }}>
                   <div style={{ width: "30px", height: "30px", borderRadius: "50%", background: "#d4a017",
@@ -237,7 +237,7 @@ export default function PromoterPage() {
                 </div>
                 <div style={{ textAlign: "right" }}>
                   <div style={{ fontSize: "11px", fontWeight: 800, color: "#27ae60" }}>
-                    15% comisión
+                    20% comisión
                   </div>
                 </div>
               </div>

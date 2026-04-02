@@ -39,7 +39,7 @@ export default function TerminosPage() {
           <p style={S}>NexoNet es un intermediario. Las transacciones son entre usuarios. NexoNet no garantiza la calidad, veracidad ni legalidad de los bienes o servicios publicados. Recomendamos verificar la identidad del vendedor antes de concretar una operación.</p>
 
           <div style={H}>7. Programa NexoPromotor</div>
-          <p style={S}>Al referir usuarios, recibís el 15% en BIT Promo de cada compra que realice tu referido. El reembolso en dinero está disponible al acumular 100.000 BIT Promo, contra presentación de factura A con IVA. El valor de referencia es 1 BIT Promo = $1 ARS al momento del reembolso. NexoNet se reserva el derecho de modificar el programa con previo aviso de 30 días.</p>
+          <p style={S}>Al referir usuarios, recibís el 20% en BIT Promo de cada compra que realice tu referido. El reembolso en dinero está disponible al acumular 100.000 BIT Promo, contra presentación de factura A con IVA. El valor de referencia es 1 BIT Promo = $1 ARS al momento del reembolso. NexoNet se reserva el derecho de modificar el programa con previo aviso de 30 días.</p>
 
           <div style={H}>8. Propiedad intelectual</div>
           <p style={S}>El nombre NexoNet, su logo, diseño y código son propiedad de Adrián Morra. No podés copiar, reproducir ni distribuir contenido de la plataforma sin autorización.</p>

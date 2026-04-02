@@ -315,7 +315,7 @@ export default function Header() {
         <span style={{ fontSize: "14px" }}>⭐</span>
         <span style={{ fontSize: "12px", fontWeight: 800, color: "#1a2a3a" }}>NEXO PROMOTOR</span>
         <span style={{ fontSize: "10px", color: "#1a2a3a", fontWeight: 700 }}>—</span>
-        <span style={{ fontSize: "12px", fontWeight: 800, color: "#1a2a3a" }}>Ganá el 15%</span>
+        <span style={{ fontSize: "12px", fontWeight: 800, color: "#1a2a3a" }}>Ganá el 20%</span>
         <span style={{ fontSize: "12px", color: "#1a2a3a", fontWeight: 800 }}>→</span>
       </div>
       <AyudaPopup tipo="promotor" open={promotorPopup} onClose={() => setPromotorPopup(false)} />

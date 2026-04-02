@@ -487,6 +487,17 @@ export default function AnuncioDetalle() {
             : <span style={{ fontSize:"80px" }}>📦</span>}
         </div>
         <button onClick={volver} style={{ position:"absolute", top:"44px", left:"12px", background:"rgba(212,160,23,0.9)", border:"none", borderRadius:"20px", padding:"6px 14px", color:"#1a2a3a", fontSize:"13px", fontWeight:800, cursor:"pointer", display:"flex", alignItems:"center", gap:"4px", fontFamily:"'Nunito',sans-serif" }}>← Volver</button>
+                <button onClick={async () => {
+                  const url = `${window.location.origin}/anuncios/${anuncio.id}`;
+                  if (navigator.share) {
+                    await navigator.share({ title: anuncio.titulo, text: `Mirá este anuncio en NexoNet: ${anuncio.titulo}`, url });
+                  } else {
+                    await navigator.clipboard.writeText(url);
+                    alert("✅ Link copiado");
+                  }
+                }} style={{ position:"absolute", top:"44px", right: esPropio ? "90px" : "12px", background:"rgba(58,123,213,0.85)", border:"none", borderRadius:"20px", padding:"6px 14px", color:"#fff", fontSize:"13px", fontWeight:800, cursor:"pointer", display:"flex", alignItems:"center", gap:"4px", fontFamily:"'Nunito',sans-serif" }}>
+                  📤 Compartir
+                </button>
         {esPropio && (
           <button onClick={() => setEditando(true)} style={{ position:"absolute", top:"44px", right:"12px", background:"rgba(212,160,23,0.85)", border:"none", borderRadius:"20px", padding:"6px 14px", fontSize:"12px", fontWeight:800, color:"#1a2a3a", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>✏️ Editar</button>
         )}

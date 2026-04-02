@@ -460,6 +460,17 @@ function NexoPageInner() {
               )}
             </div>
             <div style={{ display:"flex", flexDirection:"column", gap:"6px", flexShrink:0, maxWidth:"120px" }}>
+              <button onClick={async () => {
+                const url = `${window.location.origin}/nexo/${nexo.id}`;
+                if (navigator.share) {
+                  await navigator.share({ title: nexo.titulo, text: `Mirá "${nexo.titulo}" en NexoNet`, url });
+                } else {
+                  await navigator.clipboard.writeText(url);
+                  alert("✅ Link copiado");
+                }
+              }} style={{ background:"rgba(58,123,213,0.15)", border:"1px solid rgba(58,123,213,0.4)", borderRadius:"10px", padding:"7px 8px", fontSize:"11px", fontWeight:800, color:"#7fb3f5", cursor:"pointer", fontFamily:"'Nunito',sans-serif", display:"flex", alignItems:"center", justifyContent:"center", gap:"4px" }}>
+                📤 Compartir
+              </button>
               {esAdmin && (
                 <button onClick={()=>router.push(`/nexo/${id}/admin`)}
                   style={{ background:`${colorNexo}cc`, border:"none", borderRadius:"10px", padding:"7px 8px", fontSize:"11px", fontWeight:900, color:nexo.tipo==="anuncio"?"#1a2a3a":"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>

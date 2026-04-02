@@ -5,6 +5,7 @@ import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
 import { supabase } from "@/lib/supabase";
 import AyudaPopup from "@/components/AyudaPopup";
+import BannerPromotor from "@/components/BannerPromotor";
 
 
 type Referido = {
@@ -198,6 +199,13 @@ export default function PromoterPage() {
                   📱 WhatsApp
                 </button>
               </div>
+            </div>
+
+            <div style={{ background: "#fff", borderRadius: "16px", padding: "18px" }}>
+              <div style={{ fontSize:"11px", fontWeight:800, color:"#9a9a9a", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"12px" }}>
+                🎨 Tu banner de invitación
+              </div>
+              <BannerPromotor nombreUsuario={perfil.nombre_usuario} codigo={perfil.codigo} />
             </div>
 
             <div style={{ background: "linear-gradient(135deg,#1a2a3a,#243b55)", borderRadius: "16px", padding: "18px", border: "2px solid #d4a017" }}>

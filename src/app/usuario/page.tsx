@@ -1,6 +1,7 @@
 "use client";
 import React from "react";
 import Header from "@/components/Header";
+import BannerPromotor from "@/components/BannerPromotor";
 import BottomNav from "@/components/BottomNav";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -817,6 +818,14 @@ export default function Usuario() {
                   🔗
                 </button>
               </div>
+              {perfil && (
+                <div style={{ marginTop:"16px" }}>
+                  <div style={{ fontSize:"11px", fontWeight:800, color:"#9a9a9a", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"10px" }}>
+                    🎨 Tu banner de invitación
+                  </div>
+                  <BannerPromotor nombreUsuario={perfil.nombre_usuario} codigo={perfil.codigo} />
+                </div>
+              )}
               <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"36px", color:"#f0c040", marginBottom:"4px" }}>
                 {(perfil?.bits_promotor||0).toLocaleString()} BIT
               </div>

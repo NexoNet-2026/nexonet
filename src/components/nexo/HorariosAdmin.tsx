@@ -42,6 +42,9 @@ export default function HorariosAdmin({ nexoId, color }: Props) {
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
   const [guardado, setGuardado] = useState(false);
+  const [feriado, setFeriado] = useState<{ cerrado: boolean; hora_desde: string; hora_hasta: string }>({
+    cerrado: true, hora_desde: "09:00", hora_hasta: "18:00"
+  });
 
   useEffect(() => {
     const cargar = async () => {
@@ -53,6 +56,11 @@ export default function HorariosAdmin({ nexoId, color }: Props) {
             ? { dia: i, hora_desde: row.hora_desde?.slice(0,5) || "09:00", hora_hasta: row.hora_hasta?.slice(0,5) || "18:00", cerrado: row.cerrado || false }
             : { dia: i, hora_desde: "09:00", hora_hasta: "18:00", cerrado: false };
         }));
+      }
+      const { data: feriadoData } = await supabase.from("nexo_horarios")
+        .select("*").eq("nexo_id", nexoId).eq("dia", 7).maybeSingle();
+      if (feriadoData) {
+        setFeriado({ cerrado: feriadoData.cerrado || false, hora_desde: feriadoData.hora_desde?.slice(0,5) || "09:00", hora_hasta: feriadoData.hora_hasta?.slice(0,5) || "18:00" });
       }
       setCargando(false);
     };
@@ -76,6 +84,14 @@ export default function HorariosAdmin({ nexoId, color }: Props) {
         updated_at: new Date().toISOString(),
       }, { onConflict: "nexo_id,dia" });
     }
+    await supabase.from("nexo_horarios").upsert({
+      nexo_id: nexoId,
+      dia: 7,
+      hora_desde: feriado.cerrado ? null : feriado.hora_desde,
+      hora_hasta: feriado.cerrado ? null : feriado.hora_hasta,
+      cerrado: feriado.cerrado,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: "nexo_id,dia" });
     setGuardando(false);
     setGuardado(true);
     setTimeout(() => setGuardado(false), 2500);
@@ -163,6 +179,30 @@ export default function HorariosAdmin({ nexoId, color }: Props) {
               )}
             </div>
           ))}
+        </div>
+      </div>
+
+      <div style={{ background:"#fff", borderRadius:"16px", padding:"16px", boxShadow:"0 2px 8px rgba(0,0,0,0.06)" }}>
+        <div style={{ fontSize:"11px", fontWeight:900, color:"#9a9a9a", textTransform:"uppercase" as const, letterSpacing:"1px", marginBottom:"14px" }}>
+          🇦🇷 Horario en feriados
+        </div>
+        <div style={{ display:"flex", alignItems:"center", gap:"10px", padding:"10px 12px", borderRadius:"12px", background: feriado.cerrado ? "#f9f9f9" : `${color}08`, border:`1.5px solid ${feriado.cerrado ? "#e8e8e6" : color + "30"}` }}>
+          <div style={{ width:"76px", fontSize:"13px", fontWeight:900, color:"#1a2a3a", flexShrink:0 }}>FERIADO</div>
+          <div onClick={() => setFeriado(f => ({ ...f, cerrado: !f.cerrado }))}
+            style={{ width:"40px", height:"22px", borderRadius:"11px", background: feriado.cerrado ? "#e74c3c" : "#27ae60", position:"relative", cursor:"pointer", flexShrink:0, transition:"background .2s" }}>
+            <div style={{ width:"16px", height:"16px", borderRadius:"50%", background:"#fff", position:"absolute", top:"3px", left: feriado.cerrado ? "3px" : "21px", transition:"left .2s", boxShadow:"0 1px 3px rgba(0,0,0,0.2)" }} />
+          </div>
+          <div style={{ fontSize:"10px", fontWeight:800, color: feriado.cerrado ? "#e74c3c" : "#27ae60", width:"40px", flexShrink:0 }}>
+            {feriado.cerrado ? "CERR." : "ABRE"}
+          </div>
+          {!feriado.cerrado && (<>
+            <input type="time" value={feriado.hora_desde} onChange={e => setFeriado(f => ({ ...f, hora_desde: e.target.value }))}
+              style={{ border:"2px solid #e8e8e6", borderRadius:"8px", padding:"5px 8px", fontSize:"13px", fontFamily:"'Nunito',sans-serif", fontWeight:700, outline:"none", color:"#1a2a3a", flex:1, minWidth:"0" }} />
+            <span style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:700, flexShrink:0 }}>a</span>
+            <input type="time" value={feriado.hora_hasta} onChange={e => setFeriado(f => ({ ...f, hora_hasta: e.target.value }))}
+              style={{ border:"2px solid #e8e8e6", borderRadius:"8px", padding:"5px 8px", fontSize:"13px", fontFamily:"'Nunito',sans-serif", fontWeight:700, outline:"none", color:"#1a2a3a", flex:1, minWidth:"0" }} />
+          </>)}
+          {feriado.cerrado && <div style={{ flex:1, fontSize:"12px", fontWeight:700, color:"#bbb", textAlign:"center" as const }}>No disponible</div>}
         </div>
       </div>
 

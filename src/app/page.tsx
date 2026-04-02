@@ -119,13 +119,10 @@ export default function Home() {
               n.tipo === "grupo" &&
               (!n.subtipo || !SUBTIPOS_GRUPO.find(s => s.key === n.subtipo))
             );
-            if (sinSubtipo.length === 0 && nexos.filter(n=>n.tipo==="grupo").length > 0) return null;
+            if (sinSubtipo.length === 0) return null;
             return (
               <Slider titulo="👥 Grupos" acento="#3a7bd5" verTodos="/grupos" onTituloClick={() => router.push("/grupos")}>
-                {sinSubtipo.length > 0
-                  ? sinSubtipo.map((n,i) => <TarjetaNexo key={n.id} nexo={n} color="#3a7bd5" onClick={() => router.push(`/nexo/${n.id}`)} esPrimero={i===0&&(n.visitas_semana||0)>0} />)
-                  : [<TarjetaVacia key="vacia" emoji="👥" texto="Sé el primero en crear un grupo" color="#3a7bd5" onClick={() => router.push("/nexo/crear/grupo")} />]
-                }
+                {sinSubtipo.map((n,i) => <TarjetaNexo key={n.id} nexo={n} color="#3a7bd5" onClick={() => router.push(`/nexo/${n.id}`)} esPrimero={i===0&&(n.visitas_semana||0)>0} />)}
               </Slider>
             );
           })()}

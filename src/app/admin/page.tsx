@@ -408,10 +408,19 @@ export default function AdminPanel() {
     setAnuncios(prev=>prev.map(x=>x.id===a.id?{...x,estado:nuevo}:x));
     showToast(nuevo==="bloqueado"?"Anuncio bloqueado":"Anuncio activado");
   };
-  const eliminarAnuncio = async (a:any) => {
+  const eliminarAnuncio = async (a: any) => {
     if (!confirm(`¿Eliminar "${a.titulo}"?`)) return;
-    await supabase.from("anuncios").delete().eq("id",a.id);
-    setAnuncios(prev=>prev.filter(x=>x.id!==a.id));
+    const res = await fetch("/api/admin/eliminar-anuncio", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ anuncio_id: a.id }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      alert("Error al eliminar: " + (data.error || "Error desconocido"));
+      return;
+    }
+    setAnuncios(prev => prev.filter(x => x.id !== a.id));
     showToast("Anuncio eliminado");
   };
   const guardarAnuncio = async (a:any) => {
@@ -433,10 +442,26 @@ export default function AdminPanel() {
     setNexos(prev=>prev.map(x=>x.id===n.id?{...x,estado:nuevo}:x));
     showToast(nuevo==="bloqueado"?"Nexo bloqueado":"Nexo activado");
   };
-  const eliminarNexo = async (n:any) => {
+  const eliminarNexo = async (n: any) => {
     if (!confirm(`¿Eliminar nexo "${n.titulo}"?`)) return;
-    await supabase.from("nexos").delete().eq("id",n.id);
-    setNexos(prev=>prev.filter(x=>x.id!==n.id));
+    const res = await fetch("/api/admin/eliminar-usuario", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ usuario_id: n.usuario_id, solo_nexo_id: n.id }),
+    });
+    await supabase.from("nexo_miembros").delete().eq("nexo_id", n.id);
+    await supabase.from("nexo_visitas").delete().eq("nexo_id", n.id);
+    await supabase.from("nexo_descargas").delete().eq("nexo_id", n.id);
+    await supabase.from("nexo_descargas_pagos").delete().eq("nexo_id", n.id);
+    await supabase.from("nexo_slider_items").delete().eq("nexo_id", n.id);
+    await supabase.from("nexo_sliders").delete().eq("nexo_id", n.id);
+    await supabase.from("nexo_mensajes").delete().eq("nexo_id", n.id);
+    const { error: nexoError } = await supabase.from("nexos").delete().eq("id", n.id);
+    if (nexoError) {
+      alert("Error al eliminar nexo: " + nexoError.message);
+      return;
+    }
+    setNexos(prev => prev.filter(x => x.id !== n.id));
     showToast("Nexo eliminado");
   };
   const nexosFiltrados = nexos.filter(n=> filtroNexo==="todos" || n.tipo===filtroNexo);

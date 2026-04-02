@@ -2109,19 +2109,53 @@ export default function AdminPanel() {
 
       {/* ══ MODAL ASIGNAR BIT ══════════════════════════════════════════════════ */}
       {modalBit && (
-        <Modal titulo={`💰 Asignar BIT a ${modalBit.nombre_usuario}`} onClose={()=>setModalBit(null)}>
-          <label style={S.label}>Tipo de BIT</label>
-          <select style={{...S.input,marginBottom:"12px"}} value={bitTipo} onChange={e=>setBitTipo(e.target.value)}>
-            <option value="bits">💛 BIT Nexo</option>
-            <option value="bits_free">💙 BIT Free</option>
-            <option value="bits_promo">🟢 BIT Promo</option>
-          </select>
-          <label style={S.label}>Cantidad (negativa para quitar)</label>
-          <input style={{...S.input,marginBottom:"12px"}} type="number" placeholder="Ej: 500" value={bitCant} onChange={e=>setBitCant(e.target.value)} />
-          <label style={S.label}>Nota para el usuario (opcional)</label>
-          <input style={{...S.input,marginBottom:"16px"}} placeholder="Ej: Premio por participación" value={bitNota} onChange={e=>setBitNota(e.target.value)} />
-          <div style={{fontSize:"12px",color:"#9a9a9a",fontWeight:600,marginBottom:"12px"}}>Saldo actual: <strong>{(modalBit[bitTipo]||0).toLocaleString()}</strong></div>
-          <button onClick={asignarBit} style={S.btn("#d4a017")} disabled={!bitCant}>✅ Confirmar asignación</button>
+        <Modal titulo={`💰 BIT — ${modalBit.nombre_usuario}`} onClose={()=>setModalBit(null)}>
+          {/* Saldos actuales */}
+          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"6px",marginBottom:"16px"}}>
+            {[["bits","💛 Nexo"],["bits_free","💙 Free"],["bits_promo","🟢 Promo"]].map(([k,l])=>(
+              <div key={k} onClick={()=>setBitTipo(k)}
+                style={{background:bitTipo===k?"#1a2a3a":"#f4f4f2",borderRadius:"10px",padding:"10px",textAlign:"center",cursor:"pointer",border:`2px solid ${bitTipo===k?"#d4a017":"transparent"}`}}>
+                <div style={{fontSize:"10px",fontWeight:800,color:bitTipo===k?"#d4a017":"#9a9a9a"}}>{l}</div>
+                <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"22px",color:bitTipo===k?"#fff":"#1a2a3a"}}>{(modalBit[k]||0).toLocaleString()}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Tipo de operación */}
+          <div style={{display:"flex",gap:"8px",marginBottom:"14px"}}>
+            <button onClick={()=>setBitCant(Math.abs(parseInt(bitCant)||0).toString())}
+              style={{flex:1,...S.btn("#27ae60", !bitCant||parseInt(bitCant)>0)}}>
+              ➕ Acreditar
+            </button>
+            <button onClick={()=>setBitCant((-Math.abs(parseInt(bitCant)||0)).toString())}
+              style={{flex:1,...S.btn("#e74c3c", !bitCant||parseInt(bitCant)<0)}}>
+              ➖ Debitar / Pago
+            </button>
+          </div>
+
+          <label style={S.label}>Cantidad</label>
+          <input style={{...S.input,marginBottom:"10px",fontSize:"18px",fontWeight:800,textAlign:"center" as const,
+            color:parseInt(bitCant)<0?"#e74c3c":"#27ae60"}}
+            type="number" placeholder="Ej: 500"
+            value={bitCant} onChange={e=>setBitCant(e.target.value)} />
+
+          {bitCant && parseInt(bitCant) !== 0 && (
+            <div style={{background:"#f4f4f2",borderRadius:"10px",padding:"8px 12px",marginBottom:"10px",fontSize:"12px",fontWeight:700,color:"#1a2a3a",textAlign:"center" as const}}>
+              Saldo actual: <strong>{(modalBit[bitTipo]||0).toLocaleString()}</strong>
+              {" → "}
+              <strong style={{color:parseInt(bitCant)<0?"#e74c3c":"#27ae60"}}>
+                {Math.max(0,(modalBit[bitTipo]||0)+parseInt(bitCant)).toLocaleString()}
+              </strong>
+            </div>
+          )}
+
+          <label style={S.label}>Concepto (aparece en notificación)</label>
+          <input style={{...S.input,marginBottom:"16px"}} placeholder="Ej: Pago servicio, Premio, Ajuste..." value={bitNota} onChange={e=>setBitNota(e.target.value)} />
+
+          <button onClick={asignarBit} style={S.btn(parseInt(bitCant)<0?"#e74c3c":"#27ae60")}
+            disabled={!bitCant||parseInt(bitCant)===0}>
+            {parseInt(bitCant)<0 ? `💸 Debitar ${Math.abs(parseInt(bitCant)||0)} ${bitTipo}` : `✅ Acreditar ${parseInt(bitCant)||0} ${bitTipo}`}
+          </button>
         </Modal>
       )}
 

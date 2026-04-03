@@ -47,7 +47,7 @@ export default function PromoterPage() {
   }, []);
 
   const linkReferido = perfil
-    ? `${typeof window !== "undefined" ? window.location.origin : ""}/registro?ref=${perfil.codigo_nexo}`
+    ? `https://nexonet.ar/registro?ref=${perfil.codigo_nexo}`
     : "";
 
   const copiarLink = () => {
@@ -58,7 +58,7 @@ export default function PromoterPage() {
 
   const compartirWhatsApp = () => {
     const texto = encodeURIComponent(
-      `🔗 Registrate en NexoNet con mi código y empezá a conectarte con tu barrio.\n${linkReferido}`
+      `Registrate en NexoNet con mi codigo ${perfil.codigo_nexo} y empeza con 3.000 BIT gratis 🎁\n${linkReferido}`
     );
     window.open(`https://wa.me/?text=${texto}`, "_blank");
   };

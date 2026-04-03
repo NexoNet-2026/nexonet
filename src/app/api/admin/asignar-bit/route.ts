@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 export async function POST(req: Request) {
   try {
     const { usuario_id, columna, cantidad, nota } = await req.json();
+    console.log("ASIGNAR-BIT REQUEST:", { usuario_id, columna, cantidad });
     if (!usuario_id || !columna || cantidad === undefined)
       return NextResponse.json({ error: "Faltan campos" }, { status: 400 });
 

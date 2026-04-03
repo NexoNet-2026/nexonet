@@ -16,7 +16,10 @@ export async function POST(req: Request) {
     const { data: codigoData, error: rpcError } = await supabase.rpc("generar_codigo_usuario");
     if (rpcError) return NextResponse.json({ error: rpcError.message }, { status: 500 });
 
-    const { error } = await supabase.from("usuarios").insert({
+    // Si ya existe en usuarios con ese email, eliminar para permitir reintento limpio
+    await supabase.from("usuarios").delete().eq("email", email);
+
+    const { error } = await supabase.from("usuarios").upsert({
       id, email,
       nombre: nombre || null,
       nombre_usuario,
@@ -27,7 +30,7 @@ export async function POST(req: Request) {
       socio_regional_id: socio_regional_id || null,
       bits_free: 3000,
       bits_free_fecha: new Date().toISOString(),
-    });
+    }, { onConflict: "email", ignoreDuplicates: false });
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 

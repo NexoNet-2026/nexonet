@@ -82,41 +82,22 @@ function RegistroInner() {
       }
     }
 
-    const { data: codigoData, error: rpcError } = await supabase.rpc("generar_codigo_usuario");
-    if (rpcError) { setError("Error generando código: " + rpcError.message); setLoading(false); return; }
-
-    const { error: insertError } = await supabase.from("usuarios").insert({
-      id:                  data.user.id,
-      email:               form.email,
-      nombre:              form.nombre || null,
-      nombre_usuario:      form.nombre_usuario,
-      whatsapp:            form.whatsapp || null,
-      codigo:              codigoData,
-      codigo_promotor_ref: codigoRef || null,
-      referido_por:        referidoPor,
-      socio_regional_id:   socioRegionalId,
-      bits_free:           3000,
-      bits_free_fecha:     new Date().toISOString(),
+    const res = await fetch("/api/registro/completar", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id: data.user.id,
+        email: form.email,
+        nombre: form.nombre || null,
+        nombre_usuario: form.nombre_usuario,
+        whatsapp: form.whatsapp || null,
+        codigo_promotor_ref: codigoRef || null,
+        referido_por: referidoPor,
+        socio_regional_id: socioRegionalId,
+      }),
     });
-
-    if (insertError) { setError("Error guardando perfil: " + insertError.message); setLoading(false); return; }
-
-    // Acreditar BIT Promotor al promotor que refirió (30% NAN / 20% resto)
-    if (referidoPor) {
-      const bitsBienvenida = referidoPor === "ab56253d-b92e-4b73-a19a-3cd0cd95c458" ? 1500 : 1000;
-      const { data: promotor } = await supabase
-        .from("usuarios")
-        .select("bits_promotor, bits_promotor_total")
-        .eq("id", referidoPor)
-        .single();
-      if (promotor) {
-        await supabase.from("usuarios").update({
-          bits_promotor:       (promotor.bits_promotor || 0) + bitsBienvenida,
-          bits_promotor_total: (promotor.bits_promotor_total || 0) + bitsBienvenida,
-          es_promotor:         true,
-        }).eq("id", referidoPor);
-      }
-    }
+    const result = await res.json();
+    if (!res.ok) { setError("Error guardando perfil: " + result.error); setLoading(false); return; }
 
     setLoading(false);
     setPaso(2);

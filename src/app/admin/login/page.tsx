@@ -18,7 +18,8 @@ export default function AdminLogin() {
     setLoading(true); setError("");
     const { data, error: authErr } = await supabase.auth.signInWithPassword({ email, password: pass });
     if (authErr || !data.user) { setError("Credenciales incorrectas"); setLoading(false); return; }
-    if (data.user.id !== ADMIN_UUID) {
+    const { data: u } = await supabase.from("usuarios").select("es_admin_sistema").eq("id", data.user.id).single();
+    if (!u?.es_admin_sistema) {
       await supabase.auth.signOut();
       setError("Acceso denegado");
       setLoading(false);

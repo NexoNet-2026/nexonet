@@ -35,6 +35,39 @@ export async function POST(req: Request) {
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
+    // Buscar si el usuario tiene referido_por
+    const { data: usuarioData } = await supabase
+      .from("usuarios")
+      .select("referido_por")
+      .eq("id", usuario_id)
+      .single();
+
+    if (usuarioData?.referido_por && cantidad > 0 && (columna === "bits" || columna === "bits_promo")) {
+      const { data: promotor } = await supabase
+        .from("usuarios")
+        .select("bits_promo, bits_promotor_total, codigo")
+        .eq("id", usuarioData.referido_por)
+        .single();
+
+      if (promotor) {
+        const esNAN = promotor.codigo === "NAN-5194178";
+        const porcentaje = esNAN ? 0.30 : 0.20;
+        const comision = Math.floor(cantidad * porcentaje);
+
+        await supabase.from("usuarios").update({
+          bits_promo: (promotor.bits_promo || 0) + comision,
+          bits_promotor_total: (promotor.bits_promotor_total || 0) + comision,
+        }).eq("id", usuarioData.referido_por);
+
+        await supabase.from("notificaciones").insert({
+          usuario_id: usuarioData.referido_por,
+          tipo: "sistema",
+          mensaje: `⭐ Recibiste ${comision} BIT Promo de comisión por tu referido`,
+          leida: false,
+        });
+      }
+    }
+
     if (nota) {
       await supabase.from("notificaciones").insert({
         usuario_id,

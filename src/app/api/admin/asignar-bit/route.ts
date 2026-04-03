@@ -30,6 +30,8 @@ export async function POST(req: Request) {
       .update({ [columna]: nuevo, bits_saldo })
       .eq("id", usuario_id);
 
+    console.log("UPDATE resultado:", error, "columna:", columna, "nuevo:", nuevo, "usuario:", usuario_id);
+
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
     if (nota) {

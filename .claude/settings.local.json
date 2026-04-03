@@ -31,7 +31,9 @@
       "Bash(git:*)",
       "Bash(python:*)",
       "Bash(node -e \"if\\(typeof localStorage!==''undefined''\\) localStorage.removeItem\\(''ayuda_popups_activos''\\); console.log\\(''done''\\)\")",
-      "Bash(CONTEXT.md:*)"
+      "Bash(CONTEXT.md:*)",
+      "Bash(npx sharp-cli:*)",
+      "Bash(node:*)"
     ]
   }
 }

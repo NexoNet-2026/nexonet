@@ -47,7 +47,7 @@ export default function PromoterPage() {
   }, []);
 
   const linkReferido = perfil
-    ? `https://nexonet.ar/registro?ref=${perfil.codigo_nexo}`
+    ? `${typeof window !== "undefined" ? window.location.origin : ""}/registro?ref=${perfil.codigo_nexo}`
     : "";
 
   const copiarLink = () => {

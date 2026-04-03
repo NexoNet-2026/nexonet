@@ -385,6 +385,14 @@ export default function AdminPanel() {
       return;
     }
 
+    // Sincronizar bits_saldo
+    const { data: u } = await supabase.from("usuarios").select("bits,bits_free,bits_promo").eq("id", modalBit.id).single();
+    if (u) {
+      await supabase.from("usuarios").update({
+        bits_saldo: (u.bits||0) + (u.bits_free||0) + (u.bits_promo||0)
+      }).eq("id", modalBit.id);
+    }
+
     // Log de la transacción
     await supabase.from("log_bits_internos").insert({
       usuario_id: modalBit.id,

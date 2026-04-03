@@ -8,12 +8,27 @@ export default function AuthConfirm() {
   const [estado, setEstado] = useState<"cargando"|"ok"|"error">("cargando");
 
   useEffect(() => {
+    const hash = window.location.hash;
+    if (hash.includes("error=")) {
+      setEstado("error");
+      return;
+    }
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         setEstado("ok");
         setTimeout(() => router.push("/"), 3000);
       } else {
-        setEstado("error");
+        supabase.auth.onAuthStateChange((event, session) => {
+          if (event === "SIGNED_IN" && session) {
+            setEstado("ok");
+            setTimeout(() => router.push("/"), 3000);
+          }
+        });
+        setTimeout(() => {
+          supabase.auth.getSession().then(({ data: { session } }) => {
+            if (!session) setEstado("error");
+          });
+        }, 2000);
       }
     });
   }, []);

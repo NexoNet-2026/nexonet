@@ -358,6 +358,28 @@ function NexoPageInner() {
         if (e3) console.error("Error acreditando promotor:", e3);
       }
 
+      // Comisión 20% al promotor del creador del nexo
+      if (duenio) {
+        const { data: creador } = await supabase.from("usuarios").select("referido_por").eq("id", nexo.usuario_id).single();
+        if (creador?.referido_por) {
+          const comisionPromotor = Math.floor(bitsCreador * 0.2);
+          if (comisionPromotor > 0) {
+            const { data: promotor } = await supabase.from("usuarios").select("bits_promo,bits_promotor_total").eq("id", creador.referido_por).single();
+            if (promotor) {
+              await supabase.from("usuarios").update({
+                bits_promo: (promotor.bits_promo || 0) + comisionPromotor,
+                bits_promotor_total: (promotor.bits_promotor_total || 0) + comisionPromotor,
+              }).eq("id", creador.referido_por);
+              await supabase.from("notificaciones").insert({
+                usuario_id: creador.referido_por, tipo: "sistema",
+                mensaje: `💰 Tu referido recibió BIT por una descarga y ganaste ${comisionPromotor} BIT Promo`,
+                leida: false,
+              });
+            }
+          }
+        }
+      }
+
       // Registrar BIT Promo por descarga
       await supabase.from("bits_promo_descargas").insert({
         usuario_id: nexo.usuario_id, nexo_id: id, descarga_id: descarga.id,

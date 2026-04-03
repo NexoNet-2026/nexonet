@@ -705,7 +705,7 @@ export default function Usuario() {
         {seccion === "estadisticas" && (
           <div style={{ display:"flex", flexDirection:"column", gap:"14px" }}>
             <BitCard titulo="BIT NexoNet" color="#d4a017" disponibles={bitsNexonet} consumidos={bitsGastados} descripcion="BIT de conexión para anuncios y funciones de la plataforma" />
-            <BitCard titulo="BIT NexoPromotor" color="#27ae60" disponibles={bitsPromotor} consumidos={promoGastados} descripcion="BIT obtenidos como promotor — 1.000 BIT por cada referido registrado" />
+            <BitCard titulo="BIT NexoPromotor" color="#27ae60" disponibles={bitsPromotor} consumidos={promoGastados} descripcion="BIT obtenidos como promotor — Ganá el 20% de los BIT que ingresen a tus referidos" />
             <BitCard titulo="BIT NexoFree" color="#2980b9" disponibles={bitsFree} consumidos={freeGastados} descripcion="BIT de respaldo garantizado — aval legal ante eventualidades" free />
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:"10px" }}>
               {[
@@ -793,7 +793,7 @@ export default function Usuario() {
             <div style={{ background:"linear-gradient(135deg,#1a2a3a,#243b55)", borderRadius:"16px", padding:"24px 20px", textAlign:"center" }}>
               <div style={{ fontSize:"40px", marginBottom:"8px" }}>⭐</div>
               <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"28px", color:"#d4a017", letterSpacing:"2px", marginBottom:"4px" }}>Nexo Promotor</div>
-              <div style={{ fontSize:"13px", color:"#8a9aaa", fontWeight:600, marginBottom:"20px" }}>Ganá 1000 BIT por cada usuario que se registre con tu código</div>
+              <div style={{ fontSize:"13px", color:"#8a9aaa", fontWeight:600, marginBottom:"20px" }}>Ganá el 20% de los BIT que ingresen a la cuenta de tus referidos</div>
               <div style={{ background:"rgba(212,160,23,0.15)", borderRadius:"12px", padding:"16px", marginBottom:"8px" }}>
                 <div style={{ fontSize:"12px", color:"#8a9aaa", fontWeight:600, marginBottom:"4px" }}>Tu código de promotor</div>
                 <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"28px", color:"#d4a017", letterSpacing:"4px" }}>{perfil?.codigo||"---"}</div>

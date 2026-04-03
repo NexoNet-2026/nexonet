@@ -25,6 +25,7 @@ export default function PromoterPage() {
   const [referidos, setReferidos] = useState<Referido[]>([]);
   const [cargando,  setCargando]  = useState(true);
   const [copiado,   setCopiado]   = useState(false);
+  const [linkReferido, setLinkReferido] = useState("");
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session: s } }) => {
@@ -35,6 +36,7 @@ export default function PromoterPage() {
         .eq("id", s.user.id)
         .single();
       setPerfil(u);
+      setLinkReferido(`https://nexonet.ar/registro?ref=${(u as any).codigo_nexo}`);
 
       const { data: refs } = await supabase.from("usuarios")
         .select("id, nombre, codigo_nexo, created_at")
@@ -45,10 +47,6 @@ export default function PromoterPage() {
       setCargando(false);
     });
   }, []);
-
-  const linkReferido = perfil
-    ? `https://nexonet.ar/registro?ref=${perfil.codigo_nexo}`
-    : "";
 
   const copiarLink = () => {
     navigator.clipboard.writeText(linkReferido);

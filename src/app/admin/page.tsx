@@ -362,32 +362,18 @@ export default function AdminPanel() {
     showToast("✅ Usuario eliminado correctamente");
   };
   const asignarBit = async () => {
-    console.log("asignarBit llamado", { modalBit: modalBit?.id, bitCant, bitTipo });
     if (!modalBit || !bitCant) return;
     const cant = parseInt(bitCant);
     if (isNaN(cant) || cant === 0) return;
-
-    const colMap: Record<string, string> = {
-      bits: "bits", bits_free: "bits_free", bits_promo: "bits_promo",
-    };
-    const col = colMap[bitTipo] || "bits_free";
-
-    try {
-      const res = await fetch("/api/admin/asignar-bit", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ usuario_id: modalBit.id, columna: col, cantidad: cant, nota: bitNota }),
-      });
-      const data = await res.json();
-      if (!res.ok) { alert("❌ Error: " + data.error); return; }
-
-      setUsuarios(prev => prev.map(x => x.id === modalBit.id ? { ...x, [col]: data.nuevo, bits_saldo: data.bits_saldo } : x));
-      setModalBit(null); setBitCant(""); setBitNota("");
-      showToast(`✅ ${Math.abs(cant)} ${col} ${cant > 0 ? "acreditados" : "debitados"}`);
-    } catch(err) {
-      console.error("Error en fetch asignar-bit:", err);
-      alert("Error: " + err);
-    }
+    const col = bitTipo === "bits" ? "bits" : bitTipo === "bits_free" ? "bits_free" : "bits_promo";
+    const actual = modalBit[col] || 0;
+    const nuevo = Math.max(0, actual + cant);
+    const { error } = await supabase.from("usuarios").update({ [col]: nuevo }).eq("id", modalBit.id);
+    if (error) { alert("Error: " + error.message); return; }
+    setUsuarios(prev => prev.map(x => x.id === modalBit.id ? { ...x, [col]: nuevo } : x));
+    if (bitNota) await supabase.from("notificaciones").insert({ usuario_id: modalBit.id, tipo: "sistema", mensaje: `${cant > 0 ? "💰 Recibiste" : "💸 Se debitaron"} ${Math.abs(cant)} ${col} — ${bitNota}`, leida: false });
+    setModalBit(null); setBitCant(""); setBitNota("");
+    showToast(`✅ ${Math.abs(cant)} ${col} ${cant > 0 ? "acreditados" : "debitados"}`);
   };
   const resetPassword = async () => {
     if (!modalPassword || !nuevaPass.trim()) return;

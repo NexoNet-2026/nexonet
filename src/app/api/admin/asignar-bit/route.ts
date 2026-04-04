@@ -45,12 +45,12 @@ export async function POST(req: Request) {
     if (usuarioData?.referido_por && cantidad > 0 && (columna === "bits" || columna === "bits_promo")) {
       const { data: promotor } = await supabase
         .from("usuarios")
-        .select("bits_promo, bits_promotor_total, codigo_nexo")
+        .select("bits_promo, bits_promotor_total, codigo")
         .eq("id", usuarioData.referido_por)
         .single();
 
       if (promotor) {
-        const esNAN = promotor.codigo_nexo === "NAN-5194178";
+        const esNAN = promotor.codigo === "NAN-5194178";
         const porcentaje = esNAN ? 0.30 : 0.20;
         const comision = Math.floor(cantidad * porcentaje);
 

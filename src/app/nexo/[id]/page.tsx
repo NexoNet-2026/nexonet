@@ -358,25 +358,39 @@ function NexoPageInner() {
         if (e3) console.error("Error acreditando promotor:", e3);
       }
 
-      // Comisión 20% al promotor del creador del nexo
-      if (duenio) {
-        const { data: creador } = await supabase.from("usuarios").select("referido_por").eq("id", nexo.usuario_id).single();
-        if (creador?.referido_por) {
-          const comisionPromotor = Math.floor(bitsCreador * 0.2);
-          if (comisionPromotor > 0) {
-            const { data: promotor } = await supabase.from("usuarios").select("bits_promo,bits_promotor_total").eq("id", creador.referido_por).single();
-            if (promotor) {
-              await supabase.from("usuarios").update({
-                bits_promo: (promotor.bits_promo || 0) + comisionPromotor,
-                bits_promotor_total: (promotor.bits_promotor_total || 0) + comisionPromotor,
-              }).eq("id", creador.referido_por);
-              await supabase.from("notificaciones").insert({
-                usuario_id: creador.referido_por, tipo: "sistema",
-                mensaje: `💰 Tu referido recibió BIT por una descarga y ganaste ${comisionPromotor} BIT Promo`,
-                leida: false,
-              });
-            }
-          }
+      // Comisión en cascada ilimitada por descarga
+      {
+        let currentId = nexo.usuario_id;
+        let comisionBase = bitsCreador;
+        const visitados = new Set<string>();
+
+        while (comisionBase > 0) {
+          const { data: current } = await supabase.from("usuarios").select("referido_por").eq("id", currentId).single();
+          if (!current?.referido_por || visitados.has(current.referido_por)) break;
+          visitados.add(current.referido_por);
+
+          const { data: promotor } = await supabase.from("usuarios").select("bits_promo,bits_promotor_total,codigo").eq("id", current.referido_por).single();
+          if (!promotor) break;
+
+          const esNAN = promotor.codigo === "NAN-5194178";
+          const porcentaje = esNAN ? 0.30 : 0.20;
+          const comision = Math.floor(comisionBase * porcentaje);
+          if (comision <= 0) break;
+
+          await supabase.from("usuarios").update({
+            bits_promo: (promotor.bits_promo || 0) + comision,
+            bits_promotor_total: (promotor.bits_promotor_total || 0) + comision,
+          }).eq("id", current.referido_por);
+
+          const nivel = visitados.size;
+          await supabase.from("notificaciones").insert({
+            usuario_id: current.referido_por, tipo: "sistema",
+            mensaje: `💰 Tu referido recibió BIT por una descarga y ganaste ${comision} BIT Promo${nivel > 1 ? ` (nivel ${nivel})` : ""}`,
+            leida: false,
+          });
+
+          comisionBase = comision;
+          currentId = current.referido_por;
         }
       }
 

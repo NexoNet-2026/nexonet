@@ -173,46 +173,58 @@ export async function POST(req: NextRequest) {
 
     console.log(`✅ Acreditados ${pkg.cantidad} en ${pkg.col} para usuario ${usuario_id}`);
 
-    // ── Comisión al promotor referidor (30% NAN / 20% resto) ──
+    // ── Comisión en cascada ilimitada ──
     try {
-      const { data: comprador } = await supabase
-        .from("usuarios")
-        .select("referido_por")
-        .eq("id", usuario_id)
-        .single();
+      let currentId = usuario_id;
+      let comisionBase = pkg.cantidad;
+      const visitados = new Set<string>();
 
-      if (comprador?.referido_por) {
-        const porcentaje = comprador.referido_por === "ab56253d-b92e-4b73-a19a-3cd0cd95c458" ? 0.30 : 0.20;
-        const comision = Math.floor(pkg.cantidad * porcentaje);
-        const pctLabel = comprador.referido_por === "ab56253d-b92e-4b73-a19a-3cd0cd95c458" ? "30%" : "20%";
-        if (comision > 0) {
-          const { data: promotor } = await supabase
-            .from("usuarios")
-            .select("bits_promo, bits_promotor_total")
-            .eq("id", comprador.referido_por)
-            .single();
+      while (comisionBase > 0) {
+        const { data: current } = await supabase
+          .from("usuarios")
+          .select("referido_por")
+          .eq("id", currentId)
+          .single();
 
-          if (promotor) {
-            await supabase.from("usuarios").update({
-              bits_promo: (promotor.bits_promo || 0) + comision,
-              bits_promotor_total: (promotor.bits_promotor_total || 0) + comision,
-            }).eq("id", comprador.referido_por);
+        if (!current?.referido_por || visitados.has(current.referido_por)) break;
+        visitados.add(current.referido_por);
 
-            await supabase.from("notificaciones").insert({
-              usuario_id: comprador.referido_por,
-              tipo: "sistema",
-              mensaje: `⭐ Ganaste ${comision.toLocaleString()} BIT Promo — comisión del ${pctLabel} por compra de tu referido`,
-              leida: false,
-            });
+        const { data: promotor } = await supabase
+          .from("usuarios")
+          .select("bits_promo, bits_promotor_total, codigo")
+          .eq("id", current.referido_por)
+          .single();
 
-            await supabase.from("log_bits_internos").insert({
-              usuario_id: comprador.referido_por,
-              cantidad: comision,
-              motivo: `Comisión ${pctLabel} — referido ${usuario_id} compró ${pkg.cantidad} BIT (paquete: ${paquete})`,
-              asignado_por: usuario_id,
-            });
-          }
-        }
+        if (!promotor) break;
+
+        const esNAN = promotor.codigo === "NAN-5194178";
+        const porcentaje = esNAN ? 0.30 : 0.20;
+        const comision = Math.floor(comisionBase * porcentaje);
+
+        if (comision <= 0) break;
+
+        await supabase.from("usuarios").update({
+          bits_promo: (promotor.bits_promo || 0) + comision,
+          bits_promotor_total: (promotor.bits_promotor_total || 0) + comision,
+        }).eq("id", current.referido_por);
+
+        const nivel = visitados.size;
+        await supabase.from("notificaciones").insert({
+          usuario_id: current.referido_por,
+          tipo: "sistema",
+          mensaje: `⭐ Ganaste ${comision.toLocaleString()} BIT Promo — comisión por compra de referido${nivel > 1 ? ` (nivel ${nivel})` : ""}`,
+          leida: false,
+        });
+
+        await supabase.from("log_bits_internos").insert({
+          usuario_id: current.referido_por,
+          cantidad: comision,
+          motivo: `Comisión nivel ${nivel} — referido ${usuario_id} compró ${pkg.cantidad} BIT (paquete: ${paquete})`,
+          asignado_por: usuario_id,
+        });
+
+        comisionBase = comision;
+        currentId = current.referido_por;
       }
     } catch (e) { console.error("Error comisión promotor:", e); }
 

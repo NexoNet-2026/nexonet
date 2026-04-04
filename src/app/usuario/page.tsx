@@ -688,6 +688,8 @@ export default function Usuario() {
 
               <Campo label="Provincia" valor={personal.provincia} onChange={v=>setPersonal(p=>({...p,provincia:v}))} visible={visP.provincia} onToggle={()=>toggleP("provincia")} placeholder="Ej: Santa Fe" icono="🗺️" />
               <Campo label="Ciudad" valor={personal.ciudad} onChange={v=>setPersonal(p=>({...p,ciudad:v}))} visible={visP.ciudad} onToggle={()=>toggleP("ciudad")} placeholder="Ej: Rosario" icono="🏙️" />
+              <Campo label="Barrio" valor={personal.barrio} onChange={v=>setPersonal(p=>({...p,barrio:v}))} visible={visP.barrio} onToggle={()=>toggleP("barrio")} placeholder="Ej: Centro" icono="🏘️" />
+              <Campo label="Dirección" valor={personal.direccion} onChange={v=>setPersonal(p=>({...p,direccion:v}))} visible={visP.direccion} onToggle={()=>toggleP("direccion")} placeholder="Ej: San Martín 1234, piso 2" icono="📍" />
               <button onClick={geolocPersonal} disabled={gpsLoad}
                 style={{ display:"flex", alignItems:"center", gap:"8px", background:"rgba(58,123,213,0.08)", border:"2px solid rgba(58,123,213,0.25)", borderRadius:"12px", padding:"10px 14px", cursor:gpsLoad?"wait":"pointer", fontFamily:"'Nunito',sans-serif", fontSize:"13px", fontWeight:800, color:"#3a7bd5", width:"100%", marginTop:"4px", opacity:gpsLoad?0.6:1 }}>
                 {gpsLoad ? "⏳ Buscando..." : "📍 Usar mi ubicación"}

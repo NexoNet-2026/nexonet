@@ -22,6 +22,7 @@ const SLIDERS_PREDEFINIDOS: Record<string, { id:string; emoji:string; titulo:str
   portfolio:    [{ id:"portfolio",    emoji:"🎨", titulo:"Portfolio",           tipo:"portfolio",    desc:"Trabajos realizados" }],
   testimonios:  [{ id:"testimonios",  emoji:"💬", titulo:"Testimonios",         tipo:"testimonios",  desc:"Opiniones de clientes" }],
   certificados: [{ id:"certificados", emoji:"🏅", titulo:"Certificados",        tipo:"certificados", desc:"Títulos y credenciales" }],
+  lista_precios:[{ id:"lista_precios",emoji:"💲", titulo:"Lista de precios",   tipo:"lista_precios", desc:"Ítems con precio — gratis o pago" }],
 };
 
 const CONFIG_TIPO: Record<string, { titulo:string; color:string; emoji:string; sliders_default:string[]; usaSliders:boolean }> = {

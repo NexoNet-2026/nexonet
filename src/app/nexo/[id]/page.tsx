@@ -872,7 +872,7 @@ const SLIDER_EMOJIS: Record<string,string> = {
   galeria:"📸", videos:"🎬", documentos:"📄", descargas:"📥", productos:"🛒",
   novedades:"📢", proveedores:"🏭", faq:"❓", facturas:"🧾", calendario:"📅",
   equipo:"👤", servicios:"🛠️", portfolio:"🎨", testimonios:"💬", certificados:"🏅",
-  mensajes:"💬", chat:"💬", personalizado:"✨", resenas:"⭐", clientes:"🤝",
+  mensajes:"💬", chat:"💬", personalizado:"✨", resenas:"⭐", clientes:"🤝", lista_precios:"💲",
 };
 
 function SliderContenido({ slider, items, mensajes, perfil, nexo, esAdmin, esMiembro, descargasPagadas, pagandoDescarga, miembros, texto, setTexto, enviando, onEnviar, onVisor, onPagarDescarga, onAbrirDescarga, onFlash, bottomRef, colorNexo }: any) {
@@ -935,7 +935,7 @@ function SliderContenido({ slider, items, mensajes, perfil, nexo, esAdmin, esMie
   }
 
   // DESCARGAS
-  if (tipo==="descargas") {
+  if (tipo==="descargas" || tipo==="lista_precios") {
     return (
       <div style={{ display:"flex", flexDirection:"column", gap:"12px" }}>
         {items.length===0 && <EmptySlider emoji="📥" texto="Sin archivos todavía" sub="El administrador puede agregar descargas desde el panel admin" />}

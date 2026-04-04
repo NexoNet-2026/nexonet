@@ -14,7 +14,7 @@ const SLIDER_EMOJIS: Record<string,string> = {
   galeria:"📸", videos:"🎬", documentos:"📄", descargas:"📥", productos:"🛒",
   novedades:"📢", proveedores:"🏭", faq:"❓", facturas:"🧾", calendario:"📅",
   equipo:"👤", servicios:"🛠️", portfolio:"🎨", testimonios:"💬", certificados:"🏅",
-  mensajes:"💬", chat:"💬", personalizado:"✨",
+  mensajes:"💬", chat:"💬", personalizado:"✨", lista_precios:"💲",
 };
 
 const TIPO_COLORES: Record<string,string> = {
@@ -37,6 +37,7 @@ const SLIDERS_CATALOGO = [
   { tipo:"portfolio",    emoji:"🎨", titulo:"Portfolio",           desc:"Trabajos" },
   { tipo:"testimonios",  emoji:"💬", titulo:"Testimonios",         desc:"Opiniones" },
   { tipo:"certificados", emoji:"🏅", titulo:"Certificados",        desc:"Títulos" },
+  { tipo:"lista_precios",emoji:"💲", titulo:"Lista de precios",    desc:"Gratis y de pago" },
   { tipo:"mensajes",     emoji:"💬", titulo:"Chat",                desc:"Mensajes internos" },
 ];
 
@@ -936,7 +937,7 @@ export default function NexoAdminPage() {
             )}
             <Campo label="Título (opcional)" valor={formItem.titulo} onChange={v=>setFormItem(f=>({...f,titulo:v}))} />
             <CampoTA label="Descripción (opcional)" valor={formItem.descripcion} onChange={v=>setFormItem(f=>({...f,descripcion:v}))} />
-            {popupItem.slider.tipo === "descargas" && (
+            {(popupItem.slider.tipo === "descargas" || popupItem.slider.tipo === "lista_precios") && (
               <>
                 <div style={{ marginBottom:"12px" }}>
                   <label style={LS}>Precio en BIT (0 = gratis)</label>

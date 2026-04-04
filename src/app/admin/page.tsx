@@ -1449,23 +1449,23 @@ export default function AdminPanel() {
             const abierto = promoExpandido.has(r.id);
             return (
               <div key={r.id}>
-                <div onClick={esPromo&&subRefs.length>0?()=>toggleExpand(r.id):undefined} style={{display:"flex",alignItems:"center",gap:"10px",padding:"8px 0",borderBottom:"1px solid #f0f0ee",cursor:esPromo&&subRefs.length>0?"pointer":"default"}}>
+                <div onClick={subRefs.length>0?()=>toggleExpand(r.id):undefined} style={{display:"flex",alignItems:"center",gap:"10px",padding:"8px 0",borderBottom:"1px solid #f0f0ee",cursor:subRefs.length>0?"pointer":"default"}}>
                   <div style={{width:"30px",height:"30px",borderRadius:"50%",background:esPromo?"rgba(212,160,23,0.15)":"rgba(58,123,213,0.1)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"13px",flexShrink:0}}>
                     {esPromo?"⭐":"👤"}
                   </div>
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{fontSize:"12px",fontWeight:800,color:"#1a2a3a"}}>{r.nombre_usuario || r.nombre || "Usuario"} {esPromo&&<span style={{fontSize:"9px",color:"#d4a017",fontWeight:700}}>(promotor)</span>}</div>
                     <div style={{fontSize:"10px",color:"#9a9a9a",fontWeight:600}}>{r.codigo} · {new Date(r.created_at).toLocaleDateString("es-AR")}</div>
-                    {esPromo&&<div style={{display:"flex",gap:"6px",marginTop:"2px"}}><span style={{fontSize:"9px",fontWeight:700,color:"#3a7bd5",background:"rgba(58,123,213,0.08)",borderRadius:"6px",padding:"1px 6px"}}>👥 {subRefs.length}</span><span style={{fontSize:"9px",fontWeight:700,color:"#27ae60",background:"rgba(39,174,96,0.08)",borderRadius:"6px",padding:"1px 6px"}}>🪙 {(r.bits_promotor_total||0).toLocaleString()}</span></div>}
+                    <div style={{display:"flex",gap:"6px",marginTop:"2px"}}>{subRefs.length>0&&<span style={{fontSize:"9px",fontWeight:700,color:"#3a7bd5",background:"rgba(58,123,213,0.08)",borderRadius:"6px",padding:"1px 6px"}}>👥 {subRefs.length}</span>}{esPromo&&<span style={{fontSize:"9px",fontWeight:700,color:"#27ae60",background:"rgba(39,174,96,0.08)",borderRadius:"6px",padding:"1px 6px"}}>🪙 {(r.bits_promotor_total||0).toLocaleString()}</span>}</div>
                   </div>
                   <div style={{display:"flex",gap:"6px",flexShrink:0,flexWrap:"wrap",justifyContent:"flex-end"}}>
                     {(r.bits||0)>0&&<span style={{fontSize:"9px",fontWeight:700,color:"#d4a017",background:"rgba(212,160,23,0.08)",borderRadius:"6px",padding:"2px 6px"}}>💛 {(r.bits||0).toLocaleString()}</span>}
                     {(r.bits_free||0)>0&&<span style={{fontSize:"9px",fontWeight:700,color:"#2980b9",background:"rgba(41,128,185,0.08)",borderRadius:"6px",padding:"2px 6px"}}>💙 {(r.bits_free||0).toLocaleString()}</span>}
                     {(r.bits_promo||0)>0&&<span style={{fontSize:"9px",fontWeight:700,color:"#27ae60",background:"rgba(39,174,96,0.08)",borderRadius:"6px",padding:"2px 6px"}}>🟢 {(r.bits_promo||0).toLocaleString()}</span>}
                   </div>
-                  {esPromo&&subRefs.length>0&&<span style={{fontSize:"14px",color:"#9a9a9a",transition:"transform .2s",transform:abierto?"rotate(180deg)":"rotate(0)"}}>▼</span>}
+                  {subRefs.length>0&&<span style={{fontSize:"14px",color:"#9a9a9a",transition:"transform .2s",transform:abierto?"rotate(180deg)":"rotate(0)"}}>▼</span>}
                 </div>
-                {esPromo&&abierto&&subRefs.length>0&&(
+                {abierto&&subRefs.length>0&&(
                   <div style={{marginLeft:"20px",borderLeft:"2px solid #8e44ad",paddingLeft:"12px",marginTop:"2px",marginBottom:"4px"}}>
                     {subRefs.map((sr:any)=>renderReferido(sr,nivel+1))}
                   </div>

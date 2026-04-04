@@ -1497,7 +1497,7 @@ export default function AdminPanel() {
                         <div style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600}}>{u.codigo} · {u.email}</div>
                         <div style={{display:"flex",gap:"8px",marginTop:"3px",flexWrap:"wrap"}}>
                           <span style={{fontSize:"10px",fontWeight:700,color:"#3a7bd5",background:"rgba(58,123,213,0.08)",borderRadius:"8px",padding:"2px 7px"}}>👥 {refs.length} referidos</span>
-                          <span style={{fontSize:"10px",fontWeight:700,color:"#d4a017",background:"rgba(212,160,23,0.08)",borderRadius:"8px",padding:"2px 7px"}}>🪙 {(u.bits_promotor||0).toLocaleString()} BIT actual</span>
+                          <span style={{fontSize:"10px",fontWeight:700,color:"#d4a017",background:"rgba(212,160,23,0.08)",borderRadius:"8px",padding:"2px 7px"}}>🪙 {(u.bits_promo||0).toLocaleString()} BIT actual</span>
                         </div>
                       </div>
                       <div style={{textAlign:"right",flexShrink:0}}>

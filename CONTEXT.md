@@ -26,7 +26,7 @@
 
 ---
 
-## Estado funcional — ✅ Resuelto esta sesión
+## Estado funcional — ✅ Resuelto sesiones anteriores
 
 - Tarjetas unificadas: TarjetaNexo (home + buscar) con visitas totales
 - TarjetaAnuncio con visitas_semana, sin indicador WhatsApp
@@ -50,6 +50,43 @@
 - FK busqueda_matches ON DELETE CASCADE
 - Toggle notificaciones WhatsApp eliminado de mis-anuncios y usuario
 
+## ✅ Resuelto — 4 abril 2026
+
+### Infraestructura
+- Middleware redirect: nexonet-git-master-...vercel.app → nexonet.ar (src/middleware.ts)
+- Cache-Control: no-store, no-cache, must-revalidate en next.config.ts headers
+- linkReferido en promotor/page.tsx usa https://nexonet.ar hardcodeado (no window.location.origin)
+- linkReferido se calcula en useEffect, no en render (evita cache de bundle)
+
+### Comisión en cascada ilimitada
+- While loop con Set anti-ciclos en 3 puntos: asignar-bit API, webhook MercadoPago, descargas en nexo
+- 30% para NAN-5194178, 20% para el resto, sobre la comisión del nivel anterior
+- Notificación con nombre del referido y nivel: "⭐ Recibiste X BIT Promo de comisión por tu referido [nombre] (nivel N)"
+- Se detiene cuando comisión llega a 0 o no hay más referido_por
+- Archivos: src/app/api/admin/asignar-bit/route.ts, src/app/api/mp/webhook/route.ts, src/app/nexo/[id]/page.tsx
+
+### Promotor y referidos
+- Registro sin código de promotor asigna referido_por = adrianmorra (ab56253d...) por default
+- asignarBit en admin llama a API /api/admin/asignar-bit en vez de update directo (activa comisión)
+- Texto WhatsApp promotor: "Registrate en NexoNet con mi codigo [X] y empeza con 3.000 BIT gratis 🎁"
+- Columna DB es `codigo` (no `codigo_nexo`) — codigo_nexo no existe en tabla usuarios
+
+### Panel admin
+- Dashboard: contadores por tipo de nexo (empresa/servicio/grupo/trabajo activos/total), descargas, links, mensajes totales
+- Tab Promotores: árbol jerárquico expandible con niveles, top-level = promotores sin referido_por promotor
+- Referidos expandibles muestran nombre, código, fecha, saldos (💛💙🟢)
+- Múltiples nodos expandibles a la vez (Set)
+- bits_promo 🟢 visible en tarjeta de cada usuario
+
+### Grupos
+- BIT Free habilitado para unirse a grupo (PopupCompra muestra saldo free)
+- BIT Free habilitado para pagar admin en grupo (confirmarPagoAdmin acepta bit_free)
+- Cascada ilimitada en comisión por unirse a grupo (reemplaza comisión fija al dueño)
+
+### Formulario crear anuncio
+- Filtros dinámicos de subrubro excluyen "precio" y "descripcion" para evitar duplicados con campos principales
+- Aplica en ambas secciones (sin sliders y con sliders) de src/app/nexo/crear/[tipo]/page.tsx
+
 ## Tablas nuevas / modificadas
 
 - `busqueda_matches` (id uuid, busqueda_id uuid, usuario_id uuid, anuncio_id integer, bits_consumidos integer)
@@ -70,4 +107,4 @@
 
 ---
 
-*Última actualización: 28 de marzo de 2026*
+*Última actualización: 4 de abril de 2026*

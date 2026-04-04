@@ -128,6 +128,7 @@ export default function AdminPanel() {
   const [modalSocio, setModalSocio] = useState<any>(null);
   const [modalReintegro, setModalReintegro] = useState<any>(null);
   const [reintegroCant, setReintegroCant] = useState("");
+  const [usuariosList, setUsuariosList] = useState<any[]>([]);
 
   // Crear usuario
   const [modalCrearUser, setModalCrearUser] = useState(false);
@@ -350,6 +351,11 @@ export default function AdminPanel() {
     const segInterval = setInterval(() => setRtSegs(s=>s+1), 1000);
     return () => { clearInterval(rtInterval); clearInterval(segInterval); };
   }, []);
+
+  useEffect(() => {
+    if (!modalSocio) return;
+    supabase.from("usuarios").select("id,nombre_usuario,email,codigo").eq("es_bot",false).order("nombre_usuario").then(({data})=>{ if(data) setUsuariosList(data); });
+  }, [modalSocio !== null]);
 
   // ── Usuarios ──
   const bloquearUsuario = async (u:any) => {
@@ -2045,7 +2051,7 @@ export default function AdminPanel() {
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"14px"}}>
               <div style={{display:"flex",gap:"8px"}}>
                 <button onClick={cargarSocios} style={S.btn("#3a7bd5")}>🔄 Cargar</button>
-                <button onClick={()=>setModalSocio({tipo:"regional",porcentaje:"10",region:"",codigo_referido:"",usuario_id:"",activo:true,_buscar:""})} style={S.btn("#27ae60")}>➕ Nuevo socio</button>
+                <button onClick={()=>setModalSocio({tipo:"regional",porcentaje:"10",region:"",codigo_referido:"",usuario_id:"",activo:true})} style={S.btn("#27ae60")}>➕ Nuevo socio</button>
               </div>
             </div>
             {socios.length===0 && <div style={{...S.card,textAlign:"center",color:"#9a9a9a",fontWeight:600}}>Sin socios. Hacé click en 🔄 Cargar.</div>}
@@ -2066,7 +2072,7 @@ export default function AdminPanel() {
                     </div>
                   </div>
                   <div style={{display:"flex",gap:"4px",flexShrink:0}}>
-                    <button onClick={()=>setModalSocio({...s,porcentaje:String(s.porcentaje),_buscar:""})} style={{...S.btn("#3a7bd5",true),padding:"5px 8px"}}>✏️</button>
+                    <button onClick={()=>setModalSocio({...s,porcentaje:String(s.porcentaje)})} style={{...S.btn("#3a7bd5",true),padding:"5px 8px"}}>✏️</button>
                     <button onClick={()=>setModalReintegro(s)} style={{...S.btn("#d4a017",true),padding:"5px 8px"}}>💸</button>
                     <button onClick={async()=>{await supabase.from("socios_comerciales").update({activo:!s.activo}).eq("id",s.id);await cargarSocios();}} style={{...S.btn(s.activo?"#e74c3c":"#27ae60",true),padding:"5px 8px"}}>{s.activo?"⏸":"▶"}</button>
                   </div>
@@ -2080,21 +2086,14 @@ export default function AdminPanel() {
       {/* ══ MODAL SOCIO ══════════════════════════════════════════════════ */}
       {modalSocio && (
         <Modal titulo={modalSocio.id?"✏️ Editar socio":"➕ Nuevo socio"} onClose={()=>setModalSocio(null)}>
-          <label style={S.label}>Buscar usuario por email o código NXN</label>
-          <div style={{display:"flex",gap:"6px",marginBottom:"10px"}}>
-            <input style={{...S.input,flex:1}} placeholder="email o NXN-XXXXX" value={modalSocio._buscar||""} onChange={e=>setModalSocio({...modalSocio,_buscar:e.target.value})} />
-            <button onClick={async()=>{
-              const q = modalSocio._buscar?.trim();
-              if(!q) return;
-              let found = null;
-              const {data: byEmail} = await supabase.from("usuarios").select("id,nombre_usuario,email,codigo").eq("email",q).limit(1).maybeSingle();
-              if (byEmail) { found = byEmail; }
-              else { const {data: byCodigo} = await supabase.from("usuarios").select("id,nombre_usuario,email,codigo").eq("codigo",q).limit(1).maybeSingle(); if (byCodigo) found = byCodigo; }
-              if(found) { setModalSocio({...modalSocio,usuario_id:found.id,_usuario:found}); showToast(`Encontrado: ${found.nombre_usuario}`); }
-              else showToast("Usuario no encontrado");
-            }} style={S.btn("#3a7bd5")}>🔍</button>
-          </div>
-          {modalSocio._usuario && <div style={{fontSize:"12px",fontWeight:700,color:"#27ae60",marginBottom:"10px"}}>✅ {modalSocio._usuario.nombre_usuario} ({modalSocio._usuario.email})</div>}
+          <label style={S.label}>Usuario</label>
+          <select style={{...S.input,marginBottom:"10px"}} value={modalSocio.usuario_id||""} onChange={e=>{
+            const u = usuariosList.find(u=>u.id===e.target.value);
+            setModalSocio({...modalSocio, usuario_id:e.target.value, _usuario:u||null});
+          }}>
+            <option value="">-- Seleccionar usuario --</option>
+            {usuariosList.map(u=><option key={u.id} value={u.id}>{u.nombre_usuario} — {u.email}</option>)}
+          </select>
           <label style={S.label}>Tipo</label>
           <select style={{...S.input,marginBottom:"10px"}} value={modalSocio.tipo} onChange={e=>setModalSocio({...modalSocio,tipo:e.target.value})}>
             <option value="principal">👑 Principal</option>

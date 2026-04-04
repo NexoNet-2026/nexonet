@@ -141,7 +141,7 @@ export default function AdminPanel() {
   const [registrosMes, setRegistrosMes] = useState<{mes:string;cant:number}[]>([]);
   const [dineroStats, setDineroStats] = useState<any>({ total:0, esteMes:0 });
   const [nexoStats, setNexoStats] = useState<any>({ empresa:0,servicio:0,grupo:0,trabajo:0,empresaAct:0,servicioAct:0,grupoAct:0,trabajoAct:0,descargas:0,links:0,totalMensajes:0 });
-  const [promoExpandido, setPromoExpandido] = useState<string|null>(null);
+  const [promoExpandido, setPromoExpandido] = useState<Set<string>>(new Set());
   // Realtime
   const [rtOnline, setRtOnline] = useState(0);
   const [rtOnline15, setRtOnline15] = useState(0);
@@ -1429,22 +1429,58 @@ export default function AdminPanel() {
 
         {/* ══ PROMOTORES ══════════════════════════════════════════════════════ */}
         {!loading && tab==="promotores" && (()=>{
-          const promotores = usuarios.filter(u=>u.es_promotor).sort((a:any,b:any)=>(b.bits_promotor_total||0)-(a.bits_promotor_total||0));
-          const totalRefs = usuarios.filter(u=>u.referido_por).length;
+          const allPromos = usuarios.filter((u:any)=>u.es_promotor);
+          const promoIds = new Set(allPromos.map((u:any)=>u.id));
+          // Top-level: promotores que no fueron referidos por otro promotor
+          const topPromos = allPromos.filter((u:any)=>!u.referido_por || !promoIds.has(u.referido_por)).sort((a:any,b:any)=>(b.bits_promotor_total||0)-(a.bits_promotor_total||0));
+          const totalRefs = usuarios.filter((u:any)=>u.referido_por).length;
+          const toggleExpand = (id:string) => setPromoExpandido(prev=>{const s=new Set(prev);s.has(id)?s.delete(id):s.add(id);return s;});
+
+          const renderReferido = (r:any, nivel:number) => {
+            const esPromo = r.es_promotor;
+            const subRefs = usuarios.filter((x:any)=>x.referido_por===r.id).sort((a:any,b:any)=>new Date(b.created_at).getTime()-new Date(a.created_at).getTime());
+            const abierto = promoExpandido.has(r.id);
+            return (
+              <div key={r.id}>
+                <div onClick={esPromo&&subRefs.length>0?()=>toggleExpand(r.id):undefined} style={{display:"flex",alignItems:"center",gap:"10px",padding:"8px 0",borderBottom:"1px solid #f0f0ee",cursor:esPromo&&subRefs.length>0?"pointer":"default"}}>
+                  <div style={{width:"30px",height:"30px",borderRadius:"50%",background:esPromo?"rgba(212,160,23,0.15)":"rgba(58,123,213,0.1)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"13px",flexShrink:0}}>
+                    {esPromo?"⭐":"👤"}
+                  </div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:"12px",fontWeight:800,color:"#1a2a3a"}}>{r.nombre_usuario || r.nombre || "Usuario"} {esPromo&&<span style={{fontSize:"9px",color:"#d4a017",fontWeight:700}}>(promotor)</span>}</div>
+                    <div style={{fontSize:"10px",color:"#9a9a9a",fontWeight:600}}>{r.codigo} · {new Date(r.created_at).toLocaleDateString("es-AR")}</div>
+                    {esPromo&&<div style={{display:"flex",gap:"6px",marginTop:"2px"}}><span style={{fontSize:"9px",fontWeight:700,color:"#3a7bd5",background:"rgba(58,123,213,0.08)",borderRadius:"6px",padding:"1px 6px"}}>👥 {subRefs.length}</span><span style={{fontSize:"9px",fontWeight:700,color:"#27ae60",background:"rgba(39,174,96,0.08)",borderRadius:"6px",padding:"1px 6px"}}>🪙 {(r.bits_promotor_total||0).toLocaleString()}</span></div>}
+                  </div>
+                  <div style={{display:"flex",gap:"6px",flexShrink:0,flexWrap:"wrap",justifyContent:"flex-end"}}>
+                    {(r.bits||0)>0&&<span style={{fontSize:"9px",fontWeight:700,color:"#d4a017",background:"rgba(212,160,23,0.08)",borderRadius:"6px",padding:"2px 6px"}}>💛 {(r.bits||0).toLocaleString()}</span>}
+                    {(r.bits_free||0)>0&&<span style={{fontSize:"9px",fontWeight:700,color:"#2980b9",background:"rgba(41,128,185,0.08)",borderRadius:"6px",padding:"2px 6px"}}>💙 {(r.bits_free||0).toLocaleString()}</span>}
+                    {(r.bits_promo||0)>0&&<span style={{fontSize:"9px",fontWeight:700,color:"#27ae60",background:"rgba(39,174,96,0.08)",borderRadius:"6px",padding:"2px 6px"}}>🟢 {(r.bits_promo||0).toLocaleString()}</span>}
+                  </div>
+                  {esPromo&&subRefs.length>0&&<span style={{fontSize:"14px",color:"#9a9a9a",transition:"transform .2s",transform:abierto?"rotate(180deg)":"rotate(0)"}}>▼</span>}
+                </div>
+                {esPromo&&abierto&&subRefs.length>0&&(
+                  <div style={{marginLeft:"20px",borderLeft:"2px solid #8e44ad",paddingLeft:"12px",marginTop:"2px",marginBottom:"4px"}}>
+                    {subRefs.map((sr:any)=>renderReferido(sr,nivel+1))}
+                  </div>
+                )}
+              </div>
+            );
+          };
+
           return <>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"10px",marginBottom:"14px"}}>
-              <StatBox n={String(promotores.length)} l="Promotores activos" e="⭐" c="#d4a017" />
+              <StatBox n={String(allPromos.length)} l="Promotores activos" e="⭐" c="#d4a017" />
               <StatBox n={String(totalRefs)} l="Referidos totales" e="👥" c="#3a7bd5" />
-              <StatBox n={promotores.reduce((a:number,u:any)=>a+(u.bits_promotor_total||0),0).toLocaleString()} l="BIT totales generados" e="🪙" c="#27ae60" />
+              <StatBox n={allPromos.reduce((a:number,u:any)=>a+(u.bits_promotor_total||0),0).toLocaleString()} l="BIT totales generados" e="🪙" c="#27ae60" />
             </div>
             <div style={S.card}>
               <div style={S.sect}>🌳 Árbol de promotores y referidos</div>
-              {promotores.map((u:any,i:number)=>{
+              {topPromos.map((u:any,i:number)=>{
                 const refs = usuarios.filter((x:any)=>x.referido_por===u.id).sort((a:any,b:any)=>new Date(b.created_at).getTime()-new Date(a.created_at).getTime());
-                const abierto = promoExpandido === u.id;
+                const abierto = promoExpandido.has(u.id);
                 return (
                   <div key={u.id} style={{marginBottom:"8px"}}>
-                    <div onClick={()=>setPromoExpandido(abierto?null:u.id)} style={{...S.row,gap:"10px",cursor:"pointer",background:abierto?"rgba(212,160,23,0.06)":"transparent",borderRadius:"12px",padding:"10px"}}>
+                    <div onClick={()=>toggleExpand(u.id)} style={{...S.row,gap:"10px",cursor:"pointer",background:abierto?"rgba(212,160,23,0.06)":"transparent",borderRadius:"12px",padding:"10px"}}>
                       <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"22px",color:i===0?"#d4a017":"#9a9a9a",width:"28px",textAlign:"center"}}>{i+1}</span>
                       <div style={{width:"36px",height:"36px",borderRadius:"50%",background:"linear-gradient(135deg,#1a2a3a,#d4a017)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"14px",flexShrink:0,overflow:"hidden"}}>
                         {u.avatar_url?<img src={u.avatar_url} style={{width:"100%",height:"100%",objectFit:"cover"}} alt=""/>:"⭐"}
@@ -1465,22 +1501,7 @@ export default function AdminPanel() {
                     </div>
                     {abierto && refs.length>0 && (
                       <div style={{marginLeft:"70px",borderLeft:"3px solid #d4a017",paddingLeft:"14px",marginTop:"4px",marginBottom:"8px"}}>
-                        {refs.map((r:any)=>(
-                          <div key={r.id} style={{display:"flex",alignItems:"center",gap:"10px",padding:"8px 0",borderBottom:"1px solid #f0f0ee"}}>
-                            <div style={{width:"30px",height:"30px",borderRadius:"50%",background:"rgba(58,123,213,0.1)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"13px",flexShrink:0}}>
-                              👤
-                            </div>
-                            <div style={{flex:1,minWidth:0}}>
-                              <div style={{fontSize:"12px",fontWeight:800,color:"#1a2a3a"}}>{r.nombre_usuario || r.nombre || "Usuario"}</div>
-                              <div style={{fontSize:"10px",color:"#9a9a9a",fontWeight:600}}>{r.codigo} · {new Date(r.created_at).toLocaleDateString("es-AR")}</div>
-                            </div>
-                            <div style={{display:"flex",gap:"6px",flexShrink:0,flexWrap:"wrap",justifyContent:"flex-end"}}>
-                              {(r.bits||0)>0&&<span style={{fontSize:"9px",fontWeight:700,color:"#d4a017",background:"rgba(212,160,23,0.08)",borderRadius:"6px",padding:"2px 6px"}}>💛 {(r.bits||0).toLocaleString()}</span>}
-                              {(r.bits_free||0)>0&&<span style={{fontSize:"9px",fontWeight:700,color:"#2980b9",background:"rgba(41,128,185,0.08)",borderRadius:"6px",padding:"2px 6px"}}>💙 {(r.bits_free||0).toLocaleString()}</span>}
-                              {(r.bits_promo||0)>0&&<span style={{fontSize:"9px",fontWeight:700,color:"#27ae60",background:"rgba(39,174,96,0.08)",borderRadius:"6px",padding:"2px 6px"}}>🟢 {(r.bits_promo||0).toLocaleString()}</span>}
-                            </div>
-                          </div>
-                        ))}
+                        {refs.map((r:any)=>renderReferido(r,1))}
                       </div>
                     )}
                     {abierto && refs.length===0 && (
@@ -1489,7 +1510,7 @@ export default function AdminPanel() {
                   </div>
                 );
               })}
-              {promotores.length===0 && <div style={{fontSize:"13px",color:"#9a9a9a",fontWeight:600}}>No hay promotores activos todavía.</div>}
+              {topPromos.length===0 && <div style={{fontSize:"13px",color:"#9a9a9a",fontWeight:600}}>No hay promotores activos todavía.</div>}
             </div>
           </>;
         })()}

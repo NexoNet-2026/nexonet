@@ -65,6 +65,41 @@ export async function POST(req: Request) {
           mensaje: `⭐ Recibiste ${comision} BIT Promo de comisión por tu referido`,
           leida: false,
         });
+
+        // Segundo nivel: si el promotor también tiene referido_por
+        const { data: promotorData } = await supabase
+          .from("usuarios")
+          .select("referido_por")
+          .eq("id", usuarioData.referido_por)
+          .single();
+
+        if (promotorData?.referido_por) {
+          const { data: promotor2 } = await supabase
+            .from("usuarios")
+            .select("bits_promo, bits_promotor_total, codigo")
+            .eq("id", promotorData.referido_por)
+            .single();
+
+          if (promotor2) {
+            const esNAN2 = promotor2.codigo === "NAN-5194178";
+            const porcentaje2 = esNAN2 ? 0.30 : 0.20;
+            const comision2 = Math.floor(comision * porcentaje2);
+
+            if (comision2 > 0) {
+              await supabase.from("usuarios").update({
+                bits_promo: (promotor2.bits_promo || 0) + comision2,
+                bits_promotor_total: (promotor2.bits_promotor_total || 0) + comision2,
+              }).eq("id", promotorData.referido_por);
+
+              await supabase.from("notificaciones").insert({
+                usuario_id: promotorData.referido_por,
+                tipo: "sistema",
+                mensaje: `⭐ Recibiste ${comision2} BIT Promo de comisión de segundo nivel`,
+                leida: false,
+              });
+            }
+          }
+        }
       }
     }
 

@@ -479,6 +479,7 @@ export default function AdminPanel() {
     await supabase.from("nexo_slider_items").delete().eq("nexo_id", n.id);
     await supabase.from("nexo_sliders").delete().eq("nexo_id", n.id);
     await supabase.from("nexo_mensajes").delete().eq("nexo_id", n.id);
+    await supabase.from("notificaciones").delete().eq("nexo_id", n.id);
     const { error: nexoError } = await supabase.from("nexos").delete().eq("id", n.id);
     if (nexoError) {
       alert("Error al eliminar nexo: " + nexoError.message);

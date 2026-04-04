@@ -251,24 +251,57 @@ function NexoPageInner() {
 
   const confirmarUnirse = async (metodo: MetodoPago) => {
     if (!perfil) return;
-    if (metodo === "bit_free") { alert("No se puede pagar con BIT Free"); return; }
-    const campo = "bits";
-    const saldo = perfil.bits || 0;
-    if (saldo < 500) { alert(`No tenés suficientes BIT Nexo. Tenés ${saldo}, necesitás 500.`); return; }
 
-    const { error: e1 } = await supabase.from("usuarios").update({ bits: saldo - 500 }).eq("id", perfil.id);
-    if (e1) { console.error("Error descontando BIT:", e1); alert("Error: " + e1.message); return; }
-    setPerfil((p:any) => ({...p, bits: saldo - 500}));
+    if (metodo === "bit_free") {
+      const saldo = perfil.bits_free || 0;
+      if (saldo < 500) { alert(`No tenés suficientes BIT Free. Tenés ${saldo}, necesitás 500.`); return; }
+      const { error: e1 } = await supabase.from("usuarios").update({ bits_free: saldo - 500 }).eq("id", perfil.id);
+      if (e1) { console.error("Error descontando BIT Free:", e1); alert("Error: " + e1.message); return; }
+      setPerfil((p:any) => ({...p, bits_free: saldo - 500}));
+    } else {
+      const saldo = perfil.bits || 0;
+      if (saldo < 500) { alert(`No tenés suficientes BIT Nexo. Tenés ${saldo}, necesitás 500.`); return; }
+      const { error: e1 } = await supabase.from("usuarios").update({ bits: saldo - 500 }).eq("id", perfil.id);
+      if (e1) { console.error("Error descontando BIT:", e1); alert("Error: " + e1.message); return; }
+      setPerfil((p:any) => ({...p, bits: saldo - 500}));
+    }
 
-    // Acreditar BIT Promotor al dueño (30% NAN / 20% resto)
-    const comisionUnirse = nexo.usuario_id === "ab56253d-b92e-4b73-a19a-3cd0cd95c458" ? 150 : 100;
-    const { data: dueno } = await supabase.from("usuarios").select("bits_promo,bits_promotor_total").eq("id", nexo.usuario_id).single();
-    if (dueno) {
-      const { error: e2 } = await supabase.from("usuarios").update({
-        bits_promo: (dueno.bits_promo || 0) + comisionUnirse,
-        bits_promotor_total: (dueno.bits_promotor_total || 0) + comisionUnirse,
-      }).eq("id", nexo.usuario_id);
-      if (e2) console.error("Error acreditando promotor:", e2);
+    // Comisión en cascada ilimitada
+    {
+      const { data: refUser } = await supabase.from("usuarios").select("nombre_usuario,nombre").eq("id", perfil.id).single();
+      const nombreRef = refUser?.nombre_usuario || refUser?.nombre || "un referido";
+      let currentId = perfil.id;
+      let comisionBase = 500;
+      const visitados = new Set<string>();
+
+      while (comisionBase > 0) {
+        const { data: current } = await supabase.from("usuarios").select("referido_por").eq("id", currentId).single();
+        if (!current?.referido_por || visitados.has(current.referido_por)) break;
+        visitados.add(current.referido_por);
+
+        const { data: promotor } = await supabase.from("usuarios").select("bits_promo,bits_promotor_total,codigo").eq("id", current.referido_por).single();
+        if (!promotor) break;
+
+        const esNAN = promotor.codigo === "NAN-5194178";
+        const porcentaje = esNAN ? 0.30 : 0.20;
+        const comision = Math.floor(comisionBase * porcentaje);
+        if (comision <= 0) break;
+
+        await supabase.from("usuarios").update({
+          bits_promo: (promotor.bits_promo || 0) + comision,
+          bits_promotor_total: (promotor.bits_promotor_total || 0) + comision,
+        }).eq("id", current.referido_por);
+
+        const nivel = visitados.size;
+        await supabase.from("notificaciones").insert({
+          usuario_id: current.referido_por, tipo: "sistema",
+          mensaje: `⭐ Recibiste ${comision} BIT Promo de comisión por tu referido ${nombreRef}${nivel > 1 ? ` (nivel ${nivel})` : ""}`,
+          leida: false,
+        });
+
+        comisionBase = comision;
+        currentId = current.referido_por;
+      }
     }
 
     const { data: mm } = await supabase.from("nexo_miembros")
@@ -784,7 +817,7 @@ function NexoPageInner() {
           emoji="👥"
           costo="500 BIT"
           descripcion={nexo?.titulo}
-          bits={{ free: 0, nexo: Math.max(0, perfil?.bits||0), promo: Math.max(0, perfil?.bits_promo||0) }}
+          bits={{ free: Math.max(0, perfil?.bits_free||0), nexo: Math.max(0, perfil?.bits||0), promo: Math.max(0, perfil?.bits_promo||0) }}
           onClose={() => setPopupUnirse(false)}
           onPagar={async (metodo: MetodoPago) => {
             setPopupUnirse(false);

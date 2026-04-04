@@ -849,20 +849,15 @@ export default function NexoAdminPage() {
             </div>
 
             <div style={{ background:"linear-gradient(135deg,#2c1a1a,#4a2020)", borderRadius:"16px", padding:"18px", border:"2px solid rgba(231,76,60,0.3)" }}>
-              <div style={{ fontSize:"13px", fontWeight:900, color:"#e74c3c", marginBottom:"6px" }}>⚠️ Zona peligrosa</div>
-              <div style={{ fontSize:"12px", color:"#e88a8a", fontWeight:600, marginBottom:"16px" }}>Esta acción elimina el nexo, sus sliders, miembros y mensajes permanentemente.</div>
+              <div style={{ fontSize:"13px", fontWeight:900, color:"#e67e22", marginBottom:"6px" }}>⚠️ Zona peligrosa</div>
+              <div style={{ fontSize:"12px", color:"#e8b88a", fontWeight:600, marginBottom:"16px" }}>Para dar de baja tu grupo enviá una solicitud a NexoNet. Un administrador la procesará y te contactará.</div>
               <button onClick={async()=>{
-                if (!confirm("¿Eliminar este Nexo definitivamente?")) return;
-                await supabase.from("nexo_mensajes").delete().eq("nexo_id",id);
-                await supabase.from("nexo_miembros").delete().eq("nexo_id",id);
-                await supabase.from("nexo_slider_items").delete().eq("nexo_id",id);
-                await supabase.from("nexo_sliders").delete().eq("nexo_id",id);
-                await supabase.from("nexo_descargas_pagos").delete().eq("nexo_id",id);
-                await supabase.from("nexo_descargas").delete().eq("nexo_id",id);
-                await supabase.from("nexos").delete().eq("id",id);
-                router.push("/usuario?seccion=empresa");
-              }} style={{ width:"100%", background:"rgba(231,76,60,0.18)", border:"2px solid rgba(231,76,60,0.45)", borderRadius:"12px", padding:"13px", fontSize:"13px", fontWeight:900, color:"#e74c3c", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
-                🗑️ Eliminar Nexo definitivamente
+                if (!confirm("¿Querés solicitar la baja de este grupo? Un administrador de NexoNet procesará tu solicitud.")) return;
+                await supabase.from("notificaciones").insert({ usuario_id:"ab56253d-b92e-4b73-a19a-3cd0cd95c458", tipo:"sistema", mensaje:"🚨 Solicitud de baja de grupo: "+nexo.titulo+" (ID: "+id+") — solicitado por "+perfil.nombre_usuario+" ("+perfil.codigo+")", leida:false });
+                alert("✅ Solicitud enviada. Te contactaremos a la brevedad.");
+                router.push("/usuario");
+              }} style={{ width:"100%", background:"rgba(230,126,34,0.18)", border:"2px solid rgba(230,126,34,0.45)", borderRadius:"12px", padding:"13px", fontSize:"13px", fontWeight:900, color:"#e67e22", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
+                📩 Solicitar baja del grupo
               </button>
             </div>
           </div>

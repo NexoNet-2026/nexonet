@@ -1454,7 +1454,7 @@ export default function AdminPanel() {
                     {esPromo?"⭐":"👤"}
                   </div>
                   <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontSize:"12px",fontWeight:800,color:"#1a2a3a"}}>{r.nombre_usuario || r.nombre || "Usuario"} {esPromo&&<span style={{fontSize:"9px",color:"#d4a017",fontWeight:700}}>(promotor)</span>}</div>
+                    <div style={{fontSize:"12px",fontWeight:800,color:"#1a2a3a"}}>{r.nombre_usuario || r.nombre || "Usuario"} {(esPromo||subRefs.length>0)&&<span style={{fontSize:"9px",color:"#d4a017",fontWeight:700}}>(promotor)</span>}</div>
                     <div style={{fontSize:"10px",color:"#9a9a9a",fontWeight:600}}>{r.codigo} · {new Date(r.created_at).toLocaleDateString("es-AR")}</div>
                     <div style={{display:"flex",gap:"6px",marginTop:"2px"}}>{subRefs.length>0&&<span style={{fontSize:"9px",fontWeight:700,color:"#3a7bd5",background:"rgba(58,123,213,0.08)",borderRadius:"6px",padding:"1px 6px"}}>👥 {subRefs.length}</span>}{esPromo&&<span style={{fontSize:"9px",fontWeight:700,color:"#27ae60",background:"rgba(39,174,96,0.08)",borderRadius:"6px",padding:"1px 6px"}}>🪙 {(r.bits_promotor_total||0).toLocaleString()}</span>}</div>
                   </div>

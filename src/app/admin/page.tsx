@@ -140,6 +140,7 @@ export default function AdminPanel() {
   const [visitStats, setVisitStats] = useState<any>({ hoy:0, semana:0, mes:0, anio:0 });
   const [registrosMes, setRegistrosMes] = useState<{mes:string;cant:number}[]>([]);
   const [dineroStats, setDineroStats] = useState<any>({ total:0, esteMes:0 });
+  const [nexoStats, setNexoStats] = useState<any>({ empresa:0,servicio:0,grupo:0,trabajo:0,empresaAct:0,servicioAct:0,grupoAct:0,trabajoAct:0,descargas:0,links:0,totalMensajes:0 });
   // Realtime
   const [rtOnline, setRtOnline] = useState(0);
   const [rtOnline15, setRtOnline15] = useState(0);
@@ -226,6 +227,16 @@ export default function AdminPanel() {
     const conBitNexo = (usrs||[]).filter((u:any) => (u.bits||0) > 0).length;
     const conBitPromo = (usrs||[]).filter((u:any) => (u.bits_promo||0) > 0).length;
     setStats({ usuarios:cu||0, usuariosReales:reales, bots, conBitFree, conBitNexo, conBitPromo, anuncios:(anuns||[]).length, grupos:cg||0, mensajes:cm||0, bits:totalBits, pagos:totalPagos, activos30, activos7 });
+
+    // Nexo stats por tipo
+    const nxArr = nxs || [];
+    const cTipo = (t:string) => nxArr.filter((n:any) => n.tipo === t).length;
+    const cTipoAct = (t:string) => nxArr.filter((n:any) => n.tipo === t && n.estado === "activo").length;
+    const {data:sliderItems} = await supabase.from("nexo_slider_items").select("tipo");
+    const slDescargas = (sliderItems||[]).filter((s:any) => s.tipo === "descarga").length;
+    const slLinks = (sliderItems||[]).filter((s:any) => s.tipo === "link").length;
+    const {count:totalMensajes} = await supabase.from("mensajes").select("*",{count:"exact",head:true});
+    setNexoStats({ empresa:cTipo("empresa"), servicio:cTipo("servicio"), grupo:cTipo("grupo"), trabajo:cTipo("trabajo"), empresaAct:cTipoAct("empresa"), servicioAct:cTipoAct("servicio"), grupoAct:cTipoAct("grupo"), trabajoAct:cTipoAct("trabajo"), descargas:slDescargas, links:slLinks, totalMensajes:totalMensajes||0 });
 
     const {data:cfg} = await supabase.from("config").select("*").eq("clave","alarmas").single();
     if (cfg) setAlarmas(JSON.parse(cfg.valor||"{}"));
@@ -1052,6 +1063,16 @@ export default function AdminPanel() {
               <StatBox n={String(stats.anuncios||0)}         l="Anuncios"         e="📋" c="#d4a017" />
               <StatBox n={`$${((stats.pagos||0)/1000).toFixed(0)}K`} l="Recaudado" e="💰" c="#e67e22" />
               <StatBox n={String(stats.bits||0)}             l="BIT circulando"   e="🪙" c="#8e44ad" />
+            </div>
+
+            <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"10px",marginBottom:"14px"}}>
+              <StatBox n={`${nexoStats.empresaAct}/${nexoStats.empresa}`} l="Empresas" e="🏢" c="#3a7bd5" />
+              <StatBox n={`${nexoStats.servicioAct}/${nexoStats.servicio}`} l="Servicios" e="🔧" c="#27ae60" />
+              <StatBox n={`${nexoStats.grupoAct}/${nexoStats.grupo}`} l="Grupos" e="👥" c="#8e44ad" />
+              <StatBox n={`${nexoStats.trabajoAct}/${nexoStats.trabajo}`} l="Trabajos" e="💼" c="#e67e22" />
+              <StatBox n={String(nexoStats.descargas||0)} l="Descargas" e="📥" c="#2980b9" />
+              <StatBox n={String(nexoStats.links||0)} l="Links" e="🔗" c="#d4a017" />
+              <StatBox n={String(nexoStats.totalMensajes||0)} l="Mensajes total" e="💬" c="#27ae60" />
             </div>
 
             {/* ── EN TIEMPO REAL ── */}

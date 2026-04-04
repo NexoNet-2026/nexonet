@@ -148,14 +148,6 @@ export default function NexoAdminPage() {
   };
 
   const agregarSlider = async (tipo: string, tituloCustom?: string) => {
-    // Cobrar 50 BIT por slider adicional
-    const bitsTotal = Math.max(0,perfil?.bits||0) + Math.max(0,perfil?.bits_free||0) + Math.max(0,perfil?.bits_promotor||0);
-    if (bitsTotal < 50) { alert("Necesitás 50 BIT para agregar un slider."); return; }
-    const campo = (perfil?.bits||0) >= 50 ? "bits" : (perfil?.bits_free||0) >= 50 ? "bits_free" : "bits_promotor";
-    const valor = perfil[campo] || 0;
-    await supabase.from("usuarios").update({ [campo]: valor - 50 }).eq("id", perfil.id);
-    setPerfil((p:any) => ({ ...p, [campo]: valor - 50 }));
-
     const cat = SLIDERS_CATALOGO.find(c=>c.tipo===tipo);
     const titulo = tituloCustom || cat?.titulo || tipo;
     const { data } = await supabase.from("nexo_sliders").insert({

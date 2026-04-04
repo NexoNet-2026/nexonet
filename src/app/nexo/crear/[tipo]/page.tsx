@@ -687,8 +687,9 @@ function NexoCrearInner() {
                   if (bitsTotal < 10000) { alert("Necesitás 10.000 BIT. Cargá BIT desde la tienda."); return; }
                   const campo = (perfil?.bits_free||0)>=10000?"bits_free":(perfil?.bits_promo||0)>=10000?"bits_promo":"bits";
                   const valor = campo==="bits_free"?perfil.bits_free:campo==="bits_promo"?perfil.bits_promo:perfil.bits;
-                  await supabase.from("usuarios").update({[campo]:valor-10000,plan:"nexoempresa"}).eq("id",perfil.id);
-                  setPerfil((p:any)=>({...p,[campo]:valor-10000,plan:"nexoempresa"}));
+                  const colGastoEmp = tipo==="empresa"?"bits_gastados_empresa":"bits_gastados_servicio";
+                  await supabase.from("usuarios").update({[campo]:valor-10000,plan:"nexoempresa",bits_free:(perfil.bits_free||0)+10000,[colGastoEmp]:(perfil[colGastoEmp]||0)+10000}).eq("id",perfil.id);
+                  setPerfil((p:any)=>({...p,[campo]:valor-10000,plan:"nexoempresa",bits_free:(p.bits_free||0)+10000,[colGastoEmp]:(p[colGastoEmp]||0)+10000}));
                   setPagoBITEmpresa(true);
                 }} style={{width:"100%",background:"linear-gradient(135deg,#c0392b,#e74c3c)",border:"none",borderRadius:"12px",padding:"14px",fontSize:"15px",fontWeight:900,color:"#fff",cursor:"pointer",fontFamily:"'Nunito',sans-serif",boxShadow:"0 4px 0 rgba(0,0,0,0.3)"}}>
                   💳 Pagar 10.000 BIT y activar Empresa

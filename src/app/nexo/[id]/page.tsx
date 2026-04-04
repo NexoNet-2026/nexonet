@@ -255,15 +255,15 @@ function NexoPageInner() {
     if (metodo === "bit_free") {
       const saldo = perfil.bits_free || 0;
       if (saldo < 500) { alert(`No tenés suficientes BIT Free. Tenés ${saldo}, necesitás 500.`); return; }
-      const { error: e1 } = await supabase.from("usuarios").update({ bits_free: saldo - 500 }).eq("id", perfil.id);
+      const { error: e1 } = await supabase.from("usuarios").update({ bits_free: saldo - 500, bits_gastados_grupo: (perfil.bits_gastados_grupo||0) + 500 }).eq("id", perfil.id);
       if (e1) { console.error("Error descontando BIT Free:", e1); alert("Error: " + e1.message); return; }
-      setPerfil((p:any) => ({...p, bits_free: saldo - 500}));
+      setPerfil((p:any) => ({...p, bits_free: saldo - 500, bits_gastados_grupo: (p.bits_gastados_grupo||0) + 500}));
     } else {
       const saldo = perfil.bits || 0;
       if (saldo < 500) { alert(`No tenés suficientes BIT Nexo. Tenés ${saldo}, necesitás 500.`); return; }
-      const { error: e1 } = await supabase.from("usuarios").update({ bits: saldo - 500 }).eq("id", perfil.id);
+      const { error: e1 } = await supabase.from("usuarios").update({ bits: saldo - 500, bits_gastados_grupo: (perfil.bits_gastados_grupo||0) + 500 }).eq("id", perfil.id);
       if (e1) { console.error("Error descontando BIT:", e1); alert("Error: " + e1.message); return; }
-      setPerfil((p:any) => ({...p, bits: saldo - 500}));
+      setPerfil((p:any) => ({...p, bits: saldo - 500, bits_gastados_grupo: (p.bits_gastados_grupo||0) + 500}));
     }
 
     // Comisión en cascada ilimitada
@@ -317,15 +317,15 @@ function NexoPageInner() {
     if (metodo === "bit_free") {
       const saldo = perfil.bits_free || 0;
       if (saldo < 500) { alert(`No tenés suficientes BIT Free. Tenés ${saldo}, necesitás 500.`); return; }
-      const { error: e1 } = await supabase.from("usuarios").update({ bits_free: saldo - 500 }).eq("id", perfil.id);
+      const { error: e1 } = await supabase.from("usuarios").update({ bits_free: saldo - 500, bits_gastados_grupo: (perfil.bits_gastados_grupo||0) + 500 }).eq("id", perfil.id);
       if (e1) { console.error("Error descontando BIT Free:", e1); alert("Error: " + e1.message); return; }
-      setPerfil((p: any) => ({ ...p, bits_free: saldo - 500 }));
+      setPerfil((p: any) => ({ ...p, bits_free: saldo - 500, bits_gastados_grupo: (p.bits_gastados_grupo||0) + 500 }));
     } else {
       const saldo = perfil.bits || 0;
       if (saldo < 500) { alert(`No tenés suficientes BIT Nexo. Tenés ${saldo}, necesitás 500.`); return; }
-      const { error: e1 } = await supabase.from("usuarios").update({ bits: saldo - 500 }).eq("id", perfil.id);
+      const { error: e1 } = await supabase.from("usuarios").update({ bits: saldo - 500, bits_gastados_grupo: (perfil.bits_gastados_grupo||0) + 500 }).eq("id", perfil.id);
       if (e1) { console.error("Error descontando BIT:", e1); alert("Error: " + e1.message); return; }
-      setPerfil((p: any) => ({ ...p, bits: saldo - 500 }));
+      setPerfil((p: any) => ({ ...p, bits: saldo - 500, bits_gastados_grupo: (p.bits_gastados_grupo||0) + 500 }));
     }
     // Acreditar BIT Promo al admin que aprobó (30% NAN / 20% resto)
     const aprobadorId = miMiembro.aprobado_por || nexo.usuario_id;
@@ -382,9 +382,9 @@ function NexoPageInner() {
       const campo = "bits";
       const saldo = perfil.bits || 0;
       if (saldo < costo) { alert(`No tenés suficientes BIT Nexo. Tenés ${saldo}, necesitás ${costo}.`); setPagandoDescarga(null); return; }
-      const { error: e1 } = await supabase.from("usuarios").update({ bits: saldo - costo }).eq("id", perfil.id);
+      const { error: e1 } = await supabase.from("usuarios").update({ bits: saldo - costo, bits_gastados_adjuntos: (perfil.bits_gastados_adjuntos||0) + costo }).eq("id", perfil.id);
       if (e1) { console.error("Error descontando BIT:", e1); alert("Error al descontar BIT: " + e1.message); setPagandoDescarga(null); return; }
-      setPerfil((p: any) => ({ ...p, bits: saldo - costo }));
+      setPerfil((p: any) => ({ ...p, bits: saldo - costo, bits_gastados_adjuntos: (p.bits_gastados_adjuntos||0) + costo }));
 
       // Acreditar 90% BIT Promotor al creador del nexo
       const bitsCreador = Math.floor(costo * 0.9);

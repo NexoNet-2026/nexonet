@@ -789,14 +789,14 @@ export default function MisAnuncios() {
             if (metodo === "bit_free") {
               if (bitsFree < paquete) { alert("No tenés suficientes BIT FREE."); return; }
               await supabase.from("anuncios").update({ link_habilitado: true }).eq("id", id);
-              await supabase.from("usuarios").update({ bits_free: bitsFree - paquete }).eq("id", session?.user?.id);
-              setPerfil((p:any) => ({ ...p, bits_free: bitsFree - paquete }));
+              await supabase.from("usuarios").update({ bits_free: bitsFree - paquete, bits_gastados_link: (perfil?.bits_gastados_link||0) + paquete }).eq("id", session?.user?.id);
+              setPerfil((p:any) => ({ ...p, bits_free: bitsFree - paquete, bits_gastados_link: (p.bits_gastados_link||0) + paquete }));
               setAnuncios(prev => prev.map(a => a.id === id ? ({ ...a, link_habilitado: true } as Anuncio) : a));
             } else if (metodo === "bit_nexo") {
               if (bitsNexo < paquete) { alert("No tenés suficientes BIT Nexo."); return; }
               await supabase.from("anuncios").update({ link_habilitado: true }).eq("id", id);
-              await supabase.from("usuarios").update({ bits: bitsNexo - paquete }).eq("id", session?.user?.id);
-              setPerfil((p:any) => ({ ...p, bits: bitsNexo - paquete }));
+              await supabase.from("usuarios").update({ bits: bitsNexo - paquete, bits_gastados_link: (perfil?.bits_gastados_link||0) + paquete }).eq("id", session?.user?.id);
+              setPerfil((p:any) => ({ ...p, bits: bitsNexo - paquete, bits_gastados_link: (p.bits_gastados_link||0) + paquete }));
               setAnuncios(prev => prev.map(a => a.id === id ? ({ ...a, link_habilitado: true } as Anuncio) : a));
             } else { alert("Próximamente"); }
             setPopupLink(null);
@@ -815,14 +815,14 @@ export default function MisAnuncios() {
             if (metodo === "bit_free") {
               if (bitsFree < paquete) { alert("No tenés suficientes BIT FREE."); return; }
               await supabase.from("anuncios").update({ adjunto_habilitado: true }).eq("id", id);
-              await supabase.from("usuarios").update({ bits_free: bitsFree - paquete }).eq("id", session?.user?.id);
-              setPerfil((p:any) => ({ ...p, bits_free: bitsFree - paquete }));
+              await supabase.from("usuarios").update({ bits_free: bitsFree - paquete, bits_gastados_adjuntos: (perfil?.bits_gastados_adjuntos||0) + paquete }).eq("id", session?.user?.id);
+              setPerfil((p:any) => ({ ...p, bits_free: bitsFree - paquete, bits_gastados_adjuntos: (p.bits_gastados_adjuntos||0) + paquete }));
               setAnuncios(prev => prev.map(a => a.id === id ? ({ ...a, adjunto_habilitado: true } as Anuncio) : a));
             } else if (metodo === "bit_nexo") {
               if (bitsNexo < paquete) { alert("No tenés suficientes BIT Nexo."); return; }
               await supabase.from("anuncios").update({ adjunto_habilitado: true }).eq("id", id);
-              await supabase.from("usuarios").update({ bits: bitsNexo - paquete }).eq("id", session?.user?.id);
-              setPerfil((p:any) => ({ ...p, bits: bitsNexo - paquete }));
+              await supabase.from("usuarios").update({ bits: bitsNexo - paquete, bits_gastados_adjuntos: (perfil?.bits_gastados_adjuntos||0) + paquete }).eq("id", session?.user?.id);
+              setPerfil((p:any) => ({ ...p, bits: bitsNexo - paquete, bits_gastados_adjuntos: (p.bits_gastados_adjuntos||0) + paquete }));
               setAnuncios(prev => prev.map(a => a.id === id ? ({ ...a, adjunto_habilitado: true } as Anuncio) : a));
             } else { alert("Próximamente"); }
             setPopupAdj(null);

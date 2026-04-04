@@ -67,7 +67,7 @@ export default function FlashEnvio({ nexoId, nexoTitulo, usuarioId, color, perfi
     const cuerpoBase = plantillaSeleccionada ? `${plantillaSeleccionada.cuerpo}${mensajeExtra.trim()?"\n\n"+mensajeExtra.trim():""}` : mensajeExtra.trim();
     const linkExtra = (plantillaSeleccionada?.incluir_link||incluirLink)&&itemContexto?.url ? `\n🔗 ${itemContexto.titulo}: ${itemContexto.url}` : "";
     const mensajeFinal = cuerpoBase + linkExtra;
-    await supabase.from("usuarios").update({ bits: saldoBIT - costoBIT }).eq("id",usuarioId);
+    await supabase.from("usuarios").update({ bits: saldoBIT - costoBIT, bits_gastados_conexion: (perfil?.bits_gastados_conexion||0) + costoBIT }).eq("id",usuarioId);
     const notifs = destinatarios.map(u=>({ usuario_id:u.id, tipo:"flash", mensaje:`⚡ ${nexoTitulo}: ${mensajeFinal}`, leida:false, nexo_id:nexoId, emisor_id:usuarioId }));
     for (let i=0;i<notifs.length;i+=100) await supabase.from("notificaciones").insert(notifs.slice(i,i+100));
     // Bump al tope: actualizar updated_at del nexo/anuncio para que aparezca primero

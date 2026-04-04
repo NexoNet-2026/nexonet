@@ -416,12 +416,12 @@ function NexoCrearInner() {
             onPagar={async (metodo: MetodoPago) => {
               if (metodo === "bit_free") {
                 if ((perfil?.bits_free||0) < 500) { alert("No tenés suficientes BIT FREE."); return; }
-                await supabase.from("usuarios").update({ bits_free: perfil.bits_free - 500 }).eq("id", perfil.id);
-                setPerfil((p:any) => ({...p, bits_free: p.bits_free - 500}));
+                await supabase.from("usuarios").update({ bits_free: perfil.bits_free - 500, bits_gastados_anuncios: (perfil.bits_gastados_anuncios||0) + 500 }).eq("id", perfil.id);
+                setPerfil((p:any) => ({...p, bits_free: p.bits_free - 500, bits_gastados_anuncios: (p.bits_gastados_anuncios||0) + 500}));
               } else if (metodo === "bit_nexo") {
                 if ((perfil?.bits||0) < 500) { alert("No tenés suficientes BIT Nexo."); return; }
-                await supabase.from("usuarios").update({ bits: perfil.bits - 500 }).eq("id", perfil.id);
-                setPerfil((p:any) => ({...p, bits: p.bits - 500}));
+                await supabase.from("usuarios").update({ bits: perfil.bits - 500, bits_gastados_anuncios: (perfil.bits_gastados_anuncios||0) + 500 }).eq("id", perfil.id);
+                setPerfil((p:any) => ({...p, bits: p.bits - 500, bits_gastados_anuncios: (p.bits_gastados_anuncios||0) + 500}));
               } else { alert("Próximamente — pagos con tarjeta/transferencia"); return; }
               setPopupConfirmar(false);
               crear();
@@ -680,12 +680,12 @@ function NexoCrearInner() {
           onPagar={async (metodo: MetodoPago) => {
             if (metodo === "bit_free") {
               if ((perfil?.bits_free||0) < 500) { alert("No tenés suficientes BIT FREE."); return; }
-              await supabase.from("usuarios").update({ bits_free: perfil.bits_free - 500 }).eq("id", perfil.id);
-              setPerfil((p:any) => ({...p, bits_free: p.bits_free - 500}));
+              await supabase.from("usuarios").update({ bits_free: perfil.bits_free - 500, bits_gastados_anuncios: (perfil.bits_gastados_anuncios||0) + 500 }).eq("id", perfil.id);
+              setPerfil((p:any) => ({...p, bits_free: p.bits_free - 500, bits_gastados_anuncios: (p.bits_gastados_anuncios||0) + 500}));
             } else if (metodo === "bit_nexo") {
               if ((perfil?.bits||0) < 500) { alert("No tenés suficientes BIT Nexo."); return; }
-              await supabase.from("usuarios").update({ bits: perfil.bits - 500 }).eq("id", perfil.id);
-              setPerfil((p:any) => ({...p, bits: p.bits - 500}));
+              await supabase.from("usuarios").update({ bits: perfil.bits - 500, bits_gastados_anuncios: (perfil.bits_gastados_anuncios||0) + 500 }).eq("id", perfil.id);
+              setPerfil((p:any) => ({...p, bits: p.bits - 500, bits_gastados_anuncios: (p.bits_gastados_anuncios||0) + 500}));
             } else { alert("Próximamente — pagos con tarjeta/transferencia"); return; }
             setPopupConfirmar(false);
             crear();

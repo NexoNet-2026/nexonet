@@ -426,11 +426,11 @@ function NexoCrearInner() {
           )}
 
           {/* ── Filtros dinámicos de subcategoría ── */}
-          {subFiltros.length>0 && (
+          {subFiltros.filter((f:any)=>!["precio","descripcion","descripción"].includes(f.nombre?.toLowerCase())).length>0 && (
             <div style={CAJA}>
               <SL>🔧 Detalles adicionales</SL>
               <div style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600,marginBottom:"12px"}}>Completá los campos que apliquen a tu publicación</div>
-              {subFiltros.map((f:any)=>(
+              {subFiltros.filter((f:any)=>!["precio","descripcion","descripción"].includes(f.nombre?.toLowerCase())).map((f:any)=>(
                 <div key={f.id} style={{marginBottom:"12px"}}>
                   {f.tipo==="boolean" && (<>
                     <L>{f.nombre}</L>
@@ -743,10 +743,10 @@ function NexoCrearInner() {
                 </>
               )}
               {/* Filtros dinámicos de subcategoría (sliders block) */}
-              {subFiltros.length>0 && (<>
+              {subFiltros.filter((f:any)=>!["precio","descripcion","descripción"].includes(f.nombre?.toLowerCase())).length>0 && (<>
                 <SL>🔧 Detalles adicionales</SL>
                 <div style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600,marginBottom:"12px"}}>Completá los campos que apliquen</div>
-                {subFiltros.map((f:any)=>(
+                {subFiltros.filter((f:any)=>!["precio","descripcion","descripción"].includes(f.nombre?.toLowerCase())).map((f:any)=>(
                   <div key={f.id} style={{marginBottom:"12px"}}>
                     {f.tipo==="boolean" && (<><L>{f.nombre}</L><div style={{display:"flex",gap:"8px"}}>{[{v:true,l:"Sí"},{v:false,l:"No"}].map(op=>(<button key={String(op.v)} onClick={()=>setFV(f.nombre,op.v)} style={{flex:1,background:filtroVals[f.nombre]===op.v?"#1a2a3a":"#f4f4f2",border:`2px solid ${filtroVals[f.nombre]===op.v?"#1a2a3a":"#e8e8e6"}`,borderRadius:"10px",padding:"8px",fontSize:"12px",fontWeight:800,color:filtroVals[f.nombre]===op.v?colorPage:"#666",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>{op.l}</button>))}</div></>)}
                     {f.tipo==="numero" && (<><L>{f.nombre}</L><input type="number" value={filtroVals[f.nombre]||""} onChange={e=>setFV(f.nombre,e.target.value)} placeholder={f.nombre} style={IS}/></>)}

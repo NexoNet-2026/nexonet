@@ -141,6 +141,7 @@ export default function AdminPanel() {
   const [registrosMes, setRegistrosMes] = useState<{mes:string;cant:number}[]>([]);
   const [dineroStats, setDineroStats] = useState<any>({ total:0, esteMes:0 });
   const [nexoStats, setNexoStats] = useState<any>({ empresa:0,servicio:0,grupo:0,trabajo:0,empresaAct:0,servicioAct:0,grupoAct:0,trabajoAct:0,descargas:0,links:0,totalMensajes:0 });
+  const [promoExpandido, setPromoExpandido] = useState<string|null>(null);
   // Realtime
   const [rtOnline, setRtOnline] = useState(0);
   const [rtOnline15, setRtOnline15] = useState(0);
@@ -1427,41 +1428,71 @@ export default function AdminPanel() {
         )}
 
         {/* ══ PROMOTORES ══════════════════════════════════════════════════════ */}
-        {!loading && tab==="promotores" && (
-          <>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px",marginBottom:"14px"}}>
-              <StatBox n={String(usuarios.filter(u=>u.es_promotor).length)} l="Promotores activos" e="⭐" c="#d4a017" />
-              <StatBox n={usuarios.filter(u=>u.es_promotor).reduce((a:number,u:any)=>a+(u.bits_promotor_total||0),0).toLocaleString()} l="BIT totales generados" e="🪙" c="#27ae60" />
+        {!loading && tab==="promotores" && (()=>{
+          const promotores = usuarios.filter(u=>u.es_promotor).sort((a:any,b:any)=>(b.bits_promotor_total||0)-(a.bits_promotor_total||0));
+          const totalRefs = usuarios.filter(u=>u.referido_por).length;
+          return <>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"10px",marginBottom:"14px"}}>
+              <StatBox n={String(promotores.length)} l="Promotores activos" e="⭐" c="#d4a017" />
+              <StatBox n={String(totalRefs)} l="Referidos totales" e="👥" c="#3a7bd5" />
+              <StatBox n={promotores.reduce((a:number,u:any)=>a+(u.bits_promotor_total||0),0).toLocaleString()} l="BIT totales generados" e="🪙" c="#27ae60" />
             </div>
             <div style={S.card}>
-              <div style={S.sect}>⭐ Promotores activos</div>
-              {usuarios.filter(u=>u.es_promotor).sort((a:any,b:any)=>(b.bits_promotor_total||0)-(a.bits_promotor_total||0)).map((u:any,i:number)=>{
-                const referidos = usuarios.filter(x=>x.referido_por===u.id).length;
+              <div style={S.sect}>🌳 Árbol de promotores y referidos</div>
+              {promotores.map((u:any,i:number)=>{
+                const refs = usuarios.filter((x:any)=>x.referido_por===u.id).sort((a:any,b:any)=>new Date(b.created_at).getTime()-new Date(a.created_at).getTime());
+                const abierto = promoExpandido === u.id;
                 return (
-                  <div key={u.id} style={{...S.row,gap:"10px"}}>
-                    <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"22px",color:i===0?"#d4a017":"#9a9a9a",width:"28px",textAlign:"center"}}>{i+1}</span>
-                    <div style={{width:"36px",height:"36px",borderRadius:"50%",background:"linear-gradient(135deg,#1a2a3a,#d4a017)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"14px",flexShrink:0,overflow:"hidden"}}>
-                      {u.avatar_url?<img src={u.avatar_url} style={{width:"100%",height:"100%",objectFit:"cover"}} alt=""/>:"⭐"}
-                    </div>
-                    <div style={{flex:1,minWidth:0}}>
-                      <div style={{fontSize:"13px",fontWeight:900,color:"#1a2a3a"}}>{u.nombre_usuario}</div>
-                      <div style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600}}>{u.codigo} · {u.email}</div>
-                      <div style={{display:"flex",gap:"8px",marginTop:"3px"}}>
-                        <span style={{fontSize:"10px",fontWeight:700,color:"#3a7bd5",background:"rgba(58,123,213,0.08)",borderRadius:"8px",padding:"2px 7px"}}>👥 {referidos} referidos</span>
-                        <span style={{fontSize:"10px",fontWeight:700,color:"#d4a017",background:"rgba(212,160,23,0.08)",borderRadius:"8px",padding:"2px 7px"}}>🪙 {(u.bits_promotor||0).toLocaleString()} BIT actual</span>
+                  <div key={u.id} style={{marginBottom:"8px"}}>
+                    <div onClick={()=>setPromoExpandido(abierto?null:u.id)} style={{...S.row,gap:"10px",cursor:"pointer",background:abierto?"rgba(212,160,23,0.06)":"transparent",borderRadius:"12px",padding:"10px"}}>
+                      <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"22px",color:i===0?"#d4a017":"#9a9a9a",width:"28px",textAlign:"center"}}>{i+1}</span>
+                      <div style={{width:"36px",height:"36px",borderRadius:"50%",background:"linear-gradient(135deg,#1a2a3a,#d4a017)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"14px",flexShrink:0,overflow:"hidden"}}>
+                        {u.avatar_url?<img src={u.avatar_url} style={{width:"100%",height:"100%",objectFit:"cover"}} alt=""/>:"⭐"}
                       </div>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontSize:"13px",fontWeight:900,color:"#1a2a3a"}}>{u.nombre_usuario}</div>
+                        <div style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600}}>{u.codigo} · {u.email}</div>
+                        <div style={{display:"flex",gap:"8px",marginTop:"3px",flexWrap:"wrap"}}>
+                          <span style={{fontSize:"10px",fontWeight:700,color:"#3a7bd5",background:"rgba(58,123,213,0.08)",borderRadius:"8px",padding:"2px 7px"}}>👥 {refs.length} referidos</span>
+                          <span style={{fontSize:"10px",fontWeight:700,color:"#d4a017",background:"rgba(212,160,23,0.08)",borderRadius:"8px",padding:"2px 7px"}}>🪙 {(u.bits_promotor||0).toLocaleString()} BIT actual</span>
+                        </div>
+                      </div>
+                      <div style={{textAlign:"right",flexShrink:0}}>
+                        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"20px",color:"#27ae60"}}>{(u.bits_promotor_total||0).toLocaleString()}</div>
+                        <div style={{fontSize:"9px",fontWeight:700,color:"#9a9a9a",textTransform:"uppercase"}}>BIT total</div>
+                      </div>
+                      <span style={{fontSize:"16px",color:"#9a9a9a",transition:"transform .2s",transform:abierto?"rotate(180deg)":"rotate(0)"}}>{refs.length>0?"▼":""}</span>
                     </div>
-                    <div style={{textAlign:"right",flexShrink:0}}>
-                      <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"20px",color:"#27ae60"}}>{(u.bits_promotor_total||0).toLocaleString()}</div>
-                      <div style={{fontSize:"9px",fontWeight:700,color:"#9a9a9a",textTransform:"uppercase"}}>BIT total</div>
-                    </div>
+                    {abierto && refs.length>0 && (
+                      <div style={{marginLeft:"70px",borderLeft:"3px solid #d4a017",paddingLeft:"14px",marginTop:"4px",marginBottom:"8px"}}>
+                        {refs.map((r:any)=>(
+                          <div key={r.id} style={{display:"flex",alignItems:"center",gap:"10px",padding:"8px 0",borderBottom:"1px solid #f0f0ee"}}>
+                            <div style={{width:"30px",height:"30px",borderRadius:"50%",background:"rgba(58,123,213,0.1)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"13px",flexShrink:0}}>
+                              👤
+                            </div>
+                            <div style={{flex:1,minWidth:0}}>
+                              <div style={{fontSize:"12px",fontWeight:800,color:"#1a2a3a"}}>{r.nombre_usuario || r.nombre || "Usuario"}</div>
+                              <div style={{fontSize:"10px",color:"#9a9a9a",fontWeight:600}}>{r.codigo} · {new Date(r.created_at).toLocaleDateString("es-AR")}</div>
+                            </div>
+                            <div style={{display:"flex",gap:"6px",flexShrink:0,flexWrap:"wrap",justifyContent:"flex-end"}}>
+                              {(r.bits||0)>0&&<span style={{fontSize:"9px",fontWeight:700,color:"#d4a017",background:"rgba(212,160,23,0.08)",borderRadius:"6px",padding:"2px 6px"}}>💛 {(r.bits||0).toLocaleString()}</span>}
+                              {(r.bits_free||0)>0&&<span style={{fontSize:"9px",fontWeight:700,color:"#2980b9",background:"rgba(41,128,185,0.08)",borderRadius:"6px",padding:"2px 6px"}}>💙 {(r.bits_free||0).toLocaleString()}</span>}
+                              {(r.bits_promo||0)>0&&<span style={{fontSize:"9px",fontWeight:700,color:"#27ae60",background:"rgba(39,174,96,0.08)",borderRadius:"6px",padding:"2px 6px"}}>🟢 {(r.bits_promo||0).toLocaleString()}</span>}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {abierto && refs.length===0 && (
+                      <div style={{marginLeft:"70px",padding:"8px 0",fontSize:"12px",color:"#9a9a9a",fontWeight:600}}>Sin referidos todavía</div>
+                    )}
                   </div>
                 );
               })}
-              {usuarios.filter(u=>u.es_promotor).length===0 && <div style={{fontSize:"13px",color:"#9a9a9a",fontWeight:600}}>No hay promotores activos todavía.</div>}
+              {promotores.length===0 && <div style={{fontSize:"13px",color:"#9a9a9a",fontWeight:600}}>No hay promotores activos todavía.</div>}
             </div>
-          </>
-        )}
+          </>;
+        })()}
 
         {/* ══ CONTACTOS ════════════════════════════════════════════════════════ */}
         {!loading && tab==="contactos" && (

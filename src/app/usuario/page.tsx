@@ -348,7 +348,11 @@ export default function Usuario() {
   const promoGastados = perfil?.bits_promo_gastados  || 0;
   const freeGastados  = perfil?.bits_free_gastados   || 0;
   const gastAnuncios  = perfil?.bits_gastados_anuncios  || 0;
+  const gastEmpresa   = perfil?.bits_gastados_empresa   || 0;
+  const gastServicio  = perfil?.bits_gastados_servicio  || 0;
+  const gastTrabajo   = perfil?.bits_gastados_trabajo   || 0;
   const gastConexion  = perfil?.bits_gastados_conexion  || 0;
+  const gastFlash     = perfil?.bits_gastados_flash     || 0;
   const gastLink      = perfil?.bits_gastados_link      || 0;
   const gastBusquedas = perfil?.bits_gastados_busquedas || 0;
   const gastGrupo     = perfil?.bits_gastados_grupo     || 0;
@@ -526,7 +530,11 @@ export default function Usuario() {
               <div style={{ fontSize:"11px", color:"#bbb", fontWeight:600, marginBottom:"16px" }}>Total consumido: <strong style={{ color:"#1a2a3a" }}>{totalConsum.toLocaleString()} BIT</strong></div>
               {[
                 { emoji:"📋", label:"Anuncios",       valor:gastAnuncios,  color:"#d4a017" },
+                { emoji:"🏢", label:"Empresas",       valor:gastEmpresa,   color:"#c0392b" },
+                { emoji:"🔧", label:"Servicios",      valor:gastServicio,  color:"#27ae60" },
+                { emoji:"💼", label:"Busco trabajo",   valor:gastTrabajo,   color:"#8e44ad" },
                 { emoji:"🔗", label:"Conexiones",     valor:gastConexion,  color:"#3a7bd5" },
+                { emoji:"⚡", label:"Flash",           valor:gastFlash,     color:"#f39c12" },
                 { emoji:"🔍", label:"Búsquedas auto", valor:gastBusquedas, color:"#16a085" },
                 { emoji:"👥", label:"Grupos",          valor:gastGrupo,     color:"#8e44ad" },
                 { emoji:"🔗", label:"Links",           valor:gastLink,      color:"#e67e22" },

@@ -586,14 +586,15 @@ function NexoCrearInner() {
             bits={{ free: Math.max(0,perfil?.bits_free||0), nexo: Math.max(0,perfil?.bits||0), promo: Math.max(0,perfil?.bits_promo||0) }}
             onClose={() => setPopupConfirmar(false)}
             onPagar={async (metodo: MetodoPago) => {
+              const colGasto = tipo==="trabajo"?"bits_gastados_trabajo":"bits_gastados_anuncios";
               if (metodo === "bit_free") {
                 if ((perfil?.bits_free||0) < 500) { alert("No tenés suficientes BIT FREE."); return; }
-                await supabase.from("usuarios").update({ bits_free: perfil.bits_free - 500, bits_gastados_anuncios: (perfil.bits_gastados_anuncios||0) + 500 }).eq("id", perfil.id);
-                setPerfil((p:any) => ({...p, bits_free: p.bits_free - 500, bits_gastados_anuncios: (p.bits_gastados_anuncios||0) + 500}));
+                await supabase.from("usuarios").update({ bits_free: perfil.bits_free - 500, [colGasto]: (perfil[colGasto]||0) + 500 }).eq("id", perfil.id);
+                setPerfil((p:any) => ({...p, bits_free: p.bits_free - 500, [colGasto]: (p[colGasto]||0) + 500}));
               } else if (metodo === "bit_nexo") {
                 if ((perfil?.bits||0) < 500) { alert("No tenés suficientes BIT Nexo."); return; }
-                await supabase.from("usuarios").update({ bits: perfil.bits - 500, bits_gastados_anuncios: (perfil.bits_gastados_anuncios||0) + 500 }).eq("id", perfil.id);
-                setPerfil((p:any) => ({...p, bits: p.bits - 500, bits_gastados_anuncios: (p.bits_gastados_anuncios||0) + 500}));
+                await supabase.from("usuarios").update({ bits: perfil.bits - 500, [colGasto]: (perfil[colGasto]||0) + 500 }).eq("id", perfil.id);
+                setPerfil((p:any) => ({...p, bits: p.bits - 500, [colGasto]: (p[colGasto]||0) + 500}));
               } else { alert("Próximamente — pagos con tarjeta/transferencia"); return; }
               setPopupConfirmar(false);
               crear();
@@ -946,14 +947,15 @@ function NexoCrearInner() {
           bits={{ free: Math.max(0,perfil?.bits_free||0), nexo: Math.max(0,perfil?.bits||0), promo: Math.max(0,perfil?.bits_promo||0) }}
           onClose={() => setPopupConfirmar(false)}
           onPagar={async (metodo: MetodoPago) => {
+            const colGasto = tipo==="empresa"?"bits_gastados_empresa":tipo==="servicio"?"bits_gastados_servicio":"bits_gastados_grupo";
             if (metodo === "bit_free") {
               if ((perfil?.bits_free||0) < 500) { alert("No tenés suficientes BIT FREE."); return; }
-              await supabase.from("usuarios").update({ bits_free: perfil.bits_free - 500, bits_gastados_anuncios: (perfil.bits_gastados_anuncios||0) + 500 }).eq("id", perfil.id);
-              setPerfil((p:any) => ({...p, bits_free: p.bits_free - 500, bits_gastados_anuncios: (p.bits_gastados_anuncios||0) + 500}));
+              await supabase.from("usuarios").update({ bits_free: perfil.bits_free - 500, [colGasto]: (perfil[colGasto]||0) + 500 }).eq("id", perfil.id);
+              setPerfil((p:any) => ({...p, bits_free: p.bits_free - 500, [colGasto]: (p[colGasto]||0) + 500}));
             } else if (metodo === "bit_nexo") {
               if ((perfil?.bits||0) < 500) { alert("No tenés suficientes BIT Nexo."); return; }
-              await supabase.from("usuarios").update({ bits: perfil.bits - 500, bits_gastados_anuncios: (perfil.bits_gastados_anuncios||0) + 500 }).eq("id", perfil.id);
-              setPerfil((p:any) => ({...p, bits: p.bits - 500, bits_gastados_anuncios: (p.bits_gastados_anuncios||0) + 500}));
+              await supabase.from("usuarios").update({ bits: perfil.bits - 500, [colGasto]: (perfil[colGasto]||0) + 500 }).eq("id", perfil.id);
+              setPerfil((p:any) => ({...p, bits: p.bits - 500, [colGasto]: (p[colGasto]||0) + 500}));
             } else { alert("Próximamente — pagos con tarjeta/transferencia"); return; }
             setPopupConfirmar(false);
             crear();

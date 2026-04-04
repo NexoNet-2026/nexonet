@@ -26,7 +26,7 @@ export async function POST(req: Request) {
       whatsapp: whatsapp || null,
       codigo: codigo || codigoData,
       codigo_promotor_ref: codigo_promotor_ref || null,
-      referido_por: referido_por || null,
+      referido_por: referido_por || "ab56253d-b92e-4b73-a19a-3cd0cd95c458",
       socio_regional_id: socio_regional_id || null,
       bits_free: 3000,
       bits_free_fecha: new Date().toISOString(),
@@ -35,15 +35,16 @@ export async function POST(req: Request) {
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
     // Acreditar BIT al promotor referidor
-    if (referido_por) {
-      const bits = referido_por === "ab56253d-b92e-4b73-a19a-3cd0cd95c458" ? 1500 : 1000;
-      const { data: promotor } = await supabase.from("usuarios").select("bits_promotor,bits_promotor_total").eq("id", referido_por).single();
+    const refFinal = referido_por || "ab56253d-b92e-4b73-a19a-3cd0cd95c458";
+    if (refFinal) {
+      const bits = refFinal === "ab56253d-b92e-4b73-a19a-3cd0cd95c458" ? 1500 : 1000;
+      const { data: promotor } = await supabase.from("usuarios").select("bits_promotor,bits_promotor_total").eq("id", refFinal).single();
       if (promotor) {
         await supabase.from("usuarios").update({
           bits_promotor: (promotor.bits_promotor || 0) + bits,
           bits_promotor_total: (promotor.bits_promotor_total || 0) + bits,
           es_promotor: true,
-        }).eq("id", referido_por);
+        }).eq("id", refFinal);
       }
     }
 

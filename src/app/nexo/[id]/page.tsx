@@ -313,12 +313,20 @@ function NexoPageInner() {
 
   const confirmarPagoAdmin = async (metodo: MetodoPago) => {
     if (!perfil || !miMiembro) return;
-    if (metodo === "bit_free") { alert("No se puede pagar con BIT Free"); return; }
-    const saldo = perfil.bits || 0;
-    if (saldo < 500) { alert(`No tenés suficientes BIT Nexo. Tenés ${saldo}, necesitás 500.`); return; }
-    const { error: e1 } = await supabase.from("usuarios").update({ bits: saldo - 500 }).eq("id", perfil.id);
-    if (e1) { console.error("Error descontando BIT:", e1); alert("Error: " + e1.message); return; }
-    setPerfil((p: any) => ({ ...p, bits: saldo - 500 }));
+
+    if (metodo === "bit_free") {
+      const saldo = perfil.bits_free || 0;
+      if (saldo < 500) { alert(`No tenés suficientes BIT Free. Tenés ${saldo}, necesitás 500.`); return; }
+      const { error: e1 } = await supabase.from("usuarios").update({ bits_free: saldo - 500 }).eq("id", perfil.id);
+      if (e1) { console.error("Error descontando BIT Free:", e1); alert("Error: " + e1.message); return; }
+      setPerfil((p: any) => ({ ...p, bits_free: saldo - 500 }));
+    } else {
+      const saldo = perfil.bits || 0;
+      if (saldo < 500) { alert(`No tenés suficientes BIT Nexo. Tenés ${saldo}, necesitás 500.`); return; }
+      const { error: e1 } = await supabase.from("usuarios").update({ bits: saldo - 500 }).eq("id", perfil.id);
+      if (e1) { console.error("Error descontando BIT:", e1); alert("Error: " + e1.message); return; }
+      setPerfil((p: any) => ({ ...p, bits: saldo - 500 }));
+    }
     // Acreditar BIT Promo al admin que aprobó (30% NAN / 20% resto)
     const aprobadorId = miMiembro.aprobado_por || nexo.usuario_id;
     const comisionAdmin = aprobadorId === "ab56253d-b92e-4b73-a19a-3cd0cd95c458" ? 150 : 100;
@@ -801,7 +809,7 @@ function NexoPageInner() {
           emoji="⭐"
           costo="500 BIT"
           descripcion={`Pago para ser admin de "${nexo?.titulo}"`}
-          bits={{ free: 0, nexo: Math.max(0, perfil?.bits||0), promo: Math.max(0, perfil?.bits_promo||0) }}
+          bits={{ free: Math.max(0, perfil?.bits_free||0), nexo: Math.max(0, perfil?.bits||0), promo: Math.max(0, perfil?.bits_promo||0) }}
           onClose={() => setPopupPagoAdmin(false)}
           onPagar={async (metodo: MetodoPago) => {
             setPopupPagoAdmin(false);

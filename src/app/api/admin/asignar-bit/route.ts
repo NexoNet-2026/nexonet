@@ -85,14 +85,16 @@ export async function POST(req: Request) {
       }
     }
 
-    if (nota) {
-      await supabase.from("notificaciones").insert({
-        usuario_id,
-        tipo: "sistema",
-        mensaje: `${cantidad > 0 ? "💰 Recibiste" : "💸 Se debitaron"} ${Math.abs(cantidad)} ${columna.replace("_"," ").toUpperCase()}${nota ? ` — ${nota}` : ""}`,
-        leida: false,
-      });
-    }
+    const tipoLabel = columna === "bits" ? "Nexo" : columna === "bits_free" ? "Free" : "Promo";
+    const msgNot = cantidad > 0
+      ? `💰 Recibiste ${Math.abs(cantidad)} BIT ${tipoLabel} desde NexoNet${nota ? ` — ${nota}` : ""}`
+      : `💸 Se debitaron ${Math.abs(cantidad)} BIT ${tipoLabel} desde NexoNet${nota ? ` — ${nota}` : ""}`;
+    await supabase.from("notificaciones").insert({
+      usuario_id,
+      tipo: "sistema",
+      mensaje: msgNot,
+      leida: false,
+    });
 
     return NextResponse.json({ ok: true, nuevo, bits_saldo });
   } catch (e: any) {

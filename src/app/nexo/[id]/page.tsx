@@ -243,6 +243,10 @@ function NexoPageInner() {
         .insert({ nexo_id:id, usuario_id:perfil.id, rol:"miembro", estado:"pendiente", bits_pagados:0 })
         .select().single();
       setMiMiembro(mm);
+      const { data: creadorNexo } = await supabase.from("nexos").select("usuario_id, titulo").eq("id", id).single();
+      if (creadorNexo) {
+        await supabase.from("notificaciones").insert({ usuario_id: creadorNexo.usuario_id, tipo: "sistema", nexo_id: id, mensaje: "👋 " + perfil.nombre_usuario + " solicitó unirse a \"" + creadorNexo.titulo + "\"", leida: false });
+      }
       alert("Tu solicitud fue enviada. El administrador la revisará.");
       return;
     }
@@ -309,6 +313,10 @@ function NexoPageInner() {
       .select().single();
     setMiMiembro(mm);
     setMiembros(prev => [...prev, {...mm, usuarios:perfil}]);
+    const { data: creadorNexo2 } = await supabase.from("nexos").select("usuario_id, titulo").eq("id", id).single();
+    if (creadorNexo2) {
+      await supabase.from("notificaciones").insert({ usuario_id: creadorNexo2.usuario_id, tipo: "sistema", nexo_id: id, mensaje: "🎉 " + perfil.nombre_usuario + " se unió a \"" + creadorNexo2.titulo + "\"", leida: false });
+    }
   };
 
   const confirmarPagoAdmin = async (metodo: MetodoPago) => {

@@ -175,6 +175,8 @@ export async function POST(req: NextRequest) {
 
     // ── Comisión en cascada ilimitada ──
     try {
+      const { data: refUser } = await supabase.from("usuarios").select("nombre_usuario,nombre").eq("id", usuario_id).single();
+      const nombreRef = refUser?.nombre_usuario || refUser?.nombre || "un referido";
       let currentId = usuario_id;
       let comisionBase = pkg.cantidad;
       const visitados = new Set<string>();
@@ -212,7 +214,7 @@ export async function POST(req: NextRequest) {
         await supabase.from("notificaciones").insert({
           usuario_id: current.referido_por,
           tipo: "sistema",
-          mensaje: `⭐ Ganaste ${comision.toLocaleString()} BIT Promo — comisión por compra de referido${nivel > 1 ? ` (nivel ${nivel})` : ""}`,
+          mensaje: `⭐ Recibiste ${comision.toLocaleString()} BIT Promo de comisión por tu referido ${nombreRef}${nivel > 1 ? ` (nivel ${nivel})` : ""}`,
           leida: false,
         });
 

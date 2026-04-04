@@ -360,6 +360,8 @@ function NexoPageInner() {
 
       // Comisión en cascada ilimitada por descarga
       {
+        const { data: refUser } = await supabase.from("usuarios").select("nombre_usuario,nombre").eq("id", nexo.usuario_id).single();
+        const nombreRef = refUser?.nombre_usuario || refUser?.nombre || "un referido";
         let currentId = nexo.usuario_id;
         let comisionBase = bitsCreador;
         const visitados = new Set<string>();
@@ -385,7 +387,7 @@ function NexoPageInner() {
           const nivel = visitados.size;
           await supabase.from("notificaciones").insert({
             usuario_id: current.referido_por, tipo: "sistema",
-            mensaje: `💰 Tu referido recibió BIT por una descarga y ganaste ${comision} BIT Promo${nivel > 1 ? ` (nivel ${nivel})` : ""}`,
+            mensaje: `⭐ Recibiste ${comision} BIT Promo de comisión por tu referido ${nombreRef}${nivel > 1 ? ` (nivel ${nivel})` : ""}`,
             leida: false,
           });
 

@@ -916,7 +916,7 @@ function NexoCrearInner() {
             <div style={{display:"flex",gap:"10px"}}>
               <button onClick={()=>setPaso(2)} style={{flex:1,...BTN2}}>← Volver</button>
               <button onClick={() => {
-                if (tipo === "empresa" || tipo === "servicio") { crear(); return; }
+                if (tipo === "empresa" || tipo === "servicio" || tipo === "grupo") { crear(); return; }
                 const totalBits = (perfil?.bits_free||0) + (perfil?.bits||0) + (perfil?.bits_promo||0);
                 if (totalBits < 500) { alert(`Necesitás 500 BIT para crear este Nexo. Tenés ${totalBits} BIT.`); return; }
                 setPopupConfirmar(true);

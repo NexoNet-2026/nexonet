@@ -1284,7 +1284,7 @@ export default function AdminPanel() {
                     </div>
                     <div style={{fontSize:"12px",color:"#9a9a9a",fontWeight:600,marginTop:"2px"}}>{u.email}</div>
                     <div style={{display:"flex",gap:"6px",flexWrap:"wrap",marginTop:"6px"}}>
-                      {[["bits","💛",u.bits||0],["bits_free","💙",u.bits_free||0],["bits_conexion","🔗",u.bits_conexion||0],["bits_busquedas","🤖",u.bits_busquedas||0]].map(([k,e,v]:any)=>(
+                      {[["bits","💛",u.bits||0],["bits_free","💙",u.bits_free||0],["bits_promo","🟢",u.bits_promo||0],["bits_conexion","🔗",u.bits_conexion||0],["bits_busquedas","🤖",u.bits_busquedas||0]].map(([k,e,v]:any)=>(
                         v>0&&<span key={k} style={{fontSize:"10px",fontWeight:700,color:"#555",background:"#f4f4f2",borderRadius:"8px",padding:"2px 7px"}}>{e} {v.toLocaleString()}</span>
                       ))}
                     </div>

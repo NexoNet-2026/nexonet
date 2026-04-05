@@ -202,12 +202,12 @@ export default function NexoAdminPage() {
     setPopupPagoItem(false);
     if (metodo === "bit_free") {
       if ((perfil?.bits_free||0) < 500) { alert("No tenés suficientes BIT Free."); return; }
-      await supabase.from("usuarios").update({ bits_free: (perfil.bits_free||0) - 500 }).eq("id", perfil.id);
-      setPerfil((p:any) => ({...p, bits_free: (p.bits_free||0) - 500}));
+      await supabase.from("usuarios").update({ bits_free: (perfil.bits_free||0) - 500, bits_gastados_adjuntos: (perfil.bits_gastados_adjuntos||0) + 500 }).eq("id", perfil.id);
+      setPerfil((p:any) => ({...p, bits_free: (p.bits_free||0) - 500, bits_gastados_adjuntos: (p.bits_gastados_adjuntos||0) + 500}));
     } else if (metodo === "bit_nexo") {
       if ((perfil?.bits||0) < 500) { alert("No tenés suficientes BIT Nexo."); return; }
-      await supabase.from("usuarios").update({ bits: (perfil.bits||0) - 500 }).eq("id", perfil.id);
-      setPerfil((p:any) => ({...p, bits: (p.bits||0) - 500}));
+      await supabase.from("usuarios").update({ bits: (perfil.bits||0) - 500, bits_gastados_adjuntos: (perfil.bits_gastados_adjuntos||0) + 500 }).eq("id", perfil.id);
+      setPerfil((p:any) => ({...p, bits: (p.bits||0) - 500, bits_gastados_adjuntos: (p.bits_gastados_adjuntos||0) + 500}));
     } else { alert("Próximamente"); return; }
     await agregarItem();
   };

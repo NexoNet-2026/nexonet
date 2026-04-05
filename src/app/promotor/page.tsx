@@ -67,9 +67,9 @@ export default function PromoterPage() {
     </main>
   );
 
-  const bitsPromotor = perfil?.bits_promotor || 0;
+  const bitsPromotor = perfil?.bits_promo || 0;
   const totalRefs    = referidos.length;
-  const totalGanado  = perfil?.bits_promotor_total || 0;
+  const totalGanado  = perfil?.bits_promo_total || 0;
 
   return (
     <main style={{ paddingTop: "95px", paddingBottom: "100px", fontFamily: "'Nunito',sans-serif", background: "#f4f4f2", minHeight: "100vh" }}>

@@ -76,7 +76,7 @@ export default function NexoAdminPage() {
     lat:"", lng:"", direccion:"",
   });
   const [gpsLoad, setGpsLoad] = useState(false);
-  const [formItem, setFormItem] = useState({ titulo:"", descripcion:"", url:"", tipo:"imagen", precio_bits:"0" });
+  const [formItem, setFormItem] = useState({ titulo:"", descripcion:"", url:"", tipo:"imagen", precio_bits:"0", visibilidad:"publica" });
   const [formDesc, setFormDesc] = useState({ titulo:"", descripcion:"", url:"", tipo_archivo:"pdf", precio_bits:"10", rights:false });
 
   useEffect(() => {
@@ -218,11 +218,13 @@ export default function NexoAdminPage() {
     if (!esTexto && !formItem.url) return;
     if (esTexto && !formItem.titulo && !formItem.descripcion) return;
 
+    const esDescarga = popupItem.slider.tipo === "descargas" || popupItem.slider.tipo === "lista_precios";
     const { data } = await supabase.from("nexo_slider_items").insert({
       slider_id: popupItem.slider.id, nexo_id:id,
       titulo: formItem.titulo||null, descripcion:formItem.descripcion||null,
       url: formItem.url||null, tipo: formItem.url ? formItem.tipo : "texto",
       precio_bits: parseInt(formItem.precio_bits)||0,
+      ...(esDescarga ? { visibilidad: formItem.visibilidad } : {}),
       orden: (sliderItems[popupItem.slider.id]||[]).length,
       publicado_por: perfil.id,
       vence_el: new Date(Date.now() + 30*24*60*60*1000).toISOString(),
@@ -230,7 +232,7 @@ export default function NexoAdminPage() {
     if (data) {
       setSliderItems(prev => ({ ...prev, [popupItem.slider.id]: [...(prev[popupItem.slider.id]||[]), data] }));
     }
-    setFormItem({ titulo:"", descripcion:"", url:"", tipo:"imagen", precio_bits:"0" });
+    setFormItem({ titulo:"", descripcion:"", url:"", tipo:"imagen", precio_bits:"0", visibilidad:"publica" });
     setPopupItem(null);
   };
 
@@ -913,6 +915,14 @@ export default function NexoAdminPage() {
                     🎁 GRATIS
                   </div>
                 )}
+                <div style={{ marginBottom:"12px" }}>
+                  <label style={LS}>Visibilidad</label>
+                  <select value={formItem.visibilidad} onChange={e=>setFormItem(f=>({...f,visibilidad:e.target.value}))} style={IS}>
+                    <option value="publica">🌐 Pública — cualquiera puede descargar</option>
+                    <option value="miembros">👥 Solo miembros</option>
+                    <option value="solicitud">📩 Solicitud — el admin aprueba cada descarga</option>
+                  </select>
+                </div>
               </>
             )}
             {(() => {

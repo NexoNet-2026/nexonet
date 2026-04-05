@@ -894,67 +894,7 @@ function SliderContenido({ slider, items, mensajes, perfil, nexo, esAdmin, esMie
 
   // DESCARGAS
   if (tipo==="descargas" || tipo==="lista_precios") {
-    return (
-      <div style={{ display:"flex", flexDirection:"column", gap:"12px" }}>
-        {items.length===0 && <EmptySlider emoji="📥" texto="Sin archivos todavía" sub="El administrador puede agregar descargas desde el panel admin" />}
-        {items.map((item:any)=>{
-          const gratis      = !item.precio_bits || item.precio_bits===0;
-          const yaPago      = descargasPagadas.has(item.id);
-          const procesando  = pagandoDescarga===item.id;
-          return (
-            <div key={item.id} style={{ background:"#fff", borderRadius:"16px", overflow:"hidden", boxShadow:"0 2px 10px rgba(0,0,0,0.07)" }}>
-              <div style={{ height:"120px", background:"linear-gradient(135deg,#1a2a3a,#243b55)", display:"flex", alignItems:"center", justifyContent:"center", position:"relative", overflow:"hidden" }}>
-                {item.tipo==="imagen" && item.url && <img src={item.url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} />}
-                {item.tipo==="video"  && item.url && <><video src={item.url} style={{ width:"100%", height:"100%", objectFit:"cover" }} /><div style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.4)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"40px" }}>▶️</div></>}
-                {(!item.tipo||item.tipo==="pdf"||item.tipo==="documento") && <span style={{ fontSize:"52px", opacity:0.4 }}>{item.tipo==="pdf"?"📕":"📄"}</span>}
-                <div style={{ position:"absolute", top:"8px", right:"8px", background:gratis?"rgba(39,174,96,0.92)":"rgba(212,160,23,0.92)", borderRadius:"8px", padding:"4px 10px", fontSize:"11px", fontWeight:900, color:gratis?"#fff":"#1a2a3a" }}>
-                  {gratis?"GRATIS":`${item.precio_bits} BIT`}
-                </div>
-              </div>
-              <div style={{ padding:"14px 16px" }}>
-                <div style={{ fontSize:"14px", fontWeight:900, color:"#1a2a3a", marginBottom:"4px" }}>{item.titulo||"Archivo"}</div>
-                {item.descripcion && <div style={{ fontSize:"12px", color:"#9a9a9a", fontWeight:600, marginBottom:"10px", lineHeight:1.5 }}>{item.descripcion}</div>}
-                <div style={{ display:"flex", gap:"8px", alignItems:"center", marginBottom:"12px" }}>
-                  {item.tipo && <span style={{ background:"#f0f0f0", borderRadius:"6px", padding:"2px 8px", fontSize:"10px", fontWeight:800, color:"#666", textTransform:"uppercase" }}>{item.tipo}</span>}
-                  <span style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:600 }}>📥 {item.descargas||0} descargas</span>
-                </div>
-                {gratis || yaPago ? (
-                  perfil ? (
-                    <button onClick={()=>onAbrirDescarga(item.url)}
-                      style={{ width:"100%", border:"none", cursor:"pointer", fontFamily:"'Nunito',sans-serif", textAlign:"center", background:"linear-gradient(135deg,#27ae60,#1e8449)", borderRadius:"12px", padding:"12px", fontSize:"14px", fontWeight:900, color:"#fff", boxShadow:"0 3px 0 #155a2e" }}>
-                      📥 {yaPago?"Descargar de nuevo":"Descargar gratis"}
-                    </button>
-                  ) : (
-                    <button onClick={()=>window.location.href="/login"}
-                      style={{ width:"100%", border:"none", cursor:"pointer", fontFamily:"'Nunito',sans-serif", textAlign:"center", background:"linear-gradient(135deg,#3a7bd5,#2962b0)", borderRadius:"12px", padding:"12px", fontSize:"14px", fontWeight:900, color:"#fff", boxShadow:"0 3px 0 #1e4a8a" }}>
-                      🔑 Iniciá sesión para descargar
-                    </button>
-                  )
-                ) : perfil ? (
-                  <button onClick={()=>onPagarDescarga(item)} disabled={!!procesando}
-                    style={{ width:"100%", background:`linear-gradient(135deg,${colorNexo}cc,${colorNexo})`, border:"none", borderRadius:"12px", padding:"12px", fontSize:"14px", fontWeight:900, color:"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif", boxShadow:`0 3px 0 ${colorNexo}88` }}>
-                    {procesando?"⏳ Procesando...":`💰 Pagar ${item.precio_bits} BIT y descargar`}
-                  </button>
-                ) : (
-                  <button onClick={()=>window.location.href="/login"}
-                    style={{ width:"100%", border:"none", cursor:"pointer", fontFamily:"'Nunito',sans-serif", textAlign:"center", background:"linear-gradient(135deg,#3a7bd5,#2962b0)", borderRadius:"12px", padding:"12px", fontSize:"14px", fontWeight:900, color:"#fff", boxShadow:"0 3px 0 #1e4a8a" }}>
-                    🔑 Iniciá sesión para descargar
-                  </button>
-                )}
-                {esAdmin && (
-                  <button onClick={() => onFlash(item)}
-                    style={{ marginTop: "8px", width: "100%", background: "linear-gradient(135deg,#e67e22,#d35400)",
-                      border: "none", borderRadius: "12px", padding: "10px", fontSize: "13px", fontWeight: 900,
-                      color: "#fff", cursor: "pointer", fontFamily: "'Nunito',sans-serif" }}>
-                    ⚡ Flash a este archivo
-                  </button>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    );
+    return <DescargasSlider items={items} perfil={perfil} nexo={nexo} esAdmin={esAdmin} esMiembro={esMiembro} descargasPagadas={descargasPagadas} pagandoDescarga={pagandoDescarga} onPagarDescarga={onPagarDescarga} onAbrirDescarga={onAbrirDescarga} onFlash={onFlash} colorNexo={colorNexo} />;
   }
 
   if (tipo === "resenas") {
@@ -1055,6 +995,118 @@ function SliderContenido({ slider, items, mensajes, perfil, nexo, esAdmin, esMie
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+function DescargasSlider({ items, perfil, nexo, esAdmin, esMiembro, descargasPagadas, pagandoDescarga, onPagarDescarga, onAbrirDescarga, onFlash, colorNexo }: any) {
+  const [solicitudes, setSolicitudes] = useState<Set<string>>(new Set());
+  const [enviandoSol, setEnviandoSol] = useState<string|null>(null);
+
+  useEffect(() => {
+    if (!perfil) return;
+    supabase.from("nexo_descarga_solicitudes").select("descarga_id").eq("solicitante_id", perfil.id).eq("nexo_id", nexo.id).eq("estado", "pendiente")
+      .then(({ data }) => {
+        if (data) setSolicitudes(new Set(data.map((s: any) => s.descarga_id)));
+      });
+  }, [perfil, nexo.id]);
+
+  const solicitarAcceso = async (itemId: string) => {
+    if (!perfil) return;
+    setEnviandoSol(itemId);
+    try {
+      await supabase.from("nexo_descarga_solicitudes").insert({
+        descarga_id: itemId, nexo_id: nexo.id, solicitante_id: perfil.id, estado: "pendiente",
+      });
+      await supabase.from("notificaciones").insert({
+        usuario_id: nexo.usuario_id, tipo: "sistema",
+        mensaje: `📩 ${perfil.nombre_usuario || perfil.nombre || "Un usuario"} solicitó acceso a una descarga en tu nexo`,
+        leida: false,
+      });
+      setSolicitudes(prev => new Set([...prev, itemId]));
+    } catch (err) { console.error("Error solicitando acceso:", err); }
+    setEnviandoSol(null);
+  };
+
+  return (
+    <div style={{ display:"flex", flexDirection:"column", gap:"12px" }}>
+      {items.length===0 && <EmptySlider emoji="📥" texto="Sin archivos todavía" sub="El administrador puede agregar descargas desde el panel admin" />}
+      {items.map((item:any)=>{
+        const gratis      = !item.precio_bits || item.precio_bits===0;
+        const yaPago      = descargasPagadas.has(item.id);
+        const procesando  = pagandoDescarga===item.id;
+        const vis         = item.visibilidad || "publica";
+        const bloqueadoMiembros = vis === "miembros" && !esMiembro && !esAdmin;
+        const bloqueadoSolicitud = vis === "solicitud" && !esAdmin;
+        const yaSolicito  = solicitudes.has(item.id);
+
+        return (
+          <div key={item.id} style={{ background:"#fff", borderRadius:"16px", overflow:"hidden", boxShadow:"0 2px 10px rgba(0,0,0,0.07)" }}>
+            <div style={{ height:"120px", background:"linear-gradient(135deg,#1a2a3a,#243b55)", display:"flex", alignItems:"center", justifyContent:"center", position:"relative", overflow:"hidden" }}>
+              {item.tipo==="imagen" && item.url && <img src={item.url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} />}
+              {item.tipo==="video"  && item.url && <><video src={item.url} style={{ width:"100%", height:"100%", objectFit:"cover" }} /><div style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.4)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"40px" }}>▶️</div></>}
+              {(!item.tipo||item.tipo==="pdf"||item.tipo==="documento") && <span style={{ fontSize:"52px", opacity:0.4 }}>{item.tipo==="pdf"?"📕":"📄"}</span>}
+              <div style={{ position:"absolute", top:"8px", right:"8px", background:gratis?"rgba(39,174,96,0.92)":"rgba(212,160,23,0.92)", borderRadius:"8px", padding:"4px 10px", fontSize:"11px", fontWeight:900, color:gratis?"#fff":"#1a2a3a" }}>
+                {gratis?"GRATIS":`${item.precio_bits} BIT`}
+              </div>
+            </div>
+            <div style={{ padding:"14px 16px" }}>
+              <div style={{ fontSize:"14px", fontWeight:900, color:"#1a2a3a", marginBottom:"4px" }}>{item.titulo||"Archivo"}</div>
+              {item.descripcion && <div style={{ fontSize:"12px", color:"#9a9a9a", fontWeight:600, marginBottom:"10px", lineHeight:1.5 }}>{item.descripcion}</div>}
+              <div style={{ display:"flex", gap:"8px", alignItems:"center", marginBottom:"12px" }}>
+                {item.tipo && <span style={{ background:"#f0f0f0", borderRadius:"6px", padding:"2px 8px", fontSize:"10px", fontWeight:800, color:"#666", textTransform:"uppercase" }}>{item.tipo}</span>}
+                <span style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:600 }}>📥 {item.descargas||0} descargas</span>
+              </div>
+              {bloqueadoMiembros ? (
+                <div style={{ width:"100%", background:"#f4f4f2", borderRadius:"12px", padding:"12px", fontSize:"14px", fontWeight:800, color:"#9a9a9a", textAlign:"center" }}>
+                  🔒 Solo para miembros
+                </div>
+              ) : bloqueadoSolicitud ? (
+                yaSolicito ? (
+                  <div style={{ width:"100%", background:"#f4f4f2", borderRadius:"12px", padding:"12px", fontSize:"14px", fontWeight:800, color:"#9a9a9a", textAlign:"center" }}>
+                    ⏳ Solicitud enviada
+                  </div>
+                ) : (
+                  <button onClick={()=>solicitarAcceso(item.id)} disabled={enviandoSol===item.id}
+                    style={{ width:"100%", background:"linear-gradient(135deg,#8e44ad,#6c3483)", border:"none", borderRadius:"12px", padding:"12px", fontSize:"14px", fontWeight:900, color:"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif", boxShadow:"0 3px 0 #4a235a" }}>
+                    {enviandoSol===item.id?"⏳ Enviando...":"📩 Solicitar acceso"}
+                  </button>
+                )
+              ) : gratis || yaPago ? (
+                perfil ? (
+                  <button onClick={()=>onAbrirDescarga(item.url)}
+                    style={{ width:"100%", border:"none", cursor:"pointer", fontFamily:"'Nunito',sans-serif", textAlign:"center", background:"linear-gradient(135deg,#27ae60,#1e8449)", borderRadius:"12px", padding:"12px", fontSize:"14px", fontWeight:900, color:"#fff", boxShadow:"0 3px 0 #155a2e" }}>
+                    📥 {yaPago?"Descargar de nuevo":"Descargar gratis"}
+                  </button>
+                ) : (
+                  <button onClick={()=>window.location.href="/login"}
+                    style={{ width:"100%", border:"none", cursor:"pointer", fontFamily:"'Nunito',sans-serif", textAlign:"center", background:"linear-gradient(135deg,#3a7bd5,#2962b0)", borderRadius:"12px", padding:"12px", fontSize:"14px", fontWeight:900, color:"#fff", boxShadow:"0 3px 0 #1e4a8a" }}>
+                    🔑 Iniciá sesión para descargar
+                  </button>
+                )
+              ) : perfil ? (
+                <button onClick={()=>onPagarDescarga(item)} disabled={!!procesando}
+                  style={{ width:"100%", background:`linear-gradient(135deg,${colorNexo}cc,${colorNexo})`, border:"none", borderRadius:"12px", padding:"12px", fontSize:"14px", fontWeight:900, color:"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif", boxShadow:`0 3px 0 ${colorNexo}88` }}>
+                  {procesando?"⏳ Procesando...":`💰 Pagar ${item.precio_bits} BIT y descargar`}
+                </button>
+              ) : (
+                <button onClick={()=>window.location.href="/login"}
+                  style={{ width:"100%", border:"none", cursor:"pointer", fontFamily:"'Nunito',sans-serif", textAlign:"center", background:"linear-gradient(135deg,#3a7bd5,#2962b0)", borderRadius:"12px", padding:"12px", fontSize:"14px", fontWeight:900, color:"#fff", boxShadow:"0 3px 0 #1e4a8a" }}>
+                  🔑 Iniciá sesión para descargar
+                </button>
+              )}
+              {esAdmin && (
+                <button onClick={() => onFlash(item)}
+                  style={{ marginTop: "8px", width: "100%", background: "linear-gradient(135deg,#e67e22,#d35400)",
+                    border: "none", borderRadius: "12px", padding: "10px", fontSize: "13px", fontWeight: 900,
+                    color: "#fff", cursor: "pointer", fontFamily: "'Nunito',sans-serif" }}>
+                  ⚡ Flash a este archivo
+                </button>
+              )}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

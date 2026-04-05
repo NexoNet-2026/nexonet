@@ -26,7 +26,7 @@ export async function POST(req: Request) {
       whatsapp: whatsapp || null,
       codigo: codigo || codigoData,
       codigo_promotor_ref: codigo_promotor_ref || null,
-      referido_por: referido_por || "ab56253d-b92e-4b73-a19a-3cd0cd95c458",
+      referido_por: referido_por || "f9b23e04-c591-44bf-9efb-51966c30a083",
       socio_regional_id: socio_regional_id || null,
       bits_free: 3000,
       bits_free_fecha: new Date().toISOString(),

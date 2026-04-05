@@ -327,7 +327,7 @@ export default function Usuario() {
       estado_cuenta: "baja_solicitada", nota_baja: notaBaja || null,
     }).eq("id", perfil.id);
     await supabase.from("notificaciones").insert({
-      usuario_id: "ab56253d-b92e-4b73-a19a-3cd0cd95c458", tipo: "sistema",
+      usuario_id: "f9b23e04-c591-44bf-9efb-51966c30a083", tipo: "sistema",
       mensaje: `🚨 Baja solicitada por ${perfil.nombre_usuario} (${perfil.codigo})${notaBaja ? ": " + notaBaja.slice(0, 80) : ""}`, leida: false,
     });
     await supabase.from("notificaciones").insert({

@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
-const ADMIN_UUID = "ab56253d-b92e-4b73-a19a-3cd0cd95c458";
+const ADMIN_UUID = "f9b23e04-c591-44bf-9efb-51966c30a083";
 
 type Tab = "dashboard"|"usuarios"|"anuncios"|"nexos"|"mensajes"|"promotores"|"pagos"|"alarmas"|"config"|"contactos"|"reclamos"|"socios";
 type ConfigSub = "anuncios"|"empresas"|"servicios"|"trabajo"|"grupos"|"filtros_ia"|"general";

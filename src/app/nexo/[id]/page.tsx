@@ -339,7 +339,7 @@ function NexoPageInner() {
     }
     // Acreditar BIT Promo al admin que aprobó (30% NAN / 20% resto)
     const aprobadorId = miMiembro.aprobado_por || nexo.usuario_id;
-    const comisionAdmin = aprobadorId === "ab56253d-b92e-4b73-a19a-3cd0cd95c458" ? 150 : 100;
+    const comisionAdmin = aprobadorId === "f9b23e04-c591-44bf-9efb-51966c30a083" ? 150 : 100;
     const { data: aprobador } = await supabase.from("usuarios").select("bits_promo,bits_promotor_total").eq("id", aprobadorId).single();
     if (aprobador) {
       await supabase.from("usuarios").update({
@@ -629,7 +629,7 @@ function NexoPageInner() {
                   const campo = (perfil.bits_free||0)>=500?"bits_free":(perfil.bits||0)>=500?"bits":"bits_promo";
                   await supabase.from("usuarios").update({[campo]:(perfil[campo]||0)-500}).eq("id",perfil.id);
                   setPerfil((p:any)=>({...p,[campo]:(p[campo]||0)-500}));
-                  const comRenovar = nexo.usuario_id === "ab56253d-b92e-4b73-a19a-3cd0cd95c458" ? 150 : 100;
+                  const comRenovar = nexo.usuario_id === "f9b23e04-c591-44bf-9efb-51966c30a083" ? 150 : 100;
                   const {data:dueno} = await supabase.from("usuarios").select("bits_promo,bits_promotor_total").eq("id",nexo.usuario_id).single();
                   if(dueno) await supabase.from("usuarios").update({bits_promo:(dueno.bits_promo||0)+comRenovar,bits_promotor_total:(dueno.bits_promotor_total||0)+comRenovar}).eq("id",nexo.usuario_id);
                   await supabase.from("nexo_miembros").update({estado:"activo",vence_el:new Date(Date.now()+30*24*60*60*1000).toISOString(),fecha_pago:new Date().toISOString(),bits_pagados:(miMiembro.bits_pagados||0)+500}).eq("id",miMiembro.id);
@@ -659,7 +659,7 @@ function NexoPageInner() {
                   const campo = (perfil.bits_free||0) >= 500 ? "bits_free" : (perfil.bits_promo||0) >= 500 ? "bits_promo" : "bits";
                   await supabase.from("usuarios").update({ [campo]: (perfil[campo]||0) - 500 }).eq("id", perfil.id);
                   setPerfil((p:any) => ({...p, [campo]: (p[campo]||0) - 500}));
-                  const comSolAdmin = nexo.usuario_id === "ab56253d-b92e-4b73-a19a-3cd0cd95c458" ? 150 : 100;
+                  const comSolAdmin = nexo.usuario_id === "f9b23e04-c591-44bf-9efb-51966c30a083" ? 150 : 100;
                   const { data: dueno } = await supabase.from("usuarios").select("bits_promo,bits_promotor_total").eq("id", nexo.usuario_id).single();
                   if (dueno) await supabase.from("usuarios").update({ bits_promo: (dueno.bits_promo||0)+comSolAdmin, bits_promotor_total: (dueno.bits_promotor_total||0)+comSolAdmin }).eq("id", nexo.usuario_id);
                   await supabase.from("nexo_miembros").update({ rol: "admin_solicitado" }).eq("id", miMiembro.id);

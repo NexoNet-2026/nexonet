@@ -299,7 +299,7 @@ export default function NexoAdminPage() {
       }
 
       // Acreditar BIT Promotor al dueño (30% NAN / 20% resto)
-      const comAprobar = perfil.id === "ab56253d-b92e-4b73-a19a-3cd0cd95c458" ? 150 : 100;
+      const comAprobar = perfil.id === "f9b23e04-c591-44bf-9efb-51966c30a083" ? 150 : 100;
       await supabase.from("usuarios").update({
         bits_promo: (perfil.bits_promo||0) + comAprobar,
         bits_promotor_total: (perfil.bits_promotor_total||0) + comAprobar,
@@ -315,7 +315,7 @@ export default function NexoAdminPage() {
     }
     if (accion === "hacer_admin") {
       // Creador asigna admin: creador paga 500 BIT, recibe comisión (30% NAN / 20% resto)
-      const comHacerAdmin = perfil.id === "ab56253d-b92e-4b73-a19a-3cd0cd95c458" ? 150 : 100;
+      const comHacerAdmin = perfil.id === "f9b23e04-c591-44bf-9efb-51966c30a083" ? 150 : 100;
       if ((perfil?.bits||0) < 500) { alert("Necesitás 500 BIT para asignar admin."); return; }
       await supabase.from("usuarios").update({
         bits: (perfil.bits||0)-500,
@@ -865,7 +865,7 @@ export default function NexoAdminPage() {
               <div style={{ fontSize:"12px", color:"#e8b88a", fontWeight:600, marginBottom:"16px" }}>Para dar de baja tu grupo enviá una solicitud a NexoNet. Un administrador la procesará y te contactará.</div>
               <button onClick={async()=>{
                 if (!confirm("¿Querés solicitar la baja de este grupo? Un administrador de NexoNet procesará tu solicitud.")) return;
-                await supabase.from("notificaciones").insert({ usuario_id:"ab56253d-b92e-4b73-a19a-3cd0cd95c458", tipo:"sistema", mensaje:"🚨 Solicitud de baja de grupo: "+nexo.titulo+" (ID: "+id+") — solicitado por "+perfil.nombre_usuario+" ("+perfil.codigo+")", leida:false });
+                await supabase.from("notificaciones").insert({ usuario_id:"f9b23e04-c591-44bf-9efb-51966c30a083", tipo:"sistema", mensaje:"🚨 Solicitud de baja de grupo: "+nexo.titulo+" (ID: "+id+") — solicitado por "+perfil.nombre_usuario+" ("+perfil.codigo+")", leida:false });
                 alert("✅ Solicitud enviada. Te contactaremos a la brevedad.");
                 router.push("/usuario");
               }} style={{ width:"100%", background:"rgba(230,126,34,0.18)", border:"2px solid rgba(230,126,34,0.45)", borderRadius:"12px", padding:"13px", fontSize:"13px", fontWeight:900, color:"#e67e22", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
@@ -1047,7 +1047,7 @@ export default function NexoAdminPage() {
             setNexo((n:any)=>({...n,bits_promo:(n.bits_promo||0)-500}));
           }
           // Acreditar BIT Promo al admin que aprueba (30% NAN / 20% resto)
-          const comApAdmin = perfil.id === "ab56253d-b92e-4b73-a19a-3cd0cd95c458" ? 150 : 100;
+          const comApAdmin = perfil.id === "f9b23e04-c591-44bf-9efb-51966c30a083" ? 150 : 100;
           await supabase.from("usuarios").update({
             bits_promo:(perfil.bits_promo||0)+comApAdmin,
             bits_promotor_total:(perfil.bits_promotor_total||0)+comApAdmin,

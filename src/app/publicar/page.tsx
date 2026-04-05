@@ -173,7 +173,7 @@ function PublicarSelectorInner() {
                   const { data: { session } } = await supabase.auth.getSession();
                   if (!session) { alert("Iniciá sesión para sugerir"); return; }
                   await supabase.from("sugerencias_categorias").insert({ usuario_id: session.user.id, tipo: tipoSel?.id || "", rubro_sugerido: sugerencia.trim() });
-                  await supabase.from("notificaciones").insert({ usuario_id: "ab56253d-b92e-4b73-a19a-3cd0cd95c458", tipo: "sistema", mensaje: `💡 Nueva sugerencia de categoría: "${sugerencia.trim()}" para tipo ${tipoSel?.titulo || ""}`, leida: false });
+                  await supabase.from("notificaciones").insert({ usuario_id: "f9b23e04-c591-44bf-9efb-51966c30a083", tipo: "sistema", mensaje: `💡 Nueva sugerencia de categoría: "${sugerencia.trim()}" para tipo ${tipoSel?.titulo || ""}`, leida: false });
                   setSugerencia("");
                   alert("✅ Sugerencia enviada. ¡Gracias!");
                 }} style={{ background:"rgba(212,160,23,0.3)", border:"2px solid rgba(212,160,23,0.5)", borderRadius:"12px", padding:"10px 16px", fontSize:"13px", fontWeight:800, color:"#d4a017", cursor:"pointer", fontFamily:"'Nunito',sans-serif", whiteSpace:"nowrap" }}>
@@ -220,7 +220,7 @@ function PublicarSelectorInner() {
                   const { data: { session } } = await supabase.auth.getSession();
                   if (!session) { alert("Iniciá sesión para sugerir"); return; }
                   await supabase.from("sugerencias_categorias").insert({ usuario_id: session.user.id, tipo: tipoSel?.id || "", rubro_sugerido: rubroSel?.nombre || "", subrubro_sugerido: sugerencia.trim() });
-                  await supabase.from("notificaciones").insert({ usuario_id: "ab56253d-b92e-4b73-a19a-3cd0cd95c458", tipo: "sistema", mensaje: `💡 Nueva sugerencia de subcategoría: "${sugerencia.trim()}" en ${rubroSel?.nombre || ""} para tipo ${tipoSel?.titulo || ""}`, leida: false });
+                  await supabase.from("notificaciones").insert({ usuario_id: "f9b23e04-c591-44bf-9efb-51966c30a083", tipo: "sistema", mensaje: `💡 Nueva sugerencia de subcategoría: "${sugerencia.trim()}" en ${rubroSel?.nombre || ""} para tipo ${tipoSel?.titulo || ""}`, leida: false });
                   setSugerencia("");
                   alert("✅ Sugerencia enviada. ¡Gracias!");
                 }} style={{ background:"rgba(212,160,23,0.3)", border:"2px solid rgba(212,160,23,0.5)", borderRadius:"12px", padding:"10px 16px", fontSize:"13px", fontWeight:800, color:"#d4a017", cursor:"pointer", fontFamily:"'Nunito',sans-serif", whiteSpace:"nowrap" }}>

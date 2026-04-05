@@ -88,7 +88,6 @@ function NexoCrearInner() {
   const [popupSlider,    setPopupSlider]    = useState(false);
   const [popupConfirmar, setPopupConfirmar] = useState(false);
   const [gpsLoad,        setGpsLoad]        = useState(false);
-  const [pagoBITEmpresa, setPagoBITEmpresa] = useState(false);
   const [esPrimeraEmpresa, setEsPrimeraEmpresa] = useState<boolean|null>(null);
   const [popupEmpresa, setPopupEmpresa] = useState(false);
 
@@ -658,75 +657,20 @@ function NexoCrearInner() {
         {paso===1 && (
           <div style={{display:"flex",flexDirection:"column",gap:"14px"}}>
 
-            {(tipo==="empresa" || tipo==="servicio") && (() => { console.log('RENDER esPrimeraEmpresa:', esPrimeraEmpresa, 'pagoBITEmpresa:', pagoBITEmpresa, 'tipo:', tipo); return null; })()}
-            {(tipo==="empresa" || tipo==="servicio") && !pagoBITEmpresa && esPrimeraEmpresa === true && (
-              <div style={{background:"linear-gradient(135deg,#1a3a2a,#204a30)",borderRadius:"16px",padding:"20px",border:"2px solid rgba(39,174,96,0.4)"}}>
-                <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"20px",color:"#27ae60",letterSpacing:"1px",marginBottom:"8px"}}>🏢 ¡Tu primera empresa es GRATIS!</div>
-                <div style={{fontSize:"13px",color:"#8abba0",fontWeight:600,lineHeight:1.6,marginBottom:"16px"}}>
-                  Tenés <strong style={{color:"#27ae60"}}>30 días gratis</strong> para probar tu perfil empresarial. Después del trial, el plan cuesta 10.000 BIT/mes.
-                </div>
-                <button onClick={async () => {
-                  await supabase.from("usuarios").update({ plan:"nexoempresa" }).eq("id",perfil.id);
-                  setPerfil((p:any)=>({...p, plan:"nexoempresa"}));
-                  setPagoBITEmpresa(true);
-                }} style={{width:"100%",background:"linear-gradient(135deg,#27ae60,#1e8449)",border:"none",borderRadius:"12px",padding:"14px",fontSize:"15px",fontWeight:900,color:"#fff",cursor:"pointer",fontFamily:"'Nunito',sans-serif",boxShadow:"0 4px 0 rgba(0,0,0,0.3)"}}>
-                  🎉 Activar 30 días gratis
-                </button>
-              </div>
-            )}
-
-            {(tipo==="empresa" || tipo==="servicio") && !pagoBITEmpresa && esPrimeraEmpresa === false && (
-              <div style={{background:"linear-gradient(135deg,#2c1a1a,#4a2020)",borderRadius:"16px",padding:"20px",border:"2px solid rgba(192,57,43,0.4)"}}>
-                <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"20px",color:"#e74c3c",letterSpacing:"1px",marginBottom:"8px"}}>🏢 Nexo Empresa</div>
-                <div style={{fontSize:"13px",color:"#e88a8a",fontWeight:600,lineHeight:1.6,marginBottom:"16px"}}>
-                  Para crear tu perfil empresarial necesitás abonar el plan Empresa.
-                </div>
-                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",background:"rgba(0,0,0,0.2)",borderRadius:"12px",padding:"12px 16px",marginBottom:"16px"}}>
-                  <span style={{fontSize:"13px",fontWeight:700,color:"#e88a8a"}}>Costo del plan</span>
-                  <div style={{textAlign:"right"}}>
-                    <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"28px",color:"#e74c3c"}}>10.000</div>
-                    <div style={{fontSize:"10px",color:"#e88a8a",fontWeight:700}}>BIT / mes</div>
-                  </div>
-                </div>
-                <button onClick={() => setPopupEmpresa(true)} style={{width:"100%",background:"linear-gradient(135deg,#c0392b,#e74c3c)",border:"none",borderRadius:"12px",padding:"14px",fontSize:"15px",fontWeight:900,color:"#fff",cursor:"pointer",fontFamily:"'Nunito',sans-serif",boxShadow:"0 4px 0 rgba(0,0,0,0.3)"}}>
-                  💳 Pagar 10.000 BIT y activar Empresa
-                </button>
-              </div>
-            )}
-
-            {popupEmpresa && perfil && (
-              <PopupCompra titulo="Activar Empresa" emoji="🏢" costo="10.000 BIT"
-                descripcion="Mensualidad de tu empresa en NexoNet"
-                bits={{ free: perfil.bits_free||0, nexo: perfil.bits||0, promo: perfil.bits_promo||0 }}
-                onClose={() => setPopupEmpresa(false)}
-                onPagar={async (metodo: MetodoPago) => {
-                  const colGastoEmp = tipo==="empresa"?"bits_gastados_empresa":"bits_gastados_servicio";
-                  if (metodo === "bit_free") {
-                    if ((perfil.bits_free||0) < 10000) { alert("No tenés suficientes BIT Free."); return; }
-                    await supabase.from("usuarios").update({ bits_free: (perfil.bits_free||0) - 10000, plan:"nexoempresa", [colGastoEmp]: (perfil[colGastoEmp]||0) + 10000 }).eq("id", perfil.id);
-                    setPerfil((p:any)=>({...p, bits_free: (p.bits_free||0) - 10000, plan:"nexoempresa", [colGastoEmp]: (p[colGastoEmp]||0) + 10000}));
-                  } else if (metodo === "bit_nexo") {
-                    if ((perfil.bits||0) < 10000) { alert("No tenés suficientes BIT Nexo."); return; }
-                    await supabase.from("usuarios").update({ bits: (perfil.bits||0) - 10000, plan:"nexoempresa", bits_free: (perfil.bits_free||0) + 10000, [colGastoEmp]: (perfil[colGastoEmp]||0) + 10000 }).eq("id", perfil.id);
-                    setPerfil((p:any)=>({...p, bits: (p.bits||0) - 10000, plan:"nexoempresa", bits_free: (p.bits_free||0) + 10000, [colGastoEmp]: (p[colGastoEmp]||0) + 10000}));
-                  } else if (metodo === "bit_promo") {
-                    if ((perfil.bits_promo||0) < 10000) { alert("No tenés suficientes BIT Promo."); return; }
-                    await supabase.from("usuarios").update({ bits_promo: (perfil.bits_promo||0) - 10000, plan:"nexoempresa", bits_free: (perfil.bits_free||0) + 10000, [colGastoEmp]: (perfil[colGastoEmp]||0) + 10000 }).eq("id", perfil.id);
-                    setPerfil((p:any)=>({...p, bits_promo: (p.bits_promo||0) - 10000, plan:"nexoempresa", bits_free: (p.bits_free||0) + 10000, [colGastoEmp]: (p[colGastoEmp]||0) + 10000}));
-                  } else { alert("Próximamente"); return; }
-                  setPagoBITEmpresa(true);
-                  setPopupEmpresa(false);
-                }} />
-            )}
-
-            {(tipo==="empresa" || tipo==="servicio") && pagoBITEmpresa && (
+            {(tipo==="empresa" || tipo==="servicio") && esPrimeraEmpresa === true && (
               <div style={{background:"rgba(39,174,96,0.1)",border:"2px solid rgba(39,174,96,0.3)",borderRadius:"12px",padding:"12px 16px",display:"flex",alignItems:"center",gap:"10px"}}>
-                <span style={{fontSize:"20px"}}>✅</span>
-                <div style={{fontSize:"13px",fontWeight:800,color:"#27ae60"}}>{esPrimeraEmpresa ? "Trial 30 días activado — ¡creá tu empresa!" : "Plan Empresa activado"}</div>
+                <span style={{fontSize:"20px"}}>🎉</span>
+                <div style={{fontSize:"13px",fontWeight:800,color:"#27ae60"}}>¡Tu primera empresa es GRATIS! 30 días de trial al crear.</div>
+              </div>
+            )}
+            {(tipo==="empresa" || tipo==="servicio") && esPrimeraEmpresa === false && (
+              <div style={{background:"rgba(192,57,43,0.1)",border:"2px solid rgba(192,57,43,0.3)",borderRadius:"12px",padding:"12px 16px",display:"flex",alignItems:"center",gap:"10px"}}>
+                <span style={{fontSize:"20px"}}>🏢</span>
+                <div style={{fontSize:"13px",fontWeight:800,color:"#e74c3c"}}>Plan Empresa: 10.000 BIT/mes — se cobra al confirmar.</div>
               </div>
             )}
 
-            <div style={{...CAJA, opacity:(tipo==="empresa"||tipo==="servicio")&&!pagoBITEmpresa?0.4:1, pointerEvents:(tipo==="empresa"||tipo==="servicio")&&!pagoBITEmpresa?"none" as any:"auto"}}>
+            <div style={CAJA}>
               <SL>📝 Información básica</SL>
               <L>Nombre / Título *</L>
               <input value={form.titulo} onChange={e=>F("titulo",e.target.value)}
@@ -826,7 +770,7 @@ function NexoCrearInner() {
               </>)}
             </div>
 
-            <div style={{...CAJA, opacity:(tipo==="empresa"||tipo==="servicio")&&!pagoBITEmpresa?0.4:1, pointerEvents:(tipo==="empresa"||tipo==="servicio")&&!pagoBITEmpresa?"none" as any:"auto"}}>
+            <div style={CAJA}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"12px"}}>
                 <SL style={{margin:0}}>📍 Ubicación</SL>
                 <button onClick={gps} disabled={gpsLoad} style={{background:`${colorPage}18`,border:`2px solid ${colorPage}40`,borderRadius:"10px",padding:"6px 12px",fontSize:"12px",fontWeight:800,color:colorPage,cursor:gpsLoad?"wait":"pointer",fontFamily:"'Nunito',sans-serif",opacity:gpsLoad?0.6:1}}>
@@ -853,7 +797,7 @@ function NexoCrearInner() {
               {form.lat && <div style={{marginTop:"8px",fontSize:"11px",color:"#27ae60",fontWeight:700}}>✅ Coordenadas GPS guardadas ({parseFloat(form.lat).toFixed(4)}, {parseFloat(form.lng).toFixed(4)})</div>}
             </div>
 
-            <div style={{...CAJA, opacity:(tipo==="empresa"||tipo==="servicio")&&!pagoBITEmpresa?0.4:1, pointerEvents:(tipo==="empresa"||tipo==="servicio")&&!pagoBITEmpresa?"none" as any:"auto"}}>
+            <div style={CAJA}>
               <SL>📱 Contacto</SL>
               <L>WhatsApp</L>
               <input value={form.whatsapp} onChange={e=>F("whatsapp",e.target.value)} placeholder="Ej: 3412345678" style={IS}/>
@@ -938,7 +882,20 @@ function NexoCrearInner() {
             <div style={{display:"flex",gap:"10px"}}>
               <button onClick={()=>setPaso(2)} style={{flex:1,...BTN2}}>← Volver</button>
               <button onClick={() => {
-                if (tipo === "empresa" || tipo === "servicio" || tipo === "grupo") { crear(); return; }
+                if (tipo === "empresa" || tipo === "servicio") {
+                  if (esPrimeraEmpresa) {
+                    // Primera empresa: gratis, activar plan y crear directo
+                    supabase.from("usuarios").update({ plan:"nexoempresa" }).eq("id",perfil.id).then(() => {
+                      setPerfil((p:any)=>({...p, plan:"nexoempresa"}));
+                      crear();
+                    });
+                  } else {
+                    // Segunda empresa: abrir popup de pago
+                    setPopupEmpresa(true);
+                  }
+                  return;
+                }
+                if (tipo === "grupo") { crear(); return; }
                 const totalBits = (perfil?.bits_free||0) + (perfil?.bits||0) + (perfil?.bits_promo||0);
                 if (totalBits < 500) { alert(`Necesitás 500 BIT para crear este Nexo. Tenés ${totalBits} BIT.`); return; }
                 setPopupConfirmar(true);
@@ -984,6 +941,35 @@ function NexoCrearInner() {
             crear();
           }}
         />
+      )}
+      {popupEmpresa && perfil && (
+        <PopupCompra titulo="Activar Empresa" emoji="🏢" costo="10.000 BIT"
+          descripcion="Mensualidad de tu empresa en NexoNet"
+          bits={{ free: perfil.bits_free||0, nexo: perfil.bits||0, promo: perfil.bits_promo||0 }}
+          onClose={() => setPopupEmpresa(false)}
+          onPagar={async (metodo: MetodoPago) => {
+            const colGastoEmp = tipo==="empresa"?"bits_gastados_empresa":"bits_gastados_servicio";
+            let campoDescontar = "";
+            let valorAnterior = 0;
+            if (metodo === "bit_free") {
+              if ((perfil.bits_free||0) < 10000) { alert("No tenés suficientes BIT Free."); return; }
+              campoDescontar = "bits_free"; valorAnterior = perfil.bits_free||0;
+              await supabase.from("usuarios").update({ bits_free: valorAnterior - 10000, plan:"nexoempresa", [colGastoEmp]: (perfil[colGastoEmp]||0) + 10000 }).eq("id", perfil.id);
+              setPerfil((p:any)=>({...p, bits_free: (p.bits_free||0) - 10000, plan:"nexoempresa", [colGastoEmp]: (p[colGastoEmp]||0) + 10000}));
+            } else if (metodo === "bit_nexo") {
+              if ((perfil.bits||0) < 10000) { alert("No tenés suficientes BIT Nexo."); return; }
+              campoDescontar = "bits"; valorAnterior = perfil.bits||0;
+              await supabase.from("usuarios").update({ bits: valorAnterior - 10000, plan:"nexoempresa", bits_free: (perfil.bits_free||0) + 10000, [colGastoEmp]: (perfil[colGastoEmp]||0) + 10000 }).eq("id", perfil.id);
+              setPerfil((p:any)=>({...p, bits: (p.bits||0) - 10000, plan:"nexoempresa", bits_free: (p.bits_free||0) + 10000, [colGastoEmp]: (p[colGastoEmp]||0) + 10000}));
+            } else if (metodo === "bit_promo") {
+              if ((perfil.bits_promo||0) < 10000) { alert("No tenés suficientes BIT Promo."); return; }
+              campoDescontar = "bits_promo"; valorAnterior = perfil.bits_promo||0;
+              await supabase.from("usuarios").update({ bits_promo: valorAnterior - 10000, plan:"nexoempresa", bits_free: (perfil.bits_free||0) + 10000, [colGastoEmp]: (perfil[colGastoEmp]||0) + 10000 }).eq("id", perfil.id);
+              setPerfil((p:any)=>({...p, bits_promo: (p.bits_promo||0) - 10000, plan:"nexoempresa", bits_free: (p.bits_free||0) + 10000, [colGastoEmp]: (p[colGastoEmp]||0) + 10000}));
+            } else { alert("Próximamente"); return; }
+            setPopupEmpresa(false);
+            crear();
+          }} />
       )}
       <AyudaPopup tipo={tipo as any}/>
       <BottomNav/>

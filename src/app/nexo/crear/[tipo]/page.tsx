@@ -665,8 +665,8 @@ function NexoCrearInner() {
                   Tenés <strong style={{color:"#27ae60"}}>30 días gratis</strong> para probar tu perfil empresarial. Después del trial, el plan cuesta 10.000 BIT/mes.
                 </div>
                 <button onClick={async () => {
-                  await supabase.from("usuarios").update({ plan:"nexoempresa", bits_free:(perfil?.bits_free||0)+10000 }).eq("id",perfil.id);
-                  setPerfil((p:any)=>({...p, plan:"nexoempresa", bits_free:(p.bits_free||0)+10000}));
+                  await supabase.from("usuarios").update({ plan:"nexoempresa" }).eq("id",perfil.id);
+                  setPerfil((p:any)=>({...p, plan:"nexoempresa"}));
                   setPagoBITEmpresa(true);
                 }} style={{width:"100%",background:"linear-gradient(135deg,#27ae60,#1e8449)",border:"none",borderRadius:"12px",padding:"14px",fontSize:"15px",fontWeight:900,color:"#fff",cursor:"pointer",fontFamily:"'Nunito',sans-serif",boxShadow:"0 4px 0 rgba(0,0,0,0.3)"}}>
                   🎉 Activar 30 días gratis

@@ -50,7 +50,7 @@ export async function POST(req: Request) {
       .eq("id", comprador_id);
 
     // 5) Calcular reparto
-    const bitsCreador = Math.floor(precio_bits * 0.9);
+    const bitsCreador = Math.floor(precio_bits * 0.7);
     const bitsNexonet = precio_bits - bitsCreador;
 
     // 6) Acreditar al dueño

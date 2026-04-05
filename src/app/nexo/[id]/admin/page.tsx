@@ -906,7 +906,7 @@ export default function NexoAdminPage() {
                 </div>
                 {parseInt(formItem.precio_bits)>0 ? (
                   <div style={{ background:"rgba(22,160,133,0.08)", borderRadius:"10px", padding:"10px 14px", marginBottom:"12px", fontSize:"12px", fontWeight:700, color:"#16a085" }}>
-                    El usuario paga {formItem.precio_bits} BIT — recibís <strong>{Math.floor(parseInt(formItem.precio_bits)*0.9)} BIT Promotor</strong> (90%)
+                    El usuario paga {formItem.precio_bits} BIT — recibís <strong>{Math.floor(parseInt(formItem.precio_bits)*0.7)} BIT Promotor</strong> (70%)
                   </div>
                 ) : (
                   <div style={{ background:"rgba(39,174,96,0.08)", borderRadius:"10px", padding:"10px 14px", marginBottom:"12px", fontSize:"12px", fontWeight:800, color:"#27ae60" }}>
@@ -948,7 +948,7 @@ export default function NexoAdminPage() {
             </div>
             {parseInt(formDesc.precio_bits)>0 ? (
               <div style={{ background:"rgba(22,160,133,0.08)", borderRadius:"10px", padding:"10px 14px", marginBottom:"12px", fontSize:"12px", fontWeight:700, color:"#16a085" }}>
-                El usuario paga {formDesc.precio_bits} BIT — vos recibís <strong>{Math.floor(parseInt(formDesc.precio_bits)*0.9)} BIT Promotor</strong> (90%)
+                El usuario paga {formDesc.precio_bits} BIT — vos recibís <strong>{Math.floor(parseInt(formDesc.precio_bits)*0.7)} BIT Promotor</strong> (70%)
               </div>
             ) : (
               <div style={{ background:"rgba(39,174,96,0.08)", borderRadius:"10px", padding:"10px 14px", marginBottom:"12px", fontSize:"12px", fontWeight:800, color:"#27ae60" }}>

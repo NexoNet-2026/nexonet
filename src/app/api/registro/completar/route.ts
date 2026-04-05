@@ -38,10 +38,10 @@ export async function POST(req: Request) {
     const refFinal = referido_por || "ab56253d-b92e-4b73-a19a-3cd0cd95c458";
     if (refFinal) {
       const bits = refFinal === "ab56253d-b92e-4b73-a19a-3cd0cd95c458" ? 1500 : 1000;
-      const { data: promotor } = await supabase.from("usuarios").select("bits_promotor,bits_promotor_total").eq("id", refFinal).single();
+      const { data: promotor } = await supabase.from("usuarios").select("bits_promo,bits_promotor_total").eq("id", refFinal).single();
       if (promotor) {
         await supabase.from("usuarios").update({
-          bits_promotor: (promotor.bits_promotor || 0) + bits,
+          bits_promo: (promotor.bits_promo || 0) + bits,
           bits_promotor_total: (promotor.bits_promotor_total || 0) + bits,
           es_promotor: true,
         }).eq("id", refFinal);

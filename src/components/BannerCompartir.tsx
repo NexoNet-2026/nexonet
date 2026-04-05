@@ -144,10 +144,11 @@ export default function BannerCompartir({ tipo, titulo, nombreUsuario, destino }
   };
 
   const compartir = async () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    canvas.toBlob(async (blob) => {
-      if (!blob) return;
+    try {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png"));
+      if (!blob) { console.error("BANNER: toBlob devolvió null"); descargar(); return; }
       const file = new File([blob], `nexonet-${tipo}-${titulo.replace(/\s+/g, "-").slice(0, 30)}.png`, { type: "image/png" });
       if (navigator.share && navigator.canShare({ files: [file] })) {
         await navigator.share({
@@ -157,10 +158,12 @@ export default function BannerCompartir({ tipo, titulo, nombreUsuario, destino }
         });
       } else {
         descargar();
-        await navigator.clipboard.writeText(fullUrl);
+        try { await navigator.clipboard.writeText(fullUrl); } catch (_) {}
         alert("✅ Banner descargado y link copiado");
       }
-    }, "image/png");
+    } catch (err: any) {
+      if (err?.name !== "AbortError") console.error("BANNER compartir error:", err);
+    }
   };
 
   return (

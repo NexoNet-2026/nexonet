@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Header from "@/components/Header";
+import BottomNav from "@/components/BottomNav";
 import { supabase } from "@/lib/supabase";
 import PopupCompra, { MetodoPago } from "@/components/PopupCompra";
 import AyudaPopup from "@/components/AyudaPopup";
@@ -1140,6 +1141,7 @@ export default function NexoAdminPage() {
           </div>
         </div>
       )}
+      <BottomNav />
     </main>
   );
 }

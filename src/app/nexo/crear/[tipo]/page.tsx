@@ -961,7 +961,7 @@ function NexoCrearInner() {
               campoDescontar = "bits"; valorAnterior = perfil.bits||0;
               await supabase.from("usuarios").update({ bits: valorAnterior - 10000, plan:"nexoempresa", bits_free: (perfil.bits_free||0) + 10000, [colGastoEmp]: (perfil[colGastoEmp]||0) + 10000 }).eq("id", perfil.id);
               setPerfil((p:any)=>({...p, bits: (p.bits||0) - 10000, plan:"nexoempresa", bits_free: (p.bits_free||0) + 10000, [colGastoEmp]: (p[colGastoEmp]||0) + 10000}));
-            } else if (metodo === "bit_promo") {
+            } else if ((metodo as string) === "bit_promo") {
               if ((perfil.bits_promo||0) < 10000) { alert("No tenés suficientes BIT Promo."); return; }
               campoDescontar = "bits_promo"; valorAnterior = perfil.bits_promo||0;
               await supabase.from("usuarios").update({ bits_promo: valorAnterior - 10000, plan:"nexoempresa", bits_free: (perfil.bits_free||0) + 10000, [colGastoEmp]: (perfil[colGastoEmp]||0) + 10000 }).eq("id", perfil.id);

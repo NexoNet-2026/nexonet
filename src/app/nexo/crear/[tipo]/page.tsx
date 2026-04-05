@@ -90,6 +90,7 @@ function NexoCrearInner() {
   const [gpsLoad,        setGpsLoad]        = useState(false);
   const [pagoBITEmpresa, setPagoBITEmpresa] = useState(false);
   const [esPrimeraEmpresa, setEsPrimeraEmpresa] = useState<boolean|null>(null);
+  const [popupEmpresa, setPopupEmpresa] = useState(false);
 
   const [provs,     setProvs]     = useState<Prov[]>([]);
   const [ciudades,  setCiudades]  = useState<Ciudad[]>([]);
@@ -687,19 +688,35 @@ function NexoCrearInner() {
                     <div style={{fontSize:"10px",color:"#e88a8a",fontWeight:700}}>BIT / mes</div>
                   </div>
                 </div>
-                <button onClick={async () => {
-                  const bitsTotal = Math.max(0,perfil?.bits||0)+Math.max(0,perfil?.bits_free||0)+Math.max(0,perfil?.bits_promo||0);
-                  if (bitsTotal < 10000) { alert("Necesitás 10.000 BIT. Cargá BIT desde la tienda."); return; }
-                  const campo = (perfil?.bits_free||0)>=10000?"bits_free":(perfil?.bits_promo||0)>=10000?"bits_promo":"bits";
-                  const valor = campo==="bits_free"?perfil.bits_free:campo==="bits_promo"?perfil.bits_promo:perfil.bits;
-                  const colGastoEmp = tipo==="empresa"?"bits_gastados_empresa":"bits_gastados_servicio";
-                  await supabase.from("usuarios").update({[campo]:valor-10000,plan:"nexoempresa",bits_free:(perfil.bits_free||0)+10000,[colGastoEmp]:(perfil[colGastoEmp]||0)+10000}).eq("id",perfil.id);
-                  setPerfil((p:any)=>({...p,[campo]:valor-10000,plan:"nexoempresa",bits_free:(p.bits_free||0)+10000,[colGastoEmp]:(p[colGastoEmp]||0)+10000}));
-                  setPagoBITEmpresa(true);
-                }} style={{width:"100%",background:"linear-gradient(135deg,#c0392b,#e74c3c)",border:"none",borderRadius:"12px",padding:"14px",fontSize:"15px",fontWeight:900,color:"#fff",cursor:"pointer",fontFamily:"'Nunito',sans-serif",boxShadow:"0 4px 0 rgba(0,0,0,0.3)"}}>
+                <button onClick={() => setPopupEmpresa(true)} style={{width:"100%",background:"linear-gradient(135deg,#c0392b,#e74c3c)",border:"none",borderRadius:"12px",padding:"14px",fontSize:"15px",fontWeight:900,color:"#fff",cursor:"pointer",fontFamily:"'Nunito',sans-serif",boxShadow:"0 4px 0 rgba(0,0,0,0.3)"}}>
                   💳 Pagar 10.000 BIT y activar Empresa
                 </button>
               </div>
+            )}
+
+            {popupEmpresa && perfil && (
+              <PopupCompra titulo="Activar Empresa" emoji="🏢" costo="10.000 BIT"
+                descripcion="Mensualidad de tu empresa en NexoNet"
+                bits={{ free: perfil.bits_free||0, nexo: perfil.bits||0, promo: perfil.bits_promo||0 }}
+                onClose={() => setPopupEmpresa(false)}
+                onPagar={async (metodo: MetodoPago) => {
+                  const colGastoEmp = tipo==="empresa"?"bits_gastados_empresa":"bits_gastados_servicio";
+                  if (metodo === "bit_free") {
+                    if ((perfil.bits_free||0) < 10000) { alert("No tenés suficientes BIT Free."); return; }
+                    await supabase.from("usuarios").update({ bits_free: (perfil.bits_free||0) - 10000, plan:"nexoempresa", [colGastoEmp]: (perfil[colGastoEmp]||0) + 10000 }).eq("id", perfil.id);
+                    setPerfil((p:any)=>({...p, bits_free: (p.bits_free||0) - 10000, plan:"nexoempresa", [colGastoEmp]: (p[colGastoEmp]||0) + 10000}));
+                  } else if (metodo === "bit_nexo") {
+                    if ((perfil.bits||0) < 10000) { alert("No tenés suficientes BIT Nexo."); return; }
+                    await supabase.from("usuarios").update({ bits: (perfil.bits||0) - 10000, plan:"nexoempresa", bits_free: (perfil.bits_free||0) + 10000, [colGastoEmp]: (perfil[colGastoEmp]||0) + 10000 }).eq("id", perfil.id);
+                    setPerfil((p:any)=>({...p, bits: (p.bits||0) - 10000, plan:"nexoempresa", bits_free: (p.bits_free||0) + 10000, [colGastoEmp]: (p[colGastoEmp]||0) + 10000}));
+                  } else if (metodo === "bit_promo") {
+                    if ((perfil.bits_promo||0) < 10000) { alert("No tenés suficientes BIT Promo."); return; }
+                    await supabase.from("usuarios").update({ bits_promo: (perfil.bits_promo||0) - 10000, plan:"nexoempresa", bits_free: (perfil.bits_free||0) + 10000, [colGastoEmp]: (perfil[colGastoEmp]||0) + 10000 }).eq("id", perfil.id);
+                    setPerfil((p:any)=>({...p, bits_promo: (p.bits_promo||0) - 10000, plan:"nexoempresa", bits_free: (p.bits_free||0) + 10000, [colGastoEmp]: (p[colGastoEmp]||0) + 10000}));
+                  } else { alert("Próximamente"); return; }
+                  setPagoBITEmpresa(true);
+                  setPopupEmpresa(false);
+                }} />
             )}
 
             {(tipo==="empresa" || tipo==="servicio") && pagoBITEmpresa && (

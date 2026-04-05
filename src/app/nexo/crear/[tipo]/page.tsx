@@ -29,8 +29,8 @@ const SLIDERS_PREDEFINIDOS: Record<string, { id:string; emoji:string; titulo:str
 
 const CONFIG_TIPO: Record<string, { titulo:string; color:string; emoji:string; sliders_default:string[]; usaSliders:boolean }> = {
   anuncio:  { titulo:"Crear Anuncio",    color:"#d4a017", emoji:"📣", sliders_default:[], usaSliders:false },
-  empresa:  { titulo:"Crear Empresa",    color:"#c0392b", emoji:"🏢", sliders_default:["galeria","servicios","productos","videos","documentos"], usaSliders:true },
-  servicio: { titulo:"Ofrecer Servicio", color:"#27ae60", emoji:"🛠️", sliders_default:["portfolio","videos","testimonios","certificados"], usaSliders:true },
+  empresa:  { titulo:"Crear Empresa",    color:"#c0392b", emoji:"🏢", sliders_default:["galeria","servicios","productos","videos","documentos","descargas","lista_precios"], usaSliders:true },
+  servicio: { titulo:"Ofrecer Servicio", color:"#27ae60", emoji:"🛠️", sliders_default:["portfolio","videos","testimonios","certificados","descargas","lista_precios"], usaSliders:true },
   trabajo:  { titulo:"Buscar Trabajo",   color:"#8e44ad", emoji:"💼", sliders_default:[], usaSliders:false },
 };
 

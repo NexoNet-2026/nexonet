@@ -11,7 +11,7 @@ import BannerPromotor from "@/components/BannerPromotor";
 type Referido = {
   id: string;
   nombre: string;
-  codigo_nexo: string;
+  codigo: string;
   created_at: string;
 };
 
@@ -36,10 +36,10 @@ export default function PromoterPage() {
         .eq("id", s.user.id)
         .single();
       setPerfil(u);
-      setLinkReferido(`https://nexonet.ar/registro?ref=${(u as any).codigo_nexo}`);
+      setLinkReferido(`https://nexonet.ar/registro?ref=${(u as any).codigo}`);
 
       const { data: refs } = await supabase.from("usuarios")
-        .select("id, nombre, codigo_nexo, created_at")
+        .select("id, nombre, codigo, created_at")
         .eq("referido_por", s.user.id)
         .order("created_at", { ascending: false });
 
@@ -56,7 +56,7 @@ export default function PromoterPage() {
 
   const compartirWhatsApp = () => {
     const texto = encodeURIComponent(
-      `Registrate en NexoNet con mi codigo ${perfil.codigo_nexo} y empeza con 3.000 BIT gratis 🎁\n${linkReferido}`
+      `Registrate en NexoNet con mi codigo ${perfil.codigo} y empeza con 3.000 BIT gratis 🎁\n${linkReferido}`
     );
     window.open(`https://wa.me/?text=${texto}`, "_blank");
   };
@@ -88,7 +88,7 @@ export default function PromoterPage() {
               NEXO PROMOTOR
             </div>
             <div style={{ fontSize: "12px", color: "#8a9aaa", fontWeight: 600 }}>
-              {perfil?.nombre} · {perfil?.codigo_nexo}
+              {perfil?.nombre} · {perfil?.codigo}
             </div>
           </div>
         </div>
@@ -238,7 +238,7 @@ export default function PromoterPage() {
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: "14px", fontWeight: 900, color: "#1a2a3a" }}>{r.nombre || "Usuario"}</div>
                   <div style={{ fontSize: "11px", color: "#9a9a9a", fontWeight: 600 }}>
-                    {r.codigo_nexo} · {new Date(r.created_at).toLocaleDateString("es-AR")}
+                    {r.codigo} · {new Date(r.created_at).toLocaleDateString("es-AR")}
                   </div>
                 </div>
                 <div style={{ textAlign: "right" }}>

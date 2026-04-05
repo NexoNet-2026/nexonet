@@ -23,6 +23,8 @@ const SLIDERS_PREDEFINIDOS: Record<string, { id:string; emoji:string; titulo:str
   testimonios:  [{ id:"testimonios",  emoji:"💬", titulo:"Testimonios",         tipo:"testimonios",  desc:"Opiniones de clientes" }],
   certificados: [{ id:"certificados", emoji:"🏅", titulo:"Certificados",        tipo:"certificados", desc:"Títulos y credenciales" }],
   clientes:     [{ id:"clientes",     emoji:"🤝", titulo:"Clientes",           tipo:"clientes",      desc:"Empresas y personas que confían en vos" }],
+  descargas:    [{ id:"descargas",    emoji:"📥", titulo:"Descargas",          tipo:"descargas",     desc:"Archivos descargables" }],
+  lista_precios:[{ id:"lista_precios",emoji:"💲", titulo:"Lista de precios",   tipo:"lista_precios", desc:"Precios y tarifas" }],
 };
 
 const CONFIG_TIPO: Record<string, { titulo:string; color:string; emoji:string; sliders_default:string[]; usaSliders:boolean }> = {

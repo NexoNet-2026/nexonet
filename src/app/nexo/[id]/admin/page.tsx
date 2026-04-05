@@ -10,7 +10,7 @@ import PlantillasMensaje from "@/components/nexo/PlantillasMensaje";
 import HorariosAdmin from "@/components/nexo/HorariosAdmin";
 import BannerCompartir from "@/components/BannerCompartir";
 
-type TabAdmin = "sliders" | "miembros" | "descargas" | "info" | "config" | "plantillas" | "horarios";
+type TabAdmin = "sliders" | "miembros" | "info" | "config" | "plantillas" | "horarios";
 
 const SLIDER_EMOJIS: Record<string,string> = {
   galeria:"📸", videos:"🎬", documentos:"📄", descargas:"📥", productos:"🛒",
@@ -39,6 +39,8 @@ const SLIDERS_CATALOGO = [
   { tipo:"testimonios",  emoji:"💬", titulo:"Testimonios",         desc:"Opiniones" },
   { tipo:"certificados", emoji:"🏅", titulo:"Certificados",        desc:"Títulos" },
   { tipo:"mensajes",     emoji:"💬", titulo:"Chat",                desc:"Mensajes internos" },
+  { tipo:"descargas",    emoji:"📥", titulo:"Descargas",           desc:"Archivos descargables" },
+  { tipo:"lista_precios",emoji:"💲", titulo:"Lista de precios",    desc:"Precios y tarifas" },
 ];
 
 export default function NexoAdminPage() {
@@ -395,7 +397,6 @@ export default function NexoAdminPage() {
   const activos    = miembros.filter(m=>m.estado==="activo");
   const TABS: {key:TabAdmin;emoji:string;label:string;badge?:number}[] = [
     { key:"sliders",   emoji:"📋", label:"Páginas"   },
-    { key:"descargas", emoji:"📥", label:"Descargas" },
     { key:"plantillas", emoji:"✉️", label:"Mensajes" },
     ...(["empresa","servicio"].includes(nexo?.tipo) ? [{ key:"horarios" as TabAdmin, emoji:"🕐", label:"Horarios" }] : []),
     { key:"miembros",  emoji:"👥", label:"Miembros",  badge:(pendientes.length+adminSolicitados.length)||undefined },
@@ -538,55 +539,6 @@ export default function NexoAdminPage() {
                 <div style={{ fontSize:"12px", color:"#9a9a9a", fontWeight:600, marginTop:"4px" }}>Agregá el primero con el botón de arriba</div>
               </div>
             )}
-          </div>
-        )}
-
-        {/* ══ DESCARGAS ══ */}
-        {tab==="descargas" && (
-          <div style={{ display:"flex", flexDirection:"column", gap:"12px" }}>
-            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-              <div style={{ fontSize:"11px", fontWeight:800, color:"#9a9a9a", textTransform:"uppercase", letterSpacing:"1px" }}>{descargas.length} archivos</div>
-              <button onClick={()=>setPopupAyudaDescarga(true)}
-                style={{ background:"rgba(22,160,133,0.1)", border:"2px solid rgba(22,160,133,0.35)", borderRadius:"10px", padding:"7px 14px", fontSize:"12px", fontWeight:900, color:"#16a085", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
-                ➕ Agregar descarga
-              </button>
-              <AyudaPopup tipo="descarga" open={popupAyudaDescarga} onClose={()=>{ setPopupAyudaDescarga(false); setPopupDescarga(true); }} />
-            </div>
-            <div style={{ background:"rgba(22,160,133,0.08)", border:"2px dashed rgba(22,160,133,0.3)", borderRadius:"14px", padding:"12px 14px" }}>
-              <div style={{ fontSize:"11px", fontWeight:800, color:"#16a085", marginBottom:"3px" }}>💡 BIT Descarga</div>
-              <div style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:600, lineHeight:1.6 }}>
-                Cuando un miembro paga para descargar: vos recibís el <strong style={{ color:"#16a085" }}>90% BIT Promotor</strong> y NexoNet retiene el <strong>10%</strong>.
-              </div>
-            </div>
-            {descargas.map((d:any) => (
-              <div key={d.id} style={{ background:"#fff", borderRadius:"16px", overflow:"hidden", boxShadow:"0 2px 8px rgba(0,0,0,0.06)" }}>
-                <div style={{ height:"100px", background:"linear-gradient(135deg,#1a2a3a,#243b55)", display:"flex", alignItems:"center", justifyContent:"center", position:"relative" }}>
-                  <span style={{ fontSize:"44px", opacity:0.4 }}>{d.tipo_archivo==="pdf"?"📕":d.tipo_archivo==="video"?"🎬":d.tipo_archivo==="imagen"?"🖼️":"📄"}</span>
-                  <div style={{ position:"absolute", top:"8px", left:"8px", background: d.precio_bits===0?"rgba(39,174,96,0.9)":"rgba(212,160,23,0.9)", borderRadius:"8px", padding:"3px 10px", fontSize:"11px", fontWeight:900, color:d.precio_bits===0?"#fff":"#1a2a3a" }}>
-                    {d.precio_bits===0?"GRATIS":`${d.precio_bits} BIT`}
-                  </div>
-                  <div style={{ position:"absolute", top:"8px", right:"8px", background:"rgba(0,0,0,0.5)", borderRadius:"8px", padding:"3px 10px", fontSize:"10px", fontWeight:700, color:"#fff" }}>
-                    📥 {d.descargas||0}
-                  </div>
-                </div>
-                <div style={{ padding:"12px 14px", display:"flex", alignItems:"center", gap:"10px" }}>
-                  <div style={{ flex:1 }}>
-                    <div style={{ fontSize:"14px", fontWeight:900, color:"#1a2a3a", marginBottom:"2px" }}>{d.titulo}</div>
-                    {d.descripcion && <div style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:600 }}>{d.descripcion}</div>}
-                    <div style={{ fontSize:"11px", color:"#27ae60", fontWeight:800, marginTop:"4px" }}>
-                      💰 {Math.floor((d.precio_bits||0)*0.9)} BIT Promotor por descarga
-                    </div>
-                  </div>
-                  <div style={{ display:"flex", flexDirection:"column", gap:"6px" }}>
-                    <a href={d.url} target="_blank" rel="noopener noreferrer"
-                      style={{ background:"rgba(58,123,213,0.1)", border:"1px solid rgba(58,123,213,0.25)", borderRadius:"8px", padding:"6px 10px", fontSize:"11px", fontWeight:800, color:"#3a7bd5", textDecoration:"none", textAlign:"center" }}>↗️ Ver</a>
-                    <button onClick={()=>eliminarDescarga(d.id)}
-                      style={{ background:"rgba(231,76,60,0.1)", border:"1px solid rgba(231,76,60,0.25)", borderRadius:"8px", padding:"6px 10px", fontSize:"11px", fontWeight:800, color:"#e74c3c", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>🗑️</button>
-                  </div>
-                </div>
-              </div>
-            ))}
-            {descargas.length===0 && <EmptyCard emoji="📥" texto="Sin descargas todavía" sub="Subí archivos gratuitos o de pago" />}
           </div>
         )}
 

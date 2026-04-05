@@ -10,7 +10,7 @@ import PlantillasMensaje from "@/components/nexo/PlantillasMensaje";
 import HorariosAdmin from "@/components/nexo/HorariosAdmin";
 import BannerCompartir from "@/components/BannerCompartir";
 
-type TabAdmin = "sliders" | "miembros" | "info" | "config" | "plantillas" | "horarios";
+type TabAdmin = "sliders" | "miembros" | "solicitudes" | "info" | "config" | "plantillas" | "horarios";
 
 const SLIDER_EMOJIS: Record<string,string> = {
   galeria:"📸", videos:"🎬", documentos:"📄", descargas:"📥", productos:"🛒",
@@ -54,6 +54,8 @@ export default function NexoAdminPage() {
   const [sliders,       setSliders]       = useState<any[]>([]);
   const [miembros,      setMiembros]      = useState<any[]>([]);
   const [descargas,     setDescargas]     = useState<any[]>([]);
+  const [solicitudesDesc, setSolicitudesDesc] = useState<any[]>([]);
+  const [pendientesDescarga, setPendientesDescarga] = useState(0);
   const [cargando,      setCargando]      = useState(true);
   const [guardando,     setGuardando]     = useState(false);
   const [subiendoImg,   setSubiendoImg]   = useState<string|null>(null);
@@ -104,6 +106,16 @@ export default function NexoAdminPage() {
       setSliders(sls||[]);
       setMiembros(mbs||[]);
       setDescargas(desc||[]);
+
+      const { data: sols } = await supabase
+        .from("nexo_descarga_solicitudes")
+        .select("*, usuarios:solicitante_id(nombre_usuario, codigo, avatar_url), nexo_descargas:descarga_id(titulo)")
+        .eq("nexo_id", id)
+        .eq("estado", "pendiente")
+        .order("created_at", { ascending: false });
+      setSolicitudesDesc(sols || []);
+      setPendientesDescarga((sols || []).length);
+
       setCargando(false);
     };
     cargar();
@@ -402,6 +414,7 @@ export default function NexoAdminPage() {
     { key:"plantillas", emoji:"✉️", label:"Mensajes" },
     ...(["empresa","servicio"].includes(nexo?.tipo) ? [{ key:"horarios" as TabAdmin, emoji:"🕐", label:"Horarios" }] : []),
     { key:"miembros",  emoji:"👥", label:"Miembros",  badge:(pendientes.length+adminSolicitados.length)||undefined },
+    { key:"solicitudes", emoji:"📩", label:"Solicitudes", badge:pendientesDescarga||undefined },
     { key:"info",      emoji:"✏️", label:"Info"      },
     { key:"config",    emoji:"⚙️", label:"Config"    },
   ];
@@ -541,6 +554,66 @@ export default function NexoAdminPage() {
                 <div style={{ fontSize:"12px", color:"#9a9a9a", fontWeight:600, marginTop:"4px" }}>Agregá el primero con el botón de arriba</div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* ══ SOLICITUDES DE DESCARGA ══ */}
+        {tab==="solicitudes" && (
+          <div style={{ display:"flex", flexDirection:"column", gap:"12px" }}>
+            <div style={{ fontSize:"11px", fontWeight:800, color:"#9a9a9a", textTransform:"uppercase", letterSpacing:"1px" }}>
+              {solicitudesDesc.length} solicitudes pendientes
+            </div>
+            {solicitudesDesc.length===0 && <EmptyCard emoji="📩" texto="Sin solicitudes pendientes" sub="Cuando alguien solicite una descarga aparecerá acá" />}
+            {solicitudesDesc.map((sol:any) => {
+              const usr = sol.usuarios;
+              const desc = sol.nexo_descargas;
+              return (
+                <div key={sol.id} style={{ background:"#fff", borderRadius:"16px", padding:"14px 16px", boxShadow:"0 2px 8px rgba(0,0,0,0.06)", display:"flex", alignItems:"center", gap:"12px" }}>
+                  <div style={{ width:"42px", height:"42px", borderRadius:"50%", background:"linear-gradient(135deg,#1a2a3a,#243b55)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"18px", flexShrink:0, overflow:"hidden" }}>
+                    {usr?.avatar_url ? <img src={usr.avatar_url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : "👤"}
+                  </div>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontSize:"14px", fontWeight:900, color:"#1a2a3a", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
+                      {usr?.nombre_usuario || "Usuario"}
+                    </div>
+                    <div style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:600 }}>
+                      📥 {desc?.titulo || "Descarga"} — {new Date(sol.created_at).toLocaleDateString("es-AR")}
+                    </div>
+                  </div>
+                  <div style={{ display:"flex", gap:"6px", flexShrink:0 }}>
+                    <button onClick={async () => {
+                      await supabase.from("nexo_descarga_solicitudes").update({ estado:"aprobado" }).eq("id", sol.id);
+                      await supabase.from("nexo_descargas_pagos").insert({
+                        descarga_id: sol.descarga_id, nexo_id: id, comprador_id: sol.solicitante_id,
+                        admin_id: nexo.usuario_id, duenio_id: nexo.usuario_id,
+                        bits_pagados: 0, bits_admin: 0, bits_creador: 0, bits_nexonet: 0,
+                      });
+                      await supabase.from("notificaciones").insert({
+                        usuario_id: sol.solicitante_id, tipo: "sistema",
+                        mensaje: `✅ Tu solicitud de descarga "${desc?.titulo || "archivo"}" fue aprobada`,
+                        leida: false,
+                      });
+                      setSolicitudesDesc(prev => prev.filter(s => s.id !== sol.id));
+                      setPendientesDescarga(prev => Math.max(0, prev - 1));
+                    }} style={{ background:"rgba(39,174,96,0.1)", border:"1px solid rgba(39,174,96,0.3)", borderRadius:"10px", padding:"8px 12px", fontSize:"12px", fontWeight:900, color:"#27ae60", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
+                      ✅ Aprobar
+                    </button>
+                    <button onClick={async () => {
+                      await supabase.from("nexo_descarga_solicitudes").update({ estado:"rechazado" }).eq("id", sol.id);
+                      await supabase.from("notificaciones").insert({
+                        usuario_id: sol.solicitante_id, tipo: "sistema",
+                        mensaje: `❌ Tu solicitud de descarga "${desc?.titulo || "archivo"}" fue rechazada`,
+                        leida: false,
+                      });
+                      setSolicitudesDesc(prev => prev.filter(s => s.id !== sol.id));
+                      setPendientesDescarga(prev => Math.max(0, prev - 1));
+                    }} style={{ background:"rgba(231,76,60,0.1)", border:"1px solid rgba(231,76,60,0.3)", borderRadius:"10px", padding:"8px 12px", fontSize:"12px", fontWeight:900, color:"#e74c3c", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
+                      ❌ Rechazar
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
 

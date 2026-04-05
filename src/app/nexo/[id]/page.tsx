@@ -674,18 +674,6 @@ function NexoPageInner() {
                   💬 Chat
                 </button>
               )}
-              {nexo.tipo==="grupo" && (
-                <div style={{display:"flex",gap:"6px",flexWrap:"wrap"}}>
-                  <button onClick={()=>{navigator.clipboard.writeText(`https://nexonet.vercel.app/nexo/${nexo.id}?ref=invite`);alert("✅ Link copiado");}}
-                    style={{background:"rgba(58,123,213,0.1)",border:"1px solid rgba(58,123,213,0.3)",borderRadius:"10px",padding:"7px 12px",fontSize:"11px",fontWeight:800,color:"#3a7bd5",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>
-                    🔗 Copiar link
-                  </button>
-                  <a href={`https://wa.me/?text=${encodeURIComponent(`Te invito a unirte al grupo ${nexo.titulo} en NexoNet Argentina 🇦🇷 https://nexonet.vercel.app/nexo/${nexo.id}?ref=invite`)}`} target="_blank" rel="noopener noreferrer"
-                    style={{background:"#25D366",borderRadius:"10px",padding:"7px 12px",fontSize:"11px",fontWeight:800,color:"#fff",textDecoration:"none",fontFamily:"'Nunito',sans-serif"}}>
-                    💬 Compartir
-                  </a>
-                </div>
-              )}
             </div>
           </div>
         </div>

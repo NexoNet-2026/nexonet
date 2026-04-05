@@ -43,7 +43,6 @@ export default function PromoterPage() {
         .eq("referido_por", s.user.id)
         .order("created_at", { ascending: false });
 
-      console.log('REFERIDOS:', refs, 'USER ID:', s.user.id);
       setReferidos((refs as any) || []);
       setCargando(false);
     });

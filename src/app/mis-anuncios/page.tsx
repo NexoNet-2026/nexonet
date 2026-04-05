@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import PopupCompra, { MetodoPago } from "@/components/PopupCompra";
 import FlashEnvio from "@/components/nexo/FlashEnvio";
+import BannerCompartir from "@/components/BannerCompartir";
 const LINK_PLATAFORMAS = [
   { nombre:"YouTube",   emoji:"▶️",  color:"#ff0000" },
   { nombre:"Instagram", emoji:"📸",  color:"#e1306c" },
@@ -50,6 +51,7 @@ export default function MisAnuncios() {
   const [popupLink,   setPopupLink]   = useState<string | null>(null);
   const [popupAdj,    setPopupAdj]    = useState<string | null>(null);
   const [flashAnuncio, setFlashAnuncio] = useState<Anuncio | null>(null);
+  const [bannerAnuncio, setBannerAnuncio] = useState<Anuncio | null>(null);
 
   const [editando,    setEditando]    = useState<Anuncio | null>(null);
   const [editForm,    setEditForm]    = useState({ titulo: "", descripcion: "", precio: "", moneda: "ARS", permuto: false });
@@ -321,6 +323,10 @@ export default function MisAnuncios() {
                 <button onClick={() => setFlashAnuncio(a)}
                   style={Btn("linear-gradient(135deg,#e67e22,#d35400)","#fff","none")}>
                   ⚡ Flash
+                </button>
+                <button onClick={() => setBannerAnuncio(a)}
+                  style={Btn("rgba(212,160,23,0.1)","#d4a017","1px solid rgba(212,160,23,0.3)")}>
+                  📤
                 </button>
                 <button onClick={() => toggleEstado(a)}
                   style={Btn(
@@ -839,6 +845,18 @@ export default function MisAnuncios() {
           perfil={perfil}
           onClose={() => setFlashAnuncio(null)}
         />
+      )}
+
+      {bannerAnuncio && (
+        <div style={{ position:"fixed", inset:0, zIndex:600, background:"rgba(0,0,0,0.75)", display:"flex", alignItems:"center", justifyContent:"center", padding:"20px" }} onClick={()=>setBannerAnuncio(null)}>
+          <div style={{ background:"#fff", borderRadius:"20px", padding:"20px", maxWidth:"440px", width:"100%", maxHeight:"90vh", overflowY:"auto" }} onClick={e=>e.stopPropagation()}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"14px" }}>
+              <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"20px", color:"#1a2a3a", letterSpacing:"1px" }}>🎨 Banner para compartir</div>
+              <button onClick={()=>setBannerAnuncio(null)} style={{ background:"none", border:"none", fontSize:"22px", cursor:"pointer", color:"#9a9a9a" }}>✕</button>
+            </div>
+            <BannerCompartir tipo="anuncio" titulo={bannerAnuncio.titulo} nombreUsuario={perfil?.nombre_usuario||""} destino={`/anuncios/${bannerAnuncio.id}`} />
+          </div>
+        </div>
       )}
 
       <BottomNav />

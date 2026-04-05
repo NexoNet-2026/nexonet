@@ -7,6 +7,7 @@ import PopupCompra, { MetodoPago } from "@/components/PopupCompra";
 import AyudaPopup from "@/components/AyudaPopup";
 import PlantillasMensaje from "@/components/nexo/PlantillasMensaje";
 import HorariosAdmin from "@/components/nexo/HorariosAdmin";
+import BannerCompartir from "@/components/BannerCompartir";
 
 type TabAdmin = "sliders" | "miembros" | "descargas" | "info" | "config" | "plantillas" | "horarios";
 
@@ -61,6 +62,7 @@ export default function NexoAdminPage() {
   const [popupDescarga, setPopupDescarga] = useState(false);
   const [popupAyudaDescarga, setPopupAyudaDescarga] = useState(false);
   const [popupAyudaPagina, setPopupAyudaPagina] = useState(false);
+  const [popupBanner, setPopupBanner] = useState(false);
   const [sliderItems,   setSliderItems]   = useState<Record<string,any[]>>({});
   const [sliderAbierto, setSliderAbierto] = useState<string|null>(null);
   const [customTitulo,  setCustomTitulo]  = useState("");
@@ -849,6 +851,14 @@ export default function NexoAdminPage() {
               </div>
             </div>
 
+            <div style={{ background:"#fff", borderRadius:"16px", padding:"18px", border:"2px solid rgba(212,160,23,0.2)" }}>
+              <div style={{ fontSize:"13px", fontWeight:900, color:"#d4a017", marginBottom:"6px" }}>📤 Compartir</div>
+              <div style={{ fontSize:"12px", color:"#9a9a9a", fontWeight:600, marginBottom:"12px" }}>Generá un banner para compartir tu nexo en redes sociales</div>
+              <button onClick={()=>setPopupBanner(true)} style={{ width:"100%", background:"linear-gradient(135deg,#d4a017,#f0c040)", border:"none", borderRadius:"12px", padding:"13px", fontSize:"13px", fontWeight:900, color:"#1a2a3a", cursor:"pointer", fontFamily:"'Nunito',sans-serif", boxShadow:"0 3px 0 #a07810" }}>
+                🎨 Generar banner
+              </button>
+            </div>
+
             <div style={{ background:"linear-gradient(135deg,#2c1a1a,#4a2020)", borderRadius:"16px", padding:"18px", border:"2px solid rgba(231,76,60,0.3)" }}>
               <div style={{ fontSize:"13px", fontWeight:900, color:"#e67e22", marginBottom:"6px" }}>⚠️ Zona peligrosa</div>
               <div style={{ fontSize:"12px", color:"#e8b88a", fontWeight:600, marginBottom:"16px" }}>Para dar de baja tu grupo enviá una solicitud a NexoNet. Un administrador la procesará y te contactará.</div>
@@ -1118,6 +1128,17 @@ export default function NexoAdminPage() {
           onClose={() => setPopupPagoItem(false)}
           onPagar={confirmarPagoItem}
         />
+      )}
+      {popupBanner && nexo && (
+        <div style={{ position:"fixed", inset:0, zIndex:600, background:"rgba(0,0,0,0.75)", display:"flex", alignItems:"center", justifyContent:"center", padding:"20px" }} onClick={()=>setPopupBanner(false)}>
+          <div style={{ background:"#fff", borderRadius:"20px", padding:"20px", maxWidth:"440px", width:"100%", maxHeight:"90vh", overflowY:"auto" }} onClick={e=>e.stopPropagation()}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"14px" }}>
+              <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"20px", color:"#1a2a3a", letterSpacing:"1px" }}>🎨 Banner para compartir</div>
+              <button onClick={()=>setPopupBanner(false)} style={{ background:"none", border:"none", fontSize:"22px", cursor:"pointer", color:"#9a9a9a" }}>✕</button>
+            </div>
+            <BannerCompartir tipo={nexo.tipo} titulo={nexo.titulo} nombreUsuario={perfil?.nombre_usuario||""} destino={`/nexo/${id}`} />
+          </div>
+        </div>
       )}
     </main>
   );

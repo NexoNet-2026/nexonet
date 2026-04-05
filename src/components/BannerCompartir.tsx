@@ -32,6 +32,7 @@ export default function BannerCompartir({ tipo, titulo, nombreUsuario, destino }
   const fullUrl = `https://${url}`;
 
   useEffect(() => {
+    console.log('BANNER tipo:', tipo, 'titulo:', titulo, 'destino:', destino);
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");

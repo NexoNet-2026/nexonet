@@ -34,20 +34,6 @@ export async function POST(req: Request) {
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-    // Acreditar BIT al promotor referidor
-    const refFinal = referido_por || "ab56253d-b92e-4b73-a19a-3cd0cd95c458";
-    if (refFinal) {
-      const bits = refFinal === "ab56253d-b92e-4b73-a19a-3cd0cd95c458" ? 1500 : 1000;
-      const { data: promotor } = await supabase.from("usuarios").select("bits_promo,bits_promotor_total").eq("id", refFinal).single();
-      if (promotor) {
-        await supabase.from("usuarios").update({
-          bits_promo: (promotor.bits_promo || 0) + bits,
-          bits_promotor_total: (promotor.bits_promotor_total || 0) + bits,
-          es_promotor: true,
-        }).eq("id", refFinal);
-      }
-    }
-
     return NextResponse.json({ ok: true, codigo: codigoData });
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });

@@ -120,21 +120,6 @@ export default function BannerCompartir({ tipo, titulo, nombreUsuario, destino }
       ctx.fillText(b, 540, 790 + i * 52);
     });
 
-    // Caja URL
-    ctx.fillStyle = "rgba(212,160,23,0.12)";
-    ctx.beginPath();
-    ctx.roundRect(200, 950, 680, 90, 20);
-    ctx.fill();
-    ctx.strokeStyle = "rgba(212,160,23,0.5)";
-    ctx.lineWidth = 2;
-    ctx.stroke();
-    ctx.font = "24px Arial";
-    ctx.fillStyle = "rgba(255,255,255,0.5)";
-    ctx.fillText("Visitá en", 540, 988);
-    ctx.font = "bold 34px Arial";
-    ctx.fillStyle = "#d4a017";
-    ctx.fillText(url, 540, 1025);
-
     // Botón "Ver en NexoNet"
     const btnGrad = ctx.createLinearGradient(200, 1070, 880, 1070);
     btnGrad.addColorStop(0, "#d4a017");

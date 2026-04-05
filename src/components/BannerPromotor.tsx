@@ -16,7 +16,7 @@ export default function BannerPromotor({ nombreUsuario, codigo }: Props) {
     if (!ctx) return;
 
     canvas.width = 1080;
-    canvas.height = 1080;
+    canvas.height = 1200;
 
     // Fondo degradado
     const grad = ctx.createLinearGradient(0, 0, 1080, 1080);
@@ -24,7 +24,7 @@ export default function BannerPromotor({ nombreUsuario, codigo }: Props) {
     grad.addColorStop(0.5, "#1a2a3a");
     grad.addColorStop(1, "#0a1520");
     ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, 1080, 1080);
+    ctx.fillRect(0, 0, 1080, 1200);
 
     // Círculos decorativos
     ctx.beginPath();
@@ -107,6 +107,19 @@ export default function BannerPromotor({ nombreUsuario, codigo }: Props) {
     ctx.font = "bold 38px Arial";
     ctx.fillStyle = "#d4a017";
     ctx.fillText(codigo, 540, 1022);
+
+    // Botón "Registrate gratis"
+    const btnGrad = ctx.createLinearGradient(200, 1070, 880, 1070);
+    btnGrad.addColorStop(0, "#d4a017");
+    btnGrad.addColorStop(1, "#f0c040");
+    ctx.fillStyle = btnGrad;
+    ctx.beginPath();
+    ctx.roundRect(200, 1070, 680, 80, 20);
+    ctx.fill();
+    ctx.font = "bold 36px Arial";
+    ctx.fillStyle = "#1a2a3a";
+    ctx.textAlign = "center";
+    ctx.fillText("🎁 Registrate gratis", 540, 1122);
 
   }, [nombreUsuario, codigo]);
 

@@ -383,94 +383,36 @@ function NexoPageInner() {
 
   const pagarDescarga = async (descarga: any, metodo?: MetodoPago) => {
     if (!perfil) { router.push("/login"); return; }
+    if (metodo === "bit_free") { alert("Las descargas no se pueden pagar con BIT Free"); return; }
+
     const costo = descarga.precio_bits;
+    const saldo = perfil.bits || 0;
+    if (saldo < costo) { alert(`No tenés suficientes BIT Nexo. Tenés ${saldo}, necesitás ${costo}.`); return; }
+
     setPagandoDescarga(descarga.id);
-
     try {
-      // Descontar BIT al comprador — solo BIT Nexo (no FREE)
-      if (metodo === "bit_free") { alert("Las descargas no se pueden pagar con BIT Free"); setPagandoDescarga(null); return; }
-      const campo = "bits";
-      const saldo = perfil.bits || 0;
-      if (saldo < costo) { alert(`No tenés suficientes BIT Nexo. Tenés ${saldo}, necesitás ${costo}.`); setPagandoDescarga(null); return; }
-      const { error: e1 } = await supabase.from("usuarios").update({ bits: saldo - costo, bits_gastados_adjuntos: (perfil.bits_gastados_adjuntos||0) + costo }).eq("id", perfil.id);
-      if (e1) { console.error("Error descontando BIT:", e1); alert("Error al descontar BIT: " + e1.message); setPagandoDescarga(null); return; }
-      setPerfil((p: any) => ({ ...p, bits: saldo - costo, bits_gastados_adjuntos: (p.bits_gastados_adjuntos||0) + costo }));
-
-      // Acreditar 90% BIT Promotor al creador del nexo
-      const bitsCreador = Math.floor(costo * 0.9);
-      const bitsNexonet = costo - bitsCreador;
-      const { data: duenio, error: e2 } = await supabase.from("usuarios").select("bits_promo,bits_promotor_total").eq("id", nexo.usuario_id).single();
-      if (e2) console.error("Error leyendo dueño:", e2);
-      if (duenio) {
-        const { error: e3 } = await supabase.from("usuarios").update({
-          bits_promo: (duenio.bits_promo || 0) + bitsCreador,
-          bits_promotor_total: (duenio.bits_promotor_total || 0) + bitsCreador,
-        }).eq("id", nexo.usuario_id);
-        if (e3) console.error("Error acreditando promotor:", e3);
-      }
-
-      // Comisión en cascada ilimitada por descarga
-      {
-        const { data: refUser } = await supabase.from("usuarios").select("nombre_usuario,nombre").eq("id", nexo.usuario_id).single();
-        const nombreRef = refUser?.nombre_usuario || refUser?.nombre || "un referido";
-        let currentId = nexo.usuario_id;
-        let comisionBase = bitsCreador;
-        const visitados = new Set<string>();
-
-        while (comisionBase > 0) {
-          const { data: current } = await supabase.from("usuarios").select("referido_por").eq("id", currentId).single();
-          if (!current?.referido_por || visitados.has(current.referido_por)) break;
-          visitados.add(current.referido_por);
-
-          const { data: promotor } = await supabase.from("usuarios").select("bits_promo,bits_promotor_total,codigo").eq("id", current.referido_por).single();
-          if (!promotor) break;
-
-          const esNAN = promotor.codigo === "NAN-5194178";
-          const porcentaje = esNAN ? 0.30 : 0.20;
-          const comision = Math.floor(comisionBase * porcentaje);
-          if (comision <= 0) break;
-
-          await supabase.from("usuarios").update({
-            bits_promo: (promotor.bits_promo || 0) + comision,
-            bits_promotor_total: (promotor.bits_promotor_total || 0) + comision,
-          }).eq("id", current.referido_por);
-
-          const nivel = visitados.size;
-          await supabase.from("notificaciones").insert({
-            usuario_id: current.referido_por, tipo: "sistema",
-            mensaje: `⭐ Recibiste ${comision} BIT Promo de comisión por tu referido ${nombreRef}${nivel > 1 ? ` (nivel ${nivel})` : ""}`,
-            leida: false,
-          });
-
-          comisionBase = comision;
-          currentId = current.referido_por;
-        }
-      }
-
-      // Registrar BIT Promo por descarga
-      await supabase.from("bits_promo_descargas").insert({
-        usuario_id: nexo.usuario_id, nexo_id: id, descarga_id: descarga.id,
-        bits_recibidos: bitsCreador, comprador_id: perfil.id,
+      const res = await fetch("/api/nexo/pagar-descarga", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          comprador_id: perfil.id,
+          nexo_id: id,
+          descarga_id: descarga.id,
+          precio_bits: costo,
+        }),
       });
+      const data = await res.json();
+      if (!res.ok) { alert(data.error || "Error al pagar descarga"); return; }
 
-      // Registrar pago (40% queda en sistema)
-      const { error: e4 } = await supabase.from("nexo_descargas_pagos").insert({
-        descarga_id: descarga.id, nexo_id: id, comprador_id: perfil.id,
-        admin_id: nexo.usuario_id, bits_pagados: costo, bits_admin: bitsCreador, bits_nexonet: bitsNexonet,
-      });
-      if (e4) console.error("Error registrando pago:", e4);
-
-      // Incrementar contador en ambas tablas
-      await supabase.from("nexo_descargas").update({ descargas: (descarga.descargas || 0) + 1 }).eq("id", descarga.id);
-      await supabase.from("nexo_slider_items").update({ descargas: (descarga.descargas || 0) + 1 }).eq("id", descarga.id);
-
+      setPerfil((p: any) => ({ ...p, bits: (p.bits || 0) - costo, bits_gastados_adjuntos: (p.bits_gastados_adjuntos || 0) + costo }));
       setDescargasPagadas(prev => new Set([...prev, descarga.id]));
       await abrirDescarga(descarga.url);
     } catch (err: any) {
       console.error("Error inesperado en pagarDescarga:", err);
       alert("Error inesperado: " + (err?.message || "Intentá de nuevo"));
+    } finally {
+      setPagandoDescarga(null);
     }
-    setPagandoDescarga(null);
   };
 
   useEffect(() => {

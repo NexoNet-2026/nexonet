@@ -143,6 +143,7 @@ function NexoCrearInner() {
       if (tipoCheck) {
         const { count } = await supabase.from("nexos").select("id", { count: "exact", head: true })
           .eq("usuario_id", session.user.id).eq("tipo", tipoCheck);
+        console.log('esPrimeraEmpresa calc:', 'count:', count, 'resultado:', (count || 0) === 0, 'tipo:', tipoCheck);
         setEsPrimeraEmpresa((count || 0) === 0);
       }
     });
@@ -656,6 +657,7 @@ function NexoCrearInner() {
         {paso===1 && (
           <div style={{display:"flex",flexDirection:"column",gap:"14px"}}>
 
+            {(tipo==="empresa" || tipo==="servicio") && (() => { console.log('RENDER esPrimeraEmpresa:', esPrimeraEmpresa, 'pagoBITEmpresa:', pagoBITEmpresa, 'tipo:', tipo); return null; })()}
             {(tipo==="empresa" || tipo==="servicio") && !pagoBITEmpresa && esPrimeraEmpresa === true && (
               <div style={{background:"linear-gradient(135deg,#1a3a2a,#204a30)",borderRadius:"16px",padding:"20px",border:"2px solid rgba(39,174,96,0.4)"}}>
                 <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"20px",color:"#27ae60",letterSpacing:"1px",marginBottom:"8px"}}>🏢 ¡Tu primera empresa es GRATIS!</div>

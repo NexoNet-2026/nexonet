@@ -143,7 +143,11 @@ export default function BannerPromotor({ nombreUsuario, codigo }: Props) {
   return (
     <div style={{ fontFamily:"'Nunito',sans-serif" }}>
       <canvas ref={canvasRef} style={{ width:"100%", borderRadius:"16px", display:"block" }} />
-      <div style={{ display:"flex", gap:"10px", marginTop:"12px" }}>
+      <a href={`https://nexonet.ar/registro?ref=${codigo}`} target="_blank" rel="noopener noreferrer"
+        style={{ display:"block", marginTop:"12px", background:"linear-gradient(135deg,#d4a017,#f0c040)", border:"none", borderRadius:"12px", padding:"14px", fontSize:"15px", fontWeight:900, color:"#1a2a3a", cursor:"pointer", fontFamily:"'Nunito',sans-serif", textAlign:"center", textDecoration:"none", boxShadow:"0 3px 0 #a07810" }}>
+        🎁 Registrate gratis
+      </a>
+      <div style={{ display:"flex", gap:"10px", marginTop:"10px" }}>
         <button onClick={compartir}
           style={{ flex:2, background:"linear-gradient(135deg,#d4a017,#f0c040)", border:"none", borderRadius:"12px", padding:"14px", fontSize:"14px", fontWeight:900, color:"#1a2a3a", cursor:"pointer", fontFamily:"'Nunito',sans-serif", display:"flex", alignItems:"center", justifyContent:"center", gap:"8px" }}>
           📤 Compartir banner

@@ -11,7 +11,6 @@ const SLIDERS_PREDEFINIDOS: Record<string, { id:string; emoji:string; titulo:str
   galeria:      [{ id:"galeria",      emoji:"📸", titulo:"Galería de fotos",    tipo:"galeria",      desc:"Fotos e imágenes" }],
   videos:       [{ id:"videos",       emoji:"🎬", titulo:"Videos",              tipo:"videos",       desc:"Clips y presentaciones" }],
   documentos:   [{ id:"documentos",   emoji:"📄", titulo:"Documentos",          tipo:"documentos",   desc:"PDFs y archivos" }],
-  descargas:    [{ id:"descargas",    emoji:"📥", titulo:"Descargas",           tipo:"descargas",    desc:"Archivos gratuitos y de pago" }],
   productos:    [{ id:"productos",    emoji:"🛒", titulo:"Productos",           tipo:"productos",    desc:"Catálogo de productos" }],
   novedades:    [{ id:"novedades",    emoji:"📢", titulo:"Novedades",           tipo:"novedades",    desc:"Anuncios y actualizaciones" }],
   proveedores:  [{ id:"proveedores",  emoji:"🏭", titulo:"Proveedores",         tipo:"proveedores",  desc:"Nexos de proveedores" }],
@@ -24,23 +23,22 @@ const SLIDERS_PREDEFINIDOS: Record<string, { id:string; emoji:string; titulo:str
   testimonios:  [{ id:"testimonios",  emoji:"💬", titulo:"Testimonios",         tipo:"testimonios",  desc:"Opiniones de clientes" }],
   certificados: [{ id:"certificados", emoji:"🏅", titulo:"Certificados",        tipo:"certificados", desc:"Títulos y credenciales" }],
   clientes:     [{ id:"clientes",     emoji:"🤝", titulo:"Clientes",           tipo:"clientes",      desc:"Empresas y personas que confían en vos" }],
-  lista_precios:[{ id:"lista_precios",emoji:"💲", titulo:"Lista de precios",   tipo:"lista_precios", desc:"Ítems con precio — gratis o pago" }],
 };
 
 const CONFIG_TIPO: Record<string, { titulo:string; color:string; emoji:string; sliders_default:string[]; usaSliders:boolean }> = {
   anuncio:  { titulo:"Crear Anuncio",    color:"#d4a017", emoji:"📣", sliders_default:[], usaSliders:false },
-  empresa:  { titulo:"Crear Empresa",    color:"#c0392b", emoji:"🏢", sliders_default:["galeria","servicios","productos","videos","documentos","descargas","lista_precios"], usaSliders:true },
-  servicio: { titulo:"Ofrecer Servicio", color:"#27ae60", emoji:"🛠️", sliders_default:["portfolio","videos","testimonios","certificados","descargas","lista_precios"], usaSliders:true },
+  empresa:  { titulo:"Crear Empresa",    color:"#c0392b", emoji:"🏢", sliders_default:["galeria","servicios","productos","videos","documentos"], usaSliders:true },
+  servicio: { titulo:"Ofrecer Servicio", color:"#27ae60", emoji:"🛠️", sliders_default:["portfolio","videos","testimonios","certificados"], usaSliders:true },
   trabajo:  { titulo:"Buscar Trabajo",   color:"#8e44ad", emoji:"💼", sliders_default:[], usaSliders:false },
 };
 
 const CONFIG_SUBTIPO: Record<string, { titulo:string; sliders_default:string[] }> = {
   emprendimiento: { titulo:"Crear Emprendimiento",   sliders_default:["novedades","productos","galeria","videos","proveedores","facturas","documentos"] },
-  curso:          { titulo:"Crear Curso",            sliders_default:["novedades","videos","documentos","descargas","calendario","faq"] },
+  curso:          { titulo:"Crear Curso",            sliders_default:["novedades","videos","documentos","calendario","faq"] },
   consorcio:      { titulo:"Crear Consorcio",        sliders_default:["novedades","facturas","documentos","proveedores","calendario","galeria"] },
   deportivo:      { titulo:"Crear Club Deportivo",   sliders_default:["novedades","galeria","videos","equipo","calendario","documentos"] },
-  estudio:        { titulo:"Crear Grupo de Estudio", sliders_default:["novedades","documentos","descargas","videos","calendario","faq"] },
-  venta:          { titulo:"Crear Grupo de Venta",   sliders_default:["productos","novedades","galeria","videos","descargas"] },
+  estudio:        { titulo:"Crear Grupo de Estudio", sliders_default:["novedades","documentos","videos","calendario","faq"] },
+  venta:          { titulo:"Crear Grupo de Venta",   sliders_default:["productos","novedades","galeria","videos"] },
   artistas:       { titulo:"Crear Grupo Artistas",   sliders_default:["portfolio","galeria","videos","novedades","calendario"] },
   vecinos:        { titulo:"Crear Grupo Vecinos",    sliders_default:["novedades","galeria","documentos","calendario","faq"] },
   generico:       { titulo:"Crear Grupo Libre",      sliders_default:["novedades","galeria"] },

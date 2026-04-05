@@ -27,7 +27,6 @@ const SLIDERS_CATALOGO = [
   { tipo:"galeria",      emoji:"📸", titulo:"Galería de fotos",    desc:"Imágenes" },
   { tipo:"videos",       emoji:"🎬", titulo:"Videos",              desc:"Clips" },
   { tipo:"documentos",   emoji:"📄", titulo:"Documentos",          desc:"PDFs y archivos" },
-  { tipo:"descargas",    emoji:"📥", titulo:"Descargas",           desc:"Gratis y de pago" },
   { tipo:"productos",    emoji:"🛒", titulo:"Productos",           desc:"Catálogo" },
   { tipo:"novedades",    emoji:"📢", titulo:"Novedades",           desc:"Anuncios" },
   { tipo:"proveedores",  emoji:"🏭", titulo:"Proveedores",         desc:"Nexos proveedor" },
@@ -39,7 +38,6 @@ const SLIDERS_CATALOGO = [
   { tipo:"portfolio",    emoji:"🎨", titulo:"Portfolio",           desc:"Trabajos" },
   { tipo:"testimonios",  emoji:"💬", titulo:"Testimonios",         desc:"Opiniones" },
   { tipo:"certificados", emoji:"🏅", titulo:"Certificados",        desc:"Títulos" },
-  { tipo:"lista_precios",emoji:"💲", titulo:"Lista de precios",    desc:"Gratis y de pago" },
   { tipo:"mensajes",     emoji:"💬", titulo:"Chat",                desc:"Mensajes internos" },
 ];
 

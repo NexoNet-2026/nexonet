@@ -567,11 +567,9 @@ function NexoCrearInner() {
 
           <button
             onClick={() => {
-              if ((tipo==="anuncio"||tipo==="trabajo") && perfil?.plan !== "nexoempresa") {
-                const totalBits = (perfil?.bits_free||0) + (perfil?.bits||0);
-                if (totalBits < 500) { alert(`Necesitás 500 BIT para publicar. Tenés ${totalBits} BIT disponibles.`); return; }
-                setPopupConfirmar(true);
-              } else { crear(); }
+              const totalBits = (perfil?.bits_free||0) + (perfil?.bits||0) + (perfil?.bits_promo||0);
+              if (totalBits < 500) { alert(`Necesitás 500 BIT para publicar. Tenés ${totalBits} BIT disponibles.`); return; }
+              setPopupConfirmar(true);
             }}
             disabled={guardando||!form.titulo.trim()}
             style={{width:"100%",background:guardando||!form.titulo.trim()?`${colorPage}50`:`linear-gradient(135deg,${colorPage}cc,${colorPage})`,border:"none",borderRadius:"14px",padding:"16px",fontSize:"16px",fontWeight:900,color:"#fff",cursor:guardando||!form.titulo.trim()?"not-allowed":"pointer",fontFamily:"'Nunito',sans-serif",boxShadow:guardando||!form.titulo.trim()?"none":`0 4px 0 ${colorPage}88`}}>
@@ -597,7 +595,11 @@ function NexoCrearInner() {
                 if ((perfil?.bits||0) < 500) { alert("No tenés suficientes BIT Nexo."); return; }
                 await supabase.from("usuarios").update({ bits: perfil.bits - 500, [colGasto]: (perfil[colGasto]||0) + 500 }).eq("id", perfil.id);
                 setPerfil((p:any) => ({...p, bits: p.bits - 500, [colGasto]: (p[colGasto]||0) + 500}));
-              } else { alert("Próximamente — pagos con tarjeta/transferencia"); return; }
+              } else if ((metodo as string) === "bit_promo") {
+                if ((perfil?.bits_promo||0) < 500) { alert("No tenés suficientes BIT Promo."); return; }
+                await supabase.from("usuarios").update({ bits_promo: perfil.bits_promo - 500, [colGasto]: (perfil[colGasto]||0) + 500 }).eq("id", perfil.id);
+                setPerfil((p:any) => ({...p, bits_promo: p.bits_promo - 500, [colGasto]: (p[colGasto]||0) + 500}));
+              } else { alert("Próximamente"); return; }
               setPopupConfirmar(false);
               crear();
             }}

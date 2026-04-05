@@ -86,8 +86,8 @@ export async function POST(req: Request) {
       .single();
     const nombreRef = compradorRef?.nombre_usuario || compradorRef?.nombre || "un usuario";
 
-    let currentId = comprador_id;
-    let comisionBase = precio_bits;
+    let currentId = duenio_id;
+    let comisionBase = bitsCreador;
     const visitados = new Set<string>();
 
     while (comisionBase > 0) {

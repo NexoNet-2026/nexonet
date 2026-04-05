@@ -977,19 +977,27 @@ function SliderContenido({ slider, items, mensajes, perfil, nexo, esAdmin, esMie
                   <span style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:600 }}>📥 {item.descargas||0} descargas</span>
                 </div>
                 {gratis || yaPago ? (
-                  <button onClick={()=>onAbrirDescarga(item.url)}
-                    style={{ width:"100%", border:"none", cursor:"pointer", fontFamily:"'Nunito',sans-serif", textAlign:"center", background:"linear-gradient(135deg,#27ae60,#1e8449)", borderRadius:"12px", padding:"12px", fontSize:"14px", fontWeight:900, color:"#fff", boxShadow:"0 3px 0 #155a2e" }}>
-                    📥 {yaPago?"Descargar de nuevo":"Descargar gratis"}
-                  </button>
-                ) : (esMiembro||esAdmin) ? (
+                  perfil ? (
+                    <button onClick={()=>onAbrirDescarga(item.url)}
+                      style={{ width:"100%", border:"none", cursor:"pointer", fontFamily:"'Nunito',sans-serif", textAlign:"center", background:"linear-gradient(135deg,#27ae60,#1e8449)", borderRadius:"12px", padding:"12px", fontSize:"14px", fontWeight:900, color:"#fff", boxShadow:"0 3px 0 #155a2e" }}>
+                      📥 {yaPago?"Descargar de nuevo":"Descargar gratis"}
+                    </button>
+                  ) : (
+                    <button onClick={()=>window.location.href="/login"}
+                      style={{ width:"100%", border:"none", cursor:"pointer", fontFamily:"'Nunito',sans-serif", textAlign:"center", background:"linear-gradient(135deg,#3a7bd5,#2962b0)", borderRadius:"12px", padding:"12px", fontSize:"14px", fontWeight:900, color:"#fff", boxShadow:"0 3px 0 #1e4a8a" }}>
+                      🔑 Iniciá sesión para descargar
+                    </button>
+                  )
+                ) : perfil ? (
                   <button onClick={()=>onPagarDescarga(item)} disabled={!!procesando}
                     style={{ width:"100%", background:`linear-gradient(135deg,${colorNexo}cc,${colorNexo})`, border:"none", borderRadius:"12px", padding:"12px", fontSize:"14px", fontWeight:900, color:"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif", boxShadow:`0 3px 0 ${colorNexo}88` }}>
                     {procesando?"⏳ Procesando...":`💰 Pagar ${item.precio_bits} BIT y descargar`}
                   </button>
                 ) : (
-                  <div style={{ textAlign:"center", fontSize:"13px", fontWeight:700, color:"#9a9a9a", padding:"10px", background:"#f4f4f2", borderRadius:"12px" }}>
-                    🔒 Unite al grupo para descargar
-                  </div>
+                  <button onClick={()=>window.location.href="/login"}
+                    style={{ width:"100%", border:"none", cursor:"pointer", fontFamily:"'Nunito',sans-serif", textAlign:"center", background:"linear-gradient(135deg,#3a7bd5,#2962b0)", borderRadius:"12px", padding:"12px", fontSize:"14px", fontWeight:900, color:"#fff", boxShadow:"0 3px 0 #1e4a8a" }}>
+                    🔑 Iniciá sesión para descargar
+                  </button>
                 )}
                 {esAdmin && (
                   <button onClick={() => onFlash(item)}

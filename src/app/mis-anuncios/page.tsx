@@ -820,14 +820,18 @@ export default function MisAnuncios() {
             const paquete = 500;
             if (metodo === "bit_free") {
               if (bitsFree < paquete) { alert("No tenés suficientes BIT FREE."); return; }
+              console.log('ADJUNTO PAGO PRE:', session?.user?.id, 'paquete:', paquete, 'metodo: bit_free', 'bitsFree:', bitsFree);
               await supabase.from("anuncios").update({ adjunto_habilitado: true }).eq("id", id);
-              await supabase.from("usuarios").update({ bits_free: bitsFree - paquete, bits_gastados_adjuntos: (perfil?.bits_gastados_adjuntos||0) + paquete }).eq("id", session?.user?.id);
+              const { error: e1 } = await supabase.from("usuarios").update({ bits_free: bitsFree - paquete, bits_gastados_adjuntos: (perfil?.bits_gastados_adjuntos||0) + paquete }).eq("id", session?.user?.id);
+              console.log('ADJUNTO PAGO POST:', session?.user?.id, paquete, 'error:', e1);
               setPerfil((p:any) => ({ ...p, bits_free: bitsFree - paquete, bits_gastados_adjuntos: (p.bits_gastados_adjuntos||0) + paquete }));
               setAnuncios(prev => prev.map(a => a.id === id ? ({ ...a, adjunto_habilitado: true } as Anuncio) : a));
             } else if (metodo === "bit_nexo") {
               if (bitsNexo < paquete) { alert("No tenés suficientes BIT Nexo."); return; }
+              console.log('ADJUNTO PAGO PRE:', session?.user?.id, 'paquete:', paquete, 'metodo: bit_nexo', 'bitsNexo:', bitsNexo);
               await supabase.from("anuncios").update({ adjunto_habilitado: true }).eq("id", id);
-              await supabase.from("usuarios").update({ bits: bitsNexo - paquete, bits_gastados_adjuntos: (perfil?.bits_gastados_adjuntos||0) + paquete }).eq("id", session?.user?.id);
+              const { error: e2 } = await supabase.from("usuarios").update({ bits: bitsNexo - paquete, bits_gastados_adjuntos: (perfil?.bits_gastados_adjuntos||0) + paquete }).eq("id", session?.user?.id);
+              console.log('ADJUNTO PAGO POST:', session?.user?.id, paquete, 'error:', e2);
               setPerfil((p:any) => ({ ...p, bits: bitsNexo - paquete, bits_gastados_adjuntos: (p.bits_gastados_adjuntos||0) + paquete }));
               setAnuncios(prev => prev.map(a => a.id === id ? ({ ...a, adjunto_habilitado: true } as Anuncio) : a));
             } else { alert("Próximamente"); }

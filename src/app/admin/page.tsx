@@ -467,15 +467,11 @@ export default function AdminPanel() {
   };
   const eliminarNexo = async (n: any) => {
     if (!confirm(`¿Eliminar nexo "${n.titulo}"?`)) return;
-    const res = await fetch("/api/admin/eliminar-usuario", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ usuario_id: n.usuario_id, solo_nexo_id: n.id }),
-    });
     await supabase.from("nexo_miembros").delete().eq("nexo_id", n.id);
     await supabase.from("nexo_visitas").delete().eq("nexo_id", n.id);
-    await supabase.from("nexo_descargas").delete().eq("nexo_id", n.id);
     await supabase.from("nexo_descargas_pagos").delete().eq("nexo_id", n.id);
+    await supabase.from("bits_promo_descargas").delete().eq("nexo_id", n.id);
+    await supabase.from("nexo_descargas").delete().eq("nexo_id", n.id);
     await supabase.from("nexo_slider_items").delete().eq("nexo_id", n.id);
     await supabase.from("nexo_sliders").delete().eq("nexo_id", n.id);
     await supabase.from("nexo_mensajes").delete().eq("nexo_id", n.id);

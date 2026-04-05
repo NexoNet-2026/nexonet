@@ -12,6 +12,7 @@ import ResenaWidget, { EstrellasMini } from "@/components/nexo/ResenaWidget";
 import InsigniaLogro from "@/app/_components/InsigniaLogro";
 import InsigniaReputacion from "@/app/_components/InsigniaReputacion";
 import BotonDarInsignia from "@/app/_components/BotonDarInsignia";
+import BannerCompartir from "@/components/BannerCompartir";
 
 const TIPO_COLORES: Record<string,string> = {
   anuncio:"#d4a017", empresa:"#c0392b", servicio:"#27ae60", trabajo:"#8e44ad", grupo:"#3a7bd5",
@@ -231,6 +232,7 @@ function NexoPageInner() {
   const [popupPagoAdmin, setPopupPagoAdmin] = useState(false);
   const [flashOpen, setFlashOpen] = useState(false);
   const [flashItem, setFlashItem] = useState<any>(null);
+  const [popupBannerCompartir, setPopupBannerCompartir] = useState(false);
   const colorNexo = TIPO_COLORES[nexo?.tipo] || "#d4a017";
   const emojiNexo = nexo?.subtipo ? SUBTIPO_EMOJIS[nexo.subtipo] : TIPO_EMOJIS[nexo?.tipo] || "✨";
 
@@ -549,17 +551,23 @@ function NexoPageInner() {
               )}
             </div>
             <div style={{ display:"flex", flexDirection:"column", gap:"6px", flexShrink:0, maxWidth:"120px" }}>
-              <button onClick={async () => {
-                const url = `${window.location.origin}/nexo/${nexo.id}`;
-                if (navigator.share) {
-                  await navigator.share({ title: nexo.titulo, text: `Mirá "${nexo.titulo}" en NexoNet`, url });
-                } else {
-                  await navigator.clipboard.writeText(url);
-                  alert("✅ Link copiado");
-                }
-              }} style={{ background:"rgba(58,123,213,0.15)", border:"1px solid rgba(58,123,213,0.4)", borderRadius:"10px", padding:"7px 8px", fontSize:"11px", fontWeight:800, color:"#7fb3f5", cursor:"pointer", fontFamily:"'Nunito',sans-serif", display:"flex", alignItems:"center", justifyContent:"center", gap:"4px" }}>
-                📤 Compartir
-              </button>
+              {perfil?.id === nexo.usuario_id ? (
+                <button onClick={()=>setPopupBannerCompartir(true)} style={{ background:"linear-gradient(135deg,#d4a017,#f0c040)", border:"none", borderRadius:"10px", padding:"7px 8px", fontSize:"11px", fontWeight:900, color:"#1a2a3a", cursor:"pointer", fontFamily:"'Nunito',sans-serif", display:"flex", alignItems:"center", justifyContent:"center", gap:"4px" }}>
+                  🎨 Compartir banner
+                </button>
+              ) : (
+                <button onClick={async () => {
+                  const url = `${window.location.origin}/nexo/${nexo.id}`;
+                  if (navigator.share) {
+                    await navigator.share({ title: nexo.titulo, text: `Mirá "${nexo.titulo}" en NexoNet`, url });
+                  } else {
+                    await navigator.clipboard.writeText(url);
+                    alert("✅ Link copiado");
+                  }
+                }} style={{ background:"rgba(58,123,213,0.15)", border:"1px solid rgba(58,123,213,0.4)", borderRadius:"10px", padding:"7px 8px", fontSize:"11px", fontWeight:800, color:"#7fb3f5", cursor:"pointer", fontFamily:"'Nunito',sans-serif", display:"flex", alignItems:"center", justifyContent:"center", gap:"4px" }}>
+                  📤 Compartir
+                </button>
+              )}
               {esAdmin && (
                 <button onClick={()=>router.push(`/nexo/${id}/admin`)}
                   style={{ background:`${colorNexo}cc`, border:"none", borderRadius:"10px", padding:"7px 8px", fontSize:"11px", fontWeight:900, color:nexo.tipo==="anuncio"?"#1a2a3a":"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
@@ -857,6 +865,18 @@ function NexoPageInner() {
           itemContexto={flashItem ? { id: flashItem.id, titulo: flashItem.titulo, url: flashItem.url, tipo: "adjunto" } : undefined}
           onClose={() => { setFlashOpen(false); setFlashItem(null); }}
         />
+      )}
+
+      {popupBannerCompartir && nexo && (
+        <div style={{ position:"fixed", inset:0, zIndex:600, background:"rgba(0,0,0,0.75)", display:"flex", alignItems:"center", justifyContent:"center", padding:"20px" }} onClick={()=>setPopupBannerCompartir(false)}>
+          <div style={{ background:"#fff", borderRadius:"20px", padding:"20px", maxWidth:"440px", width:"100%", maxHeight:"90vh", overflowY:"auto" }} onClick={e=>e.stopPropagation()}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"14px" }}>
+              <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"20px", color:"#1a2a3a", letterSpacing:"1px" }}>🎨 Banner para compartir</div>
+              <button onClick={()=>setPopupBannerCompartir(false)} style={{ background:"none", border:"none", fontSize:"22px", cursor:"pointer", color:"#9a9a9a" }}>✕</button>
+            </div>
+            <BannerCompartir tipo={nexo.tipo} titulo={nexo.titulo} nombreUsuario={perfil?.nombre_usuario||""} destino={`/nexo/${id}`} />
+          </div>
+        </div>
       )}
 
       <BottomNav />

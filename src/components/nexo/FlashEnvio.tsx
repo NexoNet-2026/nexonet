@@ -24,6 +24,8 @@ export default function FlashEnvio({ nexoId, nexoTitulo, usuarioId, color, perfi
   const [buscandoDest, setBuscandoDest] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [enviado, setEnviado] = useState(false);
+  const [seleccionados, setSeleccionados] = useState<Set<string>>(new Set());
+  const [listaAbierta, setListaAbierta] = useState(false);
   const [provinciasDisp, setProvinciasDisp] = useState<string[]>([]);
   const [ciudadesDisp, setCiudadesDisp] = useState<string[]>([]);
 
@@ -58,11 +60,14 @@ export default function FlashEnvio({ nexoId, nexoTitulo, usuarioId, color, perfi
     }
     if (!userIds.length) { setDestinatarios([]); setBuscandoDest(false); return; }
     const { data: usuarios } = await supabase.from("usuarios").select("id,nombre_usuario,ciudad").in("id",userIds);
-    setDestinatarios(usuarios||[]);
+    const lista = usuarios||[];
+    setDestinatarios(lista);
+    setSeleccionados(new Set(lista.map((u:any)=>u.id)));
+    setListaAbierta(false);
     setBuscandoDest(false);
   };
 
-  const costoBIT = destinatarios.length;
+  const costoBIT = seleccionados.size;
   const saldoBIT = perfil?.bits || 0;
   const alcanza = saldoBIT >= costoBIT;
 
@@ -74,7 +79,8 @@ export default function FlashEnvio({ nexoId, nexoTitulo, usuarioId, color, perfi
     const linkExtra = (plantillaSeleccionada?.incluir_link||incluirLink)&&itemContexto?.url ? `\n🔗 ${itemContexto.titulo}: ${itemContexto.url}` : "";
     const mensajeFinal = cuerpoBase + linkExtra;
     await supabase.from("usuarios").update({ bits: saldoBIT - costoBIT, bits_gastados_flash: (perfil?.bits_gastados_flash||0) + costoBIT }).eq("id",usuarioId);
-    const notifs = destinatarios.map(u=>({ usuario_id:u.id, tipo:"flash", mensaje:`⚡ ${nexoTitulo}: ${mensajeFinal}`, leida:false, nexo_id:nexoId, emisor_id:usuarioId }));
+    const destFinal = destinatarios.filter(u=>seleccionados.has(u.id));
+    const notifs = destFinal.map(u=>({ usuario_id:u.id, tipo:"flash", mensaje:`⚡ ${nexoTitulo}: ${mensajeFinal}`, leida:false, nexo_id:nexoId, emisor_id:usuarioId }));
     for (let i=0;i<notifs.length;i+=100) await supabase.from("notificaciones").insert(notifs.slice(i,i+100));
     // Bump al tope: actualizar updated_at del nexo/anuncio para que aparezca primero
     // Verificar si es un anuncio o un nexo
@@ -85,7 +91,7 @@ export default function FlashEnvio({ nexoId, nexoTitulo, usuarioId, color, perfi
       await supabase.from("nexos").update({ created_at: new Date().toISOString() }).eq("id", nexoId);
     }
 
-    await supabase.from("nexo_flash_envios").insert({ nexo_id:nexoId, emisor_id:usuarioId, plantilla_id:plantillaSeleccionada?.id||null, item_id:itemContexto?.id||null, item_url:(incluirLink||plantillaSeleccionada?.incluir_link)?itemContexto?.url||null:null, mensaje:mensajeFinal, filtro:filtros, cantidad_destinatarios:destinatarios.length, bits_consumidos:costoBIT });
+    await supabase.from("nexo_flash_envios").insert({ nexo_id:nexoId, emisor_id:usuarioId, plantilla_id:plantillaSeleccionada?.id||null, item_id:itemContexto?.id||null, item_url:(incluirLink||plantillaSeleccionada?.incluir_link)?itemContexto?.url||null:null, mensaje:mensajeFinal, filtro:filtros, cantidad_destinatarios:destFinal.length, bits_consumidos:costoBIT });
     setEnviado(true); setEnviando(false);
   };
 
@@ -104,7 +110,7 @@ export default function FlashEnvio({ nexoId, nexoTitulo, usuarioId, color, perfi
           <div style={{ padding:"40px 20px", textAlign:"center" }}>
             <div style={{ fontSize:"64px", marginBottom:"16px" }}>⚡</div>
             <div style={{ fontSize:"20px", fontWeight:900, color:"#1a2a3a", marginBottom:"8px" }}>¡Enviado!</div>
-            <div style={{ fontSize:"14px", color:"#27ae60", fontWeight:700, marginBottom:"24px" }}>✅ {destinatarios.length} usuarios notificados — {costoBIT} BIT descontados</div>
+            <div style={{ fontSize:"14px", color:"#27ae60", fontWeight:700, marginBottom:"24px" }}>✅ {costoBIT} usuarios notificados — {costoBIT} BIT descontados</div>
             <button onClick={onClose} style={{ background:`linear-gradient(135deg,${color}cc,${color})`, border:"none", borderRadius:"14px", padding:"14px 32px", fontSize:"14px", fontWeight:900, color:"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>Cerrar</button>
           </div>
         ) : (
@@ -140,9 +146,30 @@ export default function FlashEnvio({ nexoId, nexoTitulo, usuarioId, color, perfi
                 {buscandoDest?"⏳ Buscando...":"🔍 Buscar destinatarios"}
               </button>
               {destinatarios.length>0 && (
-                <div style={{ marginTop:"10px", display:"flex", alignItems:"center", justifyContent:"space-between", background:`${color}10`, borderRadius:"10px", padding:"10px 14px" }}>
-                  <div style={{ fontSize:"13px", fontWeight:800, color:"#1a2a3a" }}>👥 {destinatarios.length} usuarios</div>
-                  <div style={{ fontSize:"12px", fontWeight:800, color:alcanza?"#27ae60":"#e74c3c" }}>💰 {costoBIT} BIT {alcanza?"✅":`⚠️ (tenés ${saldoBIT})`}</div>
+                <div style={{ marginTop:"10px" }}>
+                  <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", background:`${color}10`, borderRadius:"10px", padding:"10px 14px", cursor:"pointer" }} onClick={()=>setListaAbierta(p=>!p)}>
+                    <div style={{ fontSize:"13px", fontWeight:800, color:"#1a2a3a" }}>👥 {seleccionados.size}/{destinatarios.length} seleccionados {listaAbierta?"▲":"▼"}</div>
+                    <div style={{ fontSize:"12px", fontWeight:800, color:alcanza?"#27ae60":"#e74c3c" }}>💰 {costoBIT} BIT {alcanza?"✅":`⚠️ (tenés ${saldoBIT})`}</div>
+                  </div>
+                  {listaAbierta && (
+                    <div style={{ marginTop:"8px", background:"#fff", border:"2px solid #e8e8e6", borderRadius:"12px", padding:"8px", maxHeight:"200px", overflowY:"auto" }}>
+                      <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:"6px" }}>
+                        <button onClick={()=>setSeleccionados(seleccionados.size===destinatarios.length ? new Set() : new Set(destinatarios.map(u=>u.id)))}
+                          style={{ background:"none", border:"none", fontSize:"11px", fontWeight:800, color, cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
+                          {seleccionados.size===destinatarios.length?"Deseleccionar todos":"Seleccionar todos"}
+                        </button>
+                      </div>
+                      {destinatarios.map(u=>(
+                        <label key={u.id} style={{ display:"flex", alignItems:"center", gap:"8px", padding:"4px 6px", cursor:"pointer", borderRadius:"8px" }}>
+                          <input type="checkbox" checked={seleccionados.has(u.id)}
+                            onChange={()=>setSeleccionados(prev=>{const s=new Set(prev); s.has(u.id)?s.delete(u.id):s.add(u.id); return s;})}
+                            style={{ width:"15px", height:"15px", accentColor:color, cursor:"pointer" }} />
+                          <span style={{ fontSize:"12px", fontWeight:700, color:"#1a2a3a" }}>{u.nombre_usuario||"Usuario"}</span>
+                          {u.ciudad && <span style={{ fontSize:"10px", color:"#9a9a9a", fontWeight:600 }}>— {u.ciudad}</span>}
+                        </label>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </div>

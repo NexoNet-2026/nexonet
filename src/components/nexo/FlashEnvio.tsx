@@ -99,8 +99,9 @@ export default function FlashEnvio({ nexoId, nexoTitulo, usuarioId, color, perfi
     const adjuntoExtra = archivoUrl ? `\n📎 Archivo adjunto: ${archivoUrl}` : "";
     const mensajeFinal = cuerpoBase + linkExtra + linkMultimedia + adjuntoExtra;
     await supabase.from("usuarios").update({ bits: saldoBIT - costoBIT, bits_gastados_flash: (perfil?.bits_gastados_flash||0) + costoBIT }).eq("id",usuarioId);
+    const esUUID = nexoId.length === 36 && nexoId.includes("-");
     const destFinal = destinatarios.filter(u=>seleccionados.has(u.id));
-    const notifs = destFinal.map(u=>({ usuario_id:u.id, tipo:"flash", mensaje:`⚡ ${nexoTitulo}: ${mensajeFinal}`, leida:false, nexo_id:nexoId, emisor_id:usuarioId }));
+    const notifs = destFinal.map(u=>({ usuario_id:u.id, tipo:"flash", mensaje:`⚡ ${nexoTitulo}: ${mensajeFinal}`, leida:false, ...(esUUID ? { nexo_id:nexoId } : {}), emisor_id:usuarioId }));
     for (let i=0;i<notifs.length;i+=100) {
       const { error: notifErr } = await supabase.from("notificaciones").insert(notifs.slice(i,i+100));
       if (notifErr) { console.error("FLASH NOTIF ERROR", notifErr); alert("Error notif: " + notifErr.message); }
@@ -114,7 +115,7 @@ export default function FlashEnvio({ nexoId, nexoTitulo, usuarioId, color, perfi
       await supabase.from("nexos").update({ created_at: new Date().toISOString() }).eq("id", nexoId);
     }
 
-    await supabase.from("nexo_flash_envios").insert({ nexo_id:nexoId, emisor_id:usuarioId, plantilla_id:plantillaSeleccionada?.id||null, item_id:itemContexto?.id||null, item_url:(incluirLink||plantillaSeleccionada?.incluir_link)?itemContexto?.url||null:null, mensaje:mensajeFinal, filtro:filtros, cantidad_destinatarios:destFinal.length, bits_consumidos:costoBIT });
+    await supabase.from("nexo_flash_envios").insert({ nexo_id:esUUID?nexoId:null, emisor_id:usuarioId, plantilla_id:plantillaSeleccionada?.id||null, item_id:itemContexto?.id||null, item_url:(incluirLink||plantillaSeleccionada?.incluir_link)?itemContexto?.url||null:null, mensaje:mensajeFinal, filtro:filtros, cantidad_destinatarios:destFinal.length, bits_consumidos:costoBIT });
     setEnviado(true); setEnviando(false);
   };
 

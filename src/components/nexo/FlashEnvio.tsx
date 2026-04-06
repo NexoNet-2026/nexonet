@@ -100,7 +100,7 @@ export default function FlashEnvio({ nexoId, nexoTitulo, usuarioId, color, perfi
     const mensajeFinal = cuerpoBase + linkExtra + linkMultimedia + adjuntoExtra;
     await supabase.from("usuarios").update({ bits: saldoBIT - costoBIT, bits_gastados_flash: (perfil?.bits_gastados_flash||0) + costoBIT }).eq("id",usuarioId);
     const esUUID = nexoId.length === 36 && nexoId.includes("-");
-    const destFinal = destinatarios.filter(u=>seleccionados.has(u.id));
+    const destFinal = destinatarios.filter(u=>seleccionados.has(u.id) && u.id !== usuarioId);
     const notifs = destFinal.map(u=>({ usuario_id:u.id, tipo:"flash", mensaje:`⚡ ${nexoTitulo}: ${mensajeFinal}`, leida:false, ...(esUUID ? { nexo_id:nexoId } : {}), emisor_id:usuarioId }));
     for (let i=0;i<notifs.length;i+=100) {
       const { error: notifErr } = await supabase.from("notificaciones").insert(notifs.slice(i,i+100));

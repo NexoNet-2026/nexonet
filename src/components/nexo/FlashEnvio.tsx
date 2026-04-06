@@ -69,6 +69,7 @@ export default function FlashEnvio({ nexoId, nexoTitulo, usuarioId, color, perfi
     const { data: usuarios } = await supabase.from("usuarios").select("id,nombre_usuario,ciudad").in("id",userIds);
     const lista = usuarios||[];
     setDestinatarios(lista);
+    setSeleccionados(new Set());
     setSeleccionados(new Set(lista.map((u:any)=>u.id)));
     setListaAbierta(false);
     setBuscandoDest(false);

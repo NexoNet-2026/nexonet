@@ -2,7 +2,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import PlantillasMensaje from "./PlantillasMensaje";
-import PopupCompra, { MetodoPago } from "@/components/PopupCompra";
 
 interface Props {
   nexoId: string;
@@ -20,19 +19,12 @@ export default function FlashEnvio({ nexoId, nexoTitulo, usuarioId, color, perfi
   const [filtros, setFiltros] = useState<Filtros>({ tipo: "todos" });
   const [plantillaSeleccionada, setPlantillaSeleccionada] = useState<any>(null);
   const [mensajeExtra, setMensajeExtra] = useState("");
-  const [incluirLink, setIncluirLink] = useState(false);
   const [destinatarios, setDestinatarios] = useState<any[]>([]);
   const [buscandoDest, setBuscandoDest] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [enviado, setEnviado] = useState(false);
   const [seleccionados, setSeleccionados] = useState<Set<string>>(new Set());
   const [listaAbierta, setListaAbierta] = useState(false);
-  const [linkHabilitado, setLinkHabilitado] = useState(false);
-  const [adjuntoHabilitado, setAdjuntoHabilitado] = useState(false);
-  const [popupLink, setPopupLink] = useState(false);
-  const [popupAdj, setPopupAdj] = useState(false);
-  const [linkUrl, setLinkUrl] = useState("");
-  const [archivoAdjunto, setArchivoAdjunto] = useState<File|null>(null);
   const [provinciasDisp, setProvinciasDisp] = useState<string[]>([]);
   const [ciudadesDisp, setCiudadesDisp] = useState<string[]>([]);
 
@@ -75,29 +67,16 @@ export default function FlashEnvio({ nexoId, nexoTitulo, usuarioId, color, perfi
     setBuscandoDest(false);
   };
 
-  const costoBIT = seleccionados.size + (linkHabilitado ? 500 : 0) + (adjuntoHabilitado ? 500 : 0);
+  const costoBIT = seleccionados.size;
   const saldoBIT = perfil?.bits || 0;
   const alcanza = saldoBIT >= costoBIT;
 
   const enviar = async () => {
-    if (!plantillaSeleccionada && !mensajeExtra.trim() && !linkHabilitado && !adjuntoHabilitado) return;
+    if (!plantillaSeleccionada && !mensajeExtra.trim()) return;
     if (!alcanza) { alert(`Necesitás ${costoBIT} BIT, tenés ${saldoBIT}.`); return; }
     setEnviando(true);
-    let archivoUrl = "";
-    if (archivoAdjunto) {
-      const ext = archivoAdjunto.name.split(".").pop() || "bin";
-      const path = `flash/${Date.now()}.${ext}`;
-      const { error: upErr } = await supabase.storage.from("nexos").upload(path, archivoAdjunto);
-      if (!upErr) {
-        const { data: urlData } = supabase.storage.from("nexos").getPublicUrl(path);
-        archivoUrl = urlData?.publicUrl || "";
-      }
-    }
     const cuerpoBase = plantillaSeleccionada ? `${plantillaSeleccionada.cuerpo}${mensajeExtra.trim()?"\n\n"+mensajeExtra.trim():""}` : mensajeExtra.trim();
-    const linkExtra = (plantillaSeleccionada?.incluir_link||incluirLink)&&itemContexto?.url ? `\n🔗 ${itemContexto.titulo}: ${itemContexto.url}` : "";
-    const linkMultimedia = linkHabilitado && linkUrl.trim() ? `\n🔗 ${linkUrl.trim()}` : "";
-    const adjuntoExtra = archivoUrl ? `\n📎 Archivo adjunto: ${archivoUrl}` : "";
-    const mensajeFinal = cuerpoBase + linkExtra + linkMultimedia + adjuntoExtra;
+    const mensajeFinal = cuerpoBase;
     await supabase.from("usuarios").update({ bits: saldoBIT - costoBIT, bits_gastados_flash: (perfil?.bits_gastados_flash||0) + costoBIT }).eq("id",usuarioId);
     const esUUID = nexoId.length === 36 && nexoId.includes("-");
     const destFinal = destinatarios.filter(u=>seleccionados.has(u.id) && u.id !== usuarioId);
@@ -107,7 +86,6 @@ export default function FlashEnvio({ nexoId, nexoTitulo, usuarioId, color, perfi
       if (notifErr) { console.error("FLASH NOTIF ERROR", notifErr); alert("Error notif: " + notifErr.message); }
     }
     // Bump al tope: actualizar updated_at del nexo/anuncio para que aparezca primero
-    // Verificar si es un anuncio o un nexo
     const { data: esAnuncio } = await supabase.from("anuncios").select("id").eq("id", nexoId).maybeSingle();
     if (esAnuncio) {
       await supabase.from("anuncios").update({ created_at: new Date().toISOString() }).eq("id", nexoId);
@@ -115,7 +93,7 @@ export default function FlashEnvio({ nexoId, nexoTitulo, usuarioId, color, perfi
       await supabase.from("nexos").update({ created_at: new Date().toISOString() }).eq("id", nexoId);
     }
 
-    await supabase.from("nexo_flash_envios").insert({ nexo_id:esUUID?nexoId:null, emisor_id:usuarioId, plantilla_id:plantillaSeleccionada?.id||null, item_id:itemContexto?.id||null, item_url:(incluirLink||plantillaSeleccionada?.incluir_link)?itemContexto?.url||null:null, mensaje:mensajeFinal, filtro:filtros, cantidad_destinatarios:destFinal.length, bits_consumidos:costoBIT });
+    await supabase.from("nexo_flash_envios").insert({ nexo_id:esUUID?nexoId:null, emisor_id:usuarioId, plantilla_id:plantillaSeleccionada?.id||null, item_id:itemContexto?.id||null, item_url:null, mensaje:mensajeFinal, filtro:filtros, cantidad_destinatarios:destFinal.length, bits_consumidos:costoBIT });
     setEnviado(true); setEnviando(false);
   };
 
@@ -219,59 +197,6 @@ export default function FlashEnvio({ nexoId, nexoTitulo, usuarioId, color, perfi
                   <textarea value={mensajeExtra} onChange={e=>setMensajeExtra(e.target.value)} placeholder="Mensaje..." rows={3} maxLength={300}
                     style={{ width:"100%", border:"2px solid #e8e8e6", borderRadius:"12px", padding:"10px 14px", fontSize:"13px", fontFamily:"'Nunito',sans-serif", outline:"none", resize:"vertical", boxSizing:"border-box" as const }} />
                 </div>
-                {itemContexto && (
-                  <div style={{ display:"flex", alignItems:"center", gap:"10px", marginTop:"10px", background:"#f4f4f2", borderRadius:"10px", padding:"10px 12px" }}>
-                    <input type="checkbox" id="inclLink2" checked={incluirLink} onChange={e=>setIncluirLink(e.target.checked)} style={{ width:"16px", height:"16px", accentColor:color, cursor:"pointer" }} />
-                    <label htmlFor="inclLink2" style={{ fontSize:"13px", fontWeight:700, color:"#1a2a3a", cursor:"pointer" }}>🔗 Incluir link: <span style={{ color }}>{itemContexto.titulo}</span></label>
-                  </div>
-                )}
-
-                {/* LINKS MULTIMEDIA */}
-                <div style={{ marginTop:"12px", background:"#f4f4f2", borderRadius:"12px", padding:"12px 14px" }}>
-                  <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:linkHabilitado?"8px":"0" }}>
-                    <div>
-                      <div style={{ fontSize:"13px", fontWeight:900, color:"#1a2a3a" }}>🔗 Links multimedia</div>
-                      <div style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:600 }}>YouTube · Instagram · Facebook · cualquier URL</div>
-                    </div>
-                    {!linkHabilitado && (
-                      <button onClick={()=>setPopupLink(true)}
-                        style={{ background:`linear-gradient(135deg,${color}cc,${color})`, border:"none", borderRadius:"10px", padding:"7px 12px", fontSize:"11px", fontWeight:900, color:"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif", whiteSpace:"nowrap" }}>
-                        Habilitar — 500 BIT
-                      </button>
-                    )}
-                  </div>
-                  {linkHabilitado && (
-                    <input type="url" value={linkUrl} onChange={e=>setLinkUrl(e.target.value)} placeholder="https://..."
-                      style={{ width:"100%", border:"2px solid #e8e8e6", borderRadius:"10px", padding:"9px 12px", fontSize:"13px", fontFamily:"'Nunito',sans-serif", outline:"none", boxSizing:"border-box" as const }} />
-                  )}
-                </div>
-
-                {/* ARCHIVOS ADJUNTOS */}
-                <div style={{ marginTop:"8px", background:"#f4f4f2", borderRadius:"12px", padding:"12px 14px" }}>
-                  <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:adjuntoHabilitado?"8px":"0" }}>
-                    <div>
-                      <div style={{ fontSize:"13px", fontWeight:900, color:"#1a2a3a" }}>📎 Archivos adjuntos</div>
-                      <div style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:600 }}>PDF, catálogo, ficha técnica · hasta 5 archivos</div>
-                    </div>
-                    {!adjuntoHabilitado && (
-                      <button onClick={()=>setPopupAdj(true)}
-                        style={{ background:`linear-gradient(135deg,${color}cc,${color})`, border:"none", borderRadius:"10px", padding:"7px 12px", fontSize:"11px", fontWeight:900, color:"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif", whiteSpace:"nowrap" }}>
-                        Habilitar — 500 BIT
-                      </button>
-                    )}
-                  </div>
-                  {adjuntoHabilitado && (
-                    archivoAdjunto ? (
-                      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-                        <span style={{ fontSize:"12px", fontWeight:700, color:"#1a2a3a", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>📎 {archivoAdjunto.name}</span>
-                        <button onClick={()=>setArchivoAdjunto(null)} style={{ background:"none", border:"none", fontSize:"11px", fontWeight:800, color:"#e74c3c", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>✕ Quitar</button>
-                      </div>
-                    ) : (
-                      <input type="file" onChange={e=>{const f=e.target.files?.[0]; if(f) setArchivoAdjunto(f);}}
-                        style={{ fontSize:"12px", fontFamily:"'Nunito',sans-serif" }} />
-                    )
-                  )}
-                </div>
               </div>
             )}
 
@@ -284,44 +209,6 @@ export default function FlashEnvio({ nexoId, nexoTitulo, usuarioId, color, perfi
           </div>
         )}
       </div>
-
-      {popupLink && (
-        <PopupCompra titulo="Habilitar Link Multimedia" emoji="🔗" costo="500 BIT"
-          descripcion="YouTube · Instagram · Facebook · cualquier URL"
-          bits={{ free: perfil?.bits_free||0, nexo: perfil?.bits||0, promo: perfil?.bits_promo||0 }}
-          onClose={()=>setPopupLink(false)}
-          onPagar={async (metodo: MetodoPago) => {
-            const paquete = 500;
-            if (metodo === "bit_free") {
-              if ((perfil?.bits_free||0) < paquete) { alert("No tenés suficientes BIT Free."); return; }
-              await supabase.from("usuarios").update({ bits_free: (perfil.bits_free||0) - paquete, bits_gastados_link: (perfil.bits_gastados_link||0) + paquete }).eq("id", usuarioId);
-            } else if (metodo === "bit_nexo") {
-              if ((perfil?.bits||0) < paquete) { alert("No tenés suficientes BIT Nexo."); return; }
-              await supabase.from("usuarios").update({ bits: (perfil.bits||0) - paquete, bits_gastados_link: (perfil.bits_gastados_link||0) + paquete }).eq("id", usuarioId);
-            } else { alert("Próximamente"); return; }
-            setLinkHabilitado(true);
-            setPopupLink(false);
-          }} />
-      )}
-
-      {popupAdj && (
-        <PopupCompra titulo="Habilitar Adjuntos" emoji="📎" costo="500 BIT"
-          descripcion="PDF, catálogo, ficha técnica · hasta 5 archivos"
-          bits={{ free: perfil?.bits_free||0, nexo: perfil?.bits||0, promo: perfil?.bits_promo||0 }}
-          onClose={()=>setPopupAdj(false)}
-          onPagar={async (metodo: MetodoPago) => {
-            const paquete = 500;
-            if (metodo === "bit_free") {
-              if ((perfil?.bits_free||0) < paquete) { alert("No tenés suficientes BIT Free."); return; }
-              await supabase.from("usuarios").update({ bits_free: (perfil.bits_free||0) - paquete, bits_gastados_adjuntos: (perfil.bits_gastados_adjuntos||0) + paquete }).eq("id", usuarioId);
-            } else if (metodo === "bit_nexo") {
-              if ((perfil?.bits||0) < paquete) { alert("No tenés suficientes BIT Nexo."); return; }
-              await supabase.from("usuarios").update({ bits: (perfil.bits||0) - paquete, bits_gastados_adjuntos: (perfil.bits_gastados_adjuntos||0) + paquete }).eq("id", usuarioId);
-            } else { alert("Próximamente"); return; }
-            setAdjuntoHabilitado(true);
-            setPopupAdj(false);
-          }} />
-      )}
     </div>
   );
 }

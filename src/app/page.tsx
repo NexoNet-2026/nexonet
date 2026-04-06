@@ -104,37 +104,6 @@ export default function Home() {
             );
           })}
 
-          {/* DESCARGAS DISPONIBLES */}
-          {(() => {
-            const descargas = nexoItems
-              .filter((i: any) => i.slider_tipo === "descargas" || (i.precio_bits && i.precio_bits > 0))
-              .slice(0, 10);
-            if (descargas.length === 0) return null;
-            return (
-              <Slider titulo="📥 Descargas disponibles" acento="#e67e22" verTodos="/buscar">
-                {descargas.map((item: any) => (
-                  <div key={item.id} onClick={() => router.push(`/nexo/${item.nexo_id}?slider=${item.slider_tipo}`)}
-                    style={{ width:"170px", flexShrink:0, background:"#fff", borderRadius:"16px", overflow:"hidden", boxShadow:"0 2px 10px rgba(0,0,0,0.08)", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
-                    <div style={{ height:"90px", background: (item.miniatura_url||item.url) ? `url(${item.miniatura_url||item.url}) center/cover` : "linear-gradient(135deg,#1a2a3a,#243b55)", display:"flex", alignItems:"center", justifyContent:"center", position:"relative" }}>
-                      {!(item.miniatura_url||item.url) && <span style={{ fontSize:"32px" }}>📥</span>}
-                      <div style={{ position:"absolute", top:"6px", right:"6px", background: item.precio_bits > 0 ? "rgba(212,160,23,0.92)" : "rgba(39,174,96,0.92)", borderRadius:"6px", padding:"2px 8px", fontSize:"10px", fontWeight:900, color: item.precio_bits > 0 ? "#1a2a3a" : "#fff" }}>
-                        {item.precio_bits > 0 ? `${item.precio_bits} BIT` : "GRATIS"}
-                      </div>
-                    </div>
-                    <div style={{ padding:"10px" }}>
-                      <div style={{ fontSize:"12px", fontWeight:800, color:"#1a2a3a", marginBottom:"4px", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{item.titulo || "Archivo"}</div>
-                      <div style={{ fontSize:"10px", color:"#9a9a9a", fontWeight:600, display:"flex", alignItems:"center", gap:"4px" }}>
-                        {item.nexo_avatar && <img src={item.nexo_avatar} style={{ width:"14px", height:"14px", borderRadius:"50%", objectFit:"cover" }} />}
-                        <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{item.nexo_titulo}</span>
-                      </div>
-                      {item.nexo_tipo && <div style={{ fontSize:"9px", color:"#b0b0b0", fontWeight:700, textTransform:"uppercase", marginTop:"2px" }}>{item.nexo_tipo}</div>}
-                    </div>
-                  </div>
-                ))}
-              </Slider>
-            );
-          })()}
-
           {/* GRUPOS POR SUBTIPO */}
           {SUBTIPOS_GRUPO.map(st => {
             const items = nexos.filter(n => n.tipo === "grupo" && n.subtipo === st.key).slice(0, 10);

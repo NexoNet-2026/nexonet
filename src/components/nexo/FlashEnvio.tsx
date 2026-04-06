@@ -40,7 +40,7 @@ export default function FlashEnvio({ nexoId, nexoTitulo, usuarioId, color, perfi
       userIds = (data||[]).map((u:any)=>u.id);
     }
     if (!userIds.length) { setDestinatarios([]); setBuscandoDest(false); return; }
-    const { data: usuarios } = await supabase.from("usuarios").select("id,nombre_usuario,ciudad,rubro").in("id",userIds);
+    const { data: usuarios } = await supabase.from("usuarios").select("id,nombre_usuario,ciudad").in("id",userIds);
     setDestinatarios(usuarios||[]);
     setBuscandoDest(false);
   };

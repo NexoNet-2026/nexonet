@@ -101,7 +101,10 @@ export default function FlashEnvio({ nexoId, nexoTitulo, usuarioId, color, perfi
     await supabase.from("usuarios").update({ bits: saldoBIT - costoBIT, bits_gastados_flash: (perfil?.bits_gastados_flash||0) + costoBIT }).eq("id",usuarioId);
     const destFinal = destinatarios.filter(u=>seleccionados.has(u.id));
     const notifs = destFinal.map(u=>({ usuario_id:u.id, tipo:"flash", mensaje:`⚡ ${nexoTitulo}: ${mensajeFinal}`, leida:false, nexo_id:nexoId, emisor_id:usuarioId }));
-    for (let i=0;i<notifs.length;i+=100) await supabase.from("notificaciones").insert(notifs.slice(i,i+100));
+    for (let i=0;i<notifs.length;i+=100) {
+      const { error: notifErr } = await supabase.from("notificaciones").insert(notifs.slice(i,i+100));
+      if (notifErr) { console.error("FLASH NOTIF ERROR", notifErr); alert("Error notif: " + notifErr.message); }
+    }
     // Bump al tope: actualizar updated_at del nexo/anuncio para que aparezca primero
     // Verificar si es un anuncio o un nexo
     const { data: esAnuncio } = await supabase.from("anuncios").select("id").eq("id", nexoId).maybeSingle();

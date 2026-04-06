@@ -73,7 +73,7 @@ export default function FlashEnvio({ nexoId, nexoTitulo, usuarioId, color, perfi
   };
 
   return (
-    <div style={{ position:"fixed", inset:0, zIndex:800, background:"rgba(0,0,0,0.7)", display:"flex", alignItems:"flex-end", justifyContent:"center", fontFamily:"'Nunito',sans-serif" }} onClick={onClose}>
+    <div style={{ position:"fixed", inset:0, zIndex:800, background:"rgba(0,0,0,0.7)", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Nunito',sans-serif" }} onClick={onClose}>
       <div onClick={e=>e.stopPropagation()} style={{ width:"100%", maxWidth:"600px", background:"#f4f4f2", borderRadius:"24px 24px 0 0", padding:"0 0 24px", maxHeight:"90vh", overflowY:"auto" }}>
         <div style={{ padding:"20px 20px 14px", display:"flex", justifyContent:"space-between", alignItems:"center", position:"sticky", top:0, background:"#f4f4f2", zIndex:1, borderBottom:"1.5px solid #e8e8e6" }}>
           <div>

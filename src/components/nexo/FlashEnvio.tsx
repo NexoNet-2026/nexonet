@@ -26,6 +26,8 @@ export default function FlashEnvio({ nexoId, nexoTitulo, usuarioId, color, perfi
   const [enviado, setEnviado] = useState(false);
   const [seleccionados, setSeleccionados] = useState<Set<string>>(new Set());
   const [listaAbierta, setListaAbierta] = useState(false);
+  const [archivoAdjunto, setArchivoAdjunto] = useState<File|null>(null);
+  const [subiendoArchivo, setSubiendoArchivo] = useState(false);
   const [provinciasDisp, setProvinciasDisp] = useState<string[]>([]);
   const [ciudadesDisp, setCiudadesDisp] = useState<string[]>([]);
 
@@ -67,7 +69,8 @@ export default function FlashEnvio({ nexoId, nexoTitulo, usuarioId, color, perfi
     setBuscandoDest(false);
   };
 
-  const costoBIT = seleccionados.size;
+  const costoAdjunto = archivoAdjunto ? 500 : 0;
+  const costoBIT = seleccionados.size + costoAdjunto;
   const saldoBIT = perfil?.bits || 0;
   const alcanza = saldoBIT >= costoBIT;
 
@@ -75,9 +78,20 @@ export default function FlashEnvio({ nexoId, nexoTitulo, usuarioId, color, perfi
     if (!plantillaSeleccionada && !mensajeExtra.trim()) return;
     if (!alcanza) { alert(`Necesitás ${costoBIT} BIT, tenés ${saldoBIT}.`); return; }
     setEnviando(true);
+    let archivoUrl = "";
+    if (archivoAdjunto) {
+      const ext = archivoAdjunto.name.split(".").pop() || "bin";
+      const path = `flash/${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("nexos").upload(path, archivoAdjunto);
+      if (!upErr) {
+        const { data: urlData } = supabase.storage.from("nexos").getPublicUrl(path);
+        archivoUrl = urlData?.publicUrl || "";
+      }
+    }
     const cuerpoBase = plantillaSeleccionada ? `${plantillaSeleccionada.cuerpo}${mensajeExtra.trim()?"\n\n"+mensajeExtra.trim():""}` : mensajeExtra.trim();
     const linkExtra = (plantillaSeleccionada?.incluir_link||incluirLink)&&itemContexto?.url ? `\n🔗 ${itemContexto.titulo}: ${itemContexto.url}` : "";
-    const mensajeFinal = cuerpoBase + linkExtra;
+    const adjuntoExtra = archivoUrl ? `\n📎 Archivo adjunto: ${archivoUrl}` : "";
+    const mensajeFinal = cuerpoBase + linkExtra + adjuntoExtra;
     await supabase.from("usuarios").update({ bits: saldoBIT - costoBIT, bits_gastados_flash: (perfil?.bits_gastados_flash||0) + costoBIT }).eq("id",usuarioId);
     const destFinal = destinatarios.filter(u=>seleccionados.has(u.id));
     const notifs = destFinal.map(u=>({ usuario_id:u.id, tipo:"flash", mensaje:`⚡ ${nexoTitulo}: ${mensajeFinal}`, leida:false, nexo_id:nexoId, emisor_id:usuarioId }));
@@ -201,6 +215,18 @@ export default function FlashEnvio({ nexoId, nexoTitulo, usuarioId, color, perfi
                     <label htmlFor="inclLink2" style={{ fontSize:"13px", fontWeight:700, color:"#1a2a3a", cursor:"pointer" }}>🔗 Incluir link: <span style={{ color }}>{itemContexto.titulo}</span></label>
                   </div>
                 )}
+                <div style={{ marginTop:"12px", background:"#f4f4f2", borderRadius:"10px", padding:"10px 12px" }}>
+                  <label style={{ fontSize:"11px", fontWeight:800, color:"#9a9a9a", textTransform:"uppercase" as const, display:"block", marginBottom:"6px" }}>📎 Adjuntar archivo (+500 BIT)</label>
+                  {archivoAdjunto ? (
+                    <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                      <span style={{ fontSize:"12px", fontWeight:700, color:"#1a2a3a", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>📎 {archivoAdjunto.name}</span>
+                      <button onClick={()=>setArchivoAdjunto(null)} style={{ background:"none", border:"none", fontSize:"11px", fontWeight:800, color:"#e74c3c", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>✕ Quitar</button>
+                    </div>
+                  ) : (
+                    <input type="file" onChange={e=>{const f=e.target.files?.[0]; if(f) setArchivoAdjunto(f);}}
+                      style={{ fontSize:"12px", fontFamily:"'Nunito',sans-serif" }} />
+                  )}
+                </div>
               </div>
             )}
 

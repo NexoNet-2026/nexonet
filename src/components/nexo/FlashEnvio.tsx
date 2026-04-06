@@ -13,7 +13,7 @@ interface Props {
   onClose: () => void;
 }
 
-type Filtros = { tipo: "todos"|"visitaron"|"miembros"; };
+type Filtros = { tipo: "todos"|"visitaron"|"miembros"; provincia?: string; ciudad?: string; };
 
 export default function FlashEnvio({ nexoId, nexoTitulo, usuarioId, color, perfil, itemContexto, onClose }: Props) {
   const [filtros, setFiltros] = useState<Filtros>({ tipo: "todos" });
@@ -24,6 +24,21 @@ export default function FlashEnvio({ nexoId, nexoTitulo, usuarioId, color, perfi
   const [buscandoDest, setBuscandoDest] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [enviado, setEnviado] = useState(false);
+  const [provinciasDisp, setProvinciasDisp] = useState<string[]>([]);
+  const [ciudadesDisp, setCiudadesDisp] = useState<string[]>([]);
+
+  useEffect(() => {
+    supabase.from("usuarios").select("provincia").not("provincia","is",null).then(({data})=>{
+      setProvinciasDisp([...new Set((data||[]).map((u:any)=>u.provincia).filter(Boolean))].sort() as string[]);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!filtros.provincia) { setCiudadesDisp([]); return; }
+    supabase.from("usuarios").select("ciudad").eq("provincia",filtros.provincia).not("ciudad","is",null).then(({data})=>{
+      setCiudadesDisp([...new Set((data||[]).map((u:any)=>u.ciudad).filter(Boolean))].sort() as string[]);
+    });
+  }, [filtros.provincia]);
 
   const buscarDestinatarios = async () => {
     setBuscandoDest(true);
@@ -36,6 +51,8 @@ export default function FlashEnvio({ nexoId, nexoTitulo, usuarioId, color, perfi
       userIds = [...new Set((data||[]).map((v:any)=>v.visitante_id))].filter((id:string)=>id!==usuarioId) as string[];
     } else {
       let query = supabase.from("usuarios").select("id").neq("id",usuarioId);
+      if (filtros.provincia) query = query.eq("provincia",filtros.provincia);
+      if (filtros.ciudad) query = query.eq("ciudad",filtros.ciudad);
       const { data } = await query.limit(500);
       userIds = (data||[]).map((u:any)=>u.id);
     }
@@ -102,6 +119,22 @@ export default function FlashEnvio({ nexoId, nexoTitulo, usuarioId, color, perfi
                   </button>
                 ))}
               </div>
+              {filtros.tipo === "todos" && (
+                <div style={{ display:"flex", flexDirection:"column", gap:"8px", marginTop:"8px" }}>
+                  <select value={filtros.provincia||""} onChange={e=>setFiltros(f=>({...f,provincia:e.target.value||undefined,ciudad:undefined}))}
+                    style={{ border:"2px solid #e8e8e6", borderRadius:"10px", padding:"9px 12px", fontSize:"13px", fontFamily:"'Nunito',sans-serif", fontWeight:600, background:"#fff", outline:"none" }}>
+                    <option value="">📍 Todas las provincias</option>
+                    {provinciasDisp.map(p=><option key={p} value={p}>{p}</option>)}
+                  </select>
+                  {filtros.provincia && ciudadesDisp.length > 0 && (
+                    <select value={filtros.ciudad||""} onChange={e=>setFiltros(f=>({...f,ciudad:e.target.value||undefined}))}
+                      style={{ border:"2px solid #e8e8e6", borderRadius:"10px", padding:"9px 12px", fontSize:"13px", fontFamily:"'Nunito',sans-serif", fontWeight:600, background:"#fff", outline:"none" }}>
+                      <option value="">🏙️ Todas las ciudades</option>
+                      {ciudadesDisp.map(c=><option key={c} value={c}>{c}</option>)}
+                    </select>
+                  )}
+                </div>
+              )}
               <button onClick={buscarDestinatarios} disabled={buscandoDest}
                 style={{ marginTop:"12px", width:"100%", background:`linear-gradient(135deg,${color}cc,${color})`, border:"none", borderRadius:"12px", padding:"12px", fontSize:"13px", fontWeight:900, color:"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif", opacity:buscandoDest?0.6:1 }}>
                 {buscandoDest?"⏳ Buscando...":"🔍 Buscar destinatarios"}

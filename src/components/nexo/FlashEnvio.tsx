@@ -80,7 +80,7 @@ export default function FlashEnvio({ nexoId, nexoTitulo, usuarioId, color, perfi
   const alcanza = saldoBIT >= costoBIT;
 
   const enviar = async () => {
-    if (!plantillaSeleccionada && !mensajeExtra.trim()) return;
+    if (!plantillaSeleccionada && !mensajeExtra.trim() && !linkHabilitado && !adjuntoHabilitado) return;
     if (!alcanza) { alert(`Necesitás ${costoBIT} BIT, tenés ${saldoBIT}.`); return; }
     setEnviando(true);
     let archivoUrl = "";

@@ -492,9 +492,13 @@ function BuscarInner() {
 
     // Procesar nexos
     if (idsNexos.length > 0) {
-      const { data: nexoData } = await supabase.from("nexos").select("id,usuario_id,conexiones_recibidas").in("id", idsNexos);
+      await fetch("/api/nexo/incrementar-conexiones", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nexo_ids: idsNexos }),
+      });
+      const { data: nexoData } = await supabase.from("nexos").select("id,usuario_id").in("id", idsNexos);
       if (nexoData) {
-        await Promise.all(nexoData.map((n:any) => supabase.from("nexos").update({ conexiones_recibidas: (n.conexiones_recibidas||0)+1 }).eq("id",n.id)));
         await supabase.from("notificaciones").insert(nexoData.map((n:any) => ({
           usuario_id: n.usuario_id, emisor_id: session.user.id,
           tipo: "conexion", mensaje: mensajeConexion

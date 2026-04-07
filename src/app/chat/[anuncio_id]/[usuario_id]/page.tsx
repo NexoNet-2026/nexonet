@@ -34,6 +34,7 @@ export default function ChatPage() {
   const otroUserId = params.usuario_id as string;
 
   const [session,   setSession]   = useState<any>(null);
+  const [myId,      setMyId]      = useState<string>("");
   const [mensajes,  setMensajes]  = useState<Mensaje[]>([]);
   const [texto,     setTexto]     = useState("");
   const [enviando,  setEnviando]  = useState(false);
@@ -49,6 +50,7 @@ export default function ChatPage() {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) { router.push("/login"); return; }
     setSession(session);
+    setMyId(session.user.id);
 
     // Cargar anuncio
     const { data: an } = await supabase.from("anuncios").select("id,titulo,imagenes,precio,moneda").eq("id", anuncioId).single();
@@ -84,9 +86,9 @@ export default function ChatPage() {
 
   // Realtime subscription
   useEffect(() => {
-    if (!session) return;
+    if (!myId) return;
     const canal = supabase
-      .channel(`chat-${anuncioId}-${session.user.id}`)
+      .channel(`chat-${anuncioId}-${myId}`)
       .on("postgres_changes", {
         event: "INSERT",
         schema: "public",
@@ -94,9 +96,9 @@ export default function ChatPage() {
         filter: `anuncio_id=eq.${String(anuncioId)}`,
       }, async (payload) => {
         const nuevo = payload.new as Mensaje;
-        const involucrado = nuevo.emisor_id === session.user.id || nuevo.receptor_id === session.user.id;
+        const involucrado = nuevo.emisor_id === myId || nuevo.receptor_id === myId;
         if (involucrado) {
-          await cargarMensajes(session.user.id);
+          await cargarMensajes(myId);
           if (nuevo.emisor_id === otroUserId) {
             await supabase.from("mensajes").update({ leido: true }).eq("id", nuevo.id);
           }
@@ -104,7 +106,7 @@ export default function ChatPage() {
       })
       .subscribe();
     return () => { supabase.removeChannel(canal); };
-  }, [session]);
+  }, [myId]);
 
   // Scroll to bottom on new messages
   useEffect(() => {

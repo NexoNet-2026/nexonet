@@ -123,6 +123,41 @@ export default function ChatPage() {
   const enviar = async () => {
     if (!texto.trim() || !session || enviando) return;
     setEnviando(true);
+
+    // Cobrar 1 BIT al emisor
+    const { data: wallet } = await supabase
+      .from("usuarios")
+      .select("bits, bits_free, bits_promo")
+      .eq("id", session.user.id)
+      .single();
+
+    if (!wallet || (wallet.bits_free + wallet.bits_promo + wallet.bits) < 1) {
+      alert("No tenés BIT suficientes");
+      setEnviando(false);
+      return;
+    }
+
+    let restante = 1;
+    const updates: { bits_free?: number; bits_promo?: number; bits?: number } = {};
+
+    if (wallet.bits_free > 0) {
+      const desc = Math.min(wallet.bits_free, restante);
+      updates.bits_free = wallet.bits_free - desc;
+      restante -= desc;
+    }
+    if (restante > 0 && wallet.bits_promo > 0) {
+      const desc = Math.min(wallet.bits_promo, restante);
+      updates.bits_promo = wallet.bits_promo - desc;
+      restante -= desc;
+    }
+    if (restante > 0 && wallet.bits > 0) {
+      const desc = Math.min(wallet.bits, restante);
+      updates.bits = wallet.bits - desc;
+      restante -= desc;
+    }
+
+    await supabase.from("usuarios").update(updates).eq("id", session.user.id);
+
     const msg = texto.trim();
     setTexto("");
     await supabase.from("mensajes").insert({
@@ -136,7 +171,7 @@ export default function ChatPage() {
       usuario_id:  otroUserId,
       emisor_id:   session.user.id,
       anuncio_id:  anuncioId,
-      tipo:        "conexion",
+      tipo:        "mensaje",
       mensaje:     `💬 Nuevo mensaje sobre "${anuncio?.titulo || "un anuncio"}"`,
       leida:       false,
     });

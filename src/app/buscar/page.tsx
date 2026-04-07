@@ -501,7 +501,7 @@ function BuscarInner() {
       if (nexoData) {
         await supabase.from("notificaciones").insert(nexoData.map((n:any) => ({
           usuario_id: n.usuario_id, emisor_id: session.user.id,
-          tipo: "conexion", mensaje: mensajeConexion
+          nexo_id: n.id, tipo: "conexion", mensaje: mensajeConexion
         })));
       }
     }

@@ -1,13 +1,19 @@
 "use client";
 
-export default function TarjetaNexo({ nexo, onClick, esPrimero, color, abierto }: any) {
+export default function TarjetaNexo({ nexo, onClick, esPrimero, color, abierto, modoConexion, seleccionado, onToggle }: any) {
   const colorTipo = color || "#3a7bd5";
   const esGrupo = nexo.tipo === "grupo";
   const nombreCreador = nexo.owner_nombre || nexo.usuarios?.nombre_usuario || nexo.usuarios?.nombre || "NexoNet";
   return (
-    <div onClick={onClick} style={{ width:"190px", minWidth:"190px", flexShrink:0, cursor:"pointer", position:"relative" }}>
+    <div onClick={modoConexion ? onToggle : onClick} style={{ width:"190px", minWidth:"190px", flexShrink:0, cursor:"pointer", position:"relative" }}>
       {esPrimero && (
         <div style={{ position:"absolute", top:"-6px", right:"-4px", zIndex:2, background:"linear-gradient(135deg,#ff6b00,#ff4500)", borderRadius:"8px", padding:"2px 7px", fontSize:"10px", fontWeight:900, color:"#fff" }}>🔥</div>
+      )}
+      {modoConexion && <div style={{position:"absolute",inset:0,zIndex:10,borderRadius:"14px",border:`3px solid ${seleccionado?"#d4a017":"rgba(212,160,23,0.4)"}`,background:seleccionado?"rgba(212,160,23,0.15)":"transparent",transition:"all .15s",pointerEvents:"none"}} />}
+      {modoConexion && (
+        <div style={{position:"absolute",top:"8px",right:"8px",zIndex:11,width:"24px",height:"24px",borderRadius:"50%",background:seleccionado?"#d4a017":"rgba(255,255,255,0.9)",border:`2px solid ${seleccionado?"#d4a017":"#ccc"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"14px",boxShadow:"0 2px 6px rgba(0,0,0,0.2)"}}>
+          {seleccionado && <span style={{color:"#fff",fontWeight:900}}>✓</span>}
+        </div>
       )}
       <div style={{ background:"#fff", borderRadius:"14px", overflow:"hidden", boxShadow: abierto === true ? "0 0 16px #00ff8855, 0 2px 10px rgba(0,0,0,0.08)" : abierto === false ? "0 0 16px #ff224433, 0 2px 10px rgba(0,0,0,0.08)" : "0 2px 10px rgba(0,0,0,0.08)", border: abierto === true ? "2px solid #00ff88" : abierto === false ? "2px solid #ff2244" : "1px solid #f0f0f0" }}>
         <div style={{ background:colorTipo, padding:"4px 8px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>

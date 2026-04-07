@@ -101,7 +101,7 @@ function BuscarInner() {
   const bits = bitsNexo + bitsFree + bitsPromo; // total para mostrar en UI
 
   const [modoConexion,   setModoConexion]   = useState(false);
-  const [seleccionados,  setSeleccionados]  = useState<Set<number>>(new Set());
+  const [seleccionados,  setSeleccionados]  = useState<Set<number|string>>(new Set());
   const [conectando,     setConectando]     = useState(false);
   const [resultadoConex, setResultadoConex] = useState<string|null>(null);
   const [popupConexion,  setPopupConexion]  = useState(false);
@@ -449,7 +449,7 @@ function BuscarInner() {
   const fmt = (p:number,m:string) => !p?"Consultar":`${m==="USD"?"U$D":"$"} ${p.toLocaleString("es-AR")}`;
   const phQ  = barrSel?`¿Qué buscás en ${barrSel}?`:ciudSel?`¿Qué buscás en ${ciudSel}?`:provSel?`¿Qué buscás en ${provSel}?`:"¿Qué buscás?";
 
-  const toggleSeleccion = (id:number) => { const s = new Set(seleccionados); s.has(id) ? s.delete(id) : s.add(id); setSeleccionados(s); };
+  const toggleSeleccion = (id:number|string) => { const s = new Set(seleccionados); s.has(id) ? s.delete(id) : s.add(id); setSeleccionados(s); };
   const seleccionarTodos = () => setSeleccionados(new Set(anuFilt.map(a=>a.id)));
   const deseleccionarTodos = () => setSeleccionados(new Set());
   const todosSeleccionados = anuFilt.length > 0 && seleccionados.size === anuFilt.length;
@@ -757,7 +757,7 @@ function BuscarInner() {
                       ) : (
                         <div style={{display:"flex",gap:"12px",padding:"0 16px",overflowX:"auto",scrollbarWidth:"none",WebkitOverflowScrolling:"touch"}}>
                           {itemsFinal.map((n:any,i:number) => (
-                            <TarjetaNexoGlobal key={n.id} nexo={n} color="#3a7bd5" onClick={()=>router.push(`/nexo/${n.id}`)} />
+                            <TarjetaNexoGlobal key={n.id} nexo={n} color="#3a7bd5" onClick={()=>router.push(`/nexo/${n.id}`)} modoConexion={modoConexion} seleccionado={seleccionados.has(n.id)} onToggle={()=>toggleSeleccion(n.id)} />
                           ))}
                         </div>
                       )}
@@ -779,7 +779,7 @@ function BuscarInner() {
                       </div>
                       <div style={{display:"flex",gap:"12px",padding:"0 16px",overflowX:"auto",scrollbarWidth:"none",WebkitOverflowScrolling:"touch"}}>
                         {sinCat.map((n:any) => (
-                          <TarjetaNexoGlobal key={n.id} nexo={n} color="#3a7bd5" onClick={()=>router.push(`/nexo/${n.id}`)} />
+                          <TarjetaNexoGlobal key={n.id} nexo={n} color="#3a7bd5" onClick={()=>router.push(`/nexo/${n.id}`)} modoConexion={modoConexion} seleccionado={seleccionados.has(n.id)} onToggle={()=>toggleSeleccion(n.id)} />
                         ))}
                       </div>
                     </div>
@@ -804,7 +804,7 @@ function BuscarInner() {
                       </div>
                       <div style={{display:"flex",gap:"12px",padding:"0 16px",overflowX:"auto",scrollbarWidth:"none",WebkitOverflowScrolling:"touch"}}>
                         {(nexosPorTipo["grupos"]||[]).map(n => (
-                          <TarjetaNexoGlobal key={n.id} nexo={n} color="#3a7bd5" onClick={()=>router.push(`/nexo/${n.id}`)} />
+                          <TarjetaNexoGlobal key={n.id} nexo={n} color="#3a7bd5" onClick={()=>router.push(`/nexo/${n.id}`)} modoConexion={modoConexion} seleccionado={seleccionados.has(n.id)} onToggle={()=>toggleSeleccion(n.id)} />
                         ))}
                       </div>
                     </div>
@@ -849,7 +849,7 @@ function BuscarInner() {
                       ) : (
                         <div style={{display:"flex",gap:"12px",padding:"0 16px",overflowX:"auto",scrollbarWidth:"none"}}>
                           {itemsFinal.map((n:any,i:number) => (
-                            <TarjetaNexoGlobal key={n.id} nexo={n} color={colorActivo} onClick={()=>router.push(`/nexo/${n.id}`)} esPrimero={i===0&&(n.visitas_semana||0)>0} abierto={(n as any).abierto} />
+                            <TarjetaNexoGlobal key={n.id} nexo={n} color={colorActivo} onClick={()=>router.push(`/nexo/${n.id}`)} esPrimero={i===0&&(n.visitas_semana||0)>0} abierto={(n as any).abierto} modoConexion={modoConexion} seleccionado={seleccionados.has(n.id)} onToggle={()=>toggleSeleccion(n.id)} />
                           ))}
                         </div>
                       )}
@@ -877,7 +877,7 @@ function BuscarInner() {
                       </div>
                       <div style={{display:"flex",gap:"12px",padding:"0 16px",overflowX:"auto",scrollbarWidth:"none"}}>
                         {(nexosPorTipo[tipoActivo]||[]).map((n, i) => (
-                            <TarjetaNexoGlobal key={n.id} nexo={n} color={colorActivo} onClick={()=>router.push(`/nexo/${n.id}`)} esPrimero={i === 0 && (n.visitas_semana || 0) > 0} abierto={(n as any).abierto} />
+                            <TarjetaNexoGlobal key={n.id} nexo={n} color={colorActivo} onClick={()=>router.push(`/nexo/${n.id}`)} esPrimero={i === 0 && (n.visitas_semana || 0) > 0} abierto={(n as any).abierto} modoConexion={modoConexion} seleccionado={seleccionados.has(n.id)} onToggle={()=>toggleSeleccion(n.id)} />
                         ))}
                       </div>
                     </div>
@@ -894,7 +894,7 @@ function BuscarInner() {
                     <div style={{padding:"14px 16px 8px"}}><span style={{fontSize:"16px",fontWeight:900,color:"#1a2a3a"}}>📦 Otros</span></div>
                     <div style={{display:"flex",gap:"12px",padding:"0 16px",overflowX:"auto",scrollbarWidth:"none"}}>
                       {sinCat.slice(0,8).map((n:any) => (
-                          <TarjetaNexoGlobal key={n.id} nexo={n} color={colorActivo} onClick={()=>router.push(`/nexo/${n.id}`)} abierto={(n as any).abierto} />
+                          <TarjetaNexoGlobal key={n.id} nexo={n} color={colorActivo} onClick={()=>router.push(`/nexo/${n.id}`)} abierto={(n as any).abierto} modoConexion={modoConexion} seleccionado={seleccionados.has(n.id)} onToggle={()=>toggleSeleccion(n.id)} />
                       ))}
                     </div>
                   </div>

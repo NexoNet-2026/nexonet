@@ -470,23 +470,45 @@ function BuscarInner() {
       setConectando(false); return;
     }
 
-    const { data: anuData } = await supabase.from("anuncios").select("id,usuario_id,conexiones").in("id", ids);
-    if (anuData) {
-      await Promise.all(anuData.map((a:any) => supabase.from("anuncios").update({ conexiones: (a.conexiones||0)+1 }).eq("id",a.id)));
-      await supabase.from("notificaciones").insert(anuData.map((a:any) => ({
-        usuario_id: a.usuario_id, emisor_id: session.user.id,
-        anuncio_id: a.id, tipo: "conexion", mensaje: mensajeConexion
-      })));
+    // Separar IDs numéricos (anuncios) de UUIDs (nexos)
+    const idsAnuncios = ids.filter(id => typeof id === "number") as number[];
+    const idsNexos = ids.filter(id => typeof id === "string") as string[];
 
-      // Descontar del bolsillo correcto
-      if (metodo === "bit_free") {
-        await supabase.from("usuarios").update({ bits_free: bitsFree - costo }).eq("id", session.user.id);
-        setBitsFree(prev => prev - costo);
-      } else if (metodo === "bit_nexo") {
-        await supabase.from("usuarios").update({ bits: bitsNexo - costo }).eq("id", session.user.id);
-        setBitsNexo(prev => prev - costo);
+    // Procesar anuncios
+    if (idsAnuncios.length > 0) {
+      const { data: anuData } = await supabase.from("anuncios").select("id,usuario_id,conexiones").in("id", idsAnuncios);
+      if (anuData) {
+        await Promise.all(anuData.map((a:any) => supabase.from("anuncios").update({ conexiones: (a.conexiones||0)+1 }).eq("id",a.id)));
+        await supabase.from("notificaciones").insert(anuData.map((a:any) => ({
+          usuario_id: a.usuario_id, emisor_id: session.user.id,
+          anuncio_id: a.id, tipo: "conexion", mensaje: mensajeConexion
+        })));
+        await supabase.from("mensajes").insert(anuData.map((a:any) => ({
+          anuncio_id: a.id, emisor_id: session.user.id,
+          receptor_id: a.usuario_id, texto: mensajeConexion,
+        })));
       }
+    }
 
+    // Procesar nexos
+    if (idsNexos.length > 0) {
+      const { data: nexoData } = await supabase.from("nexos").select("id,usuario_id,conexiones_recibidas").in("id", idsNexos);
+      if (nexoData) {
+        await Promise.all(nexoData.map((n:any) => supabase.from("nexos").update({ conexiones_recibidas: (n.conexiones_recibidas||0)+1 }).eq("id",n.id)));
+        await supabase.from("notificaciones").insert(nexoData.map((n:any) => ({
+          usuario_id: n.usuario_id, emisor_id: session.user.id,
+          tipo: "conexion", mensaje: mensajeConexion
+        })));
+      }
+    }
+
+    // Descontar del bolsillo correcto
+    if (metodo === "bit_free") {
+      await supabase.from("usuarios").update({ bits_free: bitsFree - costo }).eq("id", session.user.id);
+      setBitsFree(prev => prev - costo);
+    } else if (metodo === "bit_nexo") {
+      await supabase.from("usuarios").update({ bits: bitsNexo - costo }).eq("id", session.user.id);
+      setBitsNexo(prev => prev - costo);
     }
     setResultadoConex(`✅ Mensaje enviado a ${ids.length} anuncio${ids.length!==1?"s":""}. Usaste ${ids.length} BIT.`);
     setConectando(false); setSeleccionados(new Set()); setMensajeConexion(MENSAJES_PRESET[0]);

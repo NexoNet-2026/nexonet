@@ -263,7 +263,7 @@ export default function Header() {
                         Sin notificaciones
                       </div>
                     ) : notifs.map(n => (
-                      <a key={n.id} href={n.tipo==="flash" ? (n.nexo_id ? `/nexo/${n.nexo_id}` : n.anuncio_id ? `/anuncios/${n.anuncio_id}` : "/usuario") : n.tipo==="conexion" && n.anuncio_id && n.emisor_id ? `/chat/${n.anuncio_id}/${n.emisor_id}` : n.nexo_id ? (n.tipo==="solicitud_admin" ? `/nexo/${n.nexo_id}/admin` : `/nexo/${n.nexo_id}`) : n.anuncio_id ? `/anuncios/${n.anuncio_id}` : "/usuario"}
+                      <a key={n.id} href={n.tipo==="flash" ? (n.nexo_id ? `/nexo/${n.nexo_id}` : n.anuncio_id ? `/anuncios/${n.anuncio_id}` : "/usuario") : n.tipo==="conexion" && n.anuncio_id && n.emisor_id ? `/chat/${n.anuncio_id}/${n.emisor_id}` : n.tipo==="conexion" && n.nexo_id && n.emisor_id ? `/chat/nexo/${n.nexo_id}/${n.emisor_id}` : n.nexo_id ? (n.tipo==="solicitud_admin" ? `/nexo/${n.nexo_id}/admin` : `/nexo/${n.nexo_id}`) : n.anuncio_id ? `/anuncios/${n.anuncio_id}` : "/usuario"}
                         onClick={() => setPanelOpen(false)}
                         style={{
                           display: "block", padding: "11px 16px", textDecoration: "none",

@@ -91,7 +91,7 @@ export default function ChatPage() {
         event: "INSERT",
         schema: "public",
         table: "mensajes",
-        filter: `anuncio_id=eq.${anuncioId}`,
+        filter: `anuncio_id=eq.${String(anuncioId)}`,
       }, async (payload) => {
         const nuevo = payload.new as Mensaje;
         const involucrado = nuevo.emisor_id === session.user.id || nuevo.receptor_id === session.user.id;
@@ -162,7 +162,7 @@ export default function ChatPage() {
       usuario_id:  otroUserId,
       emisor_id:   session.user.id,
       anuncio_id:  anuncioId,
-      tipo:        "mensaje",
+      tipo:        "conexion",
       mensaje:     `💬 Nuevo mensaje sobre "${anuncio?.titulo || "un anuncio"}"`,
       leida:       false,
     });

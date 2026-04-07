@@ -605,7 +605,7 @@ function BuscarInner() {
         )}
 
         {/* CONEXION BUTTON */}
-        {session && !modoConexion && tipoActivo === "anuncios" && (
+        {session && !modoConexion && ["anuncios","empresas","servicios","trabajo","grupos"].includes(tipoActivo) && (
           <button onClick={activarModoConexion} style={{background:"linear-gradient(135deg,#f0c040,#d4a017)",border:"none",borderRadius:"12px",padding:"8px 16px",display:"flex",flexDirection:"row",alignItems:"center",justifyContent:"space-between",gap:"10px",cursor:"pointer",fontFamily:"'Nunito',sans-serif",boxShadow:"0 4px 0 #a07810",width:"100%",marginBottom:"4px"}}>
             <div style={{display:"flex",alignItems:"center",gap:"8px"}}>
               <span style={{fontSize:"15px"}}>🔗</span>

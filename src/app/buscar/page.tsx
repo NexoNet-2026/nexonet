@@ -503,6 +503,11 @@ function BuscarInner() {
           usuario_id: n.usuario_id, emisor_id: session.user.id,
           nexo_id: n.id, tipo: "conexion", mensaje: mensajeConexion
         })));
+        await supabase.from("mensajes").insert(nexoData.map((n:any) => ({
+          emisor_id: session.user.id,
+          receptor_id: n.usuario_id,
+          texto: mensajeConexion,
+        })));
       }
     }
 

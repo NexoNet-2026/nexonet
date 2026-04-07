@@ -95,6 +95,7 @@ export default function ChatPage() {
         table: "mensajes",
         filter: `anuncio_id=eq.${String(anuncioId)}`,
       }, async (payload) => {
+        console.log('REALTIME MENSAJE RECIBIDO', payload.new);
         const nuevo = payload.new as Mensaje;
         const involucrado = nuevo.emisor_id === myId || nuevo.receptor_id === myId;
         if (involucrado) {

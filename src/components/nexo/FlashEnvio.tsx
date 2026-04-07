@@ -1,7 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
-import PlantillasMensaje from "./PlantillasMensaje";
 
 interface Props {
   nexoId: string;
@@ -17,7 +16,6 @@ type Filtros = { tipo: "todos"|"visitaron"|"miembros"; provincia?: string; ciuda
 
 export default function FlashEnvio({ nexoId, nexoTitulo, usuarioId, color, perfil, itemContexto, onClose }: Props) {
   const [filtros, setFiltros] = useState<Filtros>({ tipo: "todos" });
-  const [plantillaSeleccionada, setPlantillaSeleccionada] = useState<any>(null);
   const [mensajeExtra, setMensajeExtra] = useState("");
   const [destinatarios, setDestinatarios] = useState<any[]>([]);
   const [buscandoDest, setBuscandoDest] = useState(false);
@@ -72,11 +70,10 @@ export default function FlashEnvio({ nexoId, nexoTitulo, usuarioId, color, perfi
   const alcanza = saldoBIT >= costoBIT;
 
   const enviar = async () => {
-    if (!plantillaSeleccionada && !mensajeExtra.trim()) return;
+    if (!mensajeExtra.trim()) return;
     if (!alcanza) { alert(`Necesitás ${costoBIT} BIT, tenés ${saldoBIT}.`); return; }
     setEnviando(true);
-    const cuerpoBase = plantillaSeleccionada ? `${plantillaSeleccionada.cuerpo}${mensajeExtra.trim()?"\n\n"+mensajeExtra.trim():""}` : mensajeExtra.trim();
-    const mensajeFinal = cuerpoBase;
+    const mensajeFinal = mensajeExtra.trim();
     await supabase.from("usuarios").update({ bits: saldoBIT - costoBIT, bits_gastados_flash: (perfil?.bits_gastados_flash||0) + costoBIT }).eq("id",usuarioId);
     const esUUID = nexoId.length === 36 && nexoId.includes("-");
     const destFinal = destinatarios.filter(u=>seleccionados.has(u.id) && u.id !== usuarioId);
@@ -93,7 +90,7 @@ export default function FlashEnvio({ nexoId, nexoTitulo, usuarioId, color, perfi
       await supabase.from("nexos").update({ created_at: new Date().toISOString() }).eq("id", nexoId);
     }
 
-    await supabase.from("nexo_flash_envios").insert({ nexo_id:esUUID?nexoId:null, emisor_id:usuarioId, plantilla_id:plantillaSeleccionada?.id||null, item_id:itemContexto?.id||null, item_url:null, mensaje:mensajeFinal, filtro:filtros, cantidad_destinatarios:destFinal.length, bits_consumidos:costoBIT });
+    await supabase.from("nexo_flash_envios").insert({ nexo_id:esUUID?nexoId:null, emisor_id:usuarioId, plantilla_id:null, item_id:itemContexto?.id||null, item_url:null, mensaje:mensajeFinal, filtro:filtros, cantidad_destinatarios:destFinal.length, bits_consumidos:costoBIT });
     setEnviado(true); setEnviando(false);
   };
 
@@ -179,20 +176,9 @@ export default function FlashEnvio({ nexoId, nexoTitulo, usuarioId, color, perfi
             {destinatarios.length>0 && (
               <div style={{ background:"#fff", borderRadius:"16px", padding:"16px", boxShadow:"0 2px 8px rgba(0,0,0,0.06)" }}>
                 <div style={{ fontSize:"12px", fontWeight:900, color:"#9a9a9a", textTransform:"uppercase" as const, letterSpacing:"1px", marginBottom:"12px" }}>2 — Mensaje</div>
-                {plantillaSeleccionada ? (
-                  <div style={{ background:`${color}10`, border:`2px solid ${color}40`, borderRadius:"12px", padding:"12px 14px" }}>
-                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"6px" }}>
-                      <div style={{ fontSize:"13px", fontWeight:900, color:"#1a2a3a" }}>✅ {plantillaSeleccionada.titulo}</div>
-                      <button onClick={()=>setPlantillaSeleccionada(null)} style={{ background:"none", border:"none", fontSize:"12px", fontWeight:800, color:"#e74c3c", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>cambiar</button>
-                    </div>
-                    <div style={{ fontSize:"12px", color:"#555", fontWeight:600, lineHeight:1.5 }}>{plantillaSeleccionada.cuerpo}</div>
-                  </div>
-                ) : (
-                  <PlantillasMensaje nexoId={nexoId} usuarioId={usuarioId} color={color} modoSelector onSelect={p=>setPlantillaSeleccionada(p)} />
-                )}
-                <div style={{ marginTop:"12px" }}>
+                <div>
                   <label style={{ fontSize:"11px", fontWeight:800, color:"#9a9a9a", textTransform:"uppercase" as const, display:"block", marginBottom:"6px" }}>
-                    {plantillaSeleccionada?"Texto adicional (opcional)":"O escribí un mensaje libre"}
+                    Escribí tu mensaje
                   </label>
                   <textarea value={mensajeExtra} onChange={e=>setMensajeExtra(e.target.value)} placeholder="Mensaje..." rows={3} maxLength={300}
                     style={{ width:"100%", border:"2px solid #e8e8e6", borderRadius:"12px", padding:"10px 14px", fontSize:"13px", fontFamily:"'Nunito',sans-serif", outline:"none", resize:"vertical", boxSizing:"border-box" as const }} />
@@ -200,7 +186,7 @@ export default function FlashEnvio({ nexoId, nexoTitulo, usuarioId, color, perfi
               </div>
             )}
 
-            {destinatarios.length>0 && (plantillaSeleccionada||mensajeExtra.trim()) && (
+            {destinatarios.length>0 && mensajeExtra.trim() && (
               <button onClick={enviar} disabled={enviando||!alcanza}
                 style={{ background:alcanza?`linear-gradient(135deg,${color}cc,${color})`:"#ccc", border:"none", borderRadius:"14px", padding:"16px", fontSize:"15px", fontWeight:900, color:"#fff", cursor:alcanza?"pointer":"default", fontFamily:"'Nunito',sans-serif", opacity:enviando?0.6:1 }}>
                 {enviando?"⏳ Enviando...":`⚡ Enviar Flash — ${costoBIT} BIT`}

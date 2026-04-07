@@ -72,23 +72,14 @@ export default function ChatPage() {
   };
 
   const cargarMensajes = async (myId: string) => {
-    const { data: enviados } = await supabase
+    const { data } = await supabase
       .from("mensajes")
       .select("*")
       .eq("anuncio_id", anuncioId)
-      .eq("emisor_id", myId)
-      .eq("receptor_id", otroUserId);
+      .or(`and(emisor_id.eq.${myId},receptor_id.eq.${otroUserId}),and(emisor_id.eq.${otroUserId},receptor_id.eq.${myId})`)
+      .order("created_at", { ascending: true });
 
-    const { data: recibidos } = await supabase
-      .from("mensajes")
-      .select("*")
-      .eq("anuncio_id", anuncioId)
-      .eq("emisor_id", otroUserId)
-      .eq("receptor_id", myId);
-
-    const todos = [...(enviados||[]), ...(recibidos||[])]
-      .sort((a,b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-    setMensajes(todos);
+    setMensajes(data || []);
   };
 
   // Realtime subscription
@@ -105,7 +96,7 @@ export default function ChatPage() {
         const nuevo = payload.new as Mensaje;
         const involucrado = nuevo.emisor_id === session.user.id || nuevo.receptor_id === session.user.id;
         if (involucrado) {
-          setMensajes(prev => [...prev, nuevo]);
+          await cargarMensajes(session.user.id);
           if (nuevo.emisor_id === otroUserId) {
             await supabase.from("mensajes").update({ leido: true }).eq("id", nuevo.id);
           }

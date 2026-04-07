@@ -1031,7 +1031,6 @@ function TarjetaAnuncio({ a, fmt, qLow, query, horizontal, modoConexion, selecci
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:"2px"}}>
               <div style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600}}>📍 {a.ciudad}</div>
               <div style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600}}>👁️ {a.visitas_semana||0}</div>
-              {tieneWA && <span style={{background:"rgba(37,211,102,0.15)",border:"1px solid rgba(37,211,102,0.4)",borderRadius:"20px",padding:"1px 7px",fontSize:"9px",fontWeight:900,color:"#1a7a4a"}}>WA</span>}
             </div>
             {a.owner_insignia_logro && a.owner_insignia_logro !== "ninguna" && (
               <div style={{marginTop:"3px"}}><InsigniaLogro nivel={a.owner_insignia_logro} size="xs" /></div>

@@ -87,6 +87,7 @@ export default function ChatPage() {
   // Realtime subscription
   useEffect(() => {
     if (!myId) return;
+    console.log('SUSCRIBIENDO CANAL', anuncioId, myId);
     const canal = supabase
       .channel(`chat-${anuncioId}-${myId}`)
       .on("postgres_changes", {
@@ -105,7 +106,7 @@ export default function ChatPage() {
           }
         }
       })
-      .subscribe();
+      .subscribe((status) => { console.log('CANAL STATUS', status); });
     return () => { supabase.removeChannel(canal); };
   }, [myId]);
 

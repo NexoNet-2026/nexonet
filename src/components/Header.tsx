@@ -263,7 +263,7 @@ export default function Header() {
                         Sin notificaciones
                       </div>
                     ) : notifs.map(n => (
-                      <a key={n.id} href={n.tipo==="conexion" && n.anuncio_id && n.emisor_id ? `/chat/${n.anuncio_id}/${n.emisor_id}` : n.nexo_id ? (n.tipo==="solicitud_admin" ? `/nexo/${n.nexo_id}/admin` : `/nexo/${n.nexo_id}`) : n.anuncio_id ? `/anuncios/${n.anuncio_id}` : "/usuario"}
+                      <a key={n.id} href={n.tipo==="flash" ? (n.nexo_id ? `/nexo/${n.nexo_id}` : n.anuncio_id ? `/anuncios/${n.anuncio_id}` : "/usuario") : n.tipo==="conexion" && n.anuncio_id && n.emisor_id ? `/chat/${n.anuncio_id}/${n.emisor_id}` : n.nexo_id ? (n.tipo==="solicitud_admin" ? `/nexo/${n.nexo_id}/admin` : `/nexo/${n.nexo_id}`) : n.anuncio_id ? `/anuncios/${n.anuncio_id}` : "/usuario"}
                         onClick={() => setPanelOpen(false)}
                         style={{
                           display: "block", padding: "11px 16px", textDecoration: "none",
@@ -280,7 +280,7 @@ export default function Header() {
                           </span>
                         </div>
                         <div style={{ fontSize: "10px", color: "#9a9a9a", fontWeight: 700, marginTop: "3px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                          {n.tipo === "match" ? "🎯 Match búsqueda" : n.tipo === "conexion" ? "🔗 Conexión" : n.tipo === "solicitud_admin" ? "⭐ Solicitud admin" : "📢 Sistema"}
+                          {n.tipo === "match" ? "🎯 Match búsqueda" : n.tipo === "conexion" ? "🔗 Conexión" : n.tipo === "solicitud_admin" ? "⭐ Solicitud admin" : n.tipo === "flash" ? "⚡ Flash" : "📢 Sistema"}
                         </div>
                       </a>
                     ))}

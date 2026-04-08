@@ -198,12 +198,12 @@ export default function Usuario() {
 
       const miembroNexoIds = (mgData||[]).map((m:any) => m.nexo_id).filter(Boolean);
       const { data: gruposNexos } = miembroNexoIds.length > 0
-        ? await supabase.from("nexos").select("id,titulo,avatar_url,ciudad,tipo,estado,vistas").in("id", miembroNexoIds).eq("tipo","grupo")
+        ? await supabase.from("nexos").select("id,titulo,avatar_url,ciudad,tipo,estado,vistas,miembros_count").in("id", miembroNexoIds).eq("tipo","grupo")
         : { data: [] };
 
       const { data: creadosData } = await supabase
         .from("nexos")
-        .select("id,titulo,avatar_url,ciudad,tipo,estado,vistas")
+        .select("id,titulo,avatar_url,ciudad,tipo,estado,vistas,miembros_count")
         .eq("usuario_id", session.user.id).eq("tipo","grupo");
 
       const miembroIds = new Set((gruposNexos||[]).map((g:any) => g.id));
@@ -959,7 +959,7 @@ export default function Usuario() {
                     {g.imagen ? <img src={g.imagen} alt={g.nombre} style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : <span style={{ fontSize:"28px", opacity:0.4 }}>{g.categoria_emoji}</span>}
                     <div style={{ position:"absolute", bottom:"4px", left:0, right:0, textAlign:"center" }}>
                       <span style={{ background:g.mi_rol==="creador"?"rgba(212,160,23,0.95)":g.mi_rol==="moderador"?"rgba(100,149,237,0.9)":"rgba(0,168,132,0.85)", borderRadius:"20px", padding:"1px 6px", fontSize:"8px", fontWeight:900, color:g.mi_rol==="creador"?"#1a2a3a":"#fff" }}>
-                        {g.mi_rol==="creador"?"👑 Creador":g.mi_rol==="moderador"?"🛡️ Mod":"✅ Miembro"}
+                        {g.mi_rol==="creador"?"👑 Creador":g.mi_rol==="moderador"?"🛡️ Mod":g.mi_rol==="administrador"?"⚙️ Admin":"✅ Miembro"}
                       </span>
                     </div>
                   </div>

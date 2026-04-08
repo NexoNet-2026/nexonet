@@ -716,6 +716,7 @@ function NexoPageInner() {
           onFlash={(item: any) => { setFlashItem(item); setFlashOpen(true); }}
           bottomRef={bottomRef}
           colorNexo={colorNexo}
+          onUnirse={() => setPopupUnirse(true)}
         />}
       </div>
 
@@ -850,8 +851,24 @@ const SLIDER_EMOJIS: Record<string,string> = {
   mensajes:"💬", chat:"💬", personalizado:"✨", resenas:"⭐", clientes:"🤝", lista_precios:"💲",
 };
 
-function SliderContenido({ slider, items, mensajes, perfil, nexo, esAdmin, esMiembro, descargasPagadas, pagandoDescarga, miembros, texto, setTexto, enviando, onEnviar, onVisor, onPagarDescarga, onAbrirDescarga, onFlash, bottomRef, colorNexo }: any) {
+function SliderContenido({ slider, items, mensajes, perfil, nexo, esAdmin, esMiembro, descargasPagadas, pagandoDescarga, miembros, texto, setTexto, enviando, onEnviar, onVisor, onPagarDescarga, onAbrirDescarga, onFlash, bottomRef, colorNexo, onUnirse }: any) {
   const tipo = slider.tipo;
+
+  // Bloquear contenido de grupo a no miembros (excepto chat y reseñas)
+  if (nexo?.tipo === "grupo" && !esMiembro && !esAdmin && tipo !== "mensajes" && tipo !== "chat" && tipo !== "resenas") {
+    return (
+      <div style={{ textAlign:"center", padding:"50px 20px" }}>
+        <div style={{ fontSize:"48px", marginBottom:"12px" }}>🔒</div>
+        <div style={{ fontSize:"16px", fontWeight:900, color:"#1a2a3a", marginBottom:"8px" }}>Contenido exclusivo para miembros</div>
+        <div style={{ fontSize:"13px", color:"#666", fontWeight:600, marginBottom:"20px" }}>Unite al grupo para acceder a este contenido.</div>
+        {onUnirse && (
+          <button onClick={onUnirse} style={{ background:"linear-gradient(135deg,#f0c040,#d4a017)", border:"none", borderRadius:"14px", padding:"14px 28px", fontSize:"14px", fontWeight:900, color:"#1a2a3a", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
+            👥 Unirse al grupo
+          </button>
+        )}
+      </div>
+    );
+  }
 
   // CHAT
   if (tipo==="mensajes"||tipo==="chat") {

@@ -95,7 +95,7 @@ export async function POST(req: Request) {
       leida: false,
     });
 
-    return NextResponse.json({ ok: true, nuevo, bits_saldo });
+    return NextResponse.json({ ok: true, nuevo });
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });
   }

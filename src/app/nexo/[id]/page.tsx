@@ -237,6 +237,13 @@ function NexoPageInner() {
   const colorNexo = TIPO_COLORES[nexo?.tipo] || "#d4a017";
   const emojiNexo = nexo?.subtipo ? SUBTIPO_EMOJIS[nexo.subtipo] : TIPO_EMOJIS[nexo?.tipo] || "✨";
 
+  // Abrir popup pago admin automáticamente desde notificación
+  useEffect(() => {
+    if (searchParams?.get("pago_admin") === "1" && miMiembro?.rol === "admin_pago_pendiente") {
+      setPopupPagoAdmin(true);
+    }
+  }, [searchParams, miMiembro]);
+
   const unirse = async () => {
     if (!perfil) { router.push("/login"); return; }
     const acceso = nexo?.config?.tipo_acceso || "libre";

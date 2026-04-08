@@ -1,6 +1,7 @@
 "use client";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
+import PopupCompra, { type MetodoPago } from "@/components/PopupCompra";
 import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
@@ -41,6 +42,8 @@ export default function ChatNexoPage() {
   const [nexo,      setNexo]      = useState<any>(null);
   const [otroUser,  setOtroUser]  = useState<any>(null);
   const [loading,   setLoading]   = useState(true);
+  const [popupBits, setPopupBits] = useState(false);
+  const [wallet,    setWallet]    = useState({ free: 0, nexo: 0, promo: 0 });
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef  = useRef<HTMLTextAreaElement>(null);
 
@@ -108,57 +111,32 @@ export default function ChatNexoPage() {
   const enviar = async () => {
     if (!texto.trim() || !session || enviando) return;
     setEnviando(true);
+    const msg = texto.trim();
 
-    // Cobrar 1 BIT al emisor
-    const { data: wallet } = await supabase
-      .from("usuarios")
-      .select("bits, bits_free, bits_promo")
-      .eq("id", session.user.id)
-      .single();
+    const res = await fetch("/api/chat/enviar-mensaje", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        emisor_id: session.user.id,
+        receptor_id: otroUserId,
+        texto: msg,
+        nexo_id: nexoId,
+        titulo: nexo?.titulo || "un nexo",
+      }),
+    });
+    const json = await res.json();
 
-    if (!wallet || (wallet.bits_free + wallet.bits_promo + wallet.bits) < 1) {
-      alert("No tenés BIT suficientes");
+    if (json.error === "sin_bits") {
+      setWallet({ free: json.wallet.bits_free, nexo: json.wallet.bits, promo: json.wallet.bits_promo });
+      setPopupBits(true);
       setEnviando(false);
       return;
     }
 
-    let restante = 1;
-    const updates: { bits_free?: number; bits_promo?: number; bits?: number } = {};
-
-    if (wallet.bits_free > 0) {
-      const desc = Math.min(wallet.bits_free, restante);
-      updates.bits_free = wallet.bits_free - desc;
-      restante -= desc;
+    if (json.wallet) {
+      setWallet({ free: json.wallet.bits_free, nexo: json.wallet.bits, promo: json.wallet.bits_promo });
     }
-    if (restante > 0 && wallet.bits_promo > 0) {
-      const desc = Math.min(wallet.bits_promo, restante);
-      updates.bits_promo = wallet.bits_promo - desc;
-      restante -= desc;
-    }
-    if (restante > 0 && wallet.bits > 0) {
-      const desc = Math.min(wallet.bits, restante);
-      updates.bits = wallet.bits - desc;
-      restante -= desc;
-    }
-
-    await supabase.from("usuarios").update(updates).eq("id", session.user.id);
-
-    const msg = texto.trim();
     setTexto("");
-    await supabase.from("mensajes").insert({
-      emisor_id:   session.user.id,
-      receptor_id: otroUserId,
-      texto:       msg,
-    });
-    // Notificar al receptor en la campanita
-    await supabase.from("notificaciones").insert({
-      usuario_id:  otroUserId,
-      emisor_id:   session.user.id,
-      nexo_id:     nexoId,
-      tipo:        "conexion",
-      mensaje:     `💬 Nuevo mensaje sobre "${nexo?.titulo || "un nexo"}"`,
-      leida:       false,
-    });
     setEnviando(false);
     inputRef.current?.focus();
   };
@@ -278,6 +256,18 @@ export default function ChatNexoPage() {
           {enviando ? "⏳" : "➤"}
         </button>
       </div>
+
+      {popupBits && (
+        <PopupCompra
+          titulo="Enviar mensaje"
+          emoji="💬"
+          costo="1 BIT"
+          descripcion="Necesitás 1 BIT para enviar este mensaje"
+          bits={wallet}
+          onPagar={async (_metodo: MetodoPago) => { setPopupBits(false); await enviar(); }}
+          onClose={() => setPopupBits(false)}
+        />
+      )}
 
       <BottomNav />
     </main>

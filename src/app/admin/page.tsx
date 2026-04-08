@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabase";
 
 const ADMIN_UUID = "f9b23e04-c591-44bf-9efb-51966c30a083";
 
-type Tab = "dashboard"|"usuarios"|"anuncios"|"nexos"|"mensajes"|"promotores"|"pagos"|"alarmas"|"config"|"contactos"|"reclamos"|"socios";
+type Tab = "dashboard"|"usuarios"|"anuncios"|"nexos"|"mensajes"|"promotores"|"pagos"|"alarmas"|"config"|"contactos"|"reclamos"|"socios"|"soporte";
 type ConfigSub = "anuncios"|"empresas"|"servicios"|"trabajo"|"grupos"|"filtros_ia"|"general";
 
 const S = {
@@ -98,6 +98,10 @@ export default function AdminPanel() {
 
   // Reclamos copyright
   const [claims, setClaims] = useState<any[]>([]);
+  const [soporteMsgs, setSoporteMsgs] = useState<any[]>([]);
+  const [soportePendientes, setSoportePendientes] = useState(0);
+  const [soporteFiltro, setSoporteFiltro] = useState("todos");
+  const [soporteResp, setSoporteResp] = useState<{id:string;texto:string}|null>(null);
 
   // Filtros IA
   const [filtrosIA, setFiltrosIA] = useState<any[]>([]);
@@ -252,6 +256,11 @@ export default function AdminPanel() {
     // Reclamos copyright
     const {data:claimsData} = await supabase.from("copyright_claims").select("*").order("received_at",{ascending:false}).limit(100);
     setClaims(claimsData||[]);
+
+    // Soporte
+    const {data:msgs} = await supabase.from("mensajes_soporte").select("*").order("created_at",{ascending:false});
+    setSoporteMsgs(msgs||[]);
+    setSoportePendientes((msgs||[]).filter((m:any)=>m.estado==="pendiente").length);
 
     // Visitas stats
     try {
@@ -992,7 +1001,7 @@ export default function AdminPanel() {
 
   if (!authed) return null;
 
-  const TABS:{id:Tab;e:string;l:string}[] = [
+  const TABS:{id:Tab;e:string;l:string;badge?:number}[] = [
     {id:"dashboard",e:"📊",l:"Panel"},
     {id:"usuarios", e:"👥",l:"Usuarios"},
     {id:"anuncios", e:"📋",l:"Anuncios"},
@@ -1005,6 +1014,7 @@ export default function AdminPanel() {
     {id:"config",   e:"⚙️",l:"Config"},
     {id:"reclamos", e:"⚖️",l:"Reclamos"},
     {id:"socios",   e:"🤝",l:"Socios"},
+    {id:"soporte",  e:"💬",l:"Soporte",badge:soportePendientes},
   ];
 
   const ItemRow = ({label,onEdit,onDelete,onUp,onDown,badge,extra}:{label:string;onEdit:()=>void;onDelete:()=>void;onUp?:()=>void;onDown?:()=>void;badge?:React.ReactNode;extra?:React.ReactNode}) => (
@@ -1043,9 +1053,10 @@ export default function AdminPanel() {
         <div style={{display:"flex",gap:"0",overflowX:"auto",borderTop:"1px solid rgba(255,255,255,0.1)"}}>
           {TABS.map(t=>(
             <button key={t.id} onClick={()=>setTab(t.id)}
-              style={{flexShrink:0,background:"none",border:"none",borderBottom:tab===t.id?"3px solid #d4a017":"3px solid transparent",padding:"10px 12px",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:"2px"}}>
+              style={{flexShrink:0,background:"none",border:"none",borderBottom:tab===t.id?"3px solid #d4a017":"3px solid transparent",padding:"10px 12px",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:"2px",position:"relative"}}>
               <span style={{fontSize:"18px"}}>{t.e}</span>
               <span style={{fontSize:"9px",fontWeight:800,color:tab===t.id?"#d4a017":"#8a9aaa",textTransform:"uppercase",letterSpacing:"0.5px",whiteSpace:"nowrap"}}>{t.l}</span>
+              {(t.badge||0) > 0 && <span style={{position:"absolute",top:"6px",right:"6px",background:"#e74c3c",borderRadius:"50%",minWidth:"16px",height:"16px",fontSize:"9px",fontWeight:900,color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",padding:"0 3px"}}>{t.badge}</span>}
             </button>
           ))}
         </div>
@@ -2076,6 +2087,66 @@ export default function AdminPanel() {
                 </div>
               </div>
             ))}
+          </>
+        )}
+
+        {/* ══ SOPORTE ═══════════════════════════════════════════════════════ */}
+        {!loading && tab==="soporte" && (
+          <>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"10px",marginBottom:"14px"}}>
+              <StatBox n={String(soporteMsgs.filter(m=>m.estado==="pendiente").length)} l="Pendientes" e="⏳" c="#e67e22" />
+              <StatBox n={String(soporteMsgs.filter(m=>m.estado==="respondido").length)} l="Respondidos" e="✅" c="#27ae60" />
+              <StatBox n={String(soporteMsgs.length)} l="Total" e="💬" c="#3a7bd5" />
+            </div>
+            <div style={{display:"flex",gap:"6px",marginBottom:"14px",flexWrap:"wrap"}}>
+              {["todos","ayuda","sugerencia","reclamo","denuncia","solicitud"].map(f=>(
+                <button key={f} onClick={()=>setSoporteFiltro(f)} style={{...S.btn(soporteFiltro===f?"#1a2a3a":"#9a9a9a",soporteFiltro!==f),fontSize:"11px",padding:"5px 10px",textTransform:"capitalize"}}>{f==="todos"?"Todos":f}</button>
+              ))}
+            </div>
+            {soporteMsgs.filter(m=>soporteFiltro==="todos"||m.tipo===soporteFiltro).length===0 && (
+              <div style={{...S.card,textAlign:"center",color:"#9a9a9a",fontWeight:600}}>Sin mensajes todavía.</div>
+            )}
+            {soporteMsgs.filter(m=>soporteFiltro==="todos"||m.tipo===soporteFiltro).map(m=>(
+              <div key={m.id} style={{...S.card,borderLeft:"4px solid "+(m.estado==="pendiente"?"#e67e22":m.estado==="respondido"?"#27ae60":"#9a9a9a")}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"8px"}}>
+                  <div>
+                    <div style={{fontSize:"13px",fontWeight:900,color:"#1a2a3a"}}>{m.nombre_usuario||"Anónimo"} {m.codigo&&<span style={{fontSize:"11px",color:"#d4a017"}}>({m.codigo})</span>}</div>
+                    <div style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600}}>{new Date(m.created_at).toLocaleDateString("es-AR",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"})}</div>
+                  </div>
+                  <div style={{display:"flex",gap:"6px",alignItems:"center"}}>
+                    <span style={{...S.badge("#fff",m.tipo==="reclamo"?"#e74c3c":m.tipo==="denuncia"?"#8e44ad":m.tipo==="sugerencia"?"#3a7bd5":m.tipo==="solicitud"?"#27ae60":"#d4a017"),fontSize:"10px"}}>{m.tipo}</span>
+                    <span style={{...S.badge("#fff",m.estado==="pendiente"?"#e67e22":m.estado==="respondido"?"#27ae60":"#9a9a9a"),fontSize:"10px"}}>{m.estado}</span>
+                  </div>
+                </div>
+                <div style={{fontSize:"13px",fontWeight:600,color:"#1a2a3a",lineHeight:1.5,background:"#f9f9f7",borderRadius:"10px",padding:"10px 12px",marginBottom:"8px"}}>{m.mensaje}</div>
+                {m.respuesta && <div style={{fontSize:"12px",color:"#27ae60",fontWeight:600,background:"rgba(39,174,96,0.06)",borderRadius:"10px",padding:"8px 12px",marginBottom:"8px"}}>💬 Respuesta: {m.respuesta}</div>}
+                {m.estado!=="respondido" && (
+                  <div style={{display:"flex",gap:"8px"}}>
+                    <button onClick={()=>setSoporteResp({id:m.id,texto:""})} style={S.btn("#3a7bd5")}>💬 Responder</button>
+                    <button onClick={async()=>{await supabase.from("mensajes_soporte").update({estado:"leido"}).eq("id",m.id);setSoporteMsgs(prev=>prev.map(x=>x.id===m.id?{...x,estado:"leido"}:x));}} style={S.btn("#9a9a9a",true)}>✅ Marcar leído</button>
+                  </div>
+                )}
+              </div>
+            ))}
+            {soporteResp && (
+              <div style={{position:"fixed",inset:0,zIndex:900,background:"rgba(0,0,0,0.6)",display:"flex",alignItems:"center",justifyContent:"center",padding:"16px"}} onClick={()=>setSoporteResp(null)}>
+                <div style={{background:"#fff",borderRadius:"20px",padding:"24px",width:"100%",maxWidth:"420px",fontFamily:"'Nunito',sans-serif"}} onClick={e=>e.stopPropagation()}>
+                  <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"20px",color:"#1a2a3a",marginBottom:"14px"}}>💬 Responder mensaje</div>
+                  <textarea value={soporteResp.texto} onChange={e=>setSoporteResp({...soporteResp,texto:e.target.value})} rows={4} placeholder="Escribí la respuesta..." style={{...S.input,minHeight:"100px",resize:"vertical",marginBottom:"12px"}} />
+                  <div style={{display:"flex",gap:"8px"}}>
+                    <button onClick={async()=>{
+                      if(!soporteResp.texto.trim()) return;
+                      await supabase.from("mensajes_soporte").update({estado:"respondido",respuesta:soporteResp.texto,respondido_at:new Date().toISOString()}).eq("id",soporteResp.id);
+                      setSoporteMsgs(prev=>prev.map(x=>x.id===soporteResp.id?{...x,estado:"respondido",respuesta:soporteResp.texto}:x));
+                      setSoportePendientes(prev=>Math.max(0,prev-1));
+                      setSoporteResp(null);
+                      showToast("✅ Respuesta guardada");
+                    }} style={S.btn("#27ae60")}>✅ Guardar respuesta</button>
+                    <button onClick={()=>setSoporteResp(null)} style={S.btn("#9a9a9a",true)}>Cancelar</button>
+                  </div>
+                </div>
+              </div>
+            )}
           </>
         )}
       </div>

@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import SoportePopup from "@/components/SoportePopup";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
@@ -138,6 +139,7 @@ export default function BottomNav() {
           );
         })}
       </nav>
+      <SoportePopup />
     </div>
   );
 }

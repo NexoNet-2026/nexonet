@@ -258,9 +258,9 @@ export default function AdminPanel() {
     setClaims(claimsData||[]);
 
     // Soporte
-    const {data:msgs} = await supabase.from("mensajes_soporte").select("*").order("created_at",{ascending:false});
-    setSoporteMsgs(msgs||[]);
-    setSoportePendientes((msgs||[]).filter((m:any)=>m.estado==="pendiente").length);
+    const {data:soporteData} = await supabase.from("mensajes_soporte").select("*").order("created_at",{ascending:false});
+    setSoporteMsgs(soporteData||[]);
+    setSoportePendientes((soporteData||[]).filter((m:any)=>m.estado==="pendiente").length);
 
     // Visitas stats
     try {

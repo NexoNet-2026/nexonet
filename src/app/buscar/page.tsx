@@ -476,11 +476,14 @@ function BuscarInner() {
 
     // Descontar 1 BIT al receptor (dueño) por cada conexión recibida
     const descontarBitReceptor = async (ownerId: string) => {
-      await fetch("/api/nexo/descontar-bit-receptor", {
+      console.log("descontarBitReceptor LLAMANDO", ownerId);
+      const res = await fetch("/api/nexo/descontar-bit-receptor", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ usuario_id: ownerId }),
       });
+      const json = await res.json();
+      console.log("descontarBitReceptor RESPUESTA", res.status, json);
     };
 
     // Procesar anuncios

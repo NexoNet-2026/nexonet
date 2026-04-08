@@ -216,7 +216,20 @@ export default function Usuario() {
       const fromCreados = creadosExtra.map((g:any) => ({
         ...g, nombre: g.titulo, imagen: g.avatar_url, mi_rol: "creador", mi_estado: "activo", categoria_nombre: "", categoria_emoji: "👥", subcategoria_nombre: "",
       }));
-      setMisGruposData([...fromMiembros, ...fromCreados]);
+      const todosLosIds = [...(gruposNexos||[]), ...creadosExtra].map((g:any) => g.id);
+let conteoMap: Record<number, number> = {};
+if (todosLosIds.length > 0) {
+  const { data: conteos } = await supabase
+    .from("nexo_miembros")
+    .select("nexo_id")
+    .in("nexo_id", todosLosIds)
+    .eq("estado", "activo");
+  (conteos||[]).forEach((r:any) => {
+    conteoMap[r.nexo_id] = (conteoMap[r.nexo_id] || 0) + 1;
+  });
+}
+const conConteo = (arr: any[]) => arr.map(g => ({ ...g, miembros_count: conteoMap[g.id] || 0 }));
+setMisGruposData([...conConteo(fromMiembros), ...conConteo(fromCreados)]);
     };
     cargar();
   }, []);

@@ -362,7 +362,7 @@ export default function NexoAdminPage() {
     if (["expulsar","bloquear"].includes(accion) && !confirm(`¿${accion} a este miembro?`)) return;
     await supabase.from("nexo_miembros").update(updates[accion]).eq("id",mId);
     if (["expulsar","bloquear"].includes(accion)) {
-      setMiembros(prev=>prev.filter(x=>x.id!==mId));
+      setMiembros(prev=>prev.filter(x=>x.id!==mId && x.usuario_id!==m?.usuario_id));
     } else {
       setMiembros(prev=>prev.map(x=>x.id===mId?{...x,...updates[accion]}:x));
     }

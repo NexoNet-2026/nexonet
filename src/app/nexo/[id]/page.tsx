@@ -757,33 +757,28 @@ function NexoPageInner() {
 
       {/* POPUP SOLICITAR ADMIN */}
       {popupSolAdmin && (
-        <PopupCompra
-          titulo="⭐ Solicitar ser admin"
-          emoji="⭐"
-          costo="500 BIT"
-          descripcion={`Ser admin de "${nexo?.titulo}"`}
-          bits={{ free: Math.max(0, perfil?.bits_free||0), nexo: Math.max(0, perfil?.bits||0), promo: Math.max(0, perfil?.bits_promo||0) }}
-          onClose={() => setPopupSolAdmin(false)}
-          onPagar={async (metodo: MetodoPago) => {
-            setPopupSolAdmin(false);
-            setSolicitandoAdmin(true);
-            const campo = metodo === "bit_free" ? "bits_free" : metodo === "bit_nexo" ? "bits" : "bits_promo";
-            await supabase.from("usuarios").update({ [campo]: (perfil[campo]||0) - 500 }).eq("id", perfil.id);
-            setPerfil((p:any) => ({...p, [campo]: (p[campo]||0) - 500}));
-            const comSolAdmin = nexo.usuario_id === "f9b23e04-c591-44bf-9efb-51966c30a083" ? 150 : 100;
-            await fetch("/api/admin/asignar-bit", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ usuario_id: nexo.usuario_id, columna: "bits_promo", cantidad: comSolAdmin, nota: "Comisión por solicitud de admin" }),
-            });
-            await supabase.from("nexo_miembros").update({ rol: "admin_solicitado" }).eq("id", miMiembro.id);
-            setMiMiembro((m:any) => ({...m, rol:"admin_solicitado"}));
-            const { data: adminsNexo } = await supabase.from("nexo_miembros").select("usuario_id").eq("nexo_id",id).in("rol",["creador","admin"]).eq("estado","activo");
-            const adminIds = [...new Set([nexo.usuario_id, ...(adminsNexo||[]).map((a:any)=>a.usuario_id)])];
-            await supabase.from("notificaciones").insert(adminIds.map(uid=>({ usuario_id:uid, tipo:"solicitud_admin", mensaje:`⭐ ${perfil.nombre_usuario} solicita ser admin en "${nexo.titulo}"`, leida:false, nexo_id:nexo.id })));
-            setSolicitandoAdmin(false);
-          }}
-        />
+        <div style={{ position:"fixed", inset:0, zIndex:800, background:"rgba(0,0,0,0.6)", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Nunito',sans-serif" }} onClick={() => setPopupSolAdmin(false)}>
+          <div onClick={e => e.stopPropagation()} style={{ background:"#fff", borderRadius:"20px", padding:"28px 24px", maxWidth:"380px", width:"90%", textAlign:"center" }}>
+            <div style={{ fontSize:"48px", marginBottom:"12px" }}>⭐</div>
+            <div style={{ fontSize:"18px", fontWeight:900, color:"#1a2a3a", marginBottom:"8px" }}>Solicitar ser admin</div>
+            <div style={{ fontSize:"13px", color:"#666", fontWeight:600, marginBottom:"20px" }}>Tu solicitud será enviada a los admins de &quot;{nexo?.titulo}&quot;. Si te aprueban, se te indicará el pago de 500 BIT.</div>
+            <div style={{ display:"flex", gap:"10px" }}>
+              <button onClick={() => setPopupSolAdmin(false)} style={{ flex:1, background:"#f0f0f0", border:"none", borderRadius:"12px", padding:"14px", fontSize:"14px", fontWeight:800, color:"#666", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>Cancelar</button>
+              <button disabled={solicitandoAdmin} onClick={async () => {
+                setPopupSolAdmin(false);
+                setSolicitandoAdmin(true);
+                await supabase.from("nexo_miembros").update({ rol: "admin_solicitado" }).eq("id", miMiembro.id);
+                setMiMiembro((m:any) => ({...m, rol:"admin_solicitado"}));
+                const { data: adminsNexo } = await supabase.from("nexo_miembros").select("usuario_id").eq("nexo_id",id).in("rol",["creador","admin"]).eq("estado","activo");
+                const adminIds = [...new Set([nexo.usuario_id, ...(adminsNexo||[]).map((a:any)=>a.usuario_id)])];
+                await supabase.from("notificaciones").insert(adminIds.map(uid=>({ usuario_id:uid, tipo:"solicitud_admin", mensaje:`⭐ ${perfil.nombre_usuario} solicita ser admin en "${nexo.titulo}"`, leida:false, nexo_id:nexo.id })));
+                setSolicitandoAdmin(false);
+              }} style={{ flex:1, background:"linear-gradient(135deg,#f0c040,#d4a017)", border:"none", borderRadius:"12px", padding:"14px", fontSize:"14px", fontWeight:900, color:"#1a2a3a", cursor:"pointer", fontFamily:"'Nunito',sans-serif", opacity:solicitandoAdmin?0.5:1 }}>
+                ⭐ Solicitar
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* POPUP UNIRSE AL GRUPO */}

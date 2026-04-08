@@ -601,6 +601,21 @@ function NexoPageInner() {
                   🚪 Solicitar baja
                 </button>
               )}
+              {perfil?.id !== nexo?.usuario_id && (miMiembro?.rol === "admin_solicitado" || miMiembro?.rol === "admin_pago_pendiente") && (
+                <button onClick={async () => {
+                  if (!confirm("¿Querés salir del grupo?")) return;
+                  await supabase.from("nexo_miembros").update({ estado: "inactivo" }).eq("id", miMiembro.id);
+                  await fetch("/api/nexo/solicitar-baja", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ usuario_id: perfil.id, nexo_id: nexo.id, nexo_titulo: nexo.titulo, motivo: "Salida voluntaria durante proceso de admin", creador_id: nexo.usuario_id }),
+                  });
+                  router.push("/");
+                }}
+                  style={{ background:"rgba(231,76,60,0.1)", border:"1px solid rgba(231,76,60,0.3)", borderRadius:"10px", padding:"7px 12px", fontSize:"11px", fontWeight:800, color:"#e74c3c", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
+                  🚪 Salir del grupo
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -618,7 +633,7 @@ function NexoPageInner() {
               <div style={{ fontSize:"12px", fontWeight:800, color:"#d4a017" }}>⭐ Fuiste aprobado como admin</div>
               <div style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:600 }}>Pagá 500 BIT para confirmar tu rol</div>
             </div>
-            <button onClick={()=>setPopupPagoAdmin(true)}
+            <button onClick={()=>router.push(`/nexo/${nexo.id}?pago_admin=1`)}
               style={{ background:"linear-gradient(135deg,#f0c040,#d4a017)", border:"none", borderRadius:"10px", padding:"8px 14px", fontSize:"12px", fontWeight:900, color:"#1a2a3a", cursor:"pointer", fontFamily:"'Nunito',sans-serif", whiteSpace:"nowrap" }}>
               💳 Pagar 500 BIT
             </button>

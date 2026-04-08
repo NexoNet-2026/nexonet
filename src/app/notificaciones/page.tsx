@@ -62,7 +62,7 @@ export default function NotificacionesPage() {
     if (n.url) return n.url;
     if (n.tipo === "conexion" && n.emisor_id) return `/chat/${n.emisor_id}`;
     if (n.tipo === "mensaje" && n.emisor_id) return `/chat/${n.emisor_id}`;
-    if (n.tipo === "solicitud_admin" && n.nexo_id) return `/nexo/${n.nexo_id}/admin`;
+    if (n.tipo === "solicitud_admin" && n.nexo_id) return `/nexo/${n.nexo_id}/admin?tab=miembros`;
     if (n.nexo_id) return `/nexo/${n.nexo_id}`;
     if (n.anuncio_id) return `/anuncios/${n.anuncio_id}`;
     return "/usuario";

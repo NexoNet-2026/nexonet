@@ -359,12 +359,27 @@ export default function NexoAdminPage() {
       return;
     }
     if (!updates[accion]) return;
-    if (["expulsar","bloquear"].includes(accion) && !confirm(`¿${accion} a este miembro?`)) return;
-    await supabase.from("nexo_miembros").update(updates[accion]).eq("id",mId);
     if (["expulsar","bloquear"].includes(accion)) {
-      const uid = miembros.find((x:any)=>x.id===mId)?.usuario_id;
-      setMiembros(prev=>prev.filter(x=>x.id!==mId && x.usuario_id!==uid));
+      const motivo = prompt(`Motivo para ${accion} (opcional):`) ?? "";
+      const miembro = miembros.find((x:any) => x.id === mId);
+      if (!miembro) return;
+      const res = await fetch("/api/nexo/expulsar-miembro", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nexo_id: id,
+          miembro_id: mId,
+          usuario_id: miembro.usuario_id,
+          accion: updates[accion].estado,
+          motivo,
+        }),
+      });
+      const json = await res.json();
+      if (json.ok) {
+        setMiembros(prev => prev.filter(x => x.id !== mId && x.usuario_id !== miembro.usuario_id));
+      }
     } else {
+      await supabase.from("nexo_miembros").update(updates[accion]).eq("id",mId);
       setMiembros(prev=>prev.map(x=>x.id===mId?{...x,...updates[accion]}:x));
     }
   };

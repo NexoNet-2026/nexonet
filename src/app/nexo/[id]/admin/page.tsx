@@ -1,6 +1,6 @@
 "use client";
-import { useState, useEffect } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
 import { supabase } from "@/lib/supabase";
@@ -44,13 +44,22 @@ const SLIDERS_CATALOGO = [
 ];
 
 export default function NexoAdminPage() {
+  return (
+    <Suspense fallback={<div style={{paddingTop:"95px",textAlign:"center",fontFamily:"'Nunito',sans-serif",color:"#9a9a9a"}}>Cargando...</div>}>
+      <NexoAdminPageInner />
+    </Suspense>
+  );
+}
+
+function NexoAdminPageInner() {
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const id     = params?.id as string;
 
   const [nexo,          setNexo]          = useState<any>(null);
   const [perfil,        setPerfil]        = useState<any>(null);
-  const [tab,           setTab]           = useState<TabAdmin>("sliders");
+  const [tab,           setTab]           = useState<TabAdmin>((searchParams?.get("tab") as TabAdmin) || "sliders");
   const [sliders,       setSliders]       = useState<any[]>([]);
   const [miembros,      setMiembros]      = useState<any[]>([]);
   const [descargas,     setDescargas]     = useState<any[]>([]);

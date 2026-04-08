@@ -834,7 +834,7 @@ function NexoPageInner() {
                 setMiMiembro((m:any) => ({...m, rol:"admin_solicitado"}));
                 const { data: adminsNexo } = await supabase.from("nexo_miembros").select("usuario_id").eq("nexo_id",id).in("rol",["creador","admin"]).eq("estado","activo");
                 const adminIds = [...new Set([nexo.usuario_id, ...(adminsNexo||[]).map((a:any)=>a.usuario_id)])];
-                await supabase.from("notificaciones").insert(adminIds.map(uid=>({ usuario_id:uid, tipo:"solicitud_admin", mensaje:`⭐ ${perfil.nombre_usuario} solicita ser admin en "${nexo.titulo}"`, leida:false, nexo_id:nexo.id })));
+                await supabase.from("notificaciones").insert(adminIds.map(uid=>({ usuario_id:uid, tipo:"solicitud_admin", mensaje:`⭐ ${perfil.nombre_usuario} solicita ser admin en "${nexo.titulo}"`, leida:false, nexo_id:nexo.id, url:`/nexo/${nexo.id}/admin?tab=miembros` })));
                 setSolicitandoAdmin(false);
               }} style={{ flex:1, background:"linear-gradient(135deg,#f0c040,#d4a017)", border:"none", borderRadius:"12px", padding:"14px", fontSize:"14px", fontWeight:900, color:"#1a2a3a", cursor:"pointer", fontFamily:"'Nunito',sans-serif", opacity:solicitandoAdmin?0.5:1 }}>
                 ⭐ Solicitar

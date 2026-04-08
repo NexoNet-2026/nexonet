@@ -239,6 +239,7 @@ function NexoPageInner() {
 
   // Abrir popup pago admin automáticamente desde notificación
   useEffect(() => {
+    console.log('PAGO_ADMIN CHECK', searchParams?.get('pago_admin'), miMiembro?.rol);
     if (searchParams?.get("pago_admin") === "1" && miMiembro?.rol === "admin_pago_pendiente") {
       setPopupPagoAdmin(true);
     }

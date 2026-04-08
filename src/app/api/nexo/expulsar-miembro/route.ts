@@ -18,9 +18,18 @@ export async function POST(req: Request) {
 
     await supabase.from("nexo_miembros").update({ estado: accion }).eq("id", miembro_id);
 
+    // Acreditar 500 BIT Promo como reembolso
+    const { data: usuario } = await supabase.from("usuarios").select("bits_promo, bits_promotor_total").eq("id", usuario_id).single();
+    if (usuario) {
+      await supabase.from("usuarios").update({
+        bits_promo: (usuario.bits_promo || 0) + 500,
+        bits_promotor_total: (usuario.bits_promotor_total || 0) + 500,
+      }).eq("id", usuario_id);
+    }
+
     const { data: nexo } = await supabase.from("nexos").select("titulo").eq("id", nexo_id).single();
     const label = accion === "expulsado" ? "expulsado/a" : "bloqueado/a";
-    const msg = `🚫 Fuiste ${label} de "${nexo?.titulo || "un nexo"}"${motivo ? ` — Motivo: ${motivo}` : ""}`;
+    const msg = `🚫 Fuiste ${label} de "${nexo?.titulo || "un nexo"}". Se te acreditaron 500 BIT Promo como reembolso.${motivo ? ` — Motivo: ${motivo}` : ""}`;
 
     await supabase.from("notificaciones").insert({
       usuario_id,

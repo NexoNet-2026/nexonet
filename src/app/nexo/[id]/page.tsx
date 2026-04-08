@@ -230,6 +230,8 @@ function NexoPageInner() {
   const [popupSolAdmin, setPopupSolAdmin] = useState(false);
   const [popupBaja, setPopupBaja] = useState(false);
   const [motivoBaja, setMotivoBaja] = useState("");
+  const [popupSalirGrupo, setPopupSalirGrupo] = useState(false);
+  const [motivoSalir, setMotivoSalir] = useState("");
   const [flashOpen, setFlashOpen] = useState(false);
   const [flashItem, setFlashItem] = useState<any>(null);
   const [popupBannerCompartir, setPopupBannerCompartir] = useState(false);
@@ -602,16 +604,7 @@ function NexoPageInner() {
                 </button>
               )}
               {perfil?.id !== nexo?.usuario_id && (miMiembro?.rol === "admin_solicitado" || miMiembro?.rol === "admin_pago_pendiente") && (
-                <button onClick={async () => {
-                  if (!confirm("¿Querés salir del grupo?")) return;
-                  await supabase.from("nexo_miembros").update({ estado: "inactivo" }).eq("id", miMiembro.id);
-                  await fetch("/api/nexo/solicitar-baja", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ usuario_id: perfil.id, nexo_id: nexo.id, nexo_titulo: nexo.titulo, motivo: "Salida voluntaria durante proceso de admin", creador_id: nexo.usuario_id }),
-                  });
-                  router.push("/");
-                }}
+                <button onClick={() => { setMotivoSalir(""); setPopupSalirGrupo(true); }}
                   style={{ background:"rgba(231,76,60,0.1)", border:"1px solid rgba(231,76,60,0.3)", borderRadius:"10px", padding:"7px 12px", fontSize:"11px", fontWeight:800, color:"#e74c3c", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
                   🚪 Salir del grupo
                 </button>
@@ -769,6 +762,40 @@ function NexoPageInner() {
                 router.push("/");
               }} style={{ flex:1, background:"linear-gradient(135deg,#e74c3c,#c0392b)", border:"none", borderRadius:"12px", padding:"14px", fontSize:"14px", fontWeight:900, color:"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
                 Confirmar baja
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* POPUP SALIR DEL GRUPO */}
+      {popupSalirGrupo && (
+        <div style={{ position:"fixed", inset:0, zIndex:800, background:"rgba(0,0,0,0.6)", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Nunito',sans-serif" }} onClick={() => setPopupSalirGrupo(false)}>
+          <div onClick={e => e.stopPropagation()} style={{ background:"#fff", borderRadius:"20px", padding:"28px 24px", maxWidth:"380px", width:"90%", textAlign:"center" }}>
+            <div style={{ fontSize:"48px", marginBottom:"12px" }}>🚪</div>
+            <div style={{ fontSize:"18px", fontWeight:900, color:"#1a2a3a", marginBottom:"8px" }}>Salir del grupo</div>
+            <div style={{ fontSize:"13px", color:"#666", fontWeight:600, marginBottom:"16px" }}>¿Estás seguro de que querés salir de &quot;{nexo?.titulo}&quot;?</div>
+            <textarea
+              value={motivoSalir}
+              onChange={e => setMotivoSalir(e.target.value)}
+              placeholder="Motivo (opcional)..."
+              rows={3}
+              maxLength={500}
+              style={{ width:"100%", border:"2px solid #e8e8e6", borderRadius:"12px", padding:"10px 14px", fontSize:"13px", fontFamily:"'Nunito',sans-serif", outline:"none", resize:"vertical", boxSizing:"border-box", marginBottom:"16px" }}
+            />
+            <div style={{ display:"flex", gap:"10px" }}>
+              <button onClick={() => setPopupSalirGrupo(false)} style={{ flex:1, background:"#f0f0f0", border:"none", borderRadius:"12px", padding:"14px", fontSize:"14px", fontWeight:800, color:"#666", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>Cancelar</button>
+              <button onClick={async () => {
+                await supabase.from("nexo_miembros").update({ estado: "inactivo" }).eq("id", miMiembro.id);
+                await fetch("/api/nexo/solicitar-baja", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ usuario_id: perfil.id, nexo_id: nexo.id, nexo_titulo: nexo.titulo, motivo: motivoSalir.trim() || "Salida voluntaria durante proceso de admin", creador_id: nexo.usuario_id }),
+                });
+                setPopupSalirGrupo(false);
+                router.push("/");
+              }} style={{ flex:1, background:"linear-gradient(135deg,#e74c3c,#c0392b)", border:"none", borderRadius:"12px", padding:"14px", fontSize:"14px", fontWeight:900, color:"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
+                Confirmar salida
               </button>
             </div>
           </div>

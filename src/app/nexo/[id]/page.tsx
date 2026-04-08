@@ -115,7 +115,7 @@ function NexoPageInner() {
 
       if (userId) {
         const { data: mm } = await supabase.from("nexo_miembros")
-          .select("*").eq("nexo_id",id).eq("usuario_id",userId).maybeSingle();
+          .select("*").eq("nexo_id",id).eq("usuario_id",userId).order("created_at",{ascending:false}).limit(1).maybeSingle();
         setMiMiembro(mm);
 
         // Descargas pagadas por este usuario
@@ -317,7 +317,7 @@ function NexoPageInner() {
     }
 
     const { data: mm } = await supabase.from("nexo_miembros")
-      .insert({ nexo_id:id, usuario_id:perfil.id, rol:"miembro", estado:"activo", bits_pagados:500, fecha_pago:new Date().toISOString(), vence_el:new Date(Date.now()+30*24*60*60*1000).toISOString() })
+      .upsert({ nexo_id:id, usuario_id:perfil.id, rol:"miembro", estado:"activo", bits_pagados:500, fecha_pago:new Date().toISOString(), vence_el:new Date(Date.now()+30*24*60*60*1000).toISOString() }, { onConflict:"nexo_id,usuario_id" })
       .select().single();
     setMiMiembro(mm);
     setMiembros(prev => [...prev, {...mm, usuarios:perfil}]);

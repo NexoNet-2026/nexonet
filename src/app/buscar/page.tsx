@@ -474,6 +474,18 @@ function BuscarInner() {
     const idsAnuncios = ids.filter(id => typeof id === "number") as number[];
     const idsNexos = ids.filter(id => typeof id === "string") as string[];
 
+    // Descontar 1 BIT al receptor (dueño) por cada conexión recibida
+    const descontarBitReceptor = async (ownerId: string) => {
+      const { data: w } = await supabase.from("usuarios").select("bits, bits_free, bits_promo").eq("id", ownerId).single();
+      if (!w) return;
+      let rest = 1;
+      const upd: { bits_free?: number; bits_promo?: number; bits?: number } = {};
+      if (w.bits_free > 0) { const d = Math.min(w.bits_free, rest); upd.bits_free = w.bits_free - d; rest -= d; }
+      if (rest > 0 && w.bits_promo > 0) { const d = Math.min(w.bits_promo, rest); upd.bits_promo = w.bits_promo - d; rest -= d; }
+      if (rest > 0 && w.bits > 0) { const d = Math.min(w.bits, rest); upd.bits = w.bits - d; rest -= d; }
+      if (Object.keys(upd).length > 0) await supabase.from("usuarios").update(upd).eq("id", ownerId);
+    };
+
     // Procesar anuncios
     if (idsAnuncios.length > 0) {
       const { data: anuData } = await supabase.from("anuncios").select("id,usuario_id,conexiones").in("id", idsAnuncios);
@@ -487,6 +499,7 @@ function BuscarInner() {
           anuncio_id: a.id, emisor_id: session.user.id,
           receptor_id: a.usuario_id, texto: mensajeConexion,
         })));
+        await Promise.all(anuData.map((a:any) => descontarBitReceptor(a.usuario_id)));
       }
     }
 
@@ -508,6 +521,7 @@ function BuscarInner() {
           receptor_id: n.usuario_id,
           texto: mensajeConexion,
         })));
+        await Promise.all(nexoData.map((n:any) => descontarBitReceptor(n.usuario_id)));
       }
     }
 

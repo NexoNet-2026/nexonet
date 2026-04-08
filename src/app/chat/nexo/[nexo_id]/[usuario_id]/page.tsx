@@ -74,14 +74,23 @@ export default function ChatNexoPage() {
   };
 
   const cargarMensajes = async (myId: string) => {
-    const { data } = await supabase
+    const { data: enviados } = await supabase
       .from("mensajes")
       .select("*")
       .is("anuncio_id", null)
-      .or(`and(emisor_id.eq.${myId},receptor_id.eq.${otroUserId}),and(emisor_id.eq.${otroUserId},receptor_id.eq.${myId})`)
-      .order("created_at", { ascending: true });
+      .eq("emisor_id", myId)
+      .eq("receptor_id", otroUserId);
 
-    setMensajes(data || []);
+    const { data: recibidos } = await supabase
+      .from("mensajes")
+      .select("*")
+      .is("anuncio_id", null)
+      .eq("emisor_id", otroUserId)
+      .eq("receptor_id", myId);
+
+    const todos = [...(enviados || []), ...(recibidos || [])]
+      .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+    setMensajes(todos);
   };
 
   // Polling cada 3s

@@ -47,6 +47,7 @@ export default function ChatPage() {
   useEffect(() => { cargar(); }, []);
 
   const cargar = async () => {
+    if (!anuncioId || isNaN(anuncioId)) { router.push("/"); return; }
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) { router.push("/login"); return; }
     setSession(session);
@@ -74,6 +75,7 @@ export default function ChatPage() {
   };
 
   const cargarMensajes = async (myId: string) => {
+    if (!anuncioId || isNaN(anuncioId)) return;
     const { data } = await supabase
       .from("mensajes")
       .select("*")

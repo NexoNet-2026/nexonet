@@ -1065,7 +1065,7 @@ export default function NexoAdminPage() {
             await supabase.from("nexo_miembros").update({ rol:"admin_pago_pendiente", aprobado_por:perfil.id }).eq("id",mId);
             setMiembros(prev=>prev.map(x=>x.id===mId?{...x,rol:"admin_pago_pendiente",aprobado_por:perfil.id}:x));
             if (m?.usuario_id) await supabase.from("notificaciones").insert({
-              usuario_id:m.usuario_id, tipo:"sistema", nexo_id:id,
+              usuario_id:m.usuario_id, tipo:"solicitud_admin", nexo_id:id,
               mensaje:`⭐ Fuiste aprobado como admin en "${nexo.titulo}". Pagá 500 BIT para confirmar.${msg?` — ${msg}`:""}`, leida:false,
             });
             setPopupAdminAccion(null);

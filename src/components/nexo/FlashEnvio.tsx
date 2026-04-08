@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
+import PopupCompra, { type MetodoPago } from "@/components/PopupCompra";
 
 interface Props {
   nexoId: string;
@@ -23,6 +24,7 @@ export default function FlashEnvio({ nexoId, nexoTitulo, usuarioId, color, perfi
   const [enviado, setEnviado] = useState(false);
   const [seleccionados, setSeleccionados] = useState<Set<string>>(new Set());
   const [listaAbierta, setListaAbierta] = useState(false);
+  const [popupRecarga, setPopupRecarga] = useState(false);
   const [provinciasDisp, setProvinciasDisp] = useState<string[]>([]);
   const [ciudadesDisp, setCiudadesDisp] = useState<string[]>([]);
 
@@ -187,14 +189,34 @@ export default function FlashEnvio({ nexoId, nexoTitulo, usuarioId, color, perfi
             )}
 
             {destinatarios.length>0 && mensajeExtra.trim() && (
-              <button onClick={enviar} disabled={enviando||!alcanza}
-                style={{ background:alcanza?`linear-gradient(135deg,${color}cc,${color})`:"#ccc", border:"none", borderRadius:"14px", padding:"16px", fontSize:"15px", fontWeight:900, color:"#fff", cursor:alcanza?"pointer":"default", fontFamily:"'Nunito',sans-serif", opacity:enviando?0.6:1 }}>
-                {enviando?"⏳ Enviando...":`⚡ Enviar Flash — ${costoBIT} BIT`}
+              <button onClick={alcanza ? enviar : () => setPopupRecarga(true)} disabled={enviando}
+                style={{ background:`linear-gradient(135deg,${color}cc,${color})`, border:"none", borderRadius:"14px", padding:"16px", fontSize:"15px", fontWeight:900, color:"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif", opacity:enviando?0.6:1 }}>
+                {enviando?"⏳ Enviando...":alcanza?`⚡ Enviar Flash — ${costoBIT} BIT`:`⚡ Cargar BIT — necesitás ${costoBIT}`}
               </button>
             )}
           </div>
         )}
       </div>
+
+      {popupRecarga && (
+        <PopupCompra
+          titulo="Cargar BIT para Flash"
+          emoji="⚡"
+          costo={`${costoBIT} BIT`}
+          descripcion="Necesitás BIT para enviar este Flash"
+          bits={{ free: perfil?.bits_free || 0, nexo: perfil?.bits || 0, promo: perfil?.bits_promo || 0 }}
+          onPagar={async (_metodo: MetodoPago) => {
+            const { data: u } = await supabase.from("usuarios").select("bits, bits_free, bits_promo").eq("id", usuarioId).single();
+            if (u) {
+              perfil.bits = u.bits;
+              perfil.bits_free = u.bits_free;
+              perfil.bits_promo = u.bits_promo;
+            }
+            setPopupRecarga(false);
+          }}
+          onClose={() => setPopupRecarga(false)}
+        />
+      )}
     </div>
   );
 }

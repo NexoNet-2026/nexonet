@@ -228,6 +228,8 @@ function NexoPageInner() {
   const [popupUnirse, setPopupUnirse] = useState(false);
   const [popupPagoAdmin, setPopupPagoAdmin] = useState(false);
   const [popupSolAdmin, setPopupSolAdmin] = useState(false);
+  const [popupBaja, setPopupBaja] = useState(false);
+  const [motivoBaja, setMotivoBaja] = useState("");
   const [flashOpen, setFlashOpen] = useState(false);
   const [flashItem, setFlashItem] = useState<any>(null);
   const [popupBannerCompartir, setPopupBannerCompartir] = useState(false);
@@ -593,6 +595,12 @@ function NexoPageInner() {
                   💬 Chat
                 </button>
               )}
+              {(esMiembro || esAdmin) && perfil?.id !== nexo?.usuario_id && miMiembro?.rol !== "creador" && (
+                <button onClick={() => { setMotivoBaja(""); setPopupBaja(true); }}
+                  style={{ background:"rgba(231,76,60,0.1)", border:"1px solid rgba(231,76,60,0.3)", borderRadius:"10px", padding:"7px 12px", fontSize:"11px", fontWeight:800, color:"#e74c3c", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
+                  🚪 Solicitar baja
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -714,6 +722,41 @@ function NexoPageInner() {
                 <a href={visor.url} target="_blank" rel="noopener noreferrer" style={{ background:"linear-gradient(135deg,#d4a017,#f0c040)", borderRadius:"12px", padding:"12px 24px", fontSize:"14px", fontWeight:900, color:"#1a2a3a", textDecoration:"none" }}>📥 Descargar</a>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* POPUP BAJA DE GRUPO */}
+      {popupBaja && (
+        <div style={{ position:"fixed", inset:0, zIndex:800, background:"rgba(0,0,0,0.6)", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Nunito',sans-serif" }} onClick={() => setPopupBaja(false)}>
+          <div onClick={e => e.stopPropagation()} style={{ background:"#fff", borderRadius:"20px", padding:"28px 24px", maxWidth:"380px", width:"90%", textAlign:"center" }}>
+            <div style={{ fontSize:"48px", marginBottom:"12px" }}>🚪</div>
+            <div style={{ fontSize:"18px", fontWeight:900, color:"#1a2a3a", marginBottom:"8px" }}>Solicitar baja del grupo</div>
+            <div style={{ fontSize:"13px", color:"#666", fontWeight:600, marginBottom:"16px" }}>Tu solicitud será enviada al equipo de NexoNet.</div>
+            <textarea
+              value={motivoBaja}
+              onChange={e => setMotivoBaja(e.target.value)}
+              placeholder="Motivo (opcional)..."
+              rows={3}
+              maxLength={500}
+              style={{ width:"100%", border:"2px solid #e8e8e6", borderRadius:"12px", padding:"10px 14px", fontSize:"13px", fontFamily:"'Nunito',sans-serif", outline:"none", resize:"vertical", boxSizing:"border-box", marginBottom:"16px" }}
+            />
+            <div style={{ display:"flex", gap:"10px" }}>
+              <button onClick={() => setPopupBaja(false)} style={{ flex:1, background:"#f0f0f0", border:"none", borderRadius:"12px", padding:"14px", fontSize:"14px", fontWeight:800, color:"#666", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>Cancelar</button>
+              <button onClick={async () => {
+                await supabase.from("nexo_miembros").update({ estado: "inactivo" }).eq("id", miMiembro.id);
+                await supabase.from("contactos_nexonet").insert({
+                  usuario_id: perfil.id,
+                  tipo: "reclamo",
+                  mensaje: `Baja de grupo: ${nexo?.titulo}. Motivo: ${motivoBaja.trim() || "Sin motivo"}`,
+                  estado: "pendiente",
+                });
+                setPopupBaja(false);
+                router.push("/");
+              }} style={{ flex:1, background:"linear-gradient(135deg,#e74c3c,#c0392b)", border:"none", borderRadius:"12px", padding:"14px", fontSize:"14px", fontWeight:900, color:"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
+                Confirmar baja
+              </button>
+            </div>
           </div>
         </div>
       )}

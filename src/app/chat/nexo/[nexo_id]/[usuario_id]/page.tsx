@@ -84,27 +84,11 @@ export default function ChatNexoPage() {
     setMensajes(data || []);
   };
 
-  // Realtime subscription
+  // Polling cada 3s
   useEffect(() => {
     if (!myId) return;
-    const canal = supabase
-      .channel(`chat-nexo-${nexoId}-${myId}`)
-      .on("postgres_changes", {
-        event: "INSERT",
-        schema: "public",
-        table: "mensajes",
-      }, async (payload) => {
-        const nuevo = payload.new as Mensaje;
-        const involucrado = nuevo.emisor_id === myId || nuevo.receptor_id === myId;
-        if (involucrado && !(nuevo as any).anuncio_id) {
-          await cargarMensajes(myId);
-          if (nuevo.emisor_id === otroUserId) {
-            await supabase.from("mensajes").update({ leido: true }).eq("id", nuevo.id);
-          }
-        }
-      })
-      .subscribe();
-    return () => { supabase.removeChannel(canal); };
+    const interval = setInterval(() => { cargarMensajes(myId); }, 3000);
+    return () => { clearInterval(interval); };
   }, [myId]);
 
   // Scroll to bottom on new messages

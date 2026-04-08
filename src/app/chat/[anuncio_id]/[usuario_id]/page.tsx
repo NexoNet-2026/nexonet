@@ -84,30 +84,11 @@ export default function ChatPage() {
     setMensajes(data || []);
   };
 
-  // Realtime subscription
+  // Polling cada 3s
   useEffect(() => {
     if (!myId) return;
-    console.log('SUSCRIBIENDO CANAL', anuncioId, myId);
-    const canal = supabase
-      .channel(`chat-${anuncioId}-${myId}`)
-      .on("postgres_changes", {
-        event: "INSERT",
-        schema: "public",
-        table: "mensajes",
-        filter: `anuncio_id=eq.${String(anuncioId)}`,
-      }, async (payload) => {
-        console.log('REALTIME MENSAJE RECIBIDO', payload.new);
-        const nuevo = payload.new as Mensaje;
-        const involucrado = nuevo.emisor_id === myId || nuevo.receptor_id === myId;
-        if (involucrado) {
-          await cargarMensajes(myId);
-          if (nuevo.emisor_id === otroUserId) {
-            await supabase.from("mensajes").update({ leido: true }).eq("id", nuevo.id);
-          }
-        }
-      })
-      .subscribe((status) => { console.log('CANAL STATUS', status); });
-    return () => { supabase.removeChannel(canal); };
+    const interval = setInterval(() => { cargarMensajes(myId); }, 3000);
+    return () => { clearInterval(interval); };
   }, [myId]);
 
   // Scroll to bottom on new messages

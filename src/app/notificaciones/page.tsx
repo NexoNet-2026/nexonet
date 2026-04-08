@@ -32,7 +32,7 @@ export default function NotificacionesPage() {
       if (!session) { router.push("/login"); return; }
       setUserId(session.user.id);
       const { data } = await supabase.from("notificaciones")
-        .select("id, tipo, mensaje, leida, created_at, anuncio_id, nexo_id, emisor_id")
+        .select("id, tipo, mensaje, leida, created_at, anuncio_id, nexo_id, emisor_id, url")
         .eq("usuario_id", session.user.id)
         .order("created_at", { ascending: false })
         .limit(100);
@@ -59,6 +59,7 @@ export default function NotificacionesPage() {
   };
 
   const getLinkNotif = (n: any) => {
+    if (n.url) return n.url;
     if (n.tipo === "conexion" && n.emisor_id) return `/chat/${n.emisor_id}`;
     if (n.tipo === "mensaje" && n.emisor_id) return `/chat/${n.emisor_id}`;
     if (n.tipo === "solicitud_admin" && n.nexo_id) return `/nexo/${n.nexo_id}/admin`;

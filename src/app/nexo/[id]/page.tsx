@@ -278,41 +278,22 @@ function NexoPageInner() {
       setPerfil((p:any) => ({...p, bits: saldo - 500, bits_gastados_grupo: (p.bits_gastados_grupo||0) + 500}));
     }
 
-    // Comisión en cascada ilimitada
+    // Comisión en cascada via service role
     {
-      const { data: refUser } = await supabase.from("usuarios").select("nombre_usuario,nombre").eq("id", perfil.id).single();
-      const nombreRef = refUser?.nombre_usuario || refUser?.nombre || "un referido";
-      let currentId = perfil.id;
-      let comisionBase = 500;
-      const visitados = new Set<string>();
-
-      while (comisionBase > 0) {
-        const { data: current } = await supabase.from("usuarios").select("referido_por").eq("id", currentId).single();
-        if (!current?.referido_por || visitados.has(current.referido_por)) break;
-        visitados.add(current.referido_por);
-
-        const { data: promotor } = await supabase.from("usuarios").select("bits_promo,bits_promotor_total,codigo").eq("id", current.referido_por).single();
-        if (!promotor) break;
-
-        const esNAN = promotor.codigo === "NAN-5194178";
-        const porcentaje = esNAN ? 0.30 : 0.20;
-        const comision = Math.floor(comisionBase * porcentaje);
-        if (comision <= 0) break;
-
-        await supabase.from("usuarios").update({
-          bits_promo: (promotor.bits_promo || 0) + comision,
-          bits_promotor_total: (promotor.bits_promotor_total || 0) + comision,
-        }).eq("id", current.referido_por);
-
-        const nivel = visitados.size;
-        await supabase.from("notificaciones").insert({
-          usuario_id: current.referido_por, tipo: "sistema",
-          mensaje: `⭐ Recibiste ${comision} BIT Promo de comisión por tu referido ${nombreRef}${nivel > 1 ? ` (nivel ${nivel})` : ""}`,
-          leida: false,
-        });
-
-        comisionBase = comision;
-        currentId = current.referido_por;
+      const { data: current } = await supabase.from("usuarios").select("referido_por").eq("id", perfil.id).single();
+      if (current?.referido_por) {
+        const { data: promotor } = await supabase.from("usuarios").select("codigo").eq("id", current.referido_por).single();
+        if (promotor) {
+          const esNAN = promotor.codigo === "NAN-5194178";
+          const comision = Math.floor(500 * (esNAN ? 0.30 : 0.20));
+          if (comision > 0) {
+            await fetch("/api/admin/asignar-bit", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ usuario_id: current.referido_por, columna: "bits_promo", cantidad: comision, nota: "Comisión por unión a grupo" }),
+            });
+          }
+        }
       }
     }
 

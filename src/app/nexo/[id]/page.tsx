@@ -221,10 +221,7 @@ function NexoPageInner() {
 
   const esAdmin = !!(
     (perfil?.id && nexo?.usuario_id && String(perfil.id) === String(nexo.usuario_id)) ||
-    miMiembro?.rol === "creador" ||
-    miMiembro?.rol === "moderador" ||
-    miMiembro?.rol === "admin" ||
-    miMiembro?.rol === "admin_pago_pendiente"
+    (miMiembro?.estado === "activo" && (miMiembro?.rol === "creador" || miMiembro?.rol === "moderador" || miMiembro?.rol === "admin" || miMiembro?.rol === "admin_pago_pendiente"))
   );
   const esMiembro = miMiembro?.estado === "activo";
   const [solicitandoAdmin, setSolicitandoAdmin] = useState(false);

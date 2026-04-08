@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, Suspense } from "react";
-import { useRouter, useParams, useSearchParams } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
 import { supabase } from "@/lib/supabase";
@@ -54,13 +54,11 @@ export default function NexoAdminPage() {
 function NexoAdminPageInner() {
   const router = useRouter();
   const params = useParams();
-  const searchParams = useSearchParams();
   const id     = params?.id as string;
 
   const [nexo,          setNexo]          = useState<any>(null);
   const [perfil,        setPerfil]        = useState<any>(null);
   const [tab,           setTab]           = useState<TabAdmin>("sliders");
-  useEffect(() => { const t = searchParams?.get("tab") as TabAdmin; if (t) setTab(t); }, [searchParams]);
   const [sliders,       setSliders]       = useState<any[]>([]);
   const [miembros,      setMiembros]      = useState<any[]>([]);
   const [descargas,     setDescargas]     = useState<any[]>([]);
@@ -127,6 +125,9 @@ function NexoAdminPageInner() {
       setPendientesDescarga((sols || []).length);
 
       setCargando(false);
+
+      const tabParam = new URLSearchParams(window.location.search).get("tab") as TabAdmin;
+      if (tabParam) setTab(tabParam);
     };
     cargar();
   }, [id]);

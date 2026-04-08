@@ -230,6 +230,7 @@ function NexoPageInner() {
   const [solicitandoAdmin, setSolicitandoAdmin] = useState(false);
   const [popupUnirse, setPopupUnirse] = useState(false);
   const [popupPagoAdmin, setPopupPagoAdmin] = useState(false);
+  const [popupSolAdmin, setPopupSolAdmin] = useState(false);
   const [flashOpen, setFlashOpen] = useState(false);
   const [flashItem, setFlashItem] = useState<any>(null);
   const [popupBannerCompartir, setPopupBannerCompartir] = useState(false);
@@ -592,24 +593,8 @@ function NexoPageInner() {
                 </button>
               )}
               {esMiembro && !esAdmin && miMiembro?.rol === "miembro" && nexo?.tipo === "grupo" && (
-                <button disabled={solicitandoAdmin} onClick={async () => {
-                  const bitsTotal = Math.max(0,(perfil.bits||0)) + Math.max(0,(perfil.bits_free||0)) + Math.max(0,(perfil.bits_promo||0));
-                  if (bitsTotal < 500) { alert("Necesitás 500 BIT para solicitar ser admin"); return; }
-                  setSolicitandoAdmin(true);
-                  const campo = (perfil.bits_free||0) >= 500 ? "bits_free" : (perfil.bits_promo||0) >= 500 ? "bits_promo" : "bits";
-                  await supabase.from("usuarios").update({ [campo]: (perfil[campo]||0) - 500 }).eq("id", perfil.id);
-                  setPerfil((p:any) => ({...p, [campo]: (p[campo]||0) - 500}));
-                  const comSolAdmin = nexo.usuario_id === "f9b23e04-c591-44bf-9efb-51966c30a083" ? 150 : 100;
-                  const { data: dueno } = await supabase.from("usuarios").select("bits_promo,bits_promotor_total").eq("id", nexo.usuario_id).single();
-                  if (dueno) await supabase.from("usuarios").update({ bits_promo: (dueno.bits_promo||0)+comSolAdmin, bits_promotor_total: (dueno.bits_promotor_total||0)+comSolAdmin }).eq("id", nexo.usuario_id);
-                  await supabase.from("nexo_miembros").update({ rol: "admin_solicitado" }).eq("id", miMiembro.id);
-                  setMiMiembro((m:any) => ({...m, rol:"admin_solicitado"}));
-                  // Notificar a todos los admins del nexo
-                  const { data: adminsNexo } = await supabase.from("nexo_miembros").select("usuario_id").eq("nexo_id",id).in("rol",["creador","admin"]).eq("estado","activo");
-                  const adminIds = [...new Set([nexo.usuario_id, ...(adminsNexo||[]).map((a:any)=>a.usuario_id)])];
-                  await supabase.from("notificaciones").insert(adminIds.map(uid=>({ usuario_id:uid, tipo:"solicitud_admin", mensaje:`⭐ ${perfil.nombre_usuario} solicita ser admin en "${nexo.titulo}"`, leida:false, nexo_id:nexo.id })));
-                  setSolicitandoAdmin(false);
-                }} style={{ background:"linear-gradient(135deg,#f0c040,#d4a017)", border:"none", borderRadius:"10px", padding:"8px 12px", fontSize:"11px", fontWeight:900, color:"#1a2a3a", cursor:"pointer", fontFamily:"'Nunito',sans-serif", opacity:solicitandoAdmin?0.5:1 }}>
+                <button disabled={solicitandoAdmin} onClick={() => setPopupSolAdmin(true)}
+                  style={{ background:"linear-gradient(135deg,#f0c040,#d4a017)", border:"none", borderRadius:"10px", padding:"8px 12px", fontSize:"11px", fontWeight:900, color:"#1a2a3a", cursor:"pointer", fontFamily:"'Nunito',sans-serif", opacity:solicitandoAdmin?0.5:1 }}>
                   ⭐ Ser admin (500 BIT)
                 </button>
               )}
@@ -758,6 +743,37 @@ function NexoPageInner() {
           onPagar={async (metodo: MetodoPago) => {
             setPopupPagoAdmin(false);
             await confirmarPagoAdmin(metodo);
+          }}
+        />
+      )}
+
+      {/* POPUP SOLICITAR ADMIN */}
+      {popupSolAdmin && (
+        <PopupCompra
+          titulo="⭐ Solicitar ser admin"
+          emoji="⭐"
+          costo="500 BIT"
+          descripcion={`Ser admin de "${nexo?.titulo}"`}
+          bits={{ free: Math.max(0, perfil?.bits_free||0), nexo: Math.max(0, perfil?.bits||0), promo: Math.max(0, perfil?.bits_promo||0) }}
+          onClose={() => setPopupSolAdmin(false)}
+          onPagar={async (metodo: MetodoPago) => {
+            setPopupSolAdmin(false);
+            setSolicitandoAdmin(true);
+            const campo = metodo === "bit_free" ? "bits_free" : metodo === "bit_nexo" ? "bits" : "bits_promo";
+            await supabase.from("usuarios").update({ [campo]: (perfil[campo]||0) - 500 }).eq("id", perfil.id);
+            setPerfil((p:any) => ({...p, [campo]: (p[campo]||0) - 500}));
+            const comSolAdmin = nexo.usuario_id === "f9b23e04-c591-44bf-9efb-51966c30a083" ? 150 : 100;
+            await fetch("/api/admin/asignar-bit", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ usuario_id: nexo.usuario_id, columna: "bits_promo", cantidad: comSolAdmin, nota: "Comisión por solicitud de admin" }),
+            });
+            await supabase.from("nexo_miembros").update({ rol: "admin_solicitado" }).eq("id", miMiembro.id);
+            setMiMiembro((m:any) => ({...m, rol:"admin_solicitado"}));
+            const { data: adminsNexo } = await supabase.from("nexo_miembros").select("usuario_id").eq("nexo_id",id).in("rol",["creador","admin"]).eq("estado","activo");
+            const adminIds = [...new Set([nexo.usuario_id, ...(adminsNexo||[]).map((a:any)=>a.usuario_id)])];
+            await supabase.from("notificaciones").insert(adminIds.map(uid=>({ usuario_id:uid, tipo:"solicitud_admin", mensaje:`⭐ ${perfil.nombre_usuario} solicita ser admin en "${nexo.titulo}"`, leida:false, nexo_id:nexo.id })));
+            setSolicitandoAdmin(false);
           }}
         />
       )}

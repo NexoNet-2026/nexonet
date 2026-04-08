@@ -24,11 +24,10 @@ export async function POST(req: Request) {
 
     const actual = u[columna as keyof typeof u] as number || 0;
     const nuevo = Math.max(0, actual + cantidad);
-    const bits_saldo = Math.max(0, (u.bits||0) + (u.bits_free||0) + (u.bits_promo||0) + cantidad);
 
     const { error } = await supabase
       .from("usuarios")
-      .update({ [columna]: nuevo, bits_saldo })
+      .update({ [columna]: nuevo })
       .eq("id", usuario_id);
 
     console.log("UPDATE resultado:", error, "columna:", columna, "nuevo:", nuevo, "usuario:", usuario_id);

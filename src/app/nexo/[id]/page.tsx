@@ -340,13 +340,11 @@ function NexoPageInner() {
     // Acreditar BIT Promo al admin que aprobó (30% NAN / 20% resto)
     const aprobadorId = miMiembro.aprobado_por || nexo.usuario_id;
     const comisionAdmin = aprobadorId === "f9b23e04-c591-44bf-9efb-51966c30a083" ? 150 : 100;
-    const { data: aprobador } = await supabase.from("usuarios").select("bits_promo,bits_promotor_total").eq("id", aprobadorId).single();
-    if (aprobador) {
-      await supabase.from("usuarios").update({
-        bits_promo: (aprobador.bits_promo || 0) + comisionAdmin,
-        bits_promotor_total: (aprobador.bits_promotor_total || 0) + comisionAdmin,
-      }).eq("id", aprobadorId);
-    }
+    await fetch("/api/admin/asignar-bit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ usuario_id: aprobadorId, columna: "bits_promo", cantidad: comisionAdmin, nota: "Comisión por aprobación de admin" }),
+    });
     await supabase.from("nexo_miembros").update({ rol: "admin" }).eq("id", miMiembro.id);
     setMiMiembro((m: any) => ({ ...m, rol: "admin" }));
     await supabase.from("notificaciones").insert({

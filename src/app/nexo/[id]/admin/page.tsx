@@ -1088,7 +1088,10 @@ export default function NexoAdminPage() {
             return;
           } else if (quienPaga === "admin") {
             if ((perfil?.bits||0) < 500) { alert("No tenés 500 BIT suficientes."); return; }
-            await supabase.from("usuarios").update({ bits:(perfil.bits||0)-500 }).eq("id",perfil.id);
+            await fetch("/api/admin/asignar-bit", {
+              method: "POST", headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ usuario_id: perfil.id, columna: "bits", cantidad: -500 }),
+            });
             setPerfil((p:any)=>({...p,bits:(p.bits||0)-500}));
           } else {
             if ((nexo?.bits_promo||0) < 500) { alert("El grupo no tiene 500 BIT Promo suficientes."); return; }
@@ -1097,10 +1100,10 @@ export default function NexoAdminPage() {
           }
           // Acreditar BIT Promo al admin que aprueba (30% NAN / 20% resto)
           const comApAdmin = perfil.id === "f9b23e04-c591-44bf-9efb-51966c30a083" ? 150 : 100;
-          await supabase.from("usuarios").update({
-            bits_promo:(perfil.bits_promo||0)+comApAdmin,
-            bits_promotor_total:(perfil.bits_promotor_total||0)+comApAdmin,
-          }).eq("id",perfil.id);
+          await fetch("/api/admin/asignar-bit", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ usuario_id: perfil.id, columna: "bits_promo", cantidad: comApAdmin, nota: "Comisión por aprobación de admin" }),
+          });
           setPerfil((p:any)=>({...p,bits_promo:(p.bits_promo||0)+comApAdmin}));
           await supabase.from("nexo_miembros").update({ rol:"admin" }).eq("id",mId);
           setMiembros(prev=>prev.map(x=>x.id===mId?{...x,rol:"admin"}:x));

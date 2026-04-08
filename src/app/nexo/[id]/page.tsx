@@ -745,11 +745,10 @@ function NexoPageInner() {
               <button onClick={() => setPopupBaja(false)} style={{ flex:1, background:"#f0f0f0", border:"none", borderRadius:"12px", padding:"14px", fontSize:"14px", fontWeight:800, color:"#666", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>Cancelar</button>
               <button onClick={async () => {
                 await supabase.from("nexo_miembros").update({ estado: "inactivo" }).eq("id", miMiembro.id);
-                await supabase.from("contactos_nexonet").insert({
-                  usuario_id: perfil.id,
-                  tipo: "reclamo",
-                  mensaje: `Baja de grupo: ${nexo?.titulo}. Motivo: ${motivoBaja.trim() || "Sin motivo"}`,
-                  estado: "pendiente",
+                await fetch("/api/nexo/solicitar-baja", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ usuario_id: perfil.id, nexo_id: nexo.id, nexo_titulo: nexo.titulo, motivo: motivoBaja.trim(), creador_id: nexo.usuario_id }),
                 });
                 setPopupBaja(false);
                 router.push("/");

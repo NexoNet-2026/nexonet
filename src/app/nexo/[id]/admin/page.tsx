@@ -59,7 +59,8 @@ function NexoAdminPageInner() {
 
   const [nexo,          setNexo]          = useState<any>(null);
   const [perfil,        setPerfil]        = useState<any>(null);
-  const [tab,           setTab]           = useState<TabAdmin>((searchParams?.get("tab") as TabAdmin) || "sliders");
+  const [tab,           setTab]           = useState<TabAdmin>("sliders");
+  useEffect(() => { const t = searchParams?.get("tab") as TabAdmin; if (t) setTab(t); }, [searchParams]);
   const [sliders,       setSliders]       = useState<any[]>([]);
   const [miembros,      setMiembros]      = useState<any[]>([]);
   const [descargas,     setDescargas]     = useState<any[]>([]);

@@ -82,7 +82,8 @@ export default function BannerCompartir({ tipo, titulo, nombreUsuario, destino }
     ctx.textAlign = "center";
     ctx.font = "bold 28px Arial";
     ctx.fillStyle = TIPO_COLOR[tipo];
-    ctx.fillText(`${TIPO_EMOJI[tipo]} ${tipo.toUpperCase()}`, 540, 290);
+    const TIPO_LABEL: Record<TipoBanner, string> = { empresa:'NEGOCIO', servicio:'SERVICIO', grupo:'GRUPO', trabajo:'TRABAJO', anuncio:'ANUNCIO' };
+    ctx.fillText(`${TIPO_EMOJI[tipo]} ${TIPO_LABEL[tipo]}`, 540, 290);
 
     // Título del nexo/anuncio
     ctx.font = "bold 72px Arial";

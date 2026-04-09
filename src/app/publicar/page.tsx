@@ -9,7 +9,7 @@ import AyudaPopup from "@/components/AyudaPopup";
 const TIPOS_NEXO = [
   { id:"anuncio",  emoji:"📣", titulo:"Anuncio",      desc:"Vendé, comprá o permutá lo que quieras",          color:"#d4a017", bg:"linear-gradient(135deg,#1a2a3a,#2d3d50)", border:"#d4a017", tablaRubros:"rubros", tablaSubrubros:"subrubros", fkSub:"rubro_id" },
   { id:"grupo",    emoji:"👥", titulo:"Grupo",         desc:"Creá tu comunidad, espacio o equipo",              color:"#3a7bd5", bg:"linear-gradient(135deg,#1a2535,#1e3a5f)", border:"#3a7bd5", tablaRubros:"grupo_categorias", tablaSubrubros:"grupo_subcategorias", fkSub:"categoria_id" },
-  { id:"empresa",  emoji:"🏢", titulo:"Empresa",       desc:"Perfil comercial con 50 anuncios incluidos",      color:"#c0392b", bg:"linear-gradient(135deg,#2c1a1a,#4a2020)", border:"#c0392b", tablaRubros:"empresa_rubros", tablaSubrubros:"empresa_subrubros", fkSub:"rubro_id" },
+  { id:"empresa",  emoji:"🏢", titulo:"Negocio",       desc:"Perfil comercial con 50 anuncios incluidos",      color:"#c0392b", bg:"linear-gradient(135deg,#2c1a1a,#4a2020)", border:"#c0392b", tablaRubros:"empresa_rubros", tablaSubrubros:"empresa_subrubros", fkSub:"rubro_id" },
   { id:"servicio", emoji:"🛠️", titulo:"Servicio",      desc:"Mostrá lo que ofrecés con videos y portfolio",   color:"#27ae60", bg:"linear-gradient(135deg,#1a2e1a,#1e4a2a)", border:"#27ae60", tablaRubros:"servicio_rubros", tablaSubrubros:"servicio_subrubros", fkSub:"rubro_id" },
   { id:"trabajo",  emoji:"💼", titulo:"Busco Trabajo", desc:"Ofrecé tus habilidades y adjuntá tu CV",          color:"#8e44ad", bg:"linear-gradient(135deg,#1e1a2e,#2e1a4a)", border:"#8e44ad", tablaRubros:"trabajo_rubros", tablaSubrubros:"trabajo_subrubros", fkSub:"rubro_id" },
 ];

@@ -629,7 +629,7 @@ setMisGruposData([...conConteo(fromMiembros), ...conConteo(fromCreados)]);
         )}
 
         {/* ═══ EMPRESA ═══ */}
-        {seccion === "empresa" && renderSeccionNexos("empresa", "#c0392b", "🏢", "empresas", "Crear negocio")}
+        {seccion === "empresa" && renderSeccionNexos("empresa", "#c0392b", "🏢", "negocios", "Crear negocio")}
 
         {/* ═══ SERVICIOS ═══ */}
         {seccion === "servicios" && renderSeccionNexos("servicio", "#27ae60", "🛠️", "servicios", "Ofrecer servicio")}

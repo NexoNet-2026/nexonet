@@ -33,7 +33,7 @@ type TipoPublicacion = "anuncios" | "grupos" | "empresas" | "servicios" | "traba
 const TIPOS: { key:TipoPublicacion; emoji:string; label:string; color:string }[] = [
   { key:"anuncios",  emoji:"📣", label:"Anuncios",  color:"#d4a017" },
   { key:"grupos",    emoji:"👥", label:"Grupos",    color:"#3a7bd5" },
-  { key:"empresas",  emoji:"🏢", label:"Empresas",  color:"#c0392b" },
+  { key:"empresas",  emoji:"🏢", label:"Negocios",  color:"#c0392b" },
   { key:"servicios", emoji:"🛠️", label:"Servicios", color:"#27ae60" },
   { key:"trabajo",   emoji:"💼", label:"Trabajo",   color:"#8e44ad" },
 ];

@@ -23,7 +23,7 @@ const DATA: Record<TipoAyuda, Info> = {
     ],
   },
   empresa: {
-    color:"#c0392b",emoji:"🏢",titulo:"CREÁ TU EMPRESA",sub:"Tu página comercial completa",
+    color:"#c0392b",emoji:"🏢",titulo:"CREÁ TU NEGOCIO",sub:"Tu página de negocio completa",
     costo:"Primer mes GRATIS · Luego 10.000 BIT/mes",
     items:[
       {emoji:"🖼️",titulo:"Logo y banner",desc:"Personalizá tu perfil con imagen de marca"},
@@ -87,7 +87,7 @@ const DATA: Record<TipoAyuda, Info> = {
     costo:"Registrate gratis · 3.000 BIT Free cada mes incluidos",
     items:[
       {emoji:"📣",titulo:"Publicá anuncios",desc:"Vendé, comprá o permutá con matching IA automático"},
-      {emoji:"🏢",titulo:"Creá tu empresa",desc:"Página comercial completa desde $0 el primer mes"},
+      {emoji:"🏢",titulo:"Creá tu negocio",desc:"Página comercial completa desde $0 el primer mes"},
       {emoji:"🛠️",titulo:"Ofrecé servicios",desc:"Que te encuentren quienes te necesitan sin pagar publicidad"},
       {emoji:"👥",titulo:"Grupos activos",desc:"Comunidades con chat en vivo, contenido y miembros activos"},
       {emoji:"🤖",titulo:"Búsqueda IA",desc:"Configurá filtros y recibí alertas automáticas de lo que buscás"},
@@ -101,7 +101,7 @@ const DATA: Record<TipoAyuda, Info> = {
       {emoji:"📍",titulo:"Geolocalización",desc:"Ves todos los anuncios y nexos activos en tu zona en tiempo real"},
       {emoji:"🔍",titulo:"Filtrá por rubro",desc:"Seleccioná categorías para ver solo lo que te interesa en el mapa"},
       {emoji:"🚗",titulo:"Calculá distancias",desc:"Sabés exactamente cuán lejos está cada publicación de vos"},
-      {emoji:"🏢",titulo:"Empresas y servicios",desc:"Encontrá comercios y profesionales activos cerca tuyo"},
+      {emoji:"🏢",titulo:"Negocios y servicios",desc:"Encontrá comercios y profesionales activos cerca tuyo"},
       {emoji:"👥",titulo:"Grupos cercanos",desc:"Descubrí comunidades activas en tu barrio o ciudad"},
       {emoji:"📱",titulo:"Usá tu GPS",desc:"Activá la ubicación para centrar el mapa en donde estás ahora"},
     ],

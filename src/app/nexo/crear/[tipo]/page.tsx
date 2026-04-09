@@ -22,14 +22,14 @@ const SLIDERS_PREDEFINIDOS: Record<string, { id:string; emoji:string; titulo:str
   portfolio:    [{ id:"portfolio",    emoji:"🎨", titulo:"Portfolio",           tipo:"portfolio",    desc:"Trabajos realizados" }],
   testimonios:  [{ id:"testimonios",  emoji:"💬", titulo:"Testimonios",         tipo:"testimonios",  desc:"Opiniones de clientes" }],
   certificados: [{ id:"certificados", emoji:"🏅", titulo:"Certificados",        tipo:"certificados", desc:"Títulos y credenciales" }],
-  clientes:     [{ id:"clientes",     emoji:"🤝", titulo:"Clientes",           tipo:"clientes",      desc:"Empresas y personas que confían en vos" }],
+  clientes:     [{ id:"clientes",     emoji:"🤝", titulo:"Clientes",           tipo:"clientes",      desc:"Negocios y personas que confían en vos" }],
   descargas:    [{ id:"descargas",    emoji:"📥", titulo:"Descargas",          tipo:"descargas",     desc:"Archivos descargables" }],
   lista_precios:[{ id:"lista_precios",emoji:"💲", titulo:"Lista de precios",   tipo:"lista_precios", desc:"Precios y tarifas" }],
 };
 
 const CONFIG_TIPO: Record<string, { titulo:string; color:string; emoji:string; sliders_default:string[]; usaSliders:boolean }> = {
   anuncio:  { titulo:"Crear Anuncio",    color:"#d4a017", emoji:"📣", sliders_default:[], usaSliders:false },
-  empresa:  { titulo:"Crear Empresa",    color:"#c0392b", emoji:"🏢", sliders_default:["galeria","servicios","productos","videos","documentos"], usaSliders:true },
+  empresa:  { titulo:"Crear Negocio",    color:"#c0392b", emoji:"🏢", sliders_default:["galeria","servicios","productos","videos","documentos"], usaSliders:true },
   servicio: { titulo:"Ofrecer Servicio", color:"#27ae60", emoji:"🛠️", sliders_default:["portfolio","videos","testimonios","certificados"], usaSliders:true },
   trabajo:  { titulo:"Buscar Trabajo",   color:"#8e44ad", emoji:"💼", sliders_default:[], usaSliders:false },
 };
@@ -662,13 +662,13 @@ function NexoCrearInner() {
             {(tipo==="empresa" || tipo==="servicio") && esPrimeraEmpresa === true && (
               <div style={{background:"rgba(39,174,96,0.1)",border:"2px solid rgba(39,174,96,0.3)",borderRadius:"12px",padding:"12px 16px",display:"flex",alignItems:"center",gap:"10px"}}>
                 <span style={{fontSize:"20px"}}>🎉</span>
-                <div style={{fontSize:"13px",fontWeight:800,color:"#27ae60"}}>¡Tu primera empresa es GRATIS! 30 días de trial al crear.</div>
+                <div style={{fontSize:"13px",fontWeight:800,color:"#27ae60"}}>¡Tu primer negocio es GRATIS! 30 días de trial al crear.</div>
               </div>
             )}
             {(tipo==="empresa" || tipo==="servicio") && esPrimeraEmpresa === false && (
               <div style={{background:"rgba(192,57,43,0.1)",border:"2px solid rgba(192,57,43,0.3)",borderRadius:"12px",padding:"12px 16px",display:"flex",alignItems:"center",gap:"10px"}}>
                 <span style={{fontSize:"20px"}}>🏢</span>
-                <div style={{fontSize:"13px",fontWeight:800,color:"#e74c3c"}}>Plan Empresa: 10.000 BIT/mes — se cobra al confirmar.</div>
+                <div style={{fontSize:"13px",fontWeight:800,color:"#e74c3c"}}>Plan Negocio: 10.000 BIT/mes — se cobra al confirmar.</div>
               </div>
             )}
 
@@ -850,8 +850,8 @@ function NexoCrearInner() {
               <SL>🔐 Tipo de acceso</SL>
               {[
                 {v:"libre",     e:"🟢",l:"Libre",         d:"El usuario paga 500 BIT para ingresar — vos recibís BIT Promotor"},
-                {v:"solicitud", e:"⏳",l:"Solicitud de acceso",d:"El creador decide quién paga: la empresa o el usuario"},
-                {v:"free",      e:"🎁",l:"Free — empresa paga",d:"La empresa absorbe el costo — los usuarios entran gratis"},
+                {v:"solicitud", e:"⏳",l:"Solicitud de acceso",d:"El creador decide quién paga: el negocio o el usuario"},
+                {v:"free",      e:"🎁",l:"Free — negocio paga",d:"El negocio absorbe el costo — los usuarios entran gratis"},
               ].map(o=>(
                 <div key={o.v} onClick={()=>F("tipo_acceso",o.v)}
                   style={{display:"flex",gap:"12px",alignItems:"center",padding:"14px",borderRadius:"12px",border:`2px solid ${form.tipo_acceso===o.v?colorPage:"#e8e8e6"}`,background:form.tipo_acceso===o.v?`${colorPage}08`:"#fafafa",cursor:"pointer",marginBottom:"8px"}}>
@@ -945,8 +945,8 @@ function NexoCrearInner() {
         />
       )}
       {popupEmpresa && perfil && (
-        <PopupCompra titulo="Activar Empresa" emoji="🏢" costo="10.000 BIT"
-          descripcion="Mensualidad de tu empresa en NexoNet"
+        <PopupCompra titulo="Activar Negocio" emoji="🏢" costo="10.000 BIT"
+          descripcion="Mensualidad de tu negocio en NexoNet"
           bits={{ free: perfil.bits_free||0, nexo: perfil.bits||0, promo: perfil.bits_promo||0 }}
           onClose={() => setPopupEmpresa(false)}
           onPagar={async (metodo: MetodoPago) => {

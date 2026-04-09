@@ -276,7 +276,7 @@ setMisGruposData([...conConteo(fromMiembros), ...conConteo(fromCreados)]);
         const r = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`);
         const d = await r.json();
         setEmp(e => ({ ...e, lat_empresa:String(lat), lng_empresa:String(lng), ciudad_empresa:d.address?.city||d.address?.town||d.address?.village||e.ciudad_empresa, provincia_empresa:d.address?.state||e.provincia_empresa, barrio_empresa:d.address?.suburb||d.address?.neighbourhood||e.barrio_empresa, direccion_empresa:(`${d.address?.road||""} ${d.address?.house_number||""}`).trim()||e.direccion_empresa }));
-        alert("✅ Ubicación empresa detectada");
+        alert("✅ Ubicación negocio detectada");
       } catch { alert("Error al obtener dirección"); }
     }, () => alert("No se pudo acceder al GPS"));
   };
@@ -543,7 +543,7 @@ setMisGruposData([...conConteo(fromMiembros), ...conConteo(fromCreados)]);
               <div style={{ fontSize:"11px", color:"#bbb", fontWeight:600, marginBottom:"16px" }}>Total consumido: <strong style={{ color:"#1a2a3a" }}>{totalConsum.toLocaleString()} BIT</strong></div>
               {[
                 { emoji:"📋", label:"Anuncios",       valor:gastAnuncios,  color:"#d4a017" },
-                { emoji:"🏢", label:"Empresas",       valor:gastEmpresa,   color:"#c0392b" },
+                { emoji:"🏢", label:"Negocios",       valor:gastEmpresa,   color:"#c0392b" },
                 { emoji:"🔧", label:"Servicios",      valor:gastServicio,  color:"#27ae60" },
                 { emoji:"💼", label:"Busco trabajo",   valor:gastTrabajo,   color:"#8e44ad" },
                 { emoji:"🔗", label:"Conexiones",     valor:gastConexion,  color:"#3a7bd5" },
@@ -713,8 +713,8 @@ setMisGruposData([...conConteo(fromMiembros), ...conConteo(fromCreados)]);
             <div style={{ background:"rgba(58,123,213,0.06)", border:"2px solid rgba(58,123,213,0.2)", borderRadius:"14px", padding:"14px 16px", display:"flex", gap:"12px", alignItems:"center" }}>
               <span style={{ fontSize:"24px" }}>🏢</span>
               <div style={{ flex:1 }}>
-                <div style={{ fontSize:"13px", fontWeight:800, color:"#1a2a3a" }}>Datos de tu empresa o grupo</div>
-                <div style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:600 }}>Se editan desde el panel admin de cada empresa/grupo</div>
+                <div style={{ fontSize:"13px", fontWeight:800, color:"#1a2a3a" }}>Datos de tu negocio o grupo</div>
+                <div style={{ fontSize:"11px", color:"#9a9a9a", fontWeight:600 }}>Se editan desde el panel admin de cada negocio/grupo</div>
               </div>
             </div>
 

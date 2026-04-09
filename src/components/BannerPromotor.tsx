@@ -85,7 +85,7 @@ export default function BannerPromotor({ nombreUsuario, codigo }: Props) {
     ctx.stroke();
 
     // Beneficios
-    const beneficios = ["🎁 3.000 BIT gratis al registrarte", "📣 Publicá anuncios y conectate", "🏢 Creá tu empresa digital"];
+    const beneficios = ["🎁 3.000 BIT gratis al registrarte", "📣 Publicá anuncios y conectate", "🏢 Creá tu negocio digital"];
     ctx.font = "30px Arial";
     ctx.fillStyle = "rgba(255,255,255,0.8)";
     beneficios.forEach((b, i) => {

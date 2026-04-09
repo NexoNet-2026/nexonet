@@ -1081,7 +1081,7 @@ export default function AdminPanel() {
             </div>
 
             <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"10px",marginBottom:"14px"}}>
-              <StatBox n={`${nexoStats.empresaAct}/${nexoStats.empresa}`} l="Empresas" e="🏢" c="#3a7bd5" />
+              <StatBox n={`${nexoStats.empresaAct}/${nexoStats.empresa}`} l="Negocios" e="🏢" c="#3a7bd5" />
               <StatBox n={`${nexoStats.servicioAct}/${nexoStats.servicio}`} l="Servicios" e="🔧" c="#27ae60" />
               <StatBox n={`${nexoStats.grupoAct}/${nexoStats.grupo}`} l="Grupos" e="👥" c="#8e44ad" />
               <StatBox n={`${nexoStats.trabajoAct}/${nexoStats.trabajo}`} l="Trabajos" e="💼" c="#e67e22" />
@@ -1638,7 +1638,7 @@ export default function AdminPanel() {
             {/* SUBTABS */}
             <div style={{display:"flex",gap:"6px",flexWrap:"wrap",marginBottom:"14px"}}>
               {([
-                ["general","⚙️","General"],["anuncios","📋","Anuncios"],["empresas","🏢","Empresas"],["servicios","🛠️","Servicios"],
+                ["general","⚙️","General"],["anuncios","📋","Anuncios"],["empresas","🏢","Negocios"],["servicios","🛠️","Servicios"],
                 ["trabajo","💼","Trabajo"],["grupos","🏘️","Grupos"],["filtros_ia","🤖","Filtros IA"],
               ] as [ConfigSub,string,string][]).map(([id,e,l])=>(
                 <button key={id} onClick={()=>{setConfigSub(id);if(["empresas","servicios","trabajo"].includes(id))cargarEntRubros(id);if(id==="general")cargarConfigGlobal();}}
@@ -1773,7 +1773,7 @@ export default function AdminPanel() {
               <>
                 <div style={S.card}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"12px"}}>
-                    <div style={S.sect}>📁 Rubros de {configSub==="empresas"?"Empresas":configSub==="servicios"?"Servicios":"Trabajo"}</div>
+                    <div style={S.sect}>📁 Rubros de {configSub==="empresas"?"Negocios":configSub==="servicios"?"Servicios":"Trabajo"}</div>
                     <button onClick={()=>setModalEntRubro({nombre:"",orden:entRubros.length,_tipo:configSub})} style={S.btn("#27ae60")}>+ Nuevo rubro</button>
                   </div>
                   {entRubros.map((r:any, idx:number)=>(

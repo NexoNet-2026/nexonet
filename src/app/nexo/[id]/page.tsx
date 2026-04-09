@@ -628,7 +628,7 @@ function NexoPageInner() {
                 const data = await res.json();
                 if (data.ok) {
                   setNexo((n:any)=>({...n,siguiente_pago:data.siguiente_pago,estado:"activo"}));
-                  alert("✅ Empresa renovada por 30 días");
+                  alert("✅ Negocio renovado por 30 días");
                 } else { alert(data.error||"Error al renovar"); }
                 setRenovando(false);
               }} disabled={renovando}

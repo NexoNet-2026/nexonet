@@ -69,7 +69,7 @@ export default function OnboardingPopup({ perfil, onClose }: Props) {
               ¡Bienvenido a NexoNet!
             </div>
             <div style={{ fontSize: "14px", color: "#666", fontWeight: 600, lineHeight: 1.7, marginBottom: "20px" }}>
-              Hola <strong style={{ color: "#d4a017" }}>{perfil.nombre_usuario}</strong>, somos la plataforma argentina de conexión entre personas, empresas y comunidades.
+              Hola <strong style={{ color: "#d4a017" }}>{perfil.nombre_usuario}</strong>, somos la plataforma argentina de conexión entre personas, negocios y comunidades.
             </div>
             <div style={{ background: "linear-gradient(135deg,#1a2a3a,#243b55)", borderRadius: "16px", padding: "16px", marginBottom: "24px" }}>
               <div style={{ fontSize: "12px", color: "rgba(255,255,255,0.55)", fontWeight: 700, marginBottom: "4px" }}>Tu código NexoNet</div>
@@ -98,12 +98,12 @@ export default function OnboardingPopup({ perfil, onClose }: Props) {
               ¿Qué es NexoNet?
             </div>
             <div style={{ fontSize: "13px", color: "#9a9a9a", fontWeight: 600, marginBottom: "20px" }}>
-              Una plataforma de conexión entre personas, empresas y comunidades de Argentina.
+              Una plataforma de conexión entre personas, negocios y comunidades de Argentina.
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "24px" }}>
               {[
                 { emoji:"📣", titulo:"Anuncios", desc:"Publicá lo que vendés o buscás y conectate con compradores o vendedores reales." },
-                { emoji:"🏢", titulo:"Empresas y Servicios", desc:"Montá la presencia digital de tu empresa o servicio con páginas, descargas y más." },
+                { emoji:"🏢", titulo:"Negocios y Servicios", desc:"Montá la presencia digital de tu negocio o servicio con páginas, descargas y más." },
                 { emoji:"👥", titulo:"Grupos", desc:"Creá o unite a grupos de interés: deportivos, de negocios, vecinales y mucho más." },
                 { emoji:"💼", titulo:"Trabajo", desc:"Publicá tu perfil laboral y aparecé ante empresas que buscan talento." },
               ].map(item => (

@@ -70,7 +70,7 @@ export default function BottomNav() {
         }}>
           <span style={{ fontSize: "14px" }}>🏢</span>
           <span style={{ fontSize: "12px", fontWeight: 800, color: "#fff", letterSpacing: "0.3px" }}>
-            Creá tu <span style={{ color: "#d4a017" }}>EMPRESA GRATIS</span> por
+            Creá tu <span style={{ color: "#d4a017" }}>NEGOCIO GRATIS</span> por
           </span>
           <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "20px", color: "#f0c040", textShadow: "0 2px 4px rgba(0,0,0,0.4)" }}>1 MES</span>
         </Link>

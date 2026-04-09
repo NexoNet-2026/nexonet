@@ -54,7 +54,7 @@ export default function Home() {
   ];
 
   const sections: { titulo: string; acento: string; tipo: string; emoji: string; textoVacio: string; crearUrl: string; nexoUrl: (id: string) => string }[] = [
-    { titulo: "🏢 Empresas",     acento: "#c0392b", tipo: "empresas",  emoji: "🏢", textoVacio: "Sé el primero en crear una empresa",    crearUrl: "/nexo/crear/empresa",  nexoUrl: id => `/nexo/${id}` },
+    { titulo: "🏢 Negocios",     acento: "#c0392b", tipo: "empresas",  emoji: "🏢", textoVacio: "Sé el primero en crear un negocio",    crearUrl: "/nexo/crear/empresa",  nexoUrl: id => `/nexo/${id}` },
     { titulo: "🛠️ Servicios",   acento: "#27ae60", tipo: "servicios", emoji: "🛠️", textoVacio: "Sé el primero en ofrecer un servicio", crearUrl: "/nexo/crear/servicio", nexoUrl: id => `/nexo/${id}` },
     { titulo: "💼 Busco Trabajo", acento: "#8e44ad", tipo: "trabajo",  emoji: "💼", textoVacio: "Sé el primero en buscar trabajo",       crearUrl: "/nexo/crear/trabajo",  nexoUrl: id => `/nexo/${id}` },
   ];

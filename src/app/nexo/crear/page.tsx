@@ -27,7 +27,7 @@ const SLIDERS_PREDEFINIDOS: Record<string, { id:string; emoji:string; titulo:str
 
 const CONFIG_TIPO: Record<string, { titulo:string; color:string; emoji:string; sliders_default:string[]; usaSliders:boolean }> = {
   anuncio: { titulo:"Crear Anuncio",   color:"#d4a017", emoji:"📣", sliders_default:[], usaSliders:false },
-  empresa: { titulo:"Crear Empresa",   color:"#c0392b", emoji:"🏢", sliders_default:["galeria","servicios","productos","videos","documentos"], usaSliders:true },
+  empresa: { titulo:"Crear Negocio",   color:"#c0392b", emoji:"🏢", sliders_default:["galeria","servicios","productos","videos","documentos"], usaSliders:true },
   servicio:{ titulo:"Ofrecer Servicio",color:"#27ae60", emoji:"🛠️", sliders_default:["portfolio","videos","testimonios","certificados"], usaSliders:true },
   trabajo: { titulo:"Buscar Trabajo",  color:"#8e44ad", emoji:"💼", sliders_default:[], usaSliders:false },
 };
@@ -212,7 +212,7 @@ function NexoCrearInner() {
 
     if (perfil.plan === "nexoempresa") {
       const { count } = await supabase.from("anuncios").select("id",{count:"exact",head:true}).eq("usuario_id",perfil.id);
-      if ((count||0) >= 50) { alert("Alcanzaste el límite de 50 anuncios del plan Empresa."); return; }
+      if ((count||0) >= 50) { alert("Alcanzaste el límite de 50 anuncios del plan Negocio."); return; }
     }
 
     setGuardando(true);
@@ -488,9 +488,9 @@ function NexoCrearInner() {
 
             {tipo==="empresa" && !pagoBITEmpresa && esPrimeraEmpresa === false && (
               <div style={{background:"linear-gradient(135deg,#2c1a1a,#4a2020)",borderRadius:"16px",padding:"20px",border:"2px solid rgba(192,57,43,0.4)"}}>
-                <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"20px",color:"#e74c3c",letterSpacing:"1px",marginBottom:"8px"}}>🏢 Nexo Empresa</div>
+                <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"20px",color:"#e74c3c",letterSpacing:"1px",marginBottom:"8px"}}>🏢 Nexo Negocio</div>
                 <div style={{fontSize:"13px",color:"#e88a8a",fontWeight:600,lineHeight:1.6,marginBottom:"16px"}}>
-                  Para crear tu perfil empresarial necesitás abonar el plan Empresa.
+                  Para crear tu perfil de negocio necesitás abonar el plan Negocio.
                 </div>
                 <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",background:"rgba(0,0,0,0.2)",borderRadius:"12px",padding:"12px 16px",marginBottom:"16px"}}>
                   <span style={{fontSize:"13px",fontWeight:700,color:"#e88a8a"}}>Costo del plan</span>
@@ -508,7 +508,7 @@ function NexoCrearInner() {
                   setPerfil((p:any)=>({...p,[campo]:valor-10000,plan:"nexoempresa"}));
                   setPagoBITEmpresa(true);
                 }} style={{width:"100%",background:"linear-gradient(135deg,#c0392b,#e74c3c)",border:"none",borderRadius:"12px",padding:"14px",fontSize:"15px",fontWeight:900,color:"#fff",cursor:"pointer",fontFamily:"'Nunito',sans-serif",boxShadow:"0 4px 0 rgba(0,0,0,0.3)"}}>
-                  💳 Pagar 10.000 BIT y activar Empresa
+                  💳 Pagar 10.000 BIT y activar Negocio
                 </button>
               </div>
             )}
@@ -516,7 +516,7 @@ function NexoCrearInner() {
             {tipo==="empresa" && pagoBITEmpresa && (
               <div style={{background:"rgba(39,174,96,0.1)",border:"2px solid rgba(39,174,96,0.3)",borderRadius:"12px",padding:"12px 16px",display:"flex",alignItems:"center",gap:"10px"}}>
                 <span style={{fontSize:"20px"}}>✅</span>
-                <div style={{fontSize:"13px",fontWeight:800,color:"#27ae60"}}>{esPrimeraEmpresa ? "Trial 30 días activado — ¡creá tu empresa!" : "Plan Empresa activado"}</div>
+                <div style={{fontSize:"13px",fontWeight:800,color:"#27ae60"}}>{esPrimeraEmpresa ? "Trial 30 días activado — ¡creá tu negocio!" : "Plan Negocio activado"}</div>
               </div>
             )}
 

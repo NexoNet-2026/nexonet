@@ -505,7 +505,7 @@ function NexoPageInner() {
                   ⚙️ Admin
                 </button>
               )}
-              {esAdmin && (
+              {perfil && nexo?.tipo !== "grupo" && (
                 <button onClick={() => setFlashOpen(true)}
                   style={{ background: "linear-gradient(135deg,#e67e22,#d35400)", border: "none",
                     borderRadius: "10px", padding: "7px 8px", fontSize: "11px", fontWeight: 900,
@@ -513,38 +513,6 @@ function NexoPageInner() {
                   ⚡ Flash
                 </button>
               )}
-              {perfil && !esMiembro && !esAdmin && nexo?.tipo !== "grupo" && (() => {
-                const limiteAlcanzado = (nexo?.conexiones_recibidas ?? 0) >= (nexo?.limite_conexiones ?? 500);
-                return (
-                  <button onClick={async () => {
-                    if (limiteAlcanzado) { alert("Este nexo alcanzó su límite de conexiones."); return; }
-                    if (!perfil) return;
-                    const { data: miData } = await supabase.from("usuarios").select("bits,bits_free,bits_promo").eq("id", perfil.id).single();
-                    if (!miData) return;
-                    const totalMio = (miData.bits_free||0) + (miData.bits||0) + (miData.bits_promo||0);
-                    if (totalMio < 1) { alert("Necesitás al menos 1 BIT para conectarte."); return; }
-                    let nf = miData.bits_free||0, nn = miData.bits||0, np = miData.bits_promo||0;
-                    if (nf >= 1) nf -= 1; else if (nn >= 1) nn -= 1; else np -= 1;
-                    await supabase.from("usuarios").update({ bits_free: nf, bits: nn, bits_promo: np }).eq("id", perfil.id);
-                    const { data: duData } = await supabase.from("usuarios").select("bits,bits_free,bits_promo").eq("id", nexo.usuario_id).single();
-                    if (duData) {
-                      let df = duData.bits_free||0, dn = duData.bits||0, dp = duData.bits_promo||0;
-                      if (df >= 1) df -= 1; else if (dn >= 1) dn -= 1; else if (dp >= 1) dp -= 1;
-                      await supabase.from("usuarios").update({ bits_free: df, bits: dn, bits_promo: dp }).eq("id", nexo.usuario_id);
-                    }
-                    await supabase.from("nexos").update({ conexiones_recibidas: (nexo.conexiones_recibidas || 0) + 1 }).eq("id", nexo.id);
-                    await supabase.from("notificaciones").insert({
-                      usuario_id: nexo.usuario_id, emisor_id: perfil.id,
-                      tipo: "conexion", mensaje: `💼 ${perfil.nombre_usuario} se conectó con tu ${nexo.tipo} "${nexo.titulo}"`, leida: false,
-                    });
-                    alert("✅ ¡Conexión realizada!");
-                  }} disabled={limiteAlcanzado}
-                    style={{ width:"100%", background: limiteAlcanzado ? "#e8e8e6" : "linear-gradient(135deg,#27ae60,#1e8449)", border:"none", borderRadius:"14px", padding:"7px 8px", fontSize:"11px", fontWeight:900, color: limiteAlcanzado ? "#9a9a9a" : "#fff", cursor: limiteAlcanzado ? "not-allowed" : "pointer", fontFamily:"'Nunito',sans-serif", boxShadow: limiteAlcanzado ? "none" : "0 4px 0 #155a2e", display:"flex", alignItems:"center", justifyContent:"center", gap:"8px", marginBottom:"4px" }}>
-                    <span>🔗</span>
-                    <span>{limiteAlcanzado ? "Límite alcanzado" : "Conectar — 1 BIT"}</span>
-                  </button>
-                );
-              })()}
               {!esAdmin && !miMiembro && nexo.tipo==="grupo" && (
                 <button onClick={unirse}
                   style={{ background:`${colorNexo}cc`, border:"none", borderRadius:"10px", padding:"7px 8px", fontSize:"11px", fontWeight:900, color:"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>

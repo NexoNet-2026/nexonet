@@ -479,7 +479,7 @@ setMisGruposData([...conConteo(fromMiembros), ...conConteo(fromCreados)]);
           {([
             ["cuenta",       "💳", "Cuenta",     "#d4a017"],
             ["anuncios",     "📋", "Anuncios",   "#d4a017"],
-            ["empresa",      "🏢", "Empresa",    "#c0392b"],
+            ["empresa",      "🏢", "Negocio",    "#c0392b"],
             ["servicios",    "🛠️", "Servicios",  "#27ae60"],
             ["trabajo",      "💼", "Trabajo",    "#8e44ad"],
             ["promotor",     "⭐", "Promotor",   "#d4a017"],
@@ -629,7 +629,7 @@ setMisGruposData([...conConteo(fromMiembros), ...conConteo(fromCreados)]);
         )}
 
         {/* ═══ EMPRESA ═══ */}
-        {seccion === "empresa" && renderSeccionNexos("empresa", "#c0392b", "🏢", "empresas", "Crear empresa")}
+        {seccion === "empresa" && renderSeccionNexos("empresa", "#c0392b", "🏢", "empresas", "Crear negocio")}
 
         {/* ═══ SERVICIOS ═══ */}
         {seccion === "servicios" && renderSeccionNexos("servicio", "#27ae60", "🛠️", "servicios", "Ofrecer servicio")}

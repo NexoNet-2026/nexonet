@@ -1374,8 +1374,8 @@ export default function AdminPanel() {
         {!loading && tab==="nexos" && (
           <>
             <div style={{display:"flex",gap:"6px",marginBottom:"14px",flexWrap:"wrap"}}>
-              {["todos","empresa","servicio","trabajo","grupo"].map(t=>(
-                <button key={t} onClick={()=>setFiltroNexo(t)} style={{...S.btn(filtroNexo===t?"#d4a017":"#9a9a9a",filtroNexo!==t),fontSize:"11px",padding:"6px 12px",textTransform:"capitalize"}}>{t}</button>
+              {([["todos","Todos"],["empresa","Negocio"],["servicio","Servicio"],["trabajo","Trabajo"],["grupo","Grupo"]] as [string,string][]).map(([t,label])=>(
+                <button key={t} onClick={()=>setFiltroNexo(t)} style={{...S.btn(filtroNexo===t?"#d4a017":"#9a9a9a",filtroNexo!==t),fontSize:"11px",padding:"6px 12px"}}>{label}</button>
               ))}
             </div>
             {nexosFiltrados.map(n=>(
@@ -1384,7 +1384,7 @@ export default function AdminPanel() {
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{display:"flex",gap:"6px",flexWrap:"wrap",alignItems:"center"}}>
                       <span style={{fontSize:"14px",fontWeight:900,color:"#1a2a3a"}}>{n.titulo||"Sin título"}</span>
-                      <span style={S.badge("#fff",n.tipo==="empresa"?"#3a7bd5":n.tipo==="servicio"?"#27ae60":n.tipo==="trabajo"?"#e67e22":"#8e44ad")}>{n.tipo}</span>
+                      <span style={S.badge("#fff",n.tipo==="empresa"?"#3a7bd5":n.tipo==="servicio"?"#27ae60":n.tipo==="trabajo"?"#e67e22":"#8e44ad")}>{n.tipo==="empresa"?"negocio":n.tipo}</span>
                       {n.estado==="bloqueado" && <span style={S.badge("#fff","#e74c3c")}>🔒</span>}
                     </div>
                     <div style={{fontSize:"12px",color:"#9a9a9a",fontWeight:600,marginTop:"2px"}}>{n.usuarios?.nombre_usuario||"—"} · {n.ciudad||""}</div>

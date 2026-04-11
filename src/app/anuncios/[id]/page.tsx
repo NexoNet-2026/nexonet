@@ -724,49 +724,7 @@ export default function AnuncioDetalle() {
                   {!soloChatInterno && (() => {
                     const limiteAlcanzado = (anuncio.conexiones_recibidas ?? 0) >= (anuncio.limite_conexiones ?? 500);
                     return (
-                      <button onClick={async () => {
-                        if (limiteAlcanzado) { alert("Este anuncio alcanzó su límite de conexiones."); return; }
-                        if (!session?.user?.id) { router.push("/login"); return; }
-                        setConectando(true);
-                        // Verificar y descontar BIT del que se conecta (escalonado: free -> nexo -> promo)
-                        const { data: miData } = await supabase.from("usuarios").select("bits,bits_free,bits_promo").eq("id", session.user.id).single();
-                        if (!miData) { setConectando(false); return; }
-                        const totalMio = (miData.bits_free||0) + (miData.bits||0) + (miData.bits_promo||0);
-                        if (totalMio < 1) { alert("Necesitás al menos 1 BIT para conectarte."); setConectando(false); return; }
-                        // Descontar 1 BIT escalonado al receptor (yo)
-                        let nf = miData.bits_free||0, nn = miData.bits||0, np = miData.bits_promo||0;
-                        if (nf >= 1) nf -= 1;
-                        else if (nn >= 1) nn -= 1;
-                        else np -= 1;
-                        const { data: perfilActual } = await supabase.from("usuarios").select("bits_gastados_conexion").eq("id", session.user.id).single();
-                        await supabase.from("usuarios").update({ bits_free: nf, bits: nn, bits_promo: np, bits_gastados_conexion: (perfilActual?.bits_gastados_conexion || 0) + 1 }).eq("id", session.user.id);
-                        // Descontar 1 BIT escalonado al dueño del anuncio
-                        const { data: duData } = await supabase.from("usuarios").select("bits,bits_free,bits_promo").eq("id", anuncio.usuario_id).single();
-                        if (duData) {
-                          let df = duData.bits_free||0, dn = duData.bits||0, dp = duData.bits_promo||0;
-                          if (df >= 1) df -= 1;
-                          else if (dn >= 1) dn -= 1;
-                          else if (dp >= 1) dp -= 1;
-                          await supabase.from("usuarios").update({ bits_free: df, bits: dn, bits_promo: dp }).eq("id", anuncio.usuario_id);
-                        }
-                        // Incrementar conexiones
-                        await supabase.from("anuncios").update({
-                          conexiones: (anuncio.conexiones || 0) + 1,
-                          conexiones_recibidas: (anuncio.conexiones_recibidas || 0) + 1,
-                        }).eq("id", anuncio.id);
-                        // Notificación al dueño
-                        await supabase.from("notificaciones").insert({
-                          usuario_id: anuncio.usuario_id, emisor_id: session.user.id,
-                          anuncio_id: anuncio.id, tipo: "conexion", mensaje: mensajeConexion, leida: false,
-                        });
-                        // Mensaje interno
-                        await supabase.from("mensajes").insert({
-                          anuncio_id: anuncio.id, emisor_id: session.user.id,
-                          receptor_id: anuncio.usuario_id, texto: mensajeConexion,
-                        });
-                        setConectando(false);
-                        router.push(`/chat/${anuncio.id}/${anuncio.usuario_id}`);
-                      }} disabled={conectando || limiteAlcanzado}
+                      <button onClick={() => { if (!session?.user?.id) { router.push("/login"); return; } setPopupMensaje(true); }} disabled={conectando || limiteAlcanzado}
                         style={{ width:"100%", background: limiteAlcanzado ? "#e8e8e6" : "linear-gradient(135deg,#27ae60,#1e8449)", border:"none", borderRadius:"14px", padding:"16px", fontSize:"15px", fontWeight:900, color: limiteAlcanzado ? "#9a9a9a" : "#fff", cursor: limiteAlcanzado ? "not-allowed" : "pointer", fontFamily:"'Nunito',sans-serif", boxShadow: limiteAlcanzado ? "none" : "0 4px 0 #155a2e", display:"flex", alignItems:"center", justifyContent:"center", gap:"10px", opacity:conectando?0.7:1 }}>
                         <span style={{ fontSize:"20px" }}>🔗</span>
                         <span>{conectando ? "Conectando..." : limiteAlcanzado ? "Límite de conexiones alcanzado" : "Conectar — 1 BIT"}</span>

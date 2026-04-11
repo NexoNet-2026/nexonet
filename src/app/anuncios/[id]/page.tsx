@@ -765,7 +765,7 @@ export default function AnuncioDetalle() {
                           receptor_id: anuncio.usuario_id, texto: mensajeConexion,
                         });
                         setConectando(false);
-                        router.push(`/chat/${anuncio.usuario_id}?anuncio=${anuncio.id}`);
+                        router.push(`/chat/${anuncio.id}/${anuncio.usuario_id}`);
                       }} disabled={conectando || limiteAlcanzado}
                         style={{ width:"100%", background: limiteAlcanzado ? "#e8e8e6" : "linear-gradient(135deg,#27ae60,#1e8449)", border:"none", borderRadius:"14px", padding:"16px", fontSize:"15px", fontWeight:900, color: limiteAlcanzado ? "#9a9a9a" : "#fff", cursor: limiteAlcanzado ? "not-allowed" : "pointer", fontFamily:"'Nunito',sans-serif", boxShadow: limiteAlcanzado ? "none" : "0 4px 0 #155a2e", display:"flex", alignItems:"center", justifyContent:"center", gap:"10px", opacity:conectando?0.7:1 }}>
                         <span style={{ fontSize:"20px" }}>🔗</span>

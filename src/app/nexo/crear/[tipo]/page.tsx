@@ -283,10 +283,10 @@ function NexoCrearInner() {
         subtipo:      subtipo||null,
         titulo:       form.titulo,
         descripcion:  form.descripcion||null,
-        ciudad:       form.ciudad||null,
-        provincia:    form.provincia||null,
-        direccion:    form.direccion||null,
-        whatsapp:     form.whatsapp||null,
+        ciudad:       perfil?.ciudad||null,
+        provincia:    perfil?.provincia||null,
+        direccion:    perfil?.direccion||null,
+        whatsapp:     perfil?.whatsapp||null,
         link_externo: form.link_externo||null,
         banner_url:   form.banner_url||null,
         avatar_url:   form.avatar_url||null,
@@ -484,34 +484,27 @@ function NexoCrearInner() {
           )}
 
           <div style={CAJA}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"12px"}}>
-              <SL style={{margin:0}}>📍 Ubicación</SL>
-              <button onClick={gps} disabled={gpsLoad} style={{background:`${colorPage}18`,border:`2px solid ${colorPage}40`,borderRadius:"10px",padding:"6px 12px",fontSize:"12px",fontWeight:800,color:colorPage,cursor:gpsLoad?"wait":"pointer",fontFamily:"'Nunito',sans-serif",display:"flex",alignItems:"center",gap:"5px",opacity:gpsLoad?0.6:1}}>
-                {gpsLoad?"⏳ Buscando...":"📍 Usar mi ubicación"}
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'12px'}}>
+              <SL style={{margin:0}}>📍 Ubicación del anuncio</SL>
+              <button onClick={gps} disabled={gpsLoad} style={{background:`${colorPage}18`,border:`2px solid ${colorPage}40`,borderRadius:'10px',padding:'6px 12px',fontSize:'12px',fontWeight:800,color:colorPage,cursor:gpsLoad?'wait':'pointer',fontFamily:"'Nunito',sans-serif",display:'flex',alignItems:'center',gap:'5px',opacity:gpsLoad?0.6:1}}>
+                {gpsLoad?'⏳ Buscando...':'📍 Usar GPS para el mapa'}
               </button>
             </div>
-            <L>Provincia</L>
-            <select value={form.provincia} onChange={e=>cambiarProv(e.target.value)} style={{...IS,marginBottom:"12px"}}>
-              <option value="">— Elegí una provincia —</option>
-              {provs.map(p=><option key={p.id} value={p.nombre}>{p.nombre}</option>)}
-            </select>
-            {form.provincia && (<>
-              <L>Ciudad</L>
-              <select value={form.ciudad} onChange={e=>F("ciudad",e.target.value)} style={{...IS,marginBottom:"12px"}}>
-                <option value="">— Elegí una ciudad —</option>
-                {ciudades.map(c=><option key={c.id} value={c.nombre}>{c.nombre}</option>)}
-              </select>
-            </>)}
-            <L>Dirección (opcional)</L>
-            <input value={form.direccion} onChange={e=>F("direccion",e.target.value)} placeholder="Ej: San Martín 1234, local 3" style={{...IS,marginBottom:"0"}}/>
-            {form.lat && <div style={{marginTop:"8px",fontSize:"11px",color:"#27ae60",fontWeight:700}}>✅ Ubicación GPS detectada</div>}
-            <div style={{marginTop:'10px',display:'flex',alignItems:'center',justifyContent:'space-between',background:'rgba(58,123,213,0.06)',border:'1px solid rgba(58,123,213,0.2)',borderRadius:'10px',padding:'10px 14px'}}>
+            <div style={{background:'#f9f9f7',borderRadius:'12px',padding:'12px 14px',fontSize:'13px',color:'#1a2a3a',fontWeight:700,marginBottom:'8px'}}>
+              <div style={{fontSize:'11px',fontWeight:800,color:'#9a9a9a',textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:'6px'}}>📋 Datos del vendedor (desde tu perfil)</div>
+              <div>👤 {perfil?.nombre_usuario}</div>
+              {perfil?.ciudad && <div style={{marginTop:'4px'}}>🏙️ {perfil?.ciudad}{perfil?.provincia ? ', '+perfil?.provincia : ''}</div>}
+              {perfil?.vis_personal?.whatsapp && perfil?.whatsapp && <div style={{marginTop:'4px'}}>📱 {perfil?.whatsapp}</div>}
+              <div style={{marginTop:'8px',fontSize:'11px',color:'#9a9a9a',fontWeight:600}}>Para cambiar estos datos andá a tu perfil → Datos</div>
+            </div>
+            {form.lat && <div style={{fontSize:'11px',color:'#27ae60',fontWeight:700,marginBottom:'4px'}}>✅ Ubicación GPS detectada — tu anuncio aparecerá en el mapa</div>}
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',background:'rgba(58,123,213,0.06)',border:'1px solid rgba(58,123,213,0.2)',borderRadius:'10px',padding:'10px 14px'}}>
               <div>
                 <div style={{fontSize:'12px',fontWeight:800,color:'#1a2a3a'}}>🗺️ Mostrar en el mapa</div>
-                <div style={{fontSize:'10px',color:'#9a9a9a',fontWeight:600,marginTop:'2px'}}>{(form as any).mostrar_en_mapa ? 'Tu anuncio aparece en el mapa de NexoNet' : 'Tu anuncio no aparece en el mapa'}</div>
+                <div style={{fontSize:'10px',color:'#9a9a9a',fontWeight:600,marginTop:'2px'}}>{(form as any).mostrar_en_mapa !== false ? 'Tu anuncio aparecerá en el mapa de NexoNet' : 'Tu anuncio no aparecerá en el mapa'}</div>
               </div>
-              <div onClick={()=>F('mostrar_en_mapa', !(form as any).mostrar_en_mapa)} style={{width:'44px',height:'24px',borderRadius:'12px',background:(form as any).mostrar_en_mapa?'#3a7bd5':'#e0e0e0',position:'relative',cursor:'pointer',transition:'background 0.2s',flexShrink:0}}>
-                <div style={{position:'absolute',top:'3px',width:'18px',height:'18px',borderRadius:'50%',background:'#fff',boxShadow:'0 1px 4px rgba(0,0,0,0.2)',transition:'left 0.2s',left:(form as any).mostrar_en_mapa?'23px':'3px'}}/>
+              <div onClick={()=>F('mostrar_en_mapa', (form as any).mostrar_en_mapa === false ? true : false)} style={{width:'44px',height:'24px',borderRadius:'12px',background:(form as any).mostrar_en_mapa !== false?'#3a7bd5':'#e0e0e0',position:'relative',cursor:'pointer',flexShrink:0}}>
+                <div style={{position:'absolute',top:'3px',width:'18px',height:'18px',borderRadius:'50%',background:'#fff',boxShadow:'0 1px 4px rgba(0,0,0,0.2)',left:(form as any).mostrar_en_mapa !== false?'23px':'3px'}}/>
               </div>
             </div>
           </div>
@@ -538,8 +531,6 @@ function NexoCrearInner() {
                 <span style={{fontSize:"13px",fontWeight:700,color:"#1a2a3a"}}>🔄 Acepto permuta</span>
               </label>
             </>)}
-            <L>WhatsApp</L>
-            <input value={form.whatsapp} onChange={e=>F("whatsapp",e.target.value)} placeholder="Ej: 3412345678" style={{...IS,marginBottom:"12px"}}/>
             <SL>📬 Tipo de contacto</SL>
             {[
               {v:"datos",e:"📋",l:"Mostrar mis datos",d:"El comprador ve tu WhatsApp y puede conectarse"},

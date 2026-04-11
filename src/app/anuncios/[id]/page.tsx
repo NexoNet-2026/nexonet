@@ -769,13 +769,6 @@ export default function AnuncioDetalle() {
                       </button>
                     );
                   })()}
-                  <button onClick={() => {
-                    if (!session?.user?.id) { router.push("/login"); return; }
-                    router.push(`/chat/${anuncio.usuario_id}?anuncio=${anuncio.id}`);
-                  }}
-                    style={{ width:"100%", background:"linear-gradient(135deg,#1a2a3a,#243b55)", border:"none", borderRadius:"14px", padding:"14px", fontSize:"14px", fontWeight:800, color:"#d4a017", cursor:"pointer", fontFamily:"'Nunito',sans-serif", boxShadow:"0 4px 0 #0a1015", display:"flex", alignItems:"center", justifyContent:"center", gap:"10px" }}>
-                    <span style={{ fontSize:"18px" }}>💬</span><span>Chat interno — gratis</span>
-                  </button>
                 </>
               );
             })()}

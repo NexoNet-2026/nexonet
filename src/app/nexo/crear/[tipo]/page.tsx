@@ -108,7 +108,7 @@ function NexoCrearInner() {
     foto1_url:"", foto2_url:"", foto3_url:"",
     tipo_acceso:"libre", tipo_contacto:"datos",
     rubro_id: preRubroId, subrubro_id: preSubrubroId,
-    lat:"", lng:"",
+    lat:"", lng:"", mostrar_en_mapa: true,
   });
 
   const F = (k:string, v:any) => setForm(f => ({...f, [k]:v}));
@@ -297,6 +297,7 @@ function NexoCrearInner() {
       if (form.moneda)      payload.moneda      = form.moneda;
       if (form.lat)         payload.lat         = parseFloat(form.lat);
       if (form.lng)         payload.lng         = parseFloat(form.lng);
+      payload.mostrar_en_mapa = (form as any).mostrar_en_mapa !== false;
       if (form.subrubro_id) payload.subrubro_id = parseInt(form.subrubro_id);
 
       // Guardar filtros dinámicos
@@ -504,6 +505,15 @@ function NexoCrearInner() {
             <L>Dirección (opcional)</L>
             <input value={form.direccion} onChange={e=>F("direccion",e.target.value)} placeholder="Ej: San Martín 1234, local 3" style={{...IS,marginBottom:"0"}}/>
             {form.lat && <div style={{marginTop:"8px",fontSize:"11px",color:"#27ae60",fontWeight:700}}>✅ Ubicación GPS detectada</div>}
+            <div style={{marginTop:'10px',display:'flex',alignItems:'center',justifyContent:'space-between',background:'rgba(58,123,213,0.06)',border:'1px solid rgba(58,123,213,0.2)',borderRadius:'10px',padding:'10px 14px'}}>
+              <div>
+                <div style={{fontSize:'12px',fontWeight:800,color:'#1a2a3a'}}>🗺️ Mostrar en el mapa</div>
+                <div style={{fontSize:'10px',color:'#9a9a9a',fontWeight:600,marginTop:'2px'}}>{(form as any).mostrar_en_mapa ? 'Tu anuncio aparece en el mapa de NexoNet' : 'Tu anuncio no aparece en el mapa'}</div>
+              </div>
+              <div onClick={()=>F('mostrar_en_mapa', !(form as any).mostrar_en_mapa)} style={{width:'44px',height:'24px',borderRadius:'12px',background:(form as any).mostrar_en_mapa?'#3a7bd5':'#e0e0e0',position:'relative',cursor:'pointer',transition:'background 0.2s',flexShrink:0}}>
+                <div style={{position:'absolute',top:'3px',width:'18px',height:'18px',borderRadius:'50%',background:'#fff',boxShadow:'0 1px 4px rgba(0,0,0,0.2)',transition:'left 0.2s',left:(form as any).mostrar_en_mapa?'23px':'3px'}}/>
+              </div>
+            </div>
           </div>
 
           <div style={CAJA}>

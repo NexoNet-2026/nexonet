@@ -372,7 +372,7 @@ setMisGruposData([...conConteo(fromMiembros), ...conConteo(fromCreados)]);
   const gastAdjuntos  = perfil?.bits_gastados_adjuntos  || 0;
   const promoGanados  = perfil?.bits_promo_ganados   || 0;
   const promoReembolso= perfil?.bits_promo_reembolso || 0;
-  const totalConsum   = bitsGastados + promoGastados + freeGastados;
+  const totalConsum   = gastAnuncios + gastEmpresa + gastServicio + gastTrabajo + gastConexion + gastFlash + gastLink + gastBusquedas + gastGrupo + gastAdjuntos;
   const estrellas     = bitsGastados + (perfil?.bits_promo_total || 0);
   const totalVistas   = perfil?.total_vistas         || 0;
   const totalConex    = perfil?.total_conexiones     || 0;

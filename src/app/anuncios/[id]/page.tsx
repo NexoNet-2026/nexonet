@@ -694,6 +694,9 @@ export default function AnuncioDetalle() {
                         {usuario.telefono && (
                           <DatoContacto emoji="📞" label="Teléfono" valor={usuario.telefono} color="#3a7bd5" />
                         )}
+                        {usuario.vis_personal?.whatsapp && usuario.whatsapp && (
+                          <DatoContacto emoji="📱" label="WhatsApp" valor={usuario.whatsapp} color="#25d366" />
+                        )}
                         {usuario.vis_personal?.provincia && usuario.provincia && (
                           <DatoContacto emoji="🗺️" label="Provincia" valor={usuario.provincia} color="#8e44ad" />
                         )}
@@ -773,7 +776,7 @@ export default function AnuncioDetalle() {
               );
             })()}
 
-            {tieneUbicacion && (
+            {tieneUbicacion && anuncio.mostrar_en_mapa !== false && (
               <button onClick={() => router.push(`/mapa?lat=${anuncio.lat}&lng=${anuncio.lng}&id=${anuncio.id}`)} style={{ width:"100%", background:"rgba(26,42,58,0.05)", border:"2px solid rgba(26,42,58,0.15)", borderRadius:"12px", padding:"13px", fontSize:"13px", fontWeight:800, color:"#1a2a3a", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
                 🗺️ Ver en mapa
               </button>

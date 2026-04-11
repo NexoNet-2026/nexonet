@@ -456,6 +456,16 @@ export default function AnuncioDetalle() {
                 </div>
               ))}
             </div>
+            <div style={{marginTop:'8px'}}>
+              <div style={{fontSize:'11px',fontWeight:800,color:'#9a9a9a',textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:'6px'}}>✏️ O escribí el tuyo</div>
+              <textarea
+                value={MENSAJES_PRESET.includes(mensajeConexion) ? '' : mensajeConexion}
+                onChange={e => setMensajeConexion(e.target.value)}
+                placeholder="Escribí tu mensaje personalizado..."
+                rows={3}
+                style={{width:'100%',border:'2px solid #e8e8e6',borderRadius:'12px',padding:'12px 14px',fontSize:'13px',fontFamily:"'Nunito',sans-serif",color:'#1a2a3a',outline:'none',boxSizing:'border-box' as any,resize:'none' as any}}
+              />
+            </div>
             <button onClick={ejecutarConectar} disabled={conectando}
               style={{ width:"100%", background:"linear-gradient(135deg,#27ae60,#1e8449)", border:"none", borderRadius:"14px", padding:"16px", fontSize:"15px", fontWeight:900, color:"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif", opacity:conectando?0.7:1 }}>
               {conectando ? "Conectando..." : "🔗 Conectar ahora"}

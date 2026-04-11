@@ -694,13 +694,10 @@ export default function AnuncioDetalle() {
                         {usuario.telefono && (
                           <DatoContacto emoji="📞" label="Teléfono" valor={usuario.telefono} color="#3a7bd5" />
                         )}
-                        {usuario.vis_personal?.whatsapp && usuario.whatsapp && (
-                          <DatoContacto emoji="📱" label="WhatsApp" valor={usuario.whatsapp} color="#25d366" />
-                        )}
-                        {usuario.vis_personal?.provincia && usuario.provincia && (
+                        {usuario.provincia && (
                           <DatoContacto emoji="🗺️" label="Provincia" valor={usuario.provincia} color="#8e44ad" />
                         )}
-                        {usuario.vis_personal?.ciudad && usuario.ciudad && (
+                        {usuario.ciudad && (
                           <DatoContacto emoji="🏙️" label="Ciudad" valor={usuario.ciudad} color="#8e44ad" />
                         )}
                         {usuario.vis_personal?.barrio && usuario.barrio && (
@@ -708,6 +705,9 @@ export default function AnuncioDetalle() {
                         )}
                         {usuario.vis_personal?.direccion && usuario.direccion && (
                           <DatoContacto emoji="📍" label="Dirección" valor={usuario.direccion} color="#8e44ad" />
+                        )}
+                        {(usuario.vis_personal?.whatsapp || usuario.vis_personal === null) && usuario.whatsapp && (
+                          <DatoContacto emoji="📱" label="WhatsApp" valor={usuario.whatsapp} color="#25d366" />
                         )}
                       </div>
                     </div>

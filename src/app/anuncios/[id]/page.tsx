@@ -738,7 +738,8 @@ export default function AnuncioDetalle() {
                         if (nf >= 1) nf -= 1;
                         else if (nn >= 1) nn -= 1;
                         else np -= 1;
-                        await supabase.from("usuarios").update({ bits_free: nf, bits: nn, bits_promo: np }).eq("id", session.user.id);
+                        const { data: perfilActual } = await supabase.from("usuarios").select("bits_gastados_conexion").eq("id", session.user.id).single();
+                        await supabase.from("usuarios").update({ bits_free: nf, bits: nn, bits_promo: np, bits_gastados_conexion: (perfilActual?.bits_gastados_conexion || 0) + 1 }).eq("id", session.user.id);
                         // Descontar 1 BIT escalonado al dueño del anuncio
                         const { data: duData } = await supabase.from("usuarios").select("bits,bits_free,bits_promo").eq("id", anuncio.usuario_id).single();
                         if (duData) {

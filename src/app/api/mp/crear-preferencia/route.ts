@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
 
     const preference = {
       items: [{
-        id: paquete,
+        id: paquete || paquete_id,
         title: `NexoNet — ${pkg.titulo}`,
         quantity: 1,
         unit_price: pkg.precio,
@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
       }],
       payer: { email: email || "usuario@nexonet.ar" },
       back_urls: {
-        success: `https://nexonet.ar/pago/exito?paquete=${paquete}&usuario_id=${usuario_id}`,
+        success: `https://nexonet.ar/pago/exito?paquete=${paquete || paquete_id}&usuario_id=${usuario_id}`,
         failure: `https://nexonet.ar/pago/error`,
         pending: `https://nexonet.ar/pago/pendiente`,
       },

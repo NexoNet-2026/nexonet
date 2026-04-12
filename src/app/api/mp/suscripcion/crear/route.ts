@@ -27,7 +27,7 @@ export async function POST(req: Request) {
           transaction_amount: monto,
           currency_id: "ARS",
         },
-        back_url: back_url || "https://nexonet.vercel.app/usuario",
+        back_url: back_url || "https://nexonet.ar/usuario",
         status: "pending",
       }),
     });

@@ -31,6 +31,25 @@ const PAQUETES: Record<string, { col: string; cantidad: number; ilimitado?: bool
 
 export async function POST(req: NextRequest) {
   try {
+    const secret = process.env.MP_WEBHOOK_SECRET;
+    if (secret) {
+      const xSignature = req.headers.get('x-signature');
+      const xRequestId = req.headers.get('x-request-id');
+      const { searchParams } = new URL(req.url);
+      const dataId = searchParams.get('data.id');
+
+      if (xSignature && xRequestId && dataId) {
+        const manifest = 'id:' + dataId + ';request-id:' + xRequestId + ';ts:' + xSignature.split(',').find(p => p.startsWith('ts='))?.split('=')[1] + ';';
+        const { createHmac } = await import('crypto');
+        const hash = createHmac('sha256', secret).update(manifest).digest('hex');
+        const v1 = xSignature.split(',').find(p => p.startsWith('v1='))?.split('=')[1];
+        if (hash !== v1) {
+          console.warn('MP Webhook firma inválida');
+          return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+      }
+    }
+
     const body = await req.json();
     console.log("MP Webhook:", JSON.stringify(body));
 

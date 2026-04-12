@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
         pending: `https://nexonet.ar/pago/pendiente`,
       },
       auto_return: "approved",
-      external_reference: `${usuario_id}|${paquete}|${Date.now()}`,
+      external_reference: `${usuario_id}|${paquete || paquete_id}|${Date.now()}`,
       notification_url: `https://nexonet.ar/api/mp/webhook`,
       statement_descriptor: "NEXONET",
     };

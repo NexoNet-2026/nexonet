@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Faltan datos' }, { status: 400 });
     }
 
-    // Verificar idempotencia - ya conectó antes?
+    // 1. Verificar idempotencia - ya conectó antes?
     const { data: yaConecto } = await supabase
       .from('conexiones')
       .select('id')
@@ -28,10 +28,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true, ya_conectado: true, contacto: anu });
     }
 
-    // Traer anuncio y verificar bits
+    // 2. Traer anuncio
     const { data: anuncio, error: anuError } = await supabase
       .from('anuncios')
-      .select('id, bits_conexion, usuario_id, link_externo, telefono, email')
+      .select('id, conexiones, usuario_id, link_externo, telefono, email')
       .eq('id', anuncio_id)
       .single();
 
@@ -39,36 +39,56 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Anuncio no encontrado' }, { status: 404 });
     }
 
-    if ((anuncio.bits_conexion || 0) <= 0) {
-      return NextResponse.json({ error: 'El anuncio no tiene BIT de conexión disponibles' }, { status: 402 });
+    // 3. Traer saldo del usuario que conecta
+    const { data: usuario, error: usuError } = await supabase
+      .from('usuarios')
+      .select('bits_free, bits, bits_promo')
+      .eq('id', usuario_id)
+      .single();
+
+    if (usuError || !usuario) {
+      return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 });
     }
 
-    // Descontar BIT del vendedor (atomico con service role)
-    const { error: updateError } = await supabase
+    const bits_free = usuario.bits_free || 0;
+    const bits = usuario.bits || 0;
+    const bits_promo = usuario.bits_promo || 0;
+    const total = bits_free + bits + bits_promo;
+
+    if (total <= 0) {
+      return NextResponse.json({ error: 'No tenés BIT disponibles para conectar' }, { status: 402 });
+    }
+
+    // 4. Descontar 1 BIT del usuario (prioridad: free → bits → promo)
+    const update: any = {};
+    if (bits_free >= 1) update.bits_free = bits_free - 1;
+    else if (bits >= 1) update.bits = bits - 1;
+    else update.bits_promo = bits_promo - 1;
+
+    await supabase.from('usuarios').update(update).eq('id', usuario_id);
+
+    // 5. Incrementar contador de conexiones del anuncio
+    await supabase
       .from('anuncios')
-      .update({ bits_conexion: anuncio.bits_conexion - 1 })
-      .eq('id', anuncio_id)
-      .eq('bits_conexion', anuncio.bits_conexion); // optimistic lock
+      .update({ conexiones: (anuncio.conexiones || 0) + 1 })
+      .eq('id', anuncio_id);
 
-    if (updateError) {
-      return NextResponse.json({ error: 'Error al descontar BIT, intenta de nuevo' }, { status: 500 });
-    }
-
-    // Registrar conexion
+    // 6. Registrar conexion
     await supabase.from('conexiones').insert({
       anuncio_id,
       usuario_id,
       vendedor_id: anuncio.usuario_id,
     });
 
-    // Notificar al vendedor
+    // 7. Notificar al vendedor
     await supabase.from('notificaciones').insert({
       usuario_id: anuncio.usuario_id,
       tipo: 'sistema',
       leida: false,
-      mensaje: 'alguien se conectó con tu anuncio. Se descontó 1 BIT de conexión.',
+      mensaje: 'alguien se conectó con tu anuncio.',
     });
 
+    // 8. Devolver contacto
     return NextResponse.json({
       ok: true,
       contacto: {

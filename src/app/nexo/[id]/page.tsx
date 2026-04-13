@@ -519,6 +519,36 @@ function NexoPageInner() {
                   {nexo.config?.tipo_acceso==="aprobacion"?"⏳ Solicitar ingreso":"👥 Unirse (500 BIT)"}
                 </button>
               )}
+              {!esAdmin && nexo.tipo!=="grupo" && (
+                <button onClick={async()=>{
+                  if (!perfil) { router.push("/login"); return; }
+                  try {
+                    const r = await fetch("/api/nexos/conectar", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ nexo_id: id, usuario_id: perfil.id }),
+                    });
+                    const j = await r.json();
+                    if (!r.ok || !j.ok) { alert(j.error || "Error al conectar"); return; }
+                    const c = j.contacto || {};
+                    if (c.whatsapp) {
+                      const wa = String(c.whatsapp).replace(/\D/g, "");
+                      window.open(`https://wa.me/${wa}`, "_blank");
+                    } else if (c.link_externo) {
+                      window.open(c.link_externo, "_blank");
+                    } else if (c.telefono) {
+                      window.open(`tel:${c.telefono}`, "_blank");
+                    } else {
+                      alert("Conexión registrada, pero el nexo no tiene datos de contacto.");
+                    }
+                  } catch (err: any) {
+                    alert("Error: " + (err?.message || "desconocido"));
+                  }
+                }}
+                  style={{ background:`${colorNexo}cc`, border:"none", borderRadius:"10px", padding:"7px 8px", fontSize:"11px", fontWeight:900, color:"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
+                  🔗 Conectar — 1 BIT
+                </button>
+              )}
               {miMiembro?.estado==="pendiente" && <div style={{ background:"rgba(230,126,34,0.2)", border:"1px solid rgba(230,126,34,0.4)", borderRadius:"10px", padding:"7px 12px", fontSize:"11px", fontWeight:800, color:"#e67e22" }}>⏳ Pendiente</div>}
               {miMiembro?.estado==="vencido" && (
                 <button onClick={async()=>{

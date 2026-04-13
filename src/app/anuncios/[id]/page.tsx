@@ -259,71 +259,31 @@ export default function AnuncioDetalle() {
     setConectando(true);
     setPopupMensaje(false);
 
-    const { data: anuData } = await supabase
-      .from("anuncios")
-      .select("id, usuario_id, conexiones, bits_conexion")
-      .eq("id", anuncio.id)
-      .single();
-    if (!anuData) { setConectando(false); return; }
+    try {
+      const res = await fetch('/api/anuncios/conectar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ anuncio_id: anuncio.id, usuario_id: session.user.id }),
+      });
+      const data = await res.json();
 
-    const bitsDisponibles = anuData.bits_conexion || 0;
-    if (bitsDisponibles <= 0) {
-      alert("Este anuncio no tiene BIT Conexión disponibles. El vendedor debe recargar.");
+      if (!res.ok || !data.ok) {
+        alert(data.error || 'Error al conectar');
+        setConectando(false);
+        return;
+      }
+
       setConectando(false);
-      return;
-    }
 
-    const nuevosBits = bitsDisponibles - 1;
-    await supabase.from("anuncios").update({
-      conexiones:    (anuData.conexiones || 0) + 1,
-      bits_conexion: nuevosBits,
-    }).eq("id", anuncio.id);
-
-    await supabase.from("notificaciones").insert({
-      usuario_id:  anuData.usuario_id,
-      emisor_id:   session.user.id,
-      anuncio_id:  anuncio.id,
-      tipo:        "conexion",
-      mensaje:     mensajeConexion,
-      leida:       false,
-    });
-
-    await supabase.from("mensajes").insert({
-      anuncio_id:  anuncio.id,
-      emisor_id:   session.user.id,
-      receptor_id: anuData.usuario_id,
-      texto:       mensajeConexion,
-    });
-
-    setAnuncio((prev: any) => ({
-      ...prev,
-      conexiones:    (anuData.conexiones || 0) + 1,
-      bits_conexion: nuevosBits,
-    }));
-
-    if (nuevosBits <= 5 && nuevosBits > 0) {
-      await supabase.from("notificaciones").insert({
-        usuario_id: anuData.usuario_id,
-        tipo:       "sistema",
-        mensaje:    `⚠️ Tu anuncio "${anuncio.titulo}" tiene solo ${nuevosBits} BIT Conexión restantes. ¡Recargá para seguir recibiendo conexiones!`,
-        leida:      false,
-      });
-    }
-    if (nuevosBits === 0) {
-      await supabase.from("notificaciones").insert({
-        usuario_id: anuData.usuario_id,
-        tipo:       "sistema",
-        mensaje:    `🔴 Tu anuncio "${anuncio.titulo}" se quedó sin BIT Conexión. Los buscadores ya no podrán conectarse hasta que recargues.`,
-        leida:      false,
-      });
-    }
-
-    setConectando(false);
-
-    if (usuario?.es_bot && anuncio.link_externo) {
-      window.open(anuncio.link_externo, '_blank');
-    } else {
-      router.push(`/chat/${anuncio.id}/${anuData.usuario_id}`);
+      const link = data.contacto?.link_externo;
+      if (link) {
+        window.open(link, '_blank');
+      } else {
+        router.push(`/chat/${anuncio.id}/${anuncio.usuario_id}`);
+      }
+    } catch (err) {
+      alert('Error al conectar');
+      setConectando(false);
     }
   };
 

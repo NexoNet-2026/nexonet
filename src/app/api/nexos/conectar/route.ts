@@ -9,7 +9,7 @@ const supabase = createClient(
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const nexo_id = parseInt(body.nexo_id);
+    const nexo_id = body.nexo_id;
     const usuario_id = body.usuario_id;
     if (!nexo_id || !usuario_id) {
       return NextResponse.json({ error: 'Faltan datos' }, { status: 400 });

@@ -46,7 +46,6 @@ export async function POST(req: Request) {
     // 3. Limpiar resto de tablas relacionadas al usuario
     const tablas = [
       "notificaciones",
-      "mensajes",
       "push_suscripciones",
       "nexo_miembros",
       "log_bits_internos",

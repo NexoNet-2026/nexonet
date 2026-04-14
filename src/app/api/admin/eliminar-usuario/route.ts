@@ -54,6 +54,10 @@ export async function POST(req: Request) {
       "bits_promo_descargas",
       "contactos_nexonet",
       "socios_comerciales",
+      "conexiones",
+      "conexiones_nexo",
+      "suscripciones_mp",
+      "usuarios_mp_tokens",
     ];
     for (const tabla of tablas) {
       await supabase.from(tabla).delete().eq("usuario_id", usuario_id);
@@ -65,6 +69,10 @@ export async function POST(req: Request) {
     await supabase.from("notificaciones").delete().eq("emisor_id", usuario_id);
     await supabase.from("comisiones_promotor").delete().eq("promotor_id", usuario_id);
     await supabase.from("comisiones_promotor").delete().eq("origen_id", usuario_id);
+    await supabase.from("conexiones").delete().eq("vendedor_id", usuario_id);
+    await supabase.from("conexiones_nexo").delete().eq("vendedor_id", usuario_id);
+    await supabase.from("insignias_reputacion").delete().eq("receptor_id", usuario_id);
+    await supabase.from("insignias_reputacion").delete().eq("emisor_id", usuario_id);
 
     // 4. Eliminar de tabla usuarios
     await supabase.from("usuarios").delete().eq("id", usuario_id);

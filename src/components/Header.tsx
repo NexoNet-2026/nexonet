@@ -12,6 +12,7 @@ export default function Header() {
   const [panelOpen,setPanelOpen]= useState(false);
   const [promotorPopup, setPromotorPopup] = useState(false);
   const [pushBanner, setPushBanner] = useState(false);
+  const [contadores, setContadores] = useState<{ usuarios_registrados: number; usuarios_activos: number } | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -151,6 +152,21 @@ export default function Header() {
     if (diff < 86400)return `${Math.floor(diff/3600)}h`;
     return `${Math.floor(diff/86400)}d`;
   };
+
+  // ── Contadores públicos ──
+  useEffect(() => {
+    let cancelado = false;
+    fetch("/api/publico/contadores")
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        if (cancelado || !d || d.error) return;
+        if (typeof d.usuarios_registrados === "number" && typeof d.usuarios_activos === "number") {
+          setContadores({ usuarios_registrados: d.usuarios_registrados, usuarios_activos: d.usuarios_activos });
+        }
+      })
+      .catch(() => {});
+    return () => { cancelado = true; };
+  }, []);
 
   // ── Calcular y exponer altura del header como CSS variable ──
   useEffect(() => {
@@ -306,6 +322,27 @@ export default function Header() {
         )}
 
       </header>
+
+      {/* CONTADORES PÚBLICOS */}
+      {contadores && (
+        <div style={{
+          background: "#152235",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: "10px",
+          padding: "4px 12px",
+          fontSize: "11px",
+          fontWeight: 700,
+          color: "rgba(255,255,255,0.65)",
+          letterSpacing: "0.3px",
+          borderTop: "1px solid rgba(255,255,255,0.04)",
+        }}>
+          <span>👥 {contadores.usuarios_registrados.toLocaleString("es-AR")} usuarios</span>
+          <span style={{ color: "rgba(255,255,255,0.25)" }}>·</span>
+          <span>🟢 {contadores.usuarios_activos.toLocaleString("es-AR")} activos</span>
+        </div>
+      )}
 
       {/* FRANJA NEXO PROMOTOR */}
       <div onClick={() => setPromotorPopup(true)} style={{

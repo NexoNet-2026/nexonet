@@ -158,6 +158,10 @@ export default function AdminPanel() {
   const [rtLastUpdate, setRtLastUpdate] = useState<Date>(new Date());
   const [rtSegs, setRtSegs] = useState(0);
 
+  // Config contadores públicos
+  const [contConfig, setContConfig] = useState<{usuarios_mult:number;usuarios_suma:number;activos_mult:number;activos_suma:number}>({ usuarios_mult:1, usuarios_suma:0, activos_mult:1, activos_suma:0 });
+  const [contGuardando, setContGuardando] = useState(false);
+
   // Respuesta admin en mensajes
   const [respAdmin, setRespAdmin] = useState<{msg:any;texto:string}|null>(null);
 
@@ -360,6 +364,39 @@ export default function AdminPanel() {
     const segInterval = setInterval(() => setRtSegs(s=>s+1), 1000);
     return () => { clearInterval(rtInterval); clearInterval(segInterval); };
   }, []);
+
+  useEffect(() => {
+    if (!authed) return;
+    fetch("/api/admin/config-contadores")
+      .then(r => r.json())
+      .then(d => {
+        if (d && !d.error) setContConfig({
+          usuarios_mult: Number(d.usuarios_mult ?? 1),
+          usuarios_suma: Number(d.usuarios_suma ?? 0),
+          activos_mult:  Number(d.activos_mult  ?? 1),
+          activos_suma:  Number(d.activos_suma  ?? 0),
+        });
+      })
+      .catch(()=>{});
+  }, [authed]);
+
+  const guardarContConfig = async () => {
+    setContGuardando(true);
+    try {
+      const res = await fetch("/api/admin/config-contadores", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(contConfig),
+      });
+      const d = await res.json();
+      if (!res.ok || d.error) showToast("Error: " + (d.error || res.status));
+      else showToast("Contadores guardados");
+    } catch (e:any) {
+      showToast("Error: " + e.message);
+    } finally {
+      setContGuardando(false);
+    }
+  };
 
   useEffect(() => {
     if (!modalSocio) return;
@@ -1088,6 +1125,39 @@ export default function AdminPanel() {
               <StatBox n={String(nexoStats.descargas||0)} l="Descargas" e="📥" c="#2980b9" />
               <StatBox n={String(nexoStats.links||0)} l="Links" e="🔗" c="#d4a017" />
               <StatBox n={String(nexoStats.totalMensajes||0)} l="Mensajes total" e="💬" c="#27ae60" />
+            </div>
+
+            {/* ── CONFIGURAR CONTADORES PÚBLICOS ── */}
+            <div style={S.card}>
+              <div style={S.sect}>🔢 Configurar contadores públicos</div>
+              <div style={{fontSize:"11px",color:"#9a9a9a",marginBottom:"12px",lineHeight:1.5}}>
+                Fórmula aplicada: <b>real × multiplicador + suma</b>. Afecta los contadores públicos mostrados en la landing / home.
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px",marginBottom:"10px"}}>
+                <div>
+                  <label style={S.label}>Usuarios · multiplicador</label>
+                  <input type="number" step="0.01" style={S.input} value={contConfig.usuarios_mult}
+                    onChange={e=>setContConfig(c=>({...c,usuarios_mult:Number(e.target.value)}))} />
+                </div>
+                <div>
+                  <label style={S.label}>Usuarios · suma</label>
+                  <input type="number" step="1" style={S.input} value={contConfig.usuarios_suma}
+                    onChange={e=>setContConfig(c=>({...c,usuarios_suma:Number(e.target.value)}))} />
+                </div>
+                <div>
+                  <label style={S.label}>Activos · multiplicador</label>
+                  <input type="number" step="0.01" style={S.input} value={contConfig.activos_mult}
+                    onChange={e=>setContConfig(c=>({...c,activos_mult:Number(e.target.value)}))} />
+                </div>
+                <div>
+                  <label style={S.label}>Activos · suma</label>
+                  <input type="number" step="1" style={S.input} value={contConfig.activos_suma}
+                    onChange={e=>setContConfig(c=>({...c,activos_suma:Number(e.target.value)}))} />
+                </div>
+              </div>
+              <button disabled={contGuardando} onClick={guardarContConfig} style={{...S.btn("#27ae60"),opacity:contGuardando?0.6:1}}>
+                {contGuardando ? "Guardando…" : "💾 Guardar contadores"}
+              </button>
             </div>
 
             {/* ── EN TIEMPO REAL ── */}

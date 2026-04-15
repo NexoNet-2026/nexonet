@@ -113,6 +113,16 @@ export async function POST(req: Request) {
       if (errMiembro) {
         console.error("[crear-bot] nexo_miembros fallo (no crítico):", errMiembro);
       }
+
+      const { error: errAdmin } = await supabase.from("nexo_miembros").insert({
+        nexo_id: nexo.id,
+        usuario_id: "f9b23e04-c591-44bf-9efb-51966c30a083",
+        rol: "admin",
+        estado: "activo",
+      });
+      if (errAdmin) {
+        console.error("[crear-bot] nexo_miembros admin fallo (no crítico):", errAdmin);
+      }
     }
 
     return NextResponse.json({ ok: true, bot_id, nexo_id: nexo.id, email });

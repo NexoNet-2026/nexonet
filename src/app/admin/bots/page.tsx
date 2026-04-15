@@ -114,6 +114,7 @@ export default function BotsAdmin() {
         showToast(`✅ Bot creado: ${d.email}`);
         setNombre(""); setSubtipo(""); setDescripcion("");
         setAvatarUrl(""); setBannerUrl(""); setFotos([]);
+        if (d.nexo_id) setTimeout(() => router.push(`/nexo/${d.nexo_id}`), 800);
       }
     } catch (e:any) { showToast("Error: " + e.message); }
     finally { setCreando(false); }

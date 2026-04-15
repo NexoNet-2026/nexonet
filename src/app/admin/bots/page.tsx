@@ -82,6 +82,26 @@ export default function BotsAdmin() {
     setSeleccionando(null);
   };
 
+  const [subiendo, setSubiendo] = useState<"avatar"|"banner"|null>(null);
+
+  const subirImagen = async (file: File, slot: "avatar"|"banner") => {
+    if (!file) return;
+    setSubiendo(slot);
+    try {
+      const safe = (nombre || "bot").toLowerCase().replace(/\s+/g,"-").replace(/[^a-z0-9\-]/g,"").slice(0,40) || "bot";
+      const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+      const path = `bots/${Date.now()}_${safe}.${ext}`;
+      const { error: errUp } = await supabase.storage.from("imagenes").upload(path, file, { cacheControl: "3600", upsert: false });
+      if (errUp) { showToast("Error subiendo: " + errUp.message); return; }
+      const { data } = supabase.storage.from("imagenes").getPublicUrl(path);
+      const url = data?.publicUrl;
+      if (!url) { showToast("No se pudo obtener URL"); return; }
+      if (slot === "avatar") setAvatarUrl(url); else setBannerUrl(url);
+      showToast("✅ Imagen subida");
+    } catch (e:any) { showToast("Error: " + e.message); }
+    finally { setSubiendo(null); }
+  };
+
   const generarIA = async () => {
     if (!nombre.trim()) return showToast("Escribí un nombre primero");
     setGenerandoIA(true);
@@ -199,20 +219,34 @@ export default function BotsAdmin() {
             </div>
 
             <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10px", marginBottom:"4px"}}>
-              <div>
-                <label style={S.label}>Avatar {seleccionando==="avatar" && "(elegí ↓)"}</label>
-                <div onClick={()=>setSeleccionando(seleccionando==="avatar"?null:"avatar")}
-                  style={{border:"2px dashed "+(seleccionando==="avatar"?"#d4a017":"#e8e8e6"), borderRadius:"10px", height:"110px", cursor:"pointer", background: avatarUrl?`url(${avatarUrl}) center/cover`:"#f9f9f7", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"11px", color:"#9a9a9a", fontWeight:700}}>
-                  {!avatarUrl && (seleccionando==="avatar"?"Elegí una foto":"Click para elegir")}
-                </div>
-              </div>
-              <div>
-                <label style={S.label}>Banner {seleccionando==="banner" && "(elegí ↓)"}</label>
-                <div onClick={()=>setSeleccionando(seleccionando==="banner"?null:"banner")}
-                  style={{border:"2px dashed "+(seleccionando==="banner"?"#d4a017":"#e8e8e6"), borderRadius:"10px", height:"110px", cursor:"pointer", background: bannerUrl?`url(${bannerUrl}) center/cover`:"#f9f9f7", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"11px", color:"#9a9a9a", fontWeight:700}}>
-                  {!bannerUrl && (seleccionando==="banner"?"Elegí una foto":"Click para elegir")}
-                </div>
-              </div>
+              {(["avatar","banner"] as const).map(slot => {
+                const url = slot==="avatar" ? avatarUrl : bannerUrl;
+                const activo = seleccionando===slot;
+                const label = slot==="avatar" ? "Avatar" : "Banner";
+                const mini: React.CSSProperties = { flex:1, background:"#f0f0ef", border:"1px solid #e0e0de", borderRadius:"8px", padding:"6px 4px", fontSize:"10px", fontWeight:800, color:"#1a2a3a", cursor:"pointer", textAlign:"center", whiteSpace:"nowrap" };
+                return (
+                  <div key={slot}>
+                    <label style={S.label}>{label} {activo && "(elegí ↓)"}</label>
+                    <div onClick={()=>setSeleccionando(activo?null:slot)}
+                      style={{border:"2px dashed "+(activo?"#d4a017":"#e8e8e6"), borderRadius:"10px", height:"110px", cursor:"pointer", background: url?`url(${url}) center/cover`:"#f9f9f7", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"11px", color:"#9a9a9a", fontWeight:700}}>
+                      {!url && (activo?"Elegí una foto":"Click para elegir")}
+                      {subiendo===slot && <div style={{background:"rgba(255,255,255,0.9)", padding:"4px 10px", borderRadius:"6px"}}>Subiendo…</div>}
+                    </div>
+                    <div style={{display:"flex", gap:"4px", marginTop:"6px"}}>
+                      <label style={mini}>
+                        📁 Subir
+                        <input type="file" accept="image/*" style={{display:"none"}}
+                          onChange={e=>{const f=e.target.files?.[0]; if(f) subirImagen(f, slot); e.target.value="";}} />
+                      </label>
+                      <label style={mini}>
+                        📷 Cámara
+                        <input type="file" accept="image/*" capture="environment" style={{display:"none"}}
+                          onChange={e=>{const f=e.target.files?.[0]; if(f) subirImagen(f, slot); e.target.value="";}} />
+                      </label>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
 
             {fotos.length>0 && (

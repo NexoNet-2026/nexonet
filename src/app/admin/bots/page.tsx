@@ -228,9 +228,16 @@ export default function BotsAdmin() {
                   <div key={slot}>
                     <label style={S.label}>{label} {activo && "(elegí ↓)"}</label>
                     <div onClick={()=>setSeleccionando(activo?null:slot)}
-                      style={{border:"2px dashed "+(activo?"#d4a017":"#e8e8e6"), borderRadius:"10px", height:"110px", cursor:"pointer", background: url?`url(${url}) center/cover`:"#f9f9f7", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"11px", color:"#9a9a9a", fontWeight:700}}>
+                      style={{position:"relative", border:"2px dashed "+(activo?"#d4a017":"#e8e8e6"), borderRadius:"10px", height:"110px", cursor:"pointer", background: url?`url(${url}) center/cover`:"#f9f9f7", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"11px", color:"#9a9a9a", fontWeight:700}}>
                       {!url && (activo?"Elegí una foto":"Click para elegir")}
                       {subiendo===slot && <div style={{background:"rgba(255,255,255,0.9)", padding:"4px 10px", borderRadius:"6px"}}>Subiendo…</div>}
+                      {url && (
+                        <button onClick={(e)=>{e.stopPropagation(); if(slot==="avatar") setAvatarUrl(""); else setBannerUrl("");}}
+                          title="Quitar imagen"
+                          style={{position:"absolute", top:"6px", right:"6px", width:"26px", height:"26px", borderRadius:"50%", border:"none", background:"rgba(231,76,60,0.95)", color:"#fff", fontSize:"13px", fontWeight:900, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", boxShadow:"0 2px 6px rgba(0,0,0,0.3)"}}>
+                          ✕
+                        </button>
+                      )}
                     </div>
                     <div style={{display:"flex", gap:"4px", marginTop:"6px"}}>
                       <label style={mini}>

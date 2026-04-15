@@ -213,6 +213,11 @@ export default function Header() {
           <div style={{ fontSize: "10px", fontWeight: 700, color: "#8a9aaa", letterSpacing: "3px", textTransform: "uppercase" }}>
             Argentina
           </div>
+          {contadores && (
+            <div style={{ marginTop: "3px", fontSize: "9px", fontWeight: 700, color: "rgba(255,255,255,0.55)", letterSpacing: "0.2px", whiteSpace: "nowrap" }}>
+              👥 {contadores.usuarios_registrados.toLocaleString("es-AR")} · 🟢 {contadores.usuarios_activos.toLocaleString("es-AR")} activos
+            </div>
+          )}
         </Link>
 
         {/* CENTRO: HOME + CAMPANA */}
@@ -322,27 +327,6 @@ export default function Header() {
         )}
 
       </header>
-
-      {/* CONTADORES PÚBLICOS */}
-      {contadores && (
-        <div style={{
-          background: "#152235",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: "10px",
-          padding: "4px 12px",
-          fontSize: "11px",
-          fontWeight: 700,
-          color: "rgba(255,255,255,0.65)",
-          letterSpacing: "0.3px",
-          borderTop: "1px solid rgba(255,255,255,0.04)",
-        }}>
-          <span>👥 {contadores.usuarios_registrados.toLocaleString("es-AR")} usuarios</span>
-          <span style={{ color: "rgba(255,255,255,0.25)" }}>·</span>
-          <span>🟢 {contadores.usuarios_activos.toLocaleString("es-AR")} activos</span>
-        </div>
-      )}
 
       {/* FRANJA NEXO PROMOTOR */}
       <div onClick={() => setPromotorPopup(true)} style={{

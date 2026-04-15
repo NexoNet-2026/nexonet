@@ -1053,6 +1053,7 @@ export default function AdminPanel() {
     {id:"socios",   e:"🤝",l:"Socios"},
     {id:"soporte",  e:"💬",l:"Soporte",badge:soportePendientes},
     {id:"dashboard",e:"🤖",l:"Bots",href:"/admin/bots"},
+    {id:"dashboard",e:"📥",l:"Importar",href:"/admin/importar"},
   ];
 
   const ItemRow = ({label,onEdit,onDelete,onUp,onDown,badge,extra}:{label:string;onEdit:()=>void;onDelete:()=>void;onUp?:()=>void;onDown?:()=>void;badge?:React.ReactNode;extra?:React.ReactNode}) => (

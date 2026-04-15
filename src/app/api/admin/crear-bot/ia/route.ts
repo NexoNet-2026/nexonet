@@ -5,20 +5,19 @@ export async function POST(req: Request) {
     const { nombre, tipo } = await req.json();
     if (!nombre || !tipo) return NextResponse.json({ error: "nombre y tipo requeridos" }, { status: 400 });
 
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey) return NextResponse.json({ error: "ANTHROPIC_API_KEY no configurada" }, { status: 500 });
+    const apiKey = process.env.GROQ_API_KEY;
+    if (!apiKey) return NextResponse.json({ error: "GROQ_API_KEY no configurada" }, { status: 500 });
 
     const prompt = `Generá una descripción atractiva para un ${tipo} llamado ${nombre} en NexoNet Argentina. Máximo 150 palabras. Solo el texto, sin explicaciones.`;
 
-    const r = await fetch("https://api.anthropic.com/v1/messages", {
+    const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
+        "Authorization": `Bearer ${apiKey}`,
         "content-type": "application/json",
       },
       body: JSON.stringify({
-        model: "claude-haiku-4-5-20251001",
+        model: "llama3-8b-8192",
         max_tokens: 500,
         messages: [{ role: "user", content: prompt }],
       }),
@@ -29,7 +28,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: d?.error?.message || `HTTP ${r.status}` }, { status: 500 });
     }
 
-    const texto: string = d?.content?.[0]?.text?.trim() || "";
+    const texto: string = d?.choices?.[0]?.message?.content?.trim() || "";
     return NextResponse.json({ descripcion: texto });
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });

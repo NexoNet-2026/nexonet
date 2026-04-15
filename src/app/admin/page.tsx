@@ -1491,7 +1491,7 @@ export default function AdminPanel() {
                   </div>
                 </div>
                 <div style={{display:"flex",gap:"6px",marginTop:"10px",flexWrap:"wrap"}}>
-                  <button onClick={()=>router.push(`/nexos/${n.id}`)} style={S.btn("#3a7bd5",true)}>👁️ Ver</button>
+                  <button onClick={()=>router.push(`/nexo/${n.id}`)} style={S.btn("#3a7bd5",true)}>👁️ Ver</button>
                   <button onClick={()=>bloquearNexo(n)} style={S.btn(n.estado==="bloqueado"?"#27ae60":"#e67e22",true)}>{n.estado==="bloqueado"?"✅ Activar":"🔒 Bloquear"}</button>
                   <button onClick={()=>eliminarNexo(n)} style={S.btn("#e74c3c",true)}>🗑️ Eliminar</button>
                 </div>

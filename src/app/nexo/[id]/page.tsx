@@ -355,6 +355,26 @@ function NexoPageInner() {
     setEnviando(false);
   };
 
+  const agregarAnuncioSlider = async (sliderId: string, link: string) => {
+    if (!perfil) { alert("Iniciá sesión"); return false; }
+    if (!link.trim()) { alert("Pegá un link"); return false; }
+    try {
+      const r = await fetch("/api/nexos/agregar-anuncio-slider", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nexo_id: id, slider_id: sliderId, link: link.trim(), usuario_id: perfil.id }),
+      });
+      const d = await r.json();
+      if (!r.ok || d.error) { alert("Error: " + (d.error || r.status)); return false; }
+      setItems(prev => ({ ...prev, [sliderId]: [...(prev[sliderId]||[]), d.item] }));
+      alert("✅ Anuncio agregado — se cobraron 500 BIT");
+      return true;
+    } catch (e: any) {
+      alert("Error: " + e.message);
+      return false;
+    }
+  };
+
   const abrirDescarga = async (url: string) => {
     // Intentar URL firmada (funciona si el bucket es privado)
     try {
@@ -709,6 +729,7 @@ function NexoPageInner() {
           bottomRef={bottomRef}
           colorNexo={colorNexo}
           onUnirse={() => setPopupUnirse(true)}
+          onAgregarAnuncio={agregarAnuncioSlider}
         />}
       </div>
 
@@ -911,7 +932,16 @@ const SLIDER_EMOJIS: Record<string,string> = {
   mensajes:"💬", chat:"💬", personalizado:"✨", resenas:"⭐", clientes:"🤝", lista_precios:"💲",
 };
 
-function SliderContenido({ slider, items, mensajes, perfil, nexo, esAdmin, esMiembro, descargasPagadas, pagandoDescarga, miembros, texto, setTexto, enviando, onEnviar, onVisor, onPagarDescarga, onAbrirDescarga, onFlash, bottomRef, colorNexo, onUnirse }: any) {
+function SliderContenido({ slider, items, mensajes, perfil, nexo, esAdmin, esMiembro, descargasPagadas, pagandoDescarga, miembros, texto, setTexto, enviando, onEnviar, onVisor, onPagarDescarga, onAbrirDescarga, onFlash, bottomRef, colorNexo, onUnirse, onAgregarAnuncio }: any) {
+  const [linkAnuncio, setLinkAnuncio] = useState("");
+  const [agregandoAnuncio, setAgregandoAnuncio] = useState(false);
+  const puedePegarAnuncio = (slider?.tipo === "productos" || slider?.tipo === "proveedores") && esMiembro && !!onAgregarAnuncio;
+  const handleAgregarAnuncio = async () => {
+    setAgregandoAnuncio(true);
+    const ok = await onAgregarAnuncio(slider.id, linkAnuncio);
+    if (ok) setLinkAnuncio("");
+    setAgregandoAnuncio(false);
+  };
   const tipo = slider.tipo;
 
   // Bloquear contenido de grupo a no miembros (excepto chat y reseñas)
@@ -1062,31 +1092,54 @@ function SliderContenido({ slider, items, mensajes, perfil, nexo, esAdmin, esMie
           ))}
         </div>
       )}
+      {puedePegarAnuncio && (
+        <div style={{ background:"#fff", borderRadius:"14px", padding:"12px", marginBottom:"12px", boxShadow:"0 2px 8px rgba(0,0,0,0.06)" }}>
+          <div style={{ fontSize:"11px", fontWeight:800, color:"#9a9a9a", marginBottom:"6px", textTransform:"uppercase", letterSpacing:"0.5px" }}>📌 Agregar anuncio NexoNet</div>
+          <div style={{ display:"flex", gap:"6px" }}>
+            <input value={linkAnuncio} onChange={e=>setLinkAnuncio(e.target.value)} placeholder="Pegá el link del anuncio"
+              style={{ flex:1, border:"2px solid #e8e8e6", borderRadius:"10px", padding:"9px 12px", fontSize:"12px", fontFamily:"'Nunito',sans-serif", outline:"none" }} />
+            <button onClick={handleAgregarAnuncio} disabled={agregandoAnuncio || !linkAnuncio.trim()}
+              style={{ background:`linear-gradient(135deg,${colorNexo},${colorNexo}cc)`, border:"none", borderRadius:"10px", padding:"9px 14px", fontSize:"12px", fontWeight:900, color:"#fff", cursor: (agregandoAnuncio||!linkAnuncio.trim())?"not-allowed":"pointer", whiteSpace:"nowrap", opacity:(agregandoAnuncio||!linkAnuncio.trim())?0.6:1 }}>
+              {agregandoAnuncio?"…":"Agregar — 500 BIT"}
+            </button>
+          </div>
+        </div>
+      )}
       {(tipo==="productos"||tipo==="servicios") && (
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px" }}>
-          {items.map((item:any)=>(
+          {items.map((item:any)=>{
+            const esAnuncio = item.tipo === "anuncio";
+            const imgSrc = esAnuncio ? item.miniatura_url : item.url;
+            return (
             <div key={item.id} style={{ background:"#fff", borderRadius:"16px", overflow:"hidden", boxShadow:"0 2px 10px rgba(0,0,0,0.07)" }}>
               <div style={{ height:"110px", background:"linear-gradient(135deg,#1a2a3a,#243b55)", display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden" }}>
-                {item.url ? <img src={item.url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : <span style={{ fontSize:"36px", opacity:0.4 }}>{SLIDER_EMOJIS[tipo]}</span>}
+                {imgSrc ? <img src={imgSrc} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : <span style={{ fontSize:"36px", opacity:0.4 }}>{SLIDER_EMOJIS[tipo]}</span>}
               </div>
               <div style={{ padding:"10px 12px" }}>
                 <div style={{ fontSize:"13px", fontWeight:900, color:"#1a2a3a", marginBottom:"3px" }}>{item.titulo||"Item"}</div>
                 {item.precio_bits ? <div style={{ fontSize:"12px", fontWeight:800, color:colorNexo }}>$ {item.precio_bits?.toLocaleString()}</div> : null}
+                {esAnuncio && <a href={`/anuncios/${item.url}`} style={{ display:"inline-block", marginTop:"6px", fontSize:"11px", fontWeight:800, color:colorNexo, textDecoration:"none" }}>Ver anuncio →</a>}
               </div>
             </div>
-          ))}
+          );})}
         </div>
       )}
       {(tipo==="novedades"||tipo==="faq"||tipo==="testimonios"||tipo==="personalizado"||tipo==="calendario"||tipo==="proveedores"||tipo==="clientes") && (
         <div style={{ display:"flex", flexDirection:"column", gap:"10px" }}>
-          {items.map((item:any)=>(
+          {items.map((item:any)=>{
+            const esAnuncio = item.tipo === "anuncio";
+            return (
             <div key={item.id} style={{ background:"#fff", borderRadius:"14px", padding:"16px", boxShadow:"0 2px 8px rgba(0,0,0,0.06)" }}>
               {item.miniatura_url && <img src={item.miniatura_url} alt="" style={{ width:"100%", maxHeight:"160px", objectFit:"cover", borderRadius:"10px", marginBottom:"10px" }} />}
               {item.titulo && <div style={{ fontSize:"14px", fontWeight:900, color:"#1a2a3a", marginBottom:"6px" }}>{item.titulo}</div>}
               {item.descripcion && <div style={{ fontSize:"13px", color:"#555", fontWeight:600, lineHeight:1.6 }}>{item.descripcion}</div>}
-              {item.url && <a href={item.url} target="_blank" rel="noopener noreferrer" style={{ display:"inline-block", marginTop:"8px", fontSize:"12px", fontWeight:700, color:colorNexo, textDecoration:"none" }}>🔗 Ver más</a>}
+              {esAnuncio ? (
+                <a href={`/anuncios/${item.url}`} style={{ display:"inline-block", marginTop:"8px", fontSize:"12px", fontWeight:800, color:colorNexo, textDecoration:"none" }}>Ver anuncio →</a>
+              ) : (
+                item.url && <a href={item.url} target="_blank" rel="noopener noreferrer" style={{ display:"inline-block", marginTop:"8px", fontSize:"12px", fontWeight:700, color:colorNexo, textDecoration:"none" }}>🔗 Ver más</a>
+              )}
             </div>
-          ))}
+          );})}
         </div>
       )}
     </div>

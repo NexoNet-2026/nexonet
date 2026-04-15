@@ -9,31 +9,23 @@ export async function GET() {
       { auth: { autoRefreshToken: false, persistSession: false } }
     );
 
-    const { count: usuariosReales } = await supabase
+    const { count: realRegistrados } = await supabase
       .from("usuarios")
       .select("id", { count: "exact", head: true });
 
     const hace5 = new Date(Date.now() - 5 * 60 * 1000).toISOString();
 
-    let activosReales = 0;
-    const { count: cConectados, error: errConectados } = await supabase
-      .from("usuarios_conectados")
-      .select("*", { count: "exact", head: true })
+    let realActivos = 0;
+    const { count: cActivos, error: errActivos } = await supabase
+      .from("usuarios")
+      .select("id", { count: "exact", head: true })
       .gte("last_seen", hace5);
 
-    if (!errConectados && typeof cConectados === "number") {
-      activosReales = cConectados;
-    } else {
-      const { count: cLastSeen } = await supabase
-        .from("usuarios")
-        .select("id", { count: "exact", head: true })
-        .gte("last_seen", hace5);
-      activosReales = cLastSeen || 0;
-    }
+    if (!errActivos && typeof cActivos === "number") realActivos = cActivos;
 
     const { data: cfg } = await supabase
       .from("config_app")
-      .select("usuarios_mult, usuarios_suma, activos_mult, activos_suma")
+      .select("usuarios_mult, usuarios_suma, activos_mult, activos_suma, updated_at")
       .eq("id", "global")
       .maybeSingle();
 
@@ -42,10 +34,14 @@ export async function GET() {
     const aMult = Number(cfg?.activos_mult ?? 1);
     const aSuma = Number(cfg?.activos_suma ?? 0);
 
-    const usuarios_registrados = Math.max(0, Math.round((usuariosReales || 0) * uMult + uSuma));
-    const usuarios_activos = Math.max(0, Math.round(activosReales * aMult + aSuma));
+    const usuarios_registrados = Math.max(0, Math.floor((realRegistrados || 0) * uMult + uSuma));
+    const usuarios_activos = Math.max(0, Math.floor(realActivos * aMult + aSuma));
 
-    return NextResponse.json({ usuarios_registrados, usuarios_activos });
+    return NextResponse.json({
+      usuarios_registrados,
+      usuarios_activos,
+      updated_at: cfg?.updated_at ?? null,
+    });
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });
   }

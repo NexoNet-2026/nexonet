@@ -1127,38 +1127,63 @@ export default function AdminPanel() {
               <StatBox n={String(nexoStats.totalMensajes||0)} l="Mensajes total" e="💬" c="#27ae60" />
             </div>
 
-            {/* ── CONFIGURAR CONTADORES PÚBLICOS ── */}
-            <div style={S.card}>
-              <div style={S.sect}>🔢 Configurar contadores públicos</div>
-              <div style={{fontSize:"11px",color:"#9a9a9a",marginBottom:"12px",lineHeight:1.5}}>
-                Fórmula aplicada: <b>real × multiplicador + suma</b>. Afecta los contadores públicos mostrados en la landing / home.
-              </div>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px",marginBottom:"10px"}}>
-                <div>
-                  <label style={S.label}>Usuarios · multiplicador</label>
-                  <input type="number" step="0.01" style={S.input} value={contConfig.usuarios_mult}
-                    onChange={e=>setContConfig(c=>({...c,usuarios_mult:Number(e.target.value)}))} />
+            {/* ── CONTADORES PÚBLICOS ── */}
+            {(() => {
+              const realReg = Number(stats.usuarios || 0);
+              const realAct = Number((stats as any).activos7 || 0);
+              const previewReg = Math.max(0, Math.floor(realReg * Number(contConfig.usuarios_mult || 0) + Number(contConfig.usuarios_suma || 0)));
+              const previewAct = Math.max(0, Math.floor(realAct * Number(contConfig.activos_mult || 0) + Number(contConfig.activos_suma || 0)));
+              return (
+                <div style={S.card}>
+                  <div style={S.sect}>🔢 Contadores públicos</div>
+                  <div style={{fontSize:"11px",color:"#9a9a9a",marginBottom:"12px",lineHeight:1.5}}>
+                    Fórmula: <b>floor(real × multiplicador + suma)</b>. Afecta los contadores públicos mostrados fuera del panel.
+                  </div>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px",marginBottom:"12px"}}>
+                    <div>
+                      <label style={S.label}>Multiplicador usuarios</label>
+                      <input type="number" step="0.01" style={S.input} value={contConfig.usuarios_mult}
+                        onChange={e=>setContConfig(c=>({...c,usuarios_mult:Number(e.target.value)}))} />
+                    </div>
+                    <div>
+                      <label style={S.label}>Suma usuarios</label>
+                      <input type="number" step="1" style={S.input} value={contConfig.usuarios_suma}
+                        onChange={e=>setContConfig(c=>({...c,usuarios_suma:Number(e.target.value)}))} />
+                    </div>
+                    <div>
+                      <label style={S.label}>Multiplicador activos</label>
+                      <input type="number" step="0.01" style={S.input} value={contConfig.activos_mult}
+                        onChange={e=>setContConfig(c=>({...c,activos_mult:Number(e.target.value)}))} />
+                    </div>
+                    <div>
+                      <label style={S.label}>Suma activos</label>
+                      <input type="number" step="1" style={S.input} value={contConfig.activos_suma}
+                        onChange={e=>setContConfig(c=>({...c,activos_suma:Number(e.target.value)}))} />
+                    </div>
+                  </div>
+
+                  <div style={{background:"linear-gradient(135deg,#0d1f2d,#1a2a3a)",borderRadius:"12px",padding:"14px",marginBottom:"12px"}}>
+                    <div style={{fontSize:"10px",fontWeight:800,color:"rgba(255,255,255,0.5)",textTransform:"uppercase",letterSpacing:"1px",marginBottom:"10px"}}>👁️ Preview en tiempo real</div>
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px"}}>
+                      <div style={{background:"rgba(58,123,213,0.18)",borderRadius:"10px",padding:"12px",textAlign:"center"}}>
+                        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"30px",color:"#5dade2",lineHeight:1}}>{previewReg.toLocaleString("es-AR")}</div>
+                        <div style={{fontSize:"9px",fontWeight:700,color:"rgba(255,255,255,0.55)",textTransform:"uppercase",marginTop:"4px"}}>Usuarios registrados</div>
+                        <div style={{fontSize:"9px",color:"rgba(255,255,255,0.35)",marginTop:"2px"}}>real {realReg} × {contConfig.usuarios_mult} + {contConfig.usuarios_suma}</div>
+                      </div>
+                      <div style={{background:"rgba(39,174,96,0.18)",borderRadius:"10px",padding:"12px",textAlign:"center"}}>
+                        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"30px",color:"#7effd4",lineHeight:1}}>{previewAct.toLocaleString("es-AR")}</div>
+                        <div style={{fontSize:"9px",fontWeight:700,color:"rgba(255,255,255,0.55)",textTransform:"uppercase",marginTop:"4px"}}>Usuarios activos</div>
+                        <div style={{fontSize:"9px",color:"rgba(255,255,255,0.35)",marginTop:"2px"}}>real {realAct} × {contConfig.activos_mult} + {contConfig.activos_suma}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <button disabled={contGuardando} onClick={guardarContConfig} style={{...S.btn("#27ae60"),opacity:contGuardando?0.6:1}}>
+                    {contGuardando ? "Guardando…" : "💾 Guardar contadores"}
+                  </button>
                 </div>
-                <div>
-                  <label style={S.label}>Usuarios · suma</label>
-                  <input type="number" step="1" style={S.input} value={contConfig.usuarios_suma}
-                    onChange={e=>setContConfig(c=>({...c,usuarios_suma:Number(e.target.value)}))} />
-                </div>
-                <div>
-                  <label style={S.label}>Activos · multiplicador</label>
-                  <input type="number" step="0.01" style={S.input} value={contConfig.activos_mult}
-                    onChange={e=>setContConfig(c=>({...c,activos_mult:Number(e.target.value)}))} />
-                </div>
-                <div>
-                  <label style={S.label}>Activos · suma</label>
-                  <input type="number" step="1" style={S.input} value={contConfig.activos_suma}
-                    onChange={e=>setContConfig(c=>({...c,activos_suma:Number(e.target.value)}))} />
-                </div>
-              </div>
-              <button disabled={contGuardando} onClick={guardarContConfig} style={{...S.btn("#27ae60"),opacity:contGuardando?0.6:1}}>
-                {contGuardando ? "Guardando…" : "💾 Guardar contadores"}
-              </button>
-            </div>
+              );
+            })()}
 
             {/* ── EN TIEMPO REAL ── */}
             <div style={{...S.card,background:"linear-gradient(135deg,#0d1f2d,#1a2a3a)",border:"2px solid rgba(39,174,96,0.3)"}}>

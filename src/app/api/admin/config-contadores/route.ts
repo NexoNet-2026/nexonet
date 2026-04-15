@@ -21,7 +21,7 @@ export async function GET() {
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
     return NextResponse.json(
-      data ?? { id: "global", usuarios_mult: 1, usuarios_suma: 0, activos_mult: 1, activos_suma: 0 }
+      data ?? { id: "global", usuarios_mult: 1, usuarios_suma: 0, activos_mult: 1, activos_suma: 0, updated_at: null }
     );
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });
@@ -44,7 +44,14 @@ export async function POST(req: Request) {
     const { data, error } = await supabase
       .from("config_app")
       .upsert(
-        { id: "global", usuarios_mult, usuarios_suma, activos_mult, activos_suma },
+        {
+          id: "global",
+          usuarios_mult,
+          usuarios_suma,
+          activos_mult,
+          activos_suma,
+          updated_at: new Date().toISOString(),
+        },
         { onConflict: "id" }
       )
       .select()

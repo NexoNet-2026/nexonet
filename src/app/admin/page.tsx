@@ -1038,7 +1038,7 @@ export default function AdminPanel() {
 
   if (!authed) return null;
 
-  const TABS:{id:Tab;e:string;l:string;badge?:number}[] = [
+  const TABS:{id:Tab;e:string;l:string;badge?:number;href?:string}[] = [
     {id:"dashboard",e:"📊",l:"Panel"},
     {id:"usuarios", e:"👥",l:"Usuarios"},
     {id:"anuncios", e:"📋",l:"Anuncios"},
@@ -1052,6 +1052,7 @@ export default function AdminPanel() {
     {id:"reclamos", e:"⚖️",l:"Reclamos"},
     {id:"socios",   e:"🤝",l:"Socios"},
     {id:"soporte",  e:"💬",l:"Soporte",badge:soportePendientes},
+    {id:"dashboard",e:"🤖",l:"Bots",href:"/admin/bots"},
   ];
 
   const ItemRow = ({label,onEdit,onDelete,onUp,onDown,badge,extra}:{label:string;onEdit:()=>void;onDelete:()=>void;onUp?:()=>void;onDown?:()=>void;badge?:React.ReactNode;extra?:React.ReactNode}) => (
@@ -1088,14 +1089,16 @@ export default function AdminPanel() {
           </div>
         </div>
         <div style={{display:"flex",gap:"0",overflowX:"auto",borderTop:"1px solid rgba(255,255,255,0.1)"}}>
-          {TABS.map(t=>(
-            <button key={t.id} onClick={()=>setTab(t.id)}
-              style={{flexShrink:0,background:"none",border:"none",borderBottom:tab===t.id?"3px solid #d4a017":"3px solid transparent",padding:"10px 12px",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:"2px",position:"relative"}}>
+          {TABS.map((t,i)=>{
+            const active = !t.href && tab===t.id;
+            return (
+            <button key={t.href||t.id} onClick={()=>t.href?router.push(t.href):setTab(t.id)}
+              style={{flexShrink:0,background:"none",border:"none",borderBottom:active?"3px solid #d4a017":"3px solid transparent",padding:"10px 12px",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:"2px",position:"relative"}}>
               <span style={{fontSize:"18px"}}>{t.e}</span>
-              <span style={{fontSize:"9px",fontWeight:800,color:tab===t.id?"#d4a017":"#8a9aaa",textTransform:"uppercase",letterSpacing:"0.5px",whiteSpace:"nowrap"}}>{t.l}</span>
+              <span style={{fontSize:"9px",fontWeight:800,color:active?"#d4a017":"#8a9aaa",textTransform:"uppercase",letterSpacing:"0.5px",whiteSpace:"nowrap"}}>{t.l}</span>
               {(t.badge||0) > 0 && <span style={{position:"absolute",top:"6px",right:"6px",background:"#e74c3c",borderRadius:"50%",minWidth:"16px",height:"16px",fontSize:"9px",fontWeight:900,color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",padding:"0 3px"}}>{t.badge}</span>}
             </button>
-          ))}
+          );})}
         </div>
       </div>
 

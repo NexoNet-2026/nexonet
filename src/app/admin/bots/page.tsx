@@ -19,7 +19,7 @@ export default function BotsAdmin() {
 
   // Crear
   const [nombre, setNombre] = useState("");
-  const [tipo, setTipo] = useState<"grupo"|"servicio"|"empresa">("grupo");
+  const [tipo, setTipo] = useState<"grupo"|"servicio"|"empresa"|"anuncio"|"trabajo">("grupo");
   const [subtipo, setSubtipo] = useState("");
   const [descripcion, setDescripcion] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
@@ -180,6 +180,8 @@ export default function BotsAdmin() {
                   <option value="grupo">Grupo</option>
                   <option value="servicio">Servicio</option>
                   <option value="empresa">Empresa</option>
+                  <option value="anuncio">Anuncio</option>
+                  <option value="trabajo">Trabajo</option>
                 </select>
               </div>
               <div>

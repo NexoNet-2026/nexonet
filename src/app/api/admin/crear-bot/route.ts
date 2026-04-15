@@ -54,7 +54,33 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: `usuarios: ${errUser.message}` }, { status: 500 });
     }
 
-    // 3. Crear nexo
+    // 3. Crear nexo o anuncio según tipo
+    const esAnuncio = tipo === "anuncio" || tipo === "trabajo";
+
+    if (esAnuncio) {
+      const { data: anuncio, error: errAn } = await supabase
+        .from("anuncios")
+        .insert({
+          usuario_id: bot_id,
+          tipo,
+          titulo: nombre,
+          descripcion: descripcion || null,
+          avatar_url: avatar_url || null,
+          banner_url: banner_url || null,
+          estado: "activo",
+        })
+        .select("id")
+        .single();
+
+      if (errAn || !anuncio) {
+        await supabase.from("usuarios").delete().eq("id", bot_id);
+        await supabase.auth.admin.deleteUser(bot_id);
+        return NextResponse.json({ error: `anuncios: ${errAn?.message || "desconocido"}` }, { status: 500 });
+      }
+
+      return NextResponse.json({ ok: true, bot_id, anuncio_id: anuncio.id, email });
+    }
+
     const { data: nexo, error: errNexo } = await supabase
       .from("nexos")
       .insert({

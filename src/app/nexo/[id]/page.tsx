@@ -1169,13 +1169,15 @@ function SliderContenido({ slider, items, mensajes, perfil, nexo, esAdmin, esMie
               const verLabel = esAnuncio ? "Ver anuncio →" : esNexoItem ? "Ver negocio →" : null;
               return (
                 <div key={item.id} style={{ background:"#fff", borderRadius:"16px", overflow:"hidden", boxShadow:"0 2px 10px rgba(0,0,0,0.07)", display:"flex", flexDirection:"column" }}>
-                  <div style={{ background:"linear-gradient(135deg,#1a2a3a,#243b55)", display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden" }}>
-                    {imgSrc ? <img src={imgSrc} alt="" style={{ width:"100%", height:"auto", display:"block" }} /> : <div style={{ padding:"30px 0", fontSize:"36px", opacity:0.4 }}>{SLIDER_EMOJIS[tipo]}</div>}
+                  <div style={{ aspectRatio:"4/3", background:"linear-gradient(135deg,#1a2a3a,#243b55)", display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden" }}>
+                    {imgSrc ? <img src={imgSrc} alt="" style={{ width:"100%", height:"100%", objectFit:"contain", display:"block" }} /> : <div style={{ fontSize:"36px", opacity:0.4 }}>{SLIDER_EMOJIS[tipo]}</div>}
                   </div>
-                  <div style={{ padding:"10px 12px", flex:1, display:"flex", flexDirection:"column" }}>
-                    <div style={{ fontSize:"13px", fontWeight:900, color:"#1a2a3a", marginBottom:"3px" }}>{item.titulo||"Item"}</div>
+                  <div style={{ padding:"10px 12px", flex:1, display:"flex", flexDirection:"column", gap:"4px" }}>
+                    <div style={{ fontSize:"13px", fontWeight:900, color:"#1a2a3a" }}>{item.titulo||"Item"}</div>
                     {item.precio_bits ? <div style={{ fontSize:"12px", fontWeight:800, color:colorNexo }}>$ {item.precio_bits?.toLocaleString()}</div> : null}
-                    {verHref && <a href={verHref} style={{ display:"inline-block", marginTop:"auto", paddingTop:"8px", fontSize:"11px", fontWeight:800, color:"#fff", textDecoration:"none", background:`linear-gradient(135deg,${colorNexo},${colorNexo}cc)`, borderRadius:"8px", padding:"6px 12px", textAlign:"center" }}>{verLabel}</a>}
+                    <div style={{ marginTop:"auto", paddingTop:"6px" }}>
+                      {verHref && <a href={verHref} style={{ display:"block", fontSize:"11px", fontWeight:800, color:"#fff", textDecoration:"none", background:`linear-gradient(135deg,${colorNexo},${colorNexo}cc)`, borderRadius:"8px", padding:"7px 12px", textAlign:"center" }}>{verLabel}</a>}
+                    </div>
                   </div>
                 </div>
               );

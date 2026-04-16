@@ -13,6 +13,7 @@ import InsigniaLogro from "@/app/_components/InsigniaLogro";
 import InsigniaReputacion from "@/app/_components/InsigniaReputacion";
 import BotonDarInsignia from "@/app/_components/BotonDarInsignia";
 import BannerCompartir from "@/components/BannerCompartir";
+import BotonCompartir from "@/components/BotonCompartir";
 
 const TIPO_COLORES: Record<string,string> = {
   anuncio:"#d4a017", empresa:"#c0392b", servicio:"#27ae60", trabajo:"#8e44ad", grupo:"#3a7bd5",
@@ -522,17 +523,15 @@ function NexoPageInner() {
                   🎨 Compartir banner
                 </button>
               ) : (
-                <button onClick={async () => {
-                  const url = `${window.location.origin}/nexo/${nexo.id}`;
-                  if (navigator.share) {
-                    await navigator.share({ title: nexo.titulo, text: `Mirá "${nexo.titulo}" en NexoNet`, url });
-                  } else {
-                    await navigator.clipboard.writeText(url);
-                    alert("✅ Link copiado");
-                  }
-                }} style={{ background:"rgba(58,123,213,0.15)", border:"1px solid rgba(58,123,213,0.4)", borderRadius:"10px", padding:"7px 8px", fontSize:"11px", fontWeight:800, color:"#7fb3f5", cursor:"pointer", fontFamily:"'Nunito',sans-serif", display:"flex", alignItems:"center", justifyContent:"center", gap:"4px" }}>
-                  📤 Compartir
-                </button>
+                <BotonCompartir
+                  titulo={nexo.titulo}
+                  descripcion={nexo.descripcion || ""}
+                  imagen={nexo.banner_url || nexo.avatar_url || ""}
+                  url={`https://nexonet.ar/nexo/${id}`}
+                  codigoReferido={perfil?.codigo || ""}
+                  textoBoton="📤 Compartir"
+                  estiloBoton={{ background:"rgba(58,123,213,0.15)", border:"1px solid rgba(58,123,213,0.4)", borderRadius:"10px", padding:"7px 8px", fontSize:"11px", fontWeight:800, color:"#7fb3f5", cursor:"pointer", fontFamily:"'Nunito',sans-serif", display:"flex", alignItems:"center", justifyContent:"center", gap:"4px" }}
+                />
               )}
               {esAdmin && (
                 <button onClick={()=>router.push(`/nexo/${id}/admin`)}

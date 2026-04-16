@@ -17,17 +17,42 @@ export async function POST(req: Request) {
       { auth: { autoRefreshToken: false, persistSession: false } }
     );
 
-    const m = String(link).match(/\/anuncios\/([^/?#\s]+)/);
-    const anuncio_id = (m ? m[1] : String(link).trim()).trim();
-    if (!anuncio_id) return NextResponse.json({ error: "Link inválido" }, { status: 400 });
+    const linkStr = String(link).trim();
+    const mNexo = linkStr.match(/\/nexo\/([^/?#\s]+)/);
+    const mAnuncio = linkStr.match(/\/anuncios\/([^/?#\s]+)/);
+    const esNexo = !!mNexo;
+    const refId = (mNexo?.[1] || mAnuncio?.[1] || linkStr).trim();
+    if (!refId) return NextResponse.json({ error: "Link inválido" }, { status: 400 });
 
-    const { data: anuncio, error: errAn } = await supabase
-      .from("anuncios")
-      .select("id, titulo, descripcion, precio, moneda, ciudad, imagenes, usuario_id")
-      .eq("id", anuncio_id)
-      .maybeSingle();
-    if (errAn) return NextResponse.json({ error: errAn.message }, { status: 500 });
-    if (!anuncio) return NextResponse.json({ error: "Anuncio no encontrado" }, { status: 404 });
+    let titulo = "", descripcion: string | null = null, miniatura: string | null = null, fuenteId: string | number = refId;
+
+    if (esNexo) {
+      const { data: nexo, error: errN } = await supabase
+        .from("nexos")
+        .select("id, titulo, descripcion, avatar_url, estado")
+        .eq("id", refId)
+        .maybeSingle();
+      if (errN) return NextResponse.json({ error: errN.message }, { status: 500 });
+      if (!nexo) return NextResponse.json({ error: "Nexo no encontrado" }, { status: 404 });
+      titulo = nexo.titulo;
+      descripcion = nexo.descripcion || null;
+      miniatura = nexo.avatar_url || null;
+      fuenteId = nexo.id;
+    } else {
+      const { data: anuncio, error: errAn } = await supabase
+        .from("anuncios")
+        .select("id, titulo, descripcion, imagenes, usuario_id")
+        .eq("id", refId)
+        .maybeSingle();
+      if (errAn) return NextResponse.json({ error: errAn.message }, { status: 500 });
+      if (!anuncio) return NextResponse.json({ error: "Anuncio no encontrado" }, { status: 404 });
+      titulo = anuncio.titulo;
+      descripcion = anuncio.descripcion || null;
+      miniatura = Array.isArray(anuncio.imagenes) && anuncio.imagenes.length > 0 ? anuncio.imagenes[0] : null;
+      fuenteId = anuncio.id;
+    }
+
+    const itemTipo = esNexo ? "nexo" : "anuncio";
 
     const { data: miembro, error: errM } = await supabase
       .from("nexo_miembros")
@@ -43,10 +68,10 @@ export async function POST(req: Request) {
       .from("nexo_slider_items")
       .select("id")
       .eq("slider_id", slider_id)
-      .eq("tipo", "anuncio")
-      .eq("url", String(anuncio_id))
+      .eq("tipo", itemTipo)
+      .eq("url", String(fuenteId))
       .maybeSingle();
-    if (existente) return NextResponse.json({ error: "Ese anuncio ya está en el slider" }, { status: 409 });
+    if (existente) return NextResponse.json({ error: "Ese ítem ya está en el slider" }, { status: 409 });
 
     const { data: usuario, error: errU } = await supabase
       .from("usuarios")
@@ -96,16 +121,14 @@ export async function POST(req: Request) {
       }
     }
 
-    const miniatura = Array.isArray(anuncio.imagenes) && anuncio.imagenes.length > 0 ? anuncio.imagenes[0] : null;
-
     const { data: item, error: errIns } = await supabase
       .from("nexo_slider_items")
       .insert({
         slider_id,
-        tipo: "anuncio",
-        url: String(anuncio.id),
-        titulo: anuncio.titulo,
-        descripcion: anuncio.descripcion || null,
+        tipo: itemTipo,
+        url: String(fuenteId),
+        titulo,
+        descripcion,
         miniatura_url: miniatura,
       })
       .select("id, titulo, descripcion, miniatura_url, url, tipo")
@@ -120,9 +143,9 @@ export async function POST(req: Request) {
         usuario_id: creador.usuario_id,
         tipo: "sistema",
         leida: false,
-        mensaje: `Un miembro agregó un anuncio al slider de tu grupo. +${COMISION_CREADOR} BIT Promo.`,
+        mensaje: `Un miembro agregó un ${itemTipo} al slider de tu grupo. +${COMISION_CREADOR} BIT Promo.`,
         nexo_id,
-        anuncio_id: anuncio.id,
+        anuncio_id: esNexo ? null : fuenteId,
         emisor_id: usuario_id,
       });
     }

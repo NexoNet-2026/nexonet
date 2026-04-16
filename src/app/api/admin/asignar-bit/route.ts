@@ -60,8 +60,15 @@ export async function POST(req: Request) {
 
         if (!promotor) break;
 
-        const esNAN = promotor.codigo === "NAN-5194178";
-        const porcentaje = esNAN ? 0.30 : 0.20;
+        const { data: socio } = await supabase
+          .from("socios_comerciales")
+          .select("porcentaje")
+          .eq("usuario_id", current.referido_por)
+          .eq("activo", true)
+          .maybeSingle();
+
+        console.log("[cascada-admin] nodo:", current.referido_por, "socio:", socio);
+        const porcentaje = socio ? (socio.porcentaje / 100) : 0.20;
         const comision = Math.floor(comisionBase * porcentaje);
 
         if (comision <= 0) break;

@@ -47,12 +47,13 @@ function PagosTab({ pagos, usuarios }: { pagos: any[]; usuarios: any[] }) {
   const [showDropdown, setShowDropdown] = useState(false);
 
   const cargarLiquidaciones = async () => {
-    const { data } = await supabase.from("log_bits_internos")
-      .select("*,usuarios(nombre_usuario,codigo)")
-      .ilike("motivo", "%Liquidación%")
-      .order("created_at", { ascending: false })
-      .limit(200);
-    setLiquidaciones(data || []);
+    try {
+      const res = await fetch("/api/admin/liquidaciones");
+      const json = await res.json();
+      setLiquidaciones(json.data || []);
+    } catch (err) {
+      console.error("[Liquidaciones] Error cargando historial:", err);
+    }
   };
 
   useEffect(() => { cargarLiquidaciones(); }, []);

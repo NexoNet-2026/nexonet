@@ -705,7 +705,7 @@ function NexoPageInner() {
       })()}
 
       {/* TAB BAR SLIDER */}
-      <div ref={tabBarRef} style={{ position:"sticky", top:"60px", zIndex:100, background:"#1a2a3a", boxShadow:"0 3px 14px rgba(0,0,0,0.28)", overflowX:"auto", scrollbarWidth:"none", display:"flex" }}>
+      <div ref={tabBarRef} style={{ position:"sticky", top:"60px", zIndex:10, background:"#1a2a3a", boxShadow:"0 3px 14px rgba(0,0,0,0.28)", overflowX:"auto", scrollbarWidth:"none", display:"flex" }}>
         {páginas.map(s => (
           <button key={s.id} onClick={()=>setTabActiva(s.id)}
             style={{ flex:"0 0 auto", minWidth:"72px", background:"none", border:"none", cursor:"pointer",

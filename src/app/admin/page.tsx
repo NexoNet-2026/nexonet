@@ -447,10 +447,13 @@ export default function AdminPanel() {
     const activos7  = (usrs||[]).filter((u:any)=>u.last_seen&&u.last_seen>=hace7).length;
     const bots = (usrs||[]).filter((u:any) => u.es_bot || u.is_interno).length;
     const reales = (usrs||[]).filter((u:any) => !u.es_bot && !u.is_interno).length;
-    const conBitFree = (usrs||[]).filter((u:any) => (u.bits_free||0) > 0).length;
-    const conBitNexo = (usrs||[]).filter((u:any) => (u.bits||0) > 0).length;
-    const conBitPromo = (usrs||[]).filter((u:any) => (u.bits_promo||0) > 0).length;
-    setStats({ usuarios:cu||0, usuariosReales:reales, bots, conBitFree, conBitNexo, conBitPromo, anuncios:(anuns||[]).length, grupos:cg||0, mensajes:cm||0, bits:totalBits, pagos:totalPagos, activos30, activos7 });
+    const totalBitFree = (usrs||[]).reduce((a:number,u:any)=>a+(u.bits_free||0),0);
+    const totalBitNexo = (usrs||[]).reduce((a:number,u:any)=>a+(u.bits||0),0);
+    const totalBitPromo = (usrs||[]).reduce((a:number,u:any)=>a+(u.bits_promo||0),0);
+    const {count:cConex} = await supabase.from("conexiones").select("*",{count:"exact",head:true});
+    const {count:cConexNexo} = await supabase.from("conexiones_nexo").select("*",{count:"exact",head:true});
+    const totalConexiones = (cConex||0) + (cConexNexo||0);
+    setStats({ usuarios:cu||0, usuariosReales:reales, bots, totalBitFree, totalBitNexo, totalBitPromo, anuncios:(anuns||[]).length, grupos:cg||0, mensajes:cm||0, bits:totalBits, pagos:totalPagos, activos30, activos7, totalConexiones });
 
     // Nexo stats por tipo
     const nxArr = nxs || [];
@@ -1327,9 +1330,9 @@ export default function AdminPanel() {
               <StatBox n={String((stats as any).usuariosReales||0)}  l="Usuarios reales"  e="👤" c="#3a7bd5" />
               <StatBox n={String((stats as any).bots||0)}             l="Bots internos"    e="🤖" c="#8e44ad" />
               <StatBox n={String(stats.usuarios||0)}         l="Total registrados" e="👥" />
-              <StatBox n={String((stats as any).conBitFree||0)}       l="Con BIT Free"     e="💙" c="#2980b9" />
-              <StatBox n={String((stats as any).conBitNexo||0)}       l="Con BIT Nexo"     e="💛" c="#d4a017" />
-              <StatBox n={String((stats as any).conBitPromo||0)}      l="Con BIT Promo"    e="🟢" c="#27ae60" />
+              <StatBox n={((stats as any).totalBitFree||0).toLocaleString("es-AR")}  l="BIT Free total"  e="💙" c="#2980b9" />
+              <StatBox n={((stats as any).totalBitNexo||0).toLocaleString("es-AR")}  l="BIT Nexo total"  e="💛" c="#d4a017" />
+              <StatBox n={((stats as any).totalBitPromo||0).toLocaleString("es-AR")} l="BIT Promo total" e="🟢" c="#27ae60" />
               <StatBox n={String(stats.anuncios||0)}         l="Anuncios"         e="📋" c="#d4a017" />
               <StatBox n={`$${((stats.pagos||0)/1000).toFixed(0)}K`} l="Recaudado" e="💰" c="#e67e22" />
               <StatBox n={String(stats.bits||0)}             l="BIT circulando"   e="🪙" c="#8e44ad" />
@@ -1343,6 +1346,7 @@ export default function AdminPanel() {
               <StatBox n={String(nexoStats.descargas||0)} l="Descargas" e="📥" c="#2980b9" />
               <StatBox n={String(nexoStats.links||0)} l="Links" e="🔗" c="#d4a017" />
               <StatBox n={String(nexoStats.totalMensajes||0)} l="Mensajes total" e="💬" c="#27ae60" />
+              <StatBox n={((stats as any).totalConexiones||0).toLocaleString("es-AR")} l="Conexiones total" e="🔗" c="#e67e22" />
             </div>
 
             {/* ── CONTADORES PÚBLICOS ── */}

@@ -176,9 +176,11 @@ function NexoAdminPageInner() {
   const agregarSlider = async (tipo: string, tituloCustom?: string) => {
     const cat = SLIDERS_CATALOGO.find(c=>c.tipo===tipo);
     const titulo = tituloCustom || cat?.titulo || tipo;
-    const { data } = await supabase.from("nexo_sliders").insert({
+    const { data, error } = await supabase.from("nexo_sliders").insert({
       nexo_id:id, titulo, tipo, orden:sliders.length, activo:true
     }).select().single();
+    console.log("[agregarSlider]", { tipo, titulo, data, error });
+    if (error) { alert("Error agregando slider: " + error.message); return; }
     if (data) setSliders(prev=>[...prev,data]);
     setPopupSlider(false);
     setCustomTitulo("");

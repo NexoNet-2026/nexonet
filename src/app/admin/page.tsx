@@ -43,24 +43,27 @@ function PagosTab({ pagos, usuarios }: { pagos: any[]; usuarios: any[] }) {
   const [liqUser, setLiqUser] = useState<any>(null);
   const [liqCant, setLiqCant] = useState("");
   const [liqLoading, setLiqLoading] = useState(false);
-  const [liqOk, setLiqOk] = useState("");
   const [liquidaciones, setLiquidaciones] = useState<any[]>([]);
 
-  useEffect(() => {
-    supabase.from("log_bits_internos")
+  const cargarLiquidaciones = async () => {
+    const { data } = await supabase.from("log_bits_internos")
       .select("*,usuarios(nombre_usuario,codigo)")
       .ilike("motivo", "%Liquidación%")
       .order("created_at", { ascending: false })
-      .limit(200)
-      .then(({ data }) => setLiquidaciones(data || []));
-  }, []);
+      .limit(200);
+    setLiquidaciones(data || []);
+  };
+
+  useEffect(() => { cargarLiquidaciones(); }, []);
 
   const pagosAprobados = pagos.filter((p: any) => p.estado === "approved");
   const totalBitVendidos = pagosAprobados.reduce((a: number, p: any) => a + (p.cantidad || p.monto || 0), 0);
   const totalARS = pagosAprobados.reduce((a: number, p: any) => a + (p.monto || 0), 0);
   const totalBitPromo = usuarios.reduce((a: number, u: any) => a + (u.bits_promo || 0), 0);
+  const totalLiquidado = liquidaciones.reduce((a: number, l: any) => a + Math.abs(l.cantidad || 0), 0);
+  const adeudado = Math.max(0, totalBitPromo);
 
-  const resultsBusq = liqBusq.trim().length >= 2
+  const resultsBusq = liqBusq.trim().length >= 2 && !liqUser
     ? usuarios.filter((u: any) =>
         (u.nombre_usuario || "").toLowerCase().includes(liqBusq.toLowerCase()) ||
         (u.codigo || "").toLowerCase().includes(liqBusq.toLowerCase())
@@ -73,6 +76,11 @@ function PagosTab({ pagos, usuarios }: { pagos: any[]; usuarios: any[] }) {
     if (isNaN(cant) || cant <= 0 || cant > (liqUser.bits_promo || 0)) {
       alert("Cantidad inválida o mayor al saldo disponible"); return;
     }
+    const ok = window.confirm(
+      `¿Liquidar ${cant.toLocaleString("es-AR")} BIT Promo a @${liqUser.nombre_usuario}?\nEquivale a $${cant.toLocaleString("es-AR")} ARS.\nEl pago se realiza fuera del sistema.`
+    );
+    if (!ok) return;
+
     setLiqLoading(true);
     const { error: e1 } = await supabase.from("usuarios")
       .update({ bits_promo: (liqUser.bits_promo || 0) - cant })
@@ -81,23 +89,17 @@ function PagosTab({ pagos, usuarios }: { pagos: any[]; usuarios: any[] }) {
 
     const { error: e2 } = await supabase.from("log_bits_internos").insert({
       usuario_id: liqUser.id,
-      cantidad: -cant,
-      motivo: "Liquidación BIT Promo - pago externo ARS",
+      cantidad: cant,
+      motivo: `Liquidación BIT Promo — pago externo $${cant.toLocaleString("es-AR")} ARS`,
       asignado_por: ADMIN_UUID,
     });
     if (e2) { alert("Error log: " + e2.message); setLiqLoading(false); return; }
 
-    setLiqOk(`Se liquidaron ${cant} BIT Promo de @${liqUser.nombre_usuario}. Transferir $${cant.toLocaleString("es-AR")} ARS.`);
+    alert(`✅ Liquidación registrada. Transferir $${cant.toLocaleString("es-AR")} ARS a @${liqUser.nombre_usuario}`);
     setLiqUser({ ...liqUser, bits_promo: (liqUser.bits_promo || 0) - cant });
     setLiqCant("");
     setLiqLoading(false);
-
-    const { data: newLiqs } = await supabase.from("log_bits_internos")
-      .select("*,usuarios(nombre_usuario,codigo)")
-      .ilike("motivo", "%Liquidación%")
-      .order("created_at", { ascending: false })
-      .limit(200);
-    if (newLiqs) setLiquidaciones(newLiqs);
+    await cargarLiquidaciones();
   };
 
   return (
@@ -107,7 +109,7 @@ function PagosTab({ pagos, usuarios }: { pagos: any[]; usuarios: any[] }) {
         <StatBox n={totalBitVendidos.toLocaleString("es-AR")} l="BIT Nexo vendidos" e="💎" c="#27ae60" />
         <StatBox n={`$${totalARS.toLocaleString("es-AR")}`} l="ARS recaudado" e="💰" c="#27ae60" />
         <StatBox n={totalBitPromo.toLocaleString("es-AR")} l="BIT Promo en circulación" e="🎁" c="#8e44ad" />
-        <StatBox n={`$${totalBitPromo.toLocaleString("es-AR")}`} l="ARS adeudado promotores" e="⚠️" c="#e67e22" />
+        <StatBox n={`$${adeudado.toLocaleString("es-AR")}`} l="ARS adeudado promotores" e="⚠️" c="#e67e22" />
       </div>
 
       {/* 2. HISTORIAL DE COMPRAS BIT */}
@@ -134,18 +136,18 @@ function PagosTab({ pagos, usuarios }: { pagos: any[]; usuarios: any[] }) {
       {/* 3. LIQUIDAR BIT PROMO */}
       <div style={S.card}>
         <div style={S.sect}>🏦 Liquidar BIT Promo</div>
-        <div style={{marginBottom:"12px"}}>
+        <div style={{position:"relative",marginBottom:"12px"}}>
           <input
             type="text"
             placeholder="Buscar usuario por nombre o código..."
             value={liqBusq}
-            onChange={e => { setLiqBusq(e.target.value); setLiqUser(null); setLiqOk(""); }}
+            onChange={e => { setLiqBusq(e.target.value); setLiqUser(null); }}
             style={S.input}
           />
-          {resultsBusq.length > 0 && !liqUser && (
-            <div style={{border:"1px solid #e8e8e6",borderRadius:"10px",marginTop:"6px",overflow:"hidden"}}>
+          {resultsBusq.length > 0 && (
+            <div style={{position:"absolute",left:0,right:0,top:"100%",zIndex:10,background:"#fff",border:"1px solid #e8e8e6",borderRadius:"0 0 10px 10px",boxShadow:"0 4px 12px rgba(0,0,0,0.1)",maxHeight:"220px",overflowY:"auto"}}>
               {resultsBusq.map((u: any) => (
-                <div key={u.id} onClick={() => { setLiqUser(u); setLiqBusq(u.nombre_usuario); }}
+                <div key={u.id} onClick={() => { setLiqUser(u); setLiqBusq(`@${u.nombre_usuario} (${u.codigo})`); }}
                   style={{padding:"10px 14px",cursor:"pointer",borderBottom:"1px solid #f0f0f0",fontSize:"13px",fontWeight:700,color:"#1a2a3a",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                   <span>@{u.nombre_usuario} <span style={{color:"#9a9a9a",fontWeight:600,fontSize:"11px"}}>({u.codigo})</span></span>
                   <span style={{fontSize:"12px",fontWeight:800,color:"#8e44ad"}}>{(u.bits_promo||0).toLocaleString("es-AR")} BIT Promo</span>
@@ -156,44 +158,40 @@ function PagosTab({ pagos, usuarios }: { pagos: any[]; usuarios: any[] }) {
         </div>
 
         {liqUser && (
-          <div style={{background:"rgba(142,68,173,0.06)",border:"2px solid rgba(142,68,173,0.2)",borderRadius:"12px",padding:"14px",marginBottom:"12px"}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"10px"}}>
+          <div style={{background:"rgba(142,68,173,0.06)",border:"2px solid rgba(142,68,173,0.2)",borderRadius:"12px",padding:"16px"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"12px"}}>
               <div>
-                <div style={{fontSize:"14px",fontWeight:900,color:"#1a2a3a"}}>@{liqUser.nombre_usuario}</div>
+                <div style={{fontSize:"15px",fontWeight:900,color:"#1a2a3a"}}>@{liqUser.nombre_usuario}</div>
                 <div style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600}}>{liqUser.codigo}</div>
               </div>
-              <div style={{textAlign:"right"}}>
-                <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"22px",color:"#8e44ad"}}>{(liqUser.bits_promo||0).toLocaleString("es-AR")}</div>
-                <div style={{fontSize:"10px",fontWeight:700,color:"#9a9a9a"}}>BIT PROMO DISPONIBLES</div>
-              </div>
+              <button onClick={() => { setLiqUser(null); setLiqBusq(""); setLiqCant(""); }}
+                style={{background:"#f0f0f0",border:"none",borderRadius:"50%",width:"28px",height:"28px",fontSize:"14px",cursor:"pointer",color:"#9a9a9a"}}>✕</button>
             </div>
-            <div style={{fontSize:"12px",fontWeight:700,color:"#27ae60",marginBottom:"10px"}}>Equivalente: ${(liqUser.bits_promo||0).toLocaleString("es-AR")} ARS</div>
+            <div style={{background:"rgba(142,68,173,0.08)",borderRadius:"10px",padding:"12px",marginBottom:"14px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <div style={{fontSize:"12px",fontWeight:800,color:"#8e44ad"}}>BIT Promo disponibles</div>
+              <div style={{fontSize:"14px",fontWeight:900,color:"#1a2a3a"}}>{(liqUser.bits_promo||0).toLocaleString("es-AR")} BIT = ${(liqUser.bits_promo||0).toLocaleString("es-AR")} ARS</div>
+            </div>
+            <label style={S.label}>Cantidad a liquidar</label>
             <div style={{display:"flex",gap:"8px",alignItems:"center"}}>
               <input
                 type="number"
-                placeholder="Cantidad BIT a liquidar"
+                placeholder={`Máximo ${(liqUser.bits_promo||0).toLocaleString("es-AR")}`}
                 value={liqCant}
                 onChange={e => setLiqCant(e.target.value)}
                 min={1}
                 max={liqUser.bits_promo || 0}
                 style={{...S.input,flex:1}}
               />
-              <button onClick={ejecutarLiquidacion} disabled={liqLoading || !liqCant}
-                style={{...S.btn("#8e44ad"),opacity:(liqLoading||!liqCant)?0.5:1,padding:"10px 20px"}}>
-                {liqLoading ? "..." : "Liquidar"}
+              <button onClick={ejecutarLiquidacion} disabled={liqLoading || !liqCant || parseInt(liqCant) <= 0}
+                style={{...S.btn("#27ae60"),opacity:(liqLoading||!liqCant)?0.5:1,padding:"10px 20px",whiteSpace:"nowrap"}}>
+                {liqLoading ? "Procesando..." : "Registrar liquidación"}
               </button>
             </div>
             {liqCant && parseInt(liqCant) > 0 && (
-              <div style={{fontSize:"11px",color:"#e67e22",fontWeight:700,marginTop:"6px"}}>
-                Se descontarán {parseInt(liqCant).toLocaleString("es-AR")} BIT Promo. Transferir ${parseInt(liqCant).toLocaleString("es-AR")} ARS al promotor.
+              <div style={{fontSize:"11px",color:"#e67e22",fontWeight:700,marginTop:"8px"}}>
+                Se descontarán {parseInt(liqCant).toLocaleString("es-AR")} BIT Promo y se registrará un pago externo de ${parseInt(liqCant).toLocaleString("es-AR")} ARS.
               </div>
             )}
-          </div>
-        )}
-
-        {liqOk && (
-          <div style={{background:"rgba(39,174,96,0.08)",border:"2px solid rgba(39,174,96,0.25)",borderRadius:"12px",padding:"14px",fontSize:"13px",fontWeight:700,color:"#27ae60"}}>
-            {liqOk}
           </div>
         )}
       </div>

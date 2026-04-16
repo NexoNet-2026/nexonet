@@ -64,6 +64,7 @@ function PagosTab({ pagos, usuarios }: { pagos: any[]; usuarios: any[] }) {
   const totalBitPromo = usuarios.reduce((a: number, u: any) => a + (u.bits_promo || 0), 0);
   const totalLiquidado = liquidaciones.reduce((a: number, l: any) => a + Math.abs(l.cantidad || 0), 0);
   const adeudado = Math.max(0, totalBitPromo);
+  const neto = totalARS - totalLiquidado;
 
   const promotoresConSaldo = usuarios
     .filter((u: any) => (u.bits_promo || 0) > 0)
@@ -127,9 +128,11 @@ function PagosTab({ pagos, usuarios }: { pagos: any[]; usuarios: any[] }) {
       {/* 1. RESUMEN */}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px",marginBottom:"14px"}}>
         <StatBox n={totalBitVendidos.toLocaleString("es-AR")} l="BIT Nexo vendidos" e="💎" c="#27ae60" />
-        <StatBox n={`$${totalARS.toLocaleString("es-AR")}`} l="ARS recaudado" e="💰" c="#27ae60" />
+        <StatBox n={`$${totalARS.toLocaleString("es-AR")}`} l="ARS recaudado bruto" e="💰" c="#27ae60" />
         <StatBox n={totalBitPromo.toLocaleString("es-AR")} l="BIT Promo en circulación" e="🎁" c="#8e44ad" />
         <StatBox n={`$${adeudado.toLocaleString("es-AR")}`} l="ARS adeudado promotores" e="⚠️" c="#e67e22" />
+        <StatBox n={`$${totalLiquidado.toLocaleString("es-AR")}`} l="ARS ya liquidado" e="🏦" c="#3a7bd5" />
+        <StatBox n={`$${Math.abs(neto).toLocaleString("es-AR")}`} l="ARS neto disponible" e="💵" c={neto >= 0 ? "#27ae60" : "#e74c3c"} />
       </div>
 
       {/* 2. HISTORIAL DE COMPRAS BIT */}

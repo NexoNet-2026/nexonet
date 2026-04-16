@@ -44,6 +44,7 @@ function PagosTab({ pagos, usuarios }: { pagos: any[]; usuarios: any[] }) {
   const [liqCant, setLiqCant] = useState("");
   const [liqLoading, setLiqLoading] = useState(false);
   const [liquidaciones, setLiquidaciones] = useState<any[]>([]);
+  const [showDropdown, setShowDropdown] = useState(false);
 
   const cargarLiquidaciones = async () => {
     const { data } = await supabase.from("log_bits_internos")
@@ -63,11 +64,18 @@ function PagosTab({ pagos, usuarios }: { pagos: any[]; usuarios: any[] }) {
   const totalLiquidado = liquidaciones.reduce((a: number, l: any) => a + Math.abs(l.cantidad || 0), 0);
   const adeudado = Math.max(0, totalBitPromo);
 
-  const resultsBusq = liqBusq.trim().length >= 2 && !liqUser
-    ? usuarios.filter((u: any) =>
-        (u.nombre_usuario || "").toLowerCase().includes(liqBusq.toLowerCase()) ||
-        (u.codigo || "").toLowerCase().includes(liqBusq.toLowerCase())
-      ).slice(0, 5)
+  const promotoresConSaldo = usuarios
+    .filter((u: any) => (u.bits_promo || 0) > 0)
+    .sort((a: any, b: any) => (b.bits_promo || 0) - (a.bits_promo || 0));
+
+  const resultsBusq = showDropdown && !liqUser
+    ? (liqBusq.trim()
+        ? promotoresConSaldo.filter((u: any) =>
+            (u.nombre_usuario || "").toLowerCase().includes(liqBusq.toLowerCase()) ||
+            (u.codigo || "").toLowerCase().includes(liqBusq.toLowerCase())
+          )
+        : promotoresConSaldo
+      )
     : [];
 
   const ejecutarLiquidacion = async () => {
@@ -139,20 +147,32 @@ function PagosTab({ pagos, usuarios }: { pagos: any[]; usuarios: any[] }) {
         <div style={{position:"relative",marginBottom:"12px"}}>
           <input
             type="text"
-            placeholder="Buscar usuario por nombre o código..."
+            placeholder="Click para ver promotores con saldo..."
             value={liqBusq}
-            onChange={e => { setLiqBusq(e.target.value); setLiqUser(null); }}
+            onChange={e => { setLiqBusq(e.target.value); setLiqUser(null); setShowDropdown(true); }}
+            onFocus={() => setShowDropdown(true)}
+            onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
             style={S.input}
           />
           {resultsBusq.length > 0 && (
-            <div style={{position:"absolute",left:0,right:0,top:"100%",zIndex:10,background:"#fff",border:"1px solid #e8e8e6",borderRadius:"0 0 10px 10px",boxShadow:"0 4px 12px rgba(0,0,0,0.1)",maxHeight:"220px",overflowY:"auto"}}>
+            <div style={{position:"absolute",left:0,right:0,top:"100%",zIndex:10,background:"#fff",border:"1px solid #e8e8e6",borderRadius:"0 0 10px 10px",boxShadow:"0 4px 12px rgba(0,0,0,0.1)",maxHeight:"280px",overflowY:"auto"}}>
               {resultsBusq.map((u: any) => (
-                <div key={u.id} onClick={() => { setLiqUser(u); setLiqBusq(`@${u.nombre_usuario} (${u.codigo})`); }}
+                <div key={u.id} onClick={() => { setLiqUser(u); setLiqBusq(`@${u.nombre_usuario} (${u.codigo})`); setShowDropdown(false); }}
                   style={{padding:"10px 14px",cursor:"pointer",borderBottom:"1px solid #f0f0f0",fontSize:"13px",fontWeight:700,color:"#1a2a3a",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                  <span>@{u.nombre_usuario} <span style={{color:"#9a9a9a",fontWeight:600,fontSize:"11px"}}>({u.codigo})</span></span>
-                  <span style={{fontSize:"12px",fontWeight:800,color:"#8e44ad"}}>{(u.bits_promo||0).toLocaleString("es-AR")} BIT Promo</span>
+                  <div>
+                    <div>@{u.nombre_usuario} <span style={{color:"#9a9a9a",fontWeight:600,fontSize:"11px"}}>({u.codigo})</span></div>
+                  </div>
+                  <div style={{textAlign:"right",flexShrink:0}}>
+                    <div style={{fontSize:"12px",fontWeight:800,color:"#8e44ad"}}>{(u.bits_promo||0).toLocaleString("es-AR")} BIT Promo</div>
+                    <div style={{fontSize:"10px",fontWeight:700,color:"#27ae60"}}>${(u.bits_promo||0).toLocaleString("es-AR")} ARS</div>
+                  </div>
                 </div>
               ))}
+            </div>
+          )}
+          {showDropdown && resultsBusq.length === 0 && !liqUser && (
+            <div style={{position:"absolute",left:0,right:0,top:"100%",zIndex:10,background:"#fff",border:"1px solid #e8e8e6",borderRadius:"0 0 10px 10px",boxShadow:"0 4px 12px rgba(0,0,0,0.1)",padding:"14px",fontSize:"13px",color:"#9a9a9a",fontWeight:600}}>
+              No hay promotores con BIT Promo pendientes.
             </div>
           )}
         </div>

@@ -264,7 +264,7 @@ export default function Header() {
                   width: "auto", background: "#fff", borderRadius: "16px",
                   boxShadow: "0 8px 32px rgba(0,0,0,0.25)", border: "1px solid #e8e8e6",
                   maxHeight: "60vh", overflow: "hidden", display: "flex", flexDirection: "column",
-                  zIndex: 1000,
+                  zIndex: 9999,
                 }}>
                   <div style={{
                     padding: "14px 16px 10px", borderBottom: "1px solid #f0f0f0",

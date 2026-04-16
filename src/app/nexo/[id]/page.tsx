@@ -1093,10 +1093,11 @@ function SliderContenido({ slider, items, mensajes, perfil, nexo, esAdmin, esMie
         </div>
       )}
       {puedePegarAnuncio && (
-        <div style={{ background:"#fff", borderRadius:"14px", padding:"12px", marginBottom:"12px", boxShadow:"0 2px 8px rgba(0,0,0,0.06)" }}>
-          <div style={{ fontSize:"11px", fontWeight:800, color:"#9a9a9a", marginBottom:"6px", textTransform:"uppercase", letterSpacing:"0.5px" }}>📌 Agregar anuncio NexoNet</div>
+        <div style={{ background:"#fff", borderRadius:"14px", padding:"14px", marginBottom:"12px", boxShadow:"0 2px 8px rgba(0,0,0,0.06)" }}>
+          <div style={{ fontSize:"11px", fontWeight:800, color:"#9a9a9a", marginBottom:"4px", textTransform:"uppercase", letterSpacing:"0.5px" }}>📌 Agregar anuncio NexoNet</div>
+          <div style={{ fontSize:"12px", color:"#555", fontWeight:600, marginBottom:"10px", lineHeight:1.4 }}>Agregá tu anuncio o negocio de NexoNet a este grupo</div>
           <div style={{ display:"flex", gap:"6px" }}>
-            <input value={linkAnuncio} onChange={e=>setLinkAnuncio(e.target.value)} placeholder="Pegá el link del anuncio"
+            <input value={linkAnuncio} onChange={e=>setLinkAnuncio(e.target.value)} placeholder="Pegá el link de tu anuncio en NexoNet (ej: nexonet.ar/anuncios/185)"
               style={{ flex:1, border:"2px solid #e8e8e6", borderRadius:"10px", padding:"9px 12px", fontSize:"12px", fontFamily:"'Nunito',sans-serif", outline:"none" }} />
             <button onClick={handleAgregarAnuncio} disabled={agregandoAnuncio || !linkAnuncio.trim()}
               style={{ background:`linear-gradient(135deg,${colorNexo},${colorNexo}cc)`, border:"none", borderRadius:"10px", padding:"9px 14px", fontSize:"12px", fontWeight:900, color:"#fff", cursor: (agregandoAnuncio||!linkAnuncio.trim())?"not-allowed":"pointer", whiteSpace:"nowrap", opacity:(agregandoAnuncio||!linkAnuncio.trim())?0.6:1 }}>

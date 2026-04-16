@@ -95,13 +95,24 @@ function PagosTab({ pagos, usuarios }: { pagos: any[]; usuarios: any[] }) {
       .eq("id", liqUser.id);
     if (e1) { alert("Error: " + e1.message); setLiqLoading(false); return; }
 
-    const { error: e2 } = await supabase.from("log_bits_internos").insert({
+    const logPayload = {
       usuario_id: liqUser.id,
       cantidad: cant,
       motivo: `Liquidación BIT Promo — pago externo $${cant.toLocaleString("es-AR")} ARS`,
       asignado_por: ADMIN_UUID,
+    };
+    console.log("[Liquidación] Insertando log_bits_internos:", logPayload);
+    const { data: logData, error: e2 } = await supabase.from("log_bits_internos").insert(logPayload).select();
+    if (e2) { console.error("[Liquidación] Error log_bits_internos:", e2); alert("Error log: " + e2.message); setLiqLoading(false); return; }
+    console.log("[Liquidación] log_bits_internos insertado OK:", logData);
+
+    const { error: e3 } = await supabase.from("notificaciones").insert({
+      usuario_id: liqUser.id,
+      tipo: "sistema",
+      leida: false,
+      mensaje: `💰 Se liquidaron ${cant.toLocaleString("es-AR")} BIT Promo (${cant.toLocaleString("es-AR")} ARS). El pago fue realizado fuera del sistema. ¡Gracias por ser promotor de NexoNet!`,
     });
-    if (e2) { alert("Error log: " + e2.message); setLiqLoading(false); return; }
+    if (e3) console.error("[Liquidación] Error notificación:", e3);
 
     alert(`✅ Liquidación registrada. Transferir $${cant.toLocaleString("es-AR")} ARS a @${liqUser.nombre_usuario}`);
     setLiqUser({ ...liqUser, bits_promo: (liqUser.bits_promo || 0) - cant });

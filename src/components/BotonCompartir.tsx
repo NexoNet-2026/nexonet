@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { createPortal } from "react-dom";
 
 type Props = {
   titulo: string;
@@ -102,14 +103,17 @@ export default function BotonCompartir({
         {textoBoton}
       </button>
 
-      {abierto && (
+      {abierto && createPortal(
         <div
           onClick={() => setAbierto(false)}
           style={{
             position: "fixed",
-            inset: 0,
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
             background: "rgba(0,0,0,0.65)",
-            zIndex: 900,
+            zIndex: 9999,
             display: "flex",
             alignItems: "flex-end",
             justifyContent: "center",
@@ -254,7 +258,8 @@ export default function BotonCompartir({
               🔗 {urlFinal}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );

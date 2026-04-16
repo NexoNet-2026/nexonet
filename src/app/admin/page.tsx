@@ -38,6 +38,187 @@ const Modal = ({titulo,onClose,children}:{titulo:string;onClose:()=>void;childre
   </div>
 );
 
+function PagosTab({ pagos, usuarios }: { pagos: any[]; usuarios: any[] }) {
+  const [liqBusq, setLiqBusq] = useState("");
+  const [liqUser, setLiqUser] = useState<any>(null);
+  const [liqCant, setLiqCant] = useState("");
+  const [liqLoading, setLiqLoading] = useState(false);
+  const [liqOk, setLiqOk] = useState("");
+  const [liquidaciones, setLiquidaciones] = useState<any[]>([]);
+
+  useEffect(() => {
+    supabase.from("log_bits_internos")
+      .select("*,usuarios(nombre_usuario,codigo)")
+      .ilike("motivo", "%Liquidación%")
+      .order("created_at", { ascending: false })
+      .limit(200)
+      .then(({ data }) => setLiquidaciones(data || []));
+  }, []);
+
+  const pagosAprobados = pagos.filter((p: any) => p.estado === "approved");
+  const totalBitVendidos = pagosAprobados.reduce((a: number, p: any) => a + (p.cantidad || p.monto || 0), 0);
+  const totalARS = pagosAprobados.reduce((a: number, p: any) => a + (p.monto || 0), 0);
+  const totalBitPromo = usuarios.reduce((a: number, u: any) => a + (u.bits_promo || 0), 0);
+
+  const resultsBusq = liqBusq.trim().length >= 2
+    ? usuarios.filter((u: any) =>
+        (u.nombre_usuario || "").toLowerCase().includes(liqBusq.toLowerCase()) ||
+        (u.codigo || "").toLowerCase().includes(liqBusq.toLowerCase())
+      ).slice(0, 5)
+    : [];
+
+  const ejecutarLiquidacion = async () => {
+    if (!liqUser || !liqCant) return;
+    const cant = parseInt(liqCant);
+    if (isNaN(cant) || cant <= 0 || cant > (liqUser.bits_promo || 0)) {
+      alert("Cantidad inválida o mayor al saldo disponible"); return;
+    }
+    setLiqLoading(true);
+    const { error: e1 } = await supabase.from("usuarios")
+      .update({ bits_promo: (liqUser.bits_promo || 0) - cant })
+      .eq("id", liqUser.id);
+    if (e1) { alert("Error: " + e1.message); setLiqLoading(false); return; }
+
+    const { error: e2 } = await supabase.from("log_bits_internos").insert({
+      usuario_id: liqUser.id,
+      cantidad: -cant,
+      motivo: "Liquidación BIT Promo - pago externo ARS",
+      asignado_por: ADMIN_UUID,
+    });
+    if (e2) { alert("Error log: " + e2.message); setLiqLoading(false); return; }
+
+    setLiqOk(`Se liquidaron ${cant} BIT Promo de @${liqUser.nombre_usuario}. Transferir $${cant.toLocaleString("es-AR")} ARS.`);
+    setLiqUser({ ...liqUser, bits_promo: (liqUser.bits_promo || 0) - cant });
+    setLiqCant("");
+    setLiqLoading(false);
+
+    const { data: newLiqs } = await supabase.from("log_bits_internos")
+      .select("*,usuarios(nombre_usuario,codigo)")
+      .ilike("motivo", "%Liquidación%")
+      .order("created_at", { ascending: false })
+      .limit(200);
+    if (newLiqs) setLiquidaciones(newLiqs);
+  };
+
+  return (
+    <>
+      {/* 1. RESUMEN */}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px",marginBottom:"14px"}}>
+        <StatBox n={totalBitVendidos.toLocaleString("es-AR")} l="BIT Nexo vendidos" e="💎" c="#27ae60" />
+        <StatBox n={`$${totalARS.toLocaleString("es-AR")}`} l="ARS recaudado" e="💰" c="#27ae60" />
+        <StatBox n={totalBitPromo.toLocaleString("es-AR")} l="BIT Promo en circulación" e="🎁" c="#8e44ad" />
+        <StatBox n={`$${totalBitPromo.toLocaleString("es-AR")}`} l="ARS adeudado promotores" e="⚠️" c="#e67e22" />
+      </div>
+
+      {/* 2. HISTORIAL DE COMPRAS BIT */}
+      <div style={S.card}>
+        <div style={S.sect}>💳 Historial de compras BIT</div>
+        {pagos.length === 0 && <div style={{fontSize:"13px",color:"#9a9a9a",fontWeight:600}}>No hay pagos registrados.</div>}
+        {pagos.map((p: any) => (
+          <div key={p.id} style={S.row}>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:"13px",fontWeight:800,color:"#1a2a3a"}}>{p.usuarios?.nombre_usuario||"—"} <span style={{fontWeight:600,color:"#9a9a9a",fontSize:"11px"}}>({p.usuarios?.codigo})</span></div>
+              <div style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600}}>{new Date(p.created_at).toLocaleDateString("es-AR",{day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"})}</div>
+            </div>
+            <div style={{textAlign:"center",flexShrink:0,marginRight:"10px"}}>
+              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"16px",color:"#3a7bd5"}}>{(p.cantidad||p.monto||0).toLocaleString("es-AR")} BIT</div>
+            </div>
+            <div style={{textAlign:"right",flexShrink:0}}>
+              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"16px",color:"#27ae60"}}>${(p.monto||0).toLocaleString("es-AR")}</div>
+              <span style={S.badge("#fff",p.estado==="approved"?"#27ae60":p.estado==="pending"?"#e67e22":"#e74c3c")}>{p.estado}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* 3. LIQUIDAR BIT PROMO */}
+      <div style={S.card}>
+        <div style={S.sect}>🏦 Liquidar BIT Promo</div>
+        <div style={{marginBottom:"12px"}}>
+          <input
+            type="text"
+            placeholder="Buscar usuario por nombre o código..."
+            value={liqBusq}
+            onChange={e => { setLiqBusq(e.target.value); setLiqUser(null); setLiqOk(""); }}
+            style={S.input}
+          />
+          {resultsBusq.length > 0 && !liqUser && (
+            <div style={{border:"1px solid #e8e8e6",borderRadius:"10px",marginTop:"6px",overflow:"hidden"}}>
+              {resultsBusq.map((u: any) => (
+                <div key={u.id} onClick={() => { setLiqUser(u); setLiqBusq(u.nombre_usuario); }}
+                  style={{padding:"10px 14px",cursor:"pointer",borderBottom:"1px solid #f0f0f0",fontSize:"13px",fontWeight:700,color:"#1a2a3a",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <span>@{u.nombre_usuario} <span style={{color:"#9a9a9a",fontWeight:600,fontSize:"11px"}}>({u.codigo})</span></span>
+                  <span style={{fontSize:"12px",fontWeight:800,color:"#8e44ad"}}>{(u.bits_promo||0).toLocaleString("es-AR")} BIT Promo</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {liqUser && (
+          <div style={{background:"rgba(142,68,173,0.06)",border:"2px solid rgba(142,68,173,0.2)",borderRadius:"12px",padding:"14px",marginBottom:"12px"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"10px"}}>
+              <div>
+                <div style={{fontSize:"14px",fontWeight:900,color:"#1a2a3a"}}>@{liqUser.nombre_usuario}</div>
+                <div style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600}}>{liqUser.codigo}</div>
+              </div>
+              <div style={{textAlign:"right"}}>
+                <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"22px",color:"#8e44ad"}}>{(liqUser.bits_promo||0).toLocaleString("es-AR")}</div>
+                <div style={{fontSize:"10px",fontWeight:700,color:"#9a9a9a"}}>BIT PROMO DISPONIBLES</div>
+              </div>
+            </div>
+            <div style={{fontSize:"12px",fontWeight:700,color:"#27ae60",marginBottom:"10px"}}>Equivalente: ${(liqUser.bits_promo||0).toLocaleString("es-AR")} ARS</div>
+            <div style={{display:"flex",gap:"8px",alignItems:"center"}}>
+              <input
+                type="number"
+                placeholder="Cantidad BIT a liquidar"
+                value={liqCant}
+                onChange={e => setLiqCant(e.target.value)}
+                min={1}
+                max={liqUser.bits_promo || 0}
+                style={{...S.input,flex:1}}
+              />
+              <button onClick={ejecutarLiquidacion} disabled={liqLoading || !liqCant}
+                style={{...S.btn("#8e44ad"),opacity:(liqLoading||!liqCant)?0.5:1,padding:"10px 20px"}}>
+                {liqLoading ? "..." : "Liquidar"}
+              </button>
+            </div>
+            {liqCant && parseInt(liqCant) > 0 && (
+              <div style={{fontSize:"11px",color:"#e67e22",fontWeight:700,marginTop:"6px"}}>
+                Se descontarán {parseInt(liqCant).toLocaleString("es-AR")} BIT Promo. Transferir ${parseInt(liqCant).toLocaleString("es-AR")} ARS al promotor.
+              </div>
+            )}
+          </div>
+        )}
+
+        {liqOk && (
+          <div style={{background:"rgba(39,174,96,0.08)",border:"2px solid rgba(39,174,96,0.25)",borderRadius:"12px",padding:"14px",fontSize:"13px",fontWeight:700,color:"#27ae60"}}>
+            {liqOk}
+          </div>
+        )}
+      </div>
+
+      {/* 4. HISTORIAL DE LIQUIDACIONES */}
+      <div style={S.card}>
+        <div style={S.sect}>📋 Historial de liquidaciones</div>
+        {liquidaciones.length === 0 && <div style={{fontSize:"13px",color:"#9a9a9a",fontWeight:600}}>No hay liquidaciones registradas.</div>}
+        {liquidaciones.map((l: any) => (
+          <div key={l.id} style={S.row}>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:"13px",fontWeight:800,color:"#1a2a3a"}}>{l.usuarios?.nombre_usuario||"—"} <span style={{fontWeight:600,color:"#9a9a9a",fontSize:"11px"}}>({l.usuarios?.codigo})</span></div>
+              <div style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600}}>{new Date(l.created_at).toLocaleDateString("es-AR",{day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"})}</div>
+            </div>
+            <div style={{textAlign:"right",flexShrink:0}}>
+              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"16px",color:"#8e44ad"}}>{Math.abs(l.cantidad).toLocaleString("es-AR")} BIT</div>
+              <div style={{fontSize:"12px",fontWeight:800,color:"#27ae60"}}>${Math.abs(l.cantidad).toLocaleString("es-AR")} ARS</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
 export default function AdminPanel() {
   const router = useRouter();
   const [authed,  setAuthed]  = useState(false);
@@ -1672,30 +1853,7 @@ export default function AdminPanel() {
         )}
 
         {/* ══ PAGOS ════════════════════════════════════════════════════════════ */}
-        {!loading && tab==="pagos" && (
-          <>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px",marginBottom:"14px"}}>
-              <StatBox n={`$${((pagos.reduce((a,p)=>a+(p.monto||0),0))/1000).toFixed(1)}K`} l="Total recaudado" e="💰" c="#27ae60" />
-              <StatBox n={String(pagos.length)} l="Transacciones" e="💳" c="#3a7bd5" />
-            </div>
-            <div style={S.card}>
-              <div style={S.sect}>💳 Historial de pagos</div>
-              {pagos.map(p=>(
-                <div key={p.id} style={S.row}>
-                  <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontSize:"13px",fontWeight:800,color:"#1a2a3a"}}>{p.usuarios?.nombre_usuario||"—"} <span style={{fontWeight:600,color:"#9a9a9a",fontSize:"11px"}}>({p.usuarios?.codigo})</span></div>
-                    <div style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600}}>{p.paquete} · {new Date(p.created_at).toLocaleDateString("es-AR")}</div>
-                  </div>
-                  <div style={{textAlign:"right",flexShrink:0}}>
-                    <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"18px",color:"#27ae60"}}>${p.monto?.toLocaleString("es-AR")}</div>
-                    <span style={S.badge("#fff",p.estado==="approved"?"#27ae60":"#e67e22")}>{p.estado}</span>
-                  </div>
-                </div>
-              ))}
-              {pagos.length===0&&<div style={{fontSize:"13px",color:"#9a9a9a",fontWeight:600}}>No hay pagos registrados todavía.</div>}
-            </div>
-          </>
-        )}
+        {!loading && tab==="pagos" && (<PagosTab pagos={pagos} usuarios={usuarios} />)}
 
         {/* ══ ALARMAS ══════════════════════════════════════════════════════════ */}
         {!loading && tab==="alarmas" && (

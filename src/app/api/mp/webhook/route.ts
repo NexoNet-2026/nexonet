@@ -199,9 +199,11 @@ export async function POST(req: NextRequest) {
     console.log(`✅ Acreditados ${pkg.cantidad} en ${pkg.col} para usuario ${usuario_id}`);
 
     // ── Comisión en cascada ilimitada ──
+    let tieneCascada = false;
     try {
-      const { data: refUser } = await supabase.from("usuarios").select("nombre_usuario,nombre").eq("id", usuario_id).single();
+      const { data: refUser } = await supabase.from("usuarios").select("nombre_usuario,nombre,referido_por").eq("id", usuario_id).single();
       const nombreRef = refUser?.nombre_usuario || refUser?.nombre || "un referido";
+      tieneCascada = !!refUser?.referido_por;
       let currentId = usuario_id;
       let comisionBase = pkg.cantidad;
       const visitados = new Set<string>();
@@ -224,8 +226,15 @@ export async function POST(req: NextRequest) {
 
         if (!promotor) break;
 
-        const esNAN = promotor.codigo === "NAN-5194178";
-        const porcentaje = esNAN ? 0.30 : 0.20;
+        // Si el promotor es socio comercial activo, usar su porcentaje personalizado
+        const { data: socio } = await supabase
+          .from("socios_comerciales")
+          .select("porcentaje")
+          .eq("usuario_id", current.referido_por)
+          .eq("activo", true)
+          .maybeSingle();
+
+        const porcentaje = socio ? (socio.porcentaje / 100) : 0.20;
         const comision = Math.floor(comisionBase * porcentaje);
 
         if (comision <= 0) break;
@@ -235,18 +244,34 @@ export async function POST(req: NextRequest) {
           bits_promotor_total: (promotor.bits_promotor_total || 0) + comision,
         }).eq("id", current.referido_por);
 
+        // Actualizar acumulado del socio si aplica
+        if (socio) {
+          const { data: socioData } = await supabase.from("socios_comerciales")
+            .select("bits_promotor_acumulado")
+            .eq("usuario_id", current.referido_por)
+            .eq("activo", true)
+            .single();
+          if (socioData) {
+            await supabase.from("socios_comerciales")
+              .update({ bits_promotor_acumulado: (socioData.bits_promotor_acumulado || 0) + comision })
+              .eq("usuario_id", current.referido_por)
+              .eq("activo", true);
+          }
+        }
+
         const nivel = visitados.size;
+        const pctLabel = socio ? `${socio.porcentaje}% socio` : "20%";
         await supabase.from("notificaciones").insert({
           usuario_id: current.referido_por,
           tipo: "sistema",
-          mensaje: `⭐ Recibiste ${comision.toLocaleString()} BIT Promo de comisión por tu referido ${nombreRef}${nivel > 1 ? ` (nivel ${nivel})` : ""}`,
+          mensaje: `⭐ Recibiste ${comision.toLocaleString()} BIT Promo de comisión (${pctLabel}) por tu referido ${nombreRef}${nivel > 1 ? ` (nivel ${nivel})` : ""}`,
           leida: false,
         });
 
         await supabase.from("log_bits_internos").insert({
           usuario_id: current.referido_por,
           cantidad: comision,
-          motivo: `Comisión nivel ${nivel} — referido ${usuario_id} compró ${pkg.cantidad} BIT (paquete: ${paquete})`,
+          motivo: `Comisión nivel ${nivel} (${pctLabel}) — referido ${usuario_id} compró ${pkg.cantidad} BIT (paquete: ${paquete})`,
           asignado_por: usuario_id,
         });
 
@@ -255,11 +280,13 @@ export async function POST(req: NextRequest) {
       }
     } catch (e) { console.error("Error comisión promotor:", e); }
 
-    // Acreditar socios comerciales
-    try {
-      const { acreditarSocios } = await import("@/lib/socios");
-      await acreditarSocios(usuario_id, pkg.cantidad);
-    } catch (_) {}
+    // Acreditar socios comerciales solo si el comprador NO tiene cadena de referidos
+    if (!tieneCascada) {
+      try {
+        const { acreditarSocios } = await import("@/lib/socios");
+        await acreditarSocios(usuario_id, pkg.cantidad);
+      } catch (_) {}
+    }
 
     return NextResponse.json({ ok: true });
 

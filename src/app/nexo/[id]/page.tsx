@@ -951,6 +951,7 @@ function SliderContenido({ slider, items, mensajes, perfil, nexo, esAdmin, esMie
   const [linkAnuncio, setLinkAnuncio] = useState("");
   const [seleccionPub, setSeleccionPub] = useState("");
   const [agregandoAnuncio, setAgregandoAnuncio] = useState(false);
+  const [showFormAnuncio, setShowFormAnuncio] = useState(false);
   const puedePegarAnuncio = (slider?.tipo === "productos" || slider?.tipo === "proveedores") && esMiembro && !!onAgregarAnuncio;
   const pubs: Array<{id:string; titulo:string; tabla:'anuncio'|'nexo'; tipo?:string}> = misPublicaciones || [];
   const labelPub = (p: {tabla:'anuncio'|'nexo'; tipo?:string}) => p.tabla === 'anuncio' ? 'anuncio' : (p.tipo || 'nexo');
@@ -1117,11 +1118,75 @@ function SliderContenido({ slider, items, mensajes, perfil, nexo, esAdmin, esMie
           ))}
         </div>
       )}
-      {puedePegarAnuncio && (
+      {(tipo==="productos"||tipo==="servicios") && (
+        <>
+          {puedePegarAnuncio && (
+            <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:"10px" }}>
+              <button onClick={() => setShowFormAnuncio(!showFormAnuncio)}
+                style={{ background:showFormAnuncio?"#f0f0f0":`linear-gradient(135deg,${colorNexo},${colorNexo}cc)`, border:"none", borderRadius:"10px", padding:"7px 14px", fontSize:"11px", fontWeight:900, color:showFormAnuncio?"#666":"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
+                {showFormAnuncio ? "✕ Cerrar" : "+ Agregar anuncio"}
+              </button>
+            </div>
+          )}
+          {showFormAnuncio && puedePegarAnuncio && (
+            <div style={{ background:"#fff", borderRadius:"14px", padding:"14px", marginBottom:"12px", boxShadow:"0 2px 8px rgba(0,0,0,0.06)", animation:"fadeIn 0.2s ease" }}>
+              <div style={{ fontSize:"11px", fontWeight:800, color:"#9a9a9a", marginBottom:"4px", textTransform:"uppercase", letterSpacing:"0.5px" }}>📌 Agregar anuncio NexoNet</div>
+              <div style={{ fontSize:"12px", color:"#555", fontWeight:600, marginBottom:"10px", lineHeight:1.4 }}>Agregá tu anuncio o negocio de NexoNet a este grupo</div>
+              {pubs.length > 0 ? (
+                <div style={{ display:"flex", gap:"6px", marginBottom:"10px" }}>
+                  <select value={seleccionPub} onChange={e=>setSeleccionPub(e.target.value)}
+                    style={{ flex:1, border:"2px solid #e8e8e6", borderRadius:"10px", padding:"9px 12px", fontSize:"12px", fontFamily:"'Nunito',sans-serif", outline:"none", background:"#fff" }}>
+                    <option value="">Elegí uno de tus anuncios o negocios…</option>
+                    {pubs.map(p => (
+                      <option key={`${p.tabla}:${p.id}`} value={`${p.tabla}:${p.id}`}>{p.titulo} ({labelPub(p)})</option>
+                    ))}
+                  </select>
+                  <button onClick={handleAgregarSeleccion} disabled={agregandoAnuncio || !seleccionPub}
+                    style={{ background:`linear-gradient(135deg,${colorNexo},${colorNexo}cc)`, border:"none", borderRadius:"10px", padding:"9px 14px", fontSize:"12px", fontWeight:900, color:"#fff", cursor:(agregandoAnuncio||!seleccionPub)?"not-allowed":"pointer", whiteSpace:"nowrap", opacity:(agregandoAnuncio||!seleccionPub)?0.6:1 }}>
+                    {agregandoAnuncio?"…":"Agregar — 500 BIT"}
+                  </button>
+                </div>
+              ) : (
+                <div style={{ fontSize:"12px", color:"#9a9a9a", fontWeight:700, marginBottom:"10px", background:"#f9f9f7", padding:"10px", borderRadius:"8px" }}>No tenés anuncios publicados. Publicá uno primero.</div>
+              )}
+              <div style={{ fontSize:"10px", fontWeight:800, color:"#9a9a9a", marginBottom:"6px", textTransform:"uppercase", letterSpacing:"0.5px" }}>O pegá un link manual</div>
+              <div style={{ display:"flex", gap:"6px" }}>
+                <input value={linkAnuncio} onChange={e=>setLinkAnuncio(e.target.value)} placeholder="ej: nexonet.ar/anuncios/185"
+                  style={{ flex:1, border:"2px solid #e8e8e6", borderRadius:"10px", padding:"9px 12px", fontSize:"12px", fontFamily:"'Nunito',sans-serif", outline:"none" }} />
+                <button onClick={handleAgregarLink} disabled={agregandoAnuncio || !linkAnuncio.trim()}
+                  style={{ background:`linear-gradient(135deg,${colorNexo},${colorNexo}cc)`, border:"none", borderRadius:"10px", padding:"9px 14px", fontSize:"12px", fontWeight:900, color:"#fff", cursor:(agregandoAnuncio||!linkAnuncio.trim())?"not-allowed":"pointer", whiteSpace:"nowrap", opacity:(agregandoAnuncio||!linkAnuncio.trim())?0.6:1 }}>
+                  {agregandoAnuncio?"…":"Agregar — 500 BIT"}
+                </button>
+              </div>
+            </div>
+          )}
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(2, 1fr)", gap:"12px" }}>
+            {items.map((item:any)=>{
+              const esAnuncio = item.tipo === "anuncio";
+              const esNexoItem = item.tipo === "nexo";
+              const imgSrc = (esAnuncio || esNexoItem) ? item.miniatura_url : item.url;
+              const verHref = esAnuncio ? `/anuncios/${item.url}` : esNexoItem ? `/nexo/${item.url}` : null;
+              const verLabel = esAnuncio ? "Ver anuncio →" : esNexoItem ? "Ver negocio →" : null;
+              return (
+                <div key={item.id} style={{ background:"#fff", borderRadius:"16px", overflow:"hidden", boxShadow:"0 2px 10px rgba(0,0,0,0.07)", display:"flex", flexDirection:"column" }}>
+                  <div style={{ background:"linear-gradient(135deg,#1a2a3a,#243b55)", display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden" }}>
+                    {imgSrc ? <img src={imgSrc} alt="" style={{ width:"100%", height:"auto", display:"block" }} /> : <div style={{ padding:"30px 0", fontSize:"36px", opacity:0.4 }}>{SLIDER_EMOJIS[tipo]}</div>}
+                  </div>
+                  <div style={{ padding:"10px 12px", flex:1, display:"flex", flexDirection:"column" }}>
+                    <div style={{ fontSize:"13px", fontWeight:900, color:"#1a2a3a", marginBottom:"3px" }}>{item.titulo||"Item"}</div>
+                    {item.precio_bits ? <div style={{ fontSize:"12px", fontWeight:800, color:colorNexo }}>$ {item.precio_bits?.toLocaleString()}</div> : null}
+                    {verHref && <a href={verHref} style={{ display:"inline-block", marginTop:"auto", paddingTop:"8px", fontSize:"11px", fontWeight:800, color:"#fff", textDecoration:"none", background:`linear-gradient(135deg,${colorNexo},${colorNexo}cc)`, borderRadius:"8px", padding:"6px 12px", textAlign:"center" }}>{verLabel}</a>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
+      {puedePegarAnuncio && tipo!=="productos" && tipo!=="servicios" && (
         <div style={{ background:"#fff", borderRadius:"14px", padding:"14px", marginBottom:"12px", boxShadow:"0 2px 8px rgba(0,0,0,0.06)" }}>
           <div style={{ fontSize:"11px", fontWeight:800, color:"#9a9a9a", marginBottom:"4px", textTransform:"uppercase", letterSpacing:"0.5px" }}>📌 Agregar anuncio NexoNet</div>
           <div style={{ fontSize:"12px", color:"#555", fontWeight:600, marginBottom:"10px", lineHeight:1.4 }}>Agregá tu anuncio o negocio de NexoNet a este grupo</div>
-
           {pubs.length > 0 ? (
             <div style={{ display:"flex", gap:"6px", marginBottom:"10px" }}>
               <select value={seleccionPub} onChange={e=>setSeleccionPub(e.target.value)}
@@ -1132,45 +1197,22 @@ function SliderContenido({ slider, items, mensajes, perfil, nexo, esAdmin, esMie
                 ))}
               </select>
               <button onClick={handleAgregarSeleccion} disabled={agregandoAnuncio || !seleccionPub}
-                style={{ background:`linear-gradient(135deg,${colorNexo},${colorNexo}cc)`, border:"none", borderRadius:"10px", padding:"9px 14px", fontSize:"12px", fontWeight:900, color:"#fff", cursor: (agregandoAnuncio||!seleccionPub)?"not-allowed":"pointer", whiteSpace:"nowrap", opacity:(agregandoAnuncio||!seleccionPub)?0.6:1 }}>
+                style={{ background:`linear-gradient(135deg,${colorNexo},${colorNexo}cc)`, border:"none", borderRadius:"10px", padding:"9px 14px", fontSize:"12px", fontWeight:900, color:"#fff", cursor:(agregandoAnuncio||!seleccionPub)?"not-allowed":"pointer", whiteSpace:"nowrap", opacity:(agregandoAnuncio||!seleccionPub)?0.6:1 }}>
                 {agregandoAnuncio?"…":"Agregar — 500 BIT"}
               </button>
             </div>
           ) : (
             <div style={{ fontSize:"12px", color:"#9a9a9a", fontWeight:700, marginBottom:"10px", background:"#f9f9f7", padding:"10px", borderRadius:"8px" }}>No tenés anuncios publicados. Publicá uno primero.</div>
           )}
-
           <div style={{ fontSize:"10px", fontWeight:800, color:"#9a9a9a", marginBottom:"6px", textTransform:"uppercase", letterSpacing:"0.5px" }}>O pegá un link manual</div>
           <div style={{ display:"flex", gap:"6px" }}>
             <input value={linkAnuncio} onChange={e=>setLinkAnuncio(e.target.value)} placeholder="ej: nexonet.ar/anuncios/185"
               style={{ flex:1, border:"2px solid #e8e8e6", borderRadius:"10px", padding:"9px 12px", fontSize:"12px", fontFamily:"'Nunito',sans-serif", outline:"none" }} />
             <button onClick={handleAgregarLink} disabled={agregandoAnuncio || !linkAnuncio.trim()}
-              style={{ background:`linear-gradient(135deg,${colorNexo},${colorNexo}cc)`, border:"none", borderRadius:"10px", padding:"9px 14px", fontSize:"12px", fontWeight:900, color:"#fff", cursor: (agregandoAnuncio||!linkAnuncio.trim())?"not-allowed":"pointer", whiteSpace:"nowrap", opacity:(agregandoAnuncio||!linkAnuncio.trim())?0.6:1 }}>
+              style={{ background:`linear-gradient(135deg,${colorNexo},${colorNexo}cc)`, border:"none", borderRadius:"10px", padding:"9px 14px", fontSize:"12px", fontWeight:900, color:"#fff", cursor:(agregandoAnuncio||!linkAnuncio.trim())?"not-allowed":"pointer", whiteSpace:"nowrap", opacity:(agregandoAnuncio||!linkAnuncio.trim())?0.6:1 }}>
               {agregandoAnuncio?"…":"Agregar — 500 BIT"}
             </button>
           </div>
-        </div>
-      )}
-      {(tipo==="productos"||tipo==="servicios") && (
-        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px" }}>
-          {items.map((item:any)=>{
-            const esAnuncio = item.tipo === "anuncio";
-            const esNexoItem = item.tipo === "nexo";
-            const imgSrc = (esAnuncio || esNexoItem) ? item.miniatura_url : item.url;
-            const verHref = esAnuncio ? `/anuncios/${item.url}` : esNexoItem ? `/nexo/${item.url}` : null;
-            const verLabel = esAnuncio ? "Ver anuncio →" : esNexoItem ? "Ver negocio →" : null;
-            return (
-            <div key={item.id} style={{ background:"#fff", borderRadius:"16px", overflow:"hidden", boxShadow:"0 2px 10px rgba(0,0,0,0.07)" }}>
-              <div style={{ height:"110px", background:"linear-gradient(135deg,#1a2a3a,#243b55)", display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden" }}>
-                {imgSrc ? <img src={imgSrc} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : <span style={{ fontSize:"36px", opacity:0.4 }}>{SLIDER_EMOJIS[tipo]}</span>}
-              </div>
-              <div style={{ padding:"10px 12px" }}>
-                <div style={{ fontSize:"13px", fontWeight:900, color:"#1a2a3a", marginBottom:"3px" }}>{item.titulo||"Item"}</div>
-                {item.precio_bits ? <div style={{ fontSize:"12px", fontWeight:800, color:colorNexo }}>$ {item.precio_bits?.toLocaleString()}</div> : null}
-                {verHref && <a href={verHref} style={{ display:"inline-block", marginTop:"6px", fontSize:"11px", fontWeight:800, color:colorNexo, textDecoration:"none" }}>{verLabel}</a>}
-              </div>
-            </div>
-          );})}
         </div>
       )}
       {(tipo==="novedades"||tipo==="faq"||tipo==="testimonios"||tipo==="personalizado"||tipo==="calendario"||tipo==="proveedores"||tipo==="clientes") && (

@@ -234,6 +234,7 @@ export async function POST(req: NextRequest) {
           .eq("activo", true)
           .maybeSingle();
 
+        console.log("[cascada] nodo:", current.referido_por, "socio:", socio);
         const porcentaje = socio ? (socio.porcentaje / 100) : 0.20;
         const comision = Math.floor(comisionBase * porcentaje);
 

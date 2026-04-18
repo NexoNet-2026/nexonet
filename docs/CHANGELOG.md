@@ -9,14 +9,31 @@
 
 - **Limpieza de debug logs en `asignar-bit`**: se eliminaron los 3 `console.log` de debug de `src/app/api/admin/asignar-bit/route.ts` — `ASIGNAR-BIT REQUEST`, `UPDATE resultado` y `[cascada-admin] nodo`. Commit: `6d716d0`.
 
+- **Errores 400 en `/admin` al cargar**: 3 queries (a `grupos`, `socios_comerciales` y `contactos_nexonet`) fallaban porque sus FKs (`creador_id` / `usuario_id`) apuntaban a `auth.users` en vez de `public.usuarios`, lo que impedía a PostgREST resolver el embed desde el cliente. Fix: se dropearon las 3 FKs viejas y se recrearon apuntando a `public.usuarios`. Aplicado vía SQL directo en Supabase — no hay migration file todavía.
+
 ### Database changes (aplicados en Supabase, NO en código)
 Las siguientes policies se crearon manualmente en SQL Editor:
 - `admin_nexos_delete`, `admin_nexos_update` en tabla `nexos`
 - `admin_<tabla>_all` en: `nexo_miembros`, `nexo_visitas`, `nexo_descargas_pagos`, `bits_promo_descargas`, `nexo_descargas`, `nexo_slider_items`, `nexo_sliders`, `nexo_mensajes`, `notificaciones`
 - `admin_all` en `log_socios_comerciales`
 
+SQL aplicado para redirigir 3 FKs de `auth.users` → `public.usuarios` (fix errores 400 en admin):
+
+```sql
+ALTER TABLE public.grupos DROP CONSTRAINT grupos_creador_id_fkey;
+ALTER TABLE public.grupos ADD CONSTRAINT grupos_creador_id_fkey
+  FOREIGN KEY (creador_id) REFERENCES public.usuarios(id) ON DELETE SET NULL;
+
+ALTER TABLE public.socios_comerciales DROP CONSTRAINT socios_comerciales_usuario_id_fkey;
+ALTER TABLE public.socios_comerciales ADD CONSTRAINT socios_comerciales_usuario_id_fkey
+  FOREIGN KEY (usuario_id) REFERENCES public.usuarios(id) ON DELETE CASCADE;
+
+ALTER TABLE public.contactos_nexonet DROP CONSTRAINT contactos_nexonet_usuario_id_fkey;
+ALTER TABLE public.contactos_nexonet ADD CONSTRAINT contactos_nexonet_usuario_id_fkey
+  FOREIGN KEY (usuario_id) REFERENCES public.usuarios(id) ON DELETE CASCADE;
+```
+
 ### Pending / Known issues
-- Errores 400 en consola al cargar admin (queries a `thehpvccubxzsnbtbzmz.supabase.co`) — pendiente diagnosticar.
 - Pago real con MP falló en checkout (tarjeta rechazada por MP, no por NexoNet).
 - Simulación de webhook MP pendiente para verificar cascada en flujo de pago real.
 - **Cascada de comisiones con socio 0%**: si un eslabón intermedio en `socios_comerciales` tiene `porcentaje=0`, el cálculo `comision=0` dispara el `break` y corta la cascada para todo el upline. Decidir si corresponde saltear ese nivel pasando el monto original al siguiente eslabón, o tratar 0% como transparente. Requiere confirmar intención de negocio antes de tocar el código.

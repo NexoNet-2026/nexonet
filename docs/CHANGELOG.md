@@ -7,6 +7,8 @@
 
 - **Eliminación de nexos desde admin**: se agregaron RLS policies en Supabase para permitir que Gapachu (admin UUID `f9b23e04-c591-44bf-9efb-51966c30a083`) pueda hacer DELETE/UPDATE sobre `nexos` y todas sus tablas hijas. Antes los borrados en admin parecían funcionar pero no persistían en DB porque las policies solo permitían operar sobre nexos propios (`auth.uid() = usuario_id`).
 
+- **Limpieza de debug logs en `asignar-bit`**: se eliminaron los 3 `console.log` de debug de `src/app/api/admin/asignar-bit/route.ts` — `ASIGNAR-BIT REQUEST`, `UPDATE resultado` y `[cascada-admin] nodo`. Commit: `6d716d0`.
+
 ### Database changes (aplicados en Supabase, NO en código)
 Las siguientes policies se crearon manualmente en SQL Editor:
 - `admin_nexos_delete`, `admin_nexos_update` en tabla `nexos`
@@ -17,7 +19,11 @@ Las siguientes policies se crearon manualmente en SQL Editor:
 - Errores 400 en consola al cargar admin (queries a `thehpvccubxzsnbtbzmz.supabase.co`) — pendiente diagnosticar.
 - Pago real con MP falló en checkout (tarjeta rechazada por MP, no por NexoNet).
 - Simulación de webhook MP pendiente para verificar cascada en flujo de pago real.
-- Debug `console.log('[cascada-admin]')` sigue activo en `src/app/api/admin/asignar-bit/route.ts` — limpiar cuando se confirme que no hay más bugs.
+- **Cascada de comisiones con socio 0%**: si un eslabón intermedio en `socios_comerciales` tiene `porcentaje=0`, el cálculo `comision=0` dispara el `break` y corta la cascada para todo el upline. Decidir si corresponde saltear ese nivel pasando el monto original al siguiente eslabón, o tratar 0% como transparente. Requiere confirmar intención de negocio antes de tocar el código.
+- **Error handling en `asignar-bit/route.ts`**: los `update` / `insert` dentro del `while` de cascada y el `insert` final de notificación no chequean `error`. Agregar `console.error` y continuar — no abortar la cascada por un fallo en el insert de notificación.
+
+### Deuda técnica
+- **`asignar-bit`: falta atomicidad**. Si falla el `insert` de notificación después del `update` de `bits_promo`, el referido ya cobró pero no fue notificado (o el caso inverso). Refactor a RPC / función SQL (`plpgsql`) para que el update de bits y el insert de notificación corran en una sola transacción. No urgente.
 
 ### Testing verified
 - Asignación manual de 10.000 BIT a Usuario5 distribuye correctamente:

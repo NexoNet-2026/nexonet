@@ -137,7 +137,7 @@ export async function POST(req: NextRequest) {
     // Obtener usuario actual
     const { data: usuario } = await supabase
       .from("usuarios")
-      .select("id, bits, bits_anuncio, bits_conexion, bits_grupo, bits_link, bits_adjunto, bits_busquedas, bits_totales_acumulados")
+      .select("id, bits, bits_busquedas, bits_totales_acumulados")
       .eq("id", usuario_id)
       .single();
 

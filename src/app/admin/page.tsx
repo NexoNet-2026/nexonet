@@ -38,6 +38,31 @@ const Modal = ({titulo,onClose,children}:{titulo:string;onClose:()=>void;childre
   </div>
 );
 
+const PAQUETES_SIM = [
+  { id: "bit_nexo_500",           label: "500 BIT Nexo" },
+  { id: "bit_nexo_1000",          label: "1.000 BIT Nexo" },
+  { id: "bit_nexo_5000",          label: "5.000 BIT Nexo" },
+  { id: "bit_nexo_ilimitado",     label: "BIT Nexo Ilimitado" },
+  { id: "bit_500",                label: "500 BIT" },
+  { id: "bit_1500",               label: "1.600 BIT (pack 1500)" },
+  { id: "bit_3000",               label: "3.300 BIT (pack 3000)" },
+  { id: "bit_6000",               label: "6.800 BIT (pack 6000)" },
+  { id: "bit_12000",              label: "14.000 BIT (pack 12000)" },
+  { id: "bit_30000",              label: "36.000 BIT (pack 30000)" },
+  { id: "bit_anuncio_3",          label: "3 BIT Anuncio" },
+  { id: "bit_anuncio_10",         label: "10 BIT Anuncio" },
+  { id: "bit_anuncio_emp_50",     label: "50 BIT Anuncio Empresa" },
+  { id: "bit_conexion_1000",      label: "1.000 BIT Conexión" },
+  { id: "bit_conexion_5000",      label: "5.000 BIT Conexión" },
+  { id: "bit_conexion_ilimitado", label: "BIT Conexión Ilimitado" },
+  { id: "bit_grupo",              label: "500 BIT Grupo" },
+  { id: "bit_link",               label: "500 BIT Link" },
+  { id: "bit_adjunto",            label: "500 BIT Adjunto" },
+  { id: "bit_ia_1000",            label: "1.000 BIT Búsqueda IA" },
+  { id: "bit_ia_5000",            label: "5.000 BIT Búsqueda IA" },
+  { id: "bit_ia_ilimitado",       label: "BIT IA Ilimitado" },
+];
+
 function PagosTab({ pagos, usuarios }: { pagos: any[]; usuarios: any[] }) {
   const [liqBusq, setLiqBusq] = useState("");
   const [liqUser, setLiqUser] = useState<any>(null);
@@ -294,6 +319,10 @@ export default function AdminPanel() {
   const [showPass,      setShowPass]      = useState(false);
   const [modalNuevoAn,  setModalNuevoAn]  = useState(false);
   const [modalNuevoGr,  setModalNuevoGr]  = useState(false);
+
+  const [modalSimular, setModalSimular] = useState<any>(null);
+  const [simPaquete,   setSimPaquete]   = useState("bit_nexo_1000");
+  const [simLoading,   setSimLoading]   = useState(false);
 
   const [bitTipo, setBitTipo] = useState("bits");
   const [bitCant, setBitCant] = useState("");
@@ -641,6 +670,37 @@ export default function AdminPanel() {
     }
     setUsuarios(prev => prev.filter(x => x.id !== u.id));
     showToast("✅ Usuario eliminado correctamente");
+  };
+
+  const ejecutarSimulacion = async () => {
+    if (!modalSimular) return;
+    setSimLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { alert("Sesión expirada — recargá la página"); setSimLoading(false); return; }
+      const res = await fetch("/api/admin/simular-compra", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ usuario_id: modalSimular.id, paquete: simPaquete }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert("Error: " + (data.error || "desconocido"));
+        setSimLoading(false);
+        return;
+      }
+      showToast(`✅ Simulación ejecutada — ${data.cascada?.length || 0} nivel(es) de cascada`);
+      setModalSimular(null);
+      setSimPaquete("bit_nexo_1000");
+      setSimLoading(false);
+      await cargarTodo();
+    } catch (e: any) {
+      alert("Error: " + e.message);
+      setSimLoading(false);
+    }
   };
   const asignarBit = async () => {
     if (!modalBit || !bitCant) return;
@@ -1649,6 +1709,7 @@ export default function AdminPanel() {
                   <button onClick={()=>setModalUsuario(u)} style={S.btn("#8e44ad",true)}>👁️ Ver</button>
                   <button onClick={()=>bloquearUsuario(u)} style={S.btn(u.bloqueado?"#27ae60":"#e67e22",true)}>{u.bloqueado?"🔓":"🔒"}</button>
                   <button onClick={()=>eliminarUsuario(u)} style={S.btn("#e74c3c",true)}>🗑️</button>
+                  <button onClick={()=>setModalSimular(u)} style={S.btn("#9b59b6",true)}>🧪 Simular</button>
                 </div>
               </div>
             ))}
@@ -2621,6 +2682,26 @@ export default function AdminPanel() {
           <label style={S.label}>Mensaje</label>
           <textarea style={{...S.input,minHeight:"90px",resize:"vertical",marginBottom:"16px"}} value={msgTexto} onChange={e=>setMsgTexto(e.target.value)} />
           <button onClick={enviarMensaje} style={S.btn("#3a7bd5")} disabled={!msgTexto}>📨 Enviar</button>
+        </Modal>
+      )}
+
+      {/* ══ MODAL SIMULAR COMPRA ═════════════════════════════════════════════════ */}
+      {modalSimular && (
+        <Modal titulo={`🧪 Simular compra — ${modalSimular.nombre_usuario}`} onClose={()=>{setModalSimular(null);setSimPaquete("bit_nexo_1000");}}>
+          <div style={{background:"rgba(155,89,182,0.08)",border:"2px solid rgba(155,89,182,0.2)",borderRadius:"12px",padding:"12px 14px",marginBottom:"14px",fontSize:"12px",color:"#6c3483",fontWeight:700,lineHeight:1.5}}>
+            ⚠️ Esta simulación replica exactamente un webhook de MercadoPago aprobado. Acredita BIT al comprador y dispara cascada de comisiones a sus referidos. Todos los registros quedan marcados como [SIMULACIÓN ADMIN] para trazabilidad. No se cobra dinero real.
+          </div>
+          <label style={S.label}>Paquete a simular</label>
+          <select style={{...S.input,marginBottom:"16px"}} value={simPaquete} onChange={e=>setSimPaquete(e.target.value)}>
+            {PAQUETES_SIM.map(p=><option key={p.id} value={p.id}>{p.label}</option>)}
+          </select>
+          <div style={{fontSize:"12px",color:"#9a9a9a",fontWeight:700,marginBottom:"16px",lineHeight:1.5}}>
+            Comprador: <strong style={{color:"#1a2a3a"}}>{modalSimular.nombre_usuario}</strong> ({modalSimular.codigo})<br/>
+            {modalSimular.referido_por ? "Tiene referido_por → cascada activa" : "Sin referido → acredita a socios comerciales"}
+          </div>
+          <button onClick={ejecutarSimulacion} disabled={simLoading} style={{...S.btn("#9b59b6"),opacity:simLoading?0.6:1}}>
+            {simLoading ? "⏳ Procesando..." : "🧪 Ejecutar simulación"}
+          </button>
         </Modal>
       )}
 

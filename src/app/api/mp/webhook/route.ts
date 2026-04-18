@@ -11,28 +11,12 @@ const ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN!;
 
 // Mapa paquete → columna Supabase y cantidad
 const PAQUETES: Record<string, { col: string; cantidad: number; ilimitado?: boolean }> = {
-  "bit_nexo_500":           { col: "bits",            cantidad: 500   },
-  "bit_nexo_1000":          { col: "bits",            cantidad: 1000  },
-  "bit_nexo_5000":          { col: "bits",            cantidad: 5000  },
-  "bit_nexo_ilimitado":     { col: "bits",            cantidad: 99999, ilimitado: true },
-  "bit_500":                { col: "bits",            cantidad: 500   },
-  "bit_1500":               { col: "bits",            cantidad: 1600  },
-  "bit_3000":               { col: "bits",            cantidad: 3300  },
-  "bit_6000":               { col: "bits",            cantidad: 6800  },
-  "bit_12000":              { col: "bits",            cantidad: 14000 },
-  "bit_30000":              { col: "bits",            cantidad: 36000 },
-  "bit_anuncio_3":          { col: "bits_anuncio",    cantidad: 3     },
-  "bit_anuncio_10":         { col: "bits_anuncio",    cantidad: 10    },
-  "bit_anuncio_emp_50":     { col: "bits_anuncio",    cantidad: 50    },
-  "bit_conexion_1000":      { col: "bits_conexion",   cantidad: 1000  },
-  "bit_conexion_5000":      { col: "bits_conexion",   cantidad: 5000  },
-  "bit_conexion_ilimitado": { col: "bits_conexion",   cantidad: 99999, ilimitado: true },
-  "bit_grupo":              { col: "bits_grupo",      cantidad: 500   },
-  "bit_link":               { col: "bits_link",       cantidad: 500   },
-  "bit_adjunto":            { col: "bits_adjunto",    cantidad: 500   },
-  "bit_ia_1000":            { col: "bits_busquedas",  cantidad: 1000  },
-  "bit_ia_5000":            { col: "bits_busquedas",  cantidad: 5000  },
-  "bit_ia_ilimitado":       { col: "bits_busquedas",  cantidad: 99999, ilimitado: true },
+  "bit_500":   { col: "bits", cantidad: 500   },
+  "bit_1500":  { col: "bits", cantidad: 1600  },
+  "bit_3000":  { col: "bits", cantidad: 3300  },
+  "bit_6000":  { col: "bits", cantidad: 6800  },
+  "bit_12000": { col: "bits", cantidad: 14000 },
+  "bit_30000": { col: "bits", cantidad: 36000 },
 };
 
 export async function POST(req: NextRequest) {

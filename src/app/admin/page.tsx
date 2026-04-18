@@ -39,28 +39,12 @@ const Modal = ({titulo,onClose,children}:{titulo:string;onClose:()=>void;childre
 );
 
 const PAQUETES_SIM = [
-  { id: "bit_nexo_500",           label: "500 BIT Nexo" },
-  { id: "bit_nexo_1000",          label: "1.000 BIT Nexo" },
-  { id: "bit_nexo_5000",          label: "5.000 BIT Nexo" },
-  { id: "bit_nexo_ilimitado",     label: "BIT Nexo Ilimitado" },
-  { id: "bit_500",                label: "500 BIT" },
-  { id: "bit_1500",               label: "1.600 BIT (pack 1500)" },
-  { id: "bit_3000",               label: "3.300 BIT (pack 3000)" },
-  { id: "bit_6000",               label: "6.800 BIT (pack 6000)" },
-  { id: "bit_12000",              label: "14.000 BIT (pack 12000)" },
-  { id: "bit_30000",              label: "36.000 BIT (pack 30000)" },
-  { id: "bit_anuncio_3",          label: "3 BIT Anuncio" },
-  { id: "bit_anuncio_10",         label: "10 BIT Anuncio" },
-  { id: "bit_anuncio_emp_50",     label: "50 BIT Anuncio Empresa" },
-  { id: "bit_conexion_1000",      label: "1.000 BIT Conexión" },
-  { id: "bit_conexion_5000",      label: "5.000 BIT Conexión" },
-  { id: "bit_conexion_ilimitado", label: "BIT Conexión Ilimitado" },
-  { id: "bit_grupo",              label: "500 BIT Grupo" },
-  { id: "bit_link",               label: "500 BIT Link" },
-  { id: "bit_adjunto",            label: "500 BIT Adjunto" },
-  { id: "bit_ia_1000",            label: "1.000 BIT Búsqueda IA" },
-  { id: "bit_ia_5000",            label: "5.000 BIT Búsqueda IA" },
-  { id: "bit_ia_ilimitado",       label: "BIT IA Ilimitado" },
+  { id: "bit_500",   label: "500 BIT — $500" },
+  { id: "bit_1500",  label: "1.600 BIT (+100 bonus) — $1.500" },
+  { id: "bit_3000",  label: "3.300 BIT (+300 bonus) — $3.000" },
+  { id: "bit_6000",  label: "6.800 BIT (+800 bonus) — $6.000" },
+  { id: "bit_12000", label: "14.000 BIT (+2.000 bonus) — $12.000" },
+  { id: "bit_30000", label: "36.000 BIT (+6.000 bonus) — $30.000" },
 ];
 
 function PagosTab({ pagos, usuarios }: { pagos: any[]; usuarios: any[] }) {
@@ -321,7 +305,7 @@ export default function AdminPanel() {
   const [modalNuevoGr,  setModalNuevoGr]  = useState(false);
 
   const [modalSimular, setModalSimular] = useState<any>(null);
-  const [simPaquete,   setSimPaquete]   = useState("bit_nexo_1000");
+  const [simPaquete,   setSimPaquete]   = useState("bit_500");
   const [simLoading,   setSimLoading]   = useState(false);
 
   const [bitTipo, setBitTipo] = useState("bits");
@@ -694,7 +678,7 @@ export default function AdminPanel() {
       }
       showToast(`✅ Simulación ejecutada — ${data.cascada?.length || 0} nivel(es) de cascada`);
       setModalSimular(null);
-      setSimPaquete("bit_nexo_1000");
+      setSimPaquete("bit_500");
       setSimLoading(false);
       await cargarTodo();
     } catch (e: any) {
@@ -2687,7 +2671,7 @@ export default function AdminPanel() {
 
       {/* ══ MODAL SIMULAR COMPRA ═════════════════════════════════════════════════ */}
       {modalSimular && (
-        <Modal titulo={`🧪 Simular compra — ${modalSimular.nombre_usuario}`} onClose={()=>{setModalSimular(null);setSimPaquete("bit_nexo_1000");}}>
+        <Modal titulo={`🧪 Simular compra — ${modalSimular.nombre_usuario}`} onClose={()=>{setModalSimular(null);setSimPaquete("bit_500");}}>
           <div style={{background:"rgba(155,89,182,0.08)",border:"2px solid rgba(155,89,182,0.2)",borderRadius:"12px",padding:"12px 14px",marginBottom:"14px",fontSize:"12px",color:"#6c3483",fontWeight:700,lineHeight:1.5}}>
             ⚠️ Esta simulación replica exactamente un webhook de MercadoPago aprobado. Acredita BIT al comprador y dispara cascada de comisiones a sus referidos. Todos los registros quedan marcados como [SIMULACIÓN ADMIN] para trazabilidad. No se cobra dinero real.
           </div>

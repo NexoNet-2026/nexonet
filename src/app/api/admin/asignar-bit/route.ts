@@ -4,7 +4,6 @@ import { NextResponse } from "next/server";
 export async function POST(req: Request) {
   try {
     const { usuario_id, columna, cantidad, nota } = await req.json();
-    console.log("ASIGNAR-BIT REQUEST:", { usuario_id, columna, cantidad });
     if (!usuario_id || !columna || cantidad === undefined)
       return NextResponse.json({ error: "Faltan campos" }, { status: 400 });
 
@@ -29,8 +28,6 @@ export async function POST(req: Request) {
       .from("usuarios")
       .update({ [columna]: nuevo })
       .eq("id", usuario_id);
-
-    console.log("UPDATE resultado:", error, "columna:", columna, "nuevo:", nuevo, "usuario:", usuario_id);
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
@@ -67,7 +64,6 @@ export async function POST(req: Request) {
           .eq("activo", true)
           .maybeSingle();
 
-        console.log("[cascada-admin] nodo:", current.referido_por, "socio:", socio);
         const porcentaje = socio ? (socio.porcentaje / 100) : 0.20;
         const comision = Math.floor(comisionBase * porcentaje);
 

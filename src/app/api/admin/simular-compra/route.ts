@@ -3,6 +3,7 @@
 // sin consultar la API de MP. Herramienta admin para diagnosticar cascada de comisiones.
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { logFallo } from "@/lib/log-fallos";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -107,7 +108,14 @@ export async function POST(req: Request) {
       bits_col: pkg.col,
       bits_cant: pkg.cantidad,
     });
-    if (pagoErr) console.error("[simular-compra] fail insert pagos_mp:", pagoErr);
+    if (pagoErr) await logFallo({
+      severidad: "critico",
+      contexto: "simular-compra",
+      operacion: "insert_pagos_mp",
+      usuario_id,
+      datos_contexto: { payment_id, paquete, error: pagoErr },
+      error_mensaje: pagoErr.message,
+    });
 
     // 8. Notificación al comprador
     const cantTxt = pkg.ilimitado ? "BIT Ilimitados" : `${pkg.cantidad.toLocaleString()} BIT`;
@@ -117,7 +125,14 @@ export async function POST(req: Request) {
       mensaje: `✅ [SIMULACIÓN ADMIN] Se acreditaron ${cantTxt} en tu cuenta`,
       leida: false,
     });
-    if (notifErr) console.error("[simular-compra] fail notif comprador:", notifErr);
+    if (notifErr) await logFallo({
+      severidad: "advertencia",
+      contexto: "simular-compra",
+      operacion: "insert_notif_comprador",
+      usuario_id,
+      datos_contexto: { payment_id, paquete, cantidad: pkg.cantidad, error: notifErr },
+      error_mensaje: notifErr.message,
+    });
 
     // 9. Cascada de comisiones (idéntica al webhook, con prefijo [SIMULACIÓN ADMIN] en mensajes)
     const cascada: Array<{ nivel: number; usuario_id: string; porcentaje: number; comision: number }> = [];
@@ -175,7 +190,14 @@ export async function POST(req: Request) {
           bits_promo: (promotor.bits_promo || 0) + comision,
           bits_promotor_total: (promotor.bits_promotor_total || 0) + comision,
         }).eq("id", current.referido_por);
-        if (upCascadaErr) console.error("[simular-compra] fail update cascada:", upCascadaErr);
+        if (upCascadaErr) await logFallo({
+          severidad: "critico",
+          contexto: "simular-compra",
+          operacion: "update_cascada_promo",
+          usuario_id: current.referido_por,
+          datos_contexto: { comision, nivel: visitados.size, referido_origen: usuario_id, payment_id, error: upCascadaErr },
+          error_mensaje: upCascadaErr.message,
+        });
 
         if (socio) {
           const { data: socioData } = await supabase
@@ -190,7 +212,14 @@ export async function POST(req: Request) {
               .update({ bits_promotor_acumulado: (socioData.bits_promotor_acumulado || 0) + comision })
               .eq("usuario_id", current.referido_por)
               .eq("activo", true);
-            if (upSocioErr) console.error("[simular-compra] fail update socio acumulado:", upSocioErr);
+            if (upSocioErr) await logFallo({
+              severidad: "critico",
+              contexto: "simular-compra",
+              operacion: "update_socio_acumulado",
+              usuario_id: current.referido_por,
+              datos_contexto: { comision, acumulado_prev: socioData.bits_promotor_acumulado || 0, payment_id, error: upSocioErr },
+              error_mensaje: upSocioErr.message,
+            });
           }
         }
 
@@ -203,7 +232,14 @@ export async function POST(req: Request) {
           mensaje: `⭐ [SIMULACIÓN ADMIN] Recibiste ${comision.toLocaleString()} BIT Promo de comisión (${pctLabel}) por tu referido ${nombreRef}${nivel > 1 ? ` (nivel ${nivel})` : ""}`,
           leida: false,
         });
-        if (notifCascadaErr) console.error("[simular-compra] fail notif cascada:", notifCascadaErr);
+        if (notifCascadaErr) await logFallo({
+          severidad: "advertencia",
+          contexto: "simular-compra",
+          operacion: "insert_notif_cascada",
+          usuario_id: current.referido_por,
+          datos_contexto: { comision, nivel: visitados.size, pctLabel, payment_id, error: notifCascadaErr },
+          error_mensaje: notifCascadaErr.message,
+        });
 
         const { error: logErr } = await supabase.from("log_bits_internos").insert({
           usuario_id: current.referido_por,
@@ -211,7 +247,14 @@ export async function POST(req: Request) {
           motivo: `[SIMULACIÓN ADMIN] Comisión nivel ${nivel} (${pctLabel}) — referido ${usuario_id} compró ${pkg.cantidad} BIT (paquete: ${paquete})`,
           asignado_por: usuario_id,
         });
-        if (logErr) console.error("[simular-compra] fail log_bits_internos:", logErr);
+        if (logErr) await logFallo({
+          severidad: "critico",
+          contexto: "simular-compra",
+          operacion: "insert_log_cascada",
+          usuario_id: current.referido_por,
+          datos_contexto: { comision, nivel: visitados.size, pctLabel, referido_origen: usuario_id, payment_id, error: logErr },
+          error_mensaje: logErr.message,
+        });
 
         cascada.push({
           nivel,
@@ -223,8 +266,15 @@ export async function POST(req: Request) {
         comisionBase = comision;
         currentId = current.referido_por;
       }
-    } catch (e) {
-      console.error("[simular-compra] error cascada:", e);
+    } catch (e: any) {
+      await logFallo({
+        severidad: "critico",
+        contexto: "simular-compra",
+        operacion: "catch_cascada",
+        usuario_id,
+        datos_contexto: { payment_id, error: String(e) },
+        error_mensaje: e?.message || String(e),
+      });
     }
 
     // 10. Si el comprador no tiene cadena de referidos, acreditar a socios comerciales
@@ -232,8 +282,15 @@ export async function POST(req: Request) {
       try {
         const { acreditarSocios } = await import("@/lib/socios");
         await acreditarSocios(usuario_id, pkg.cantidad);
-      } catch (e) {
-        console.error("[simular-compra] error acreditarSocios:", e);
+      } catch (e: any) {
+        await logFallo({
+          severidad: "critico",
+          contexto: "simular-compra",
+          operacion: "catch_acreditar_socios",
+          usuario_id,
+          datos_contexto: { payment_id, cantidad: pkg.cantidad, error: String(e) },
+          error_mensaje: e?.message || String(e),
+        });
       }
     }
 
@@ -244,7 +301,13 @@ export async function POST(req: Request) {
       cascada,
     });
   } catch (err: any) {
-    console.error("[simular-compra] error:", err);
+    await logFallo({
+      severidad: "critico",
+      contexto: "simular-compra",
+      operacion: "catch_endpoint",
+      datos_contexto: { error: String(err) },
+      error_mensaje: err?.message || String(err),
+    });
     return NextResponse.json({ error: err.message || "Error interno" }, { status: 500 });
   }
 }

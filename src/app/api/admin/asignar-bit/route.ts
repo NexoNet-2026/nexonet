@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
+import { logFallo } from "@/lib/log-fallos";
 
 export async function POST(req: Request) {
   try {
@@ -79,7 +80,14 @@ export async function POST(req: Request) {
           bits_promo: (promotor.bits_promo || 0) + comision,
           bits_promotor_total: (promotor.bits_promotor_total || 0) + comision,
         }).eq("id", current.referido_por);
-        if (upCascadaErr) console.error("[asignar-bit] fail update cascada:", upCascadaErr);
+        if (upCascadaErr) await logFallo({
+          severidad: "critico",
+          contexto: "asignar-bit",
+          operacion: "update_cascada_promo",
+          usuario_id: current.referido_por,
+          datos_contexto: { comision, nivel: visitados.size, referido_origen: usuario_id, error: upCascadaErr },
+          error_mensaje: upCascadaErr.message,
+        });
 
         if (socio) {
           const { data: socioData } = await supabase
@@ -94,7 +102,14 @@ export async function POST(req: Request) {
               .update({ bits_promotor_acumulado: (socioData.bits_promotor_acumulado || 0) + comision })
               .eq("usuario_id", current.referido_por)
               .eq("activo", true);
-            if (upSocioErr) console.error("[asignar-bit] fail update socio acumulado:", upSocioErr);
+            if (upSocioErr) await logFallo({
+              severidad: "critico",
+              contexto: "asignar-bit",
+              operacion: "update_socio_acumulado",
+              usuario_id: current.referido_por,
+              datos_contexto: { comision, acumulado_prev: socioData.bits_promotor_acumulado || 0, error: upSocioErr },
+              error_mensaje: upSocioErr.message,
+            });
           }
         }
 
@@ -106,7 +121,14 @@ export async function POST(req: Request) {
           mensaje: `⭐ Recibiste ${comision.toLocaleString()} BIT Promo de comisión (${pctLabel}) por tu referido ${nombreRef}${nivel > 1 ? ` (nivel ${nivel})` : ""}`,
           leida: false,
         });
-        if (notifCascadaErr) console.error("[asignar-bit] fail notif cascada:", notifCascadaErr);
+        if (notifCascadaErr) await logFallo({
+          severidad: "advertencia",
+          contexto: "asignar-bit",
+          operacion: "insert_notif_cascada",
+          usuario_id: current.referido_por,
+          datos_contexto: { comision, nivel: visitados.size, pctLabel, error: notifCascadaErr },
+          error_mensaje: notifCascadaErr.message,
+        });
 
         const { error: logErr } = await supabase.from("log_bits_internos").insert({
           usuario_id: current.referido_por,
@@ -114,7 +136,14 @@ export async function POST(req: Request) {
           motivo: `Comisión nivel ${nivel} (${pctLabel}) — referido ${usuario_id} recibió ${cantidad} BIT (asignación admin)`,
           asignado_por: usuario_id,
         });
-        if (logErr) console.error("[asignar-bit] fail log_bits_internos:", logErr);
+        if (logErr) await logFallo({
+          severidad: "critico",
+          contexto: "asignar-bit",
+          operacion: "insert_log_cascada",
+          usuario_id: current.referido_por,
+          datos_contexto: { comision, nivel: visitados.size, pctLabel, referido_origen: usuario_id, error: logErr },
+          error_mensaje: logErr.message,
+        });
 
         comisionBase = comision;
         currentId = current.referido_por;
@@ -131,7 +160,14 @@ export async function POST(req: Request) {
       mensaje: msgNot,
       leida: false,
     });
-    if (notifFinalErr) console.error("[asignar-bit] fail notif final:", notifFinalErr);
+    if (notifFinalErr) await logFallo({
+      severidad: "advertencia",
+      contexto: "asignar-bit",
+      operacion: "insert_notif_final",
+      usuario_id,
+      datos_contexto: { cantidad, columna, nuevo, error: notifFinalErr },
+      error_mensaje: notifFinalErr.message,
+    });
 
     return NextResponse.json({ ok: true, nuevo });
   } catch (e: any) {

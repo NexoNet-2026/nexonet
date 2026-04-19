@@ -1,6 +1,7 @@
 // src/app/api/mp/webhook/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { logFallo } from "@/lib/log-fallos";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -35,6 +36,14 @@ export async function POST(req: NextRequest) {
         const v1 = xSignature.split(',').find(p => p.startsWith('v1='))?.split('=')[1];
         if (hash !== v1) {
           console.warn('MP Webhook firma inválida');
+          await logFallo({
+            severidad: "advertencia",
+            contexto: "webhook-mp",
+            operacion: "firma_invalida",
+            usuario_id: null,
+            datos_contexto: { xSignature, xRequestId, dataId },
+            error_mensaje: "HMAC signature verification failed",
+          });
           return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
       }
@@ -51,10 +60,17 @@ export async function POST(req: NextRequest) {
         });
         const pre = await mpRes.json();
         const nuevoEstado = pre.status === "authorized" ? "authorized" : pre.status === "cancelled" ? "cancelled" : pre.status === "paused" ? "paused" : "pending";
-        await supabase.from("suscripciones_mp").update({
+        const { error: upPreErr } = await supabase.from("suscripciones_mp").update({
           estado: nuevoEstado,
           updated_at: new Date().toISOString(),
         }).eq("mp_preapproval_id", preapprovalId);
+        if (upPreErr) await logFallo({
+          severidad: "advertencia",
+          contexto: "webhook-mp",
+          operacion: "update_suscripcion_preapproval",
+          datos_contexto: { preapprovalId, nuevoEstado, error: upPreErr },
+          error_mensaje: upPreErr.message,
+        });
       }
       return NextResponse.json({ ok: true });
     }
@@ -75,17 +91,41 @@ export async function POST(req: NextRequest) {
             const bitsCantidad = sub.tipo === "empresa" ? 10000 : 500;
             const { data: usr } = await supabase.from("usuarios").select("bits").eq("id", sub.usuario_id).single();
             if (usr) {
-              await supabase.from("usuarios").update({ bits: (usr.bits || 0) + bitsCantidad }).eq("id", sub.usuario_id);
+              const { error: upSubBitsErr } = await supabase.from("usuarios").update({ bits: (usr.bits || 0) + bitsCantidad }).eq("id", sub.usuario_id);
+              if (upSubBitsErr) await logFallo({
+                severidad: "critico",
+                contexto: "webhook-mp",
+                operacion: "update_usuario_bits_suscripcion",
+                usuario_id: sub.usuario_id,
+                datos_contexto: { bitsCantidad, tipo: sub.tipo, payId, error: upSubBitsErr },
+                error_mensaje: upSubBitsErr.message,
+              });
             }
             // Actualizar próximo cobro
-            await supabase.from("suscripciones_mp").update({
+            const { error: upCobroErr } = await supabase.from("suscripciones_mp").update({
               proximo_cobro: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
               updated_at: new Date().toISOString(),
             }).eq("id", sub.id);
+            if (upCobroErr) await logFallo({
+              severidad: "advertencia",
+              contexto: "webhook-mp",
+              operacion: "update_proximo_cobro",
+              usuario_id: sub.usuario_id,
+              datos_contexto: { sub_id: sub.id, error: upCobroErr },
+              error_mensaje: upCobroErr.message,
+            });
             // Notificar
-            await supabase.from("notificaciones").insert({
+            const { error: notifSubErr } = await supabase.from("notificaciones").insert({
               usuario_id: sub.usuario_id, tipo: "sistema", leida: false,
               mensaje: `💳 Débito automático: se acreditaron ${bitsCantidad.toLocaleString()} BIT por tu suscripción de ${sub.tipo}.`,
+            });
+            if (notifSubErr) await logFallo({
+              severidad: "advertencia",
+              contexto: "webhook-mp",
+              operacion: "insert_notif_suscripcion",
+              usuario_id: sub.usuario_id,
+              datos_contexto: { bitsCantidad, tipo: sub.tipo, error: notifSubErr },
+              error_mensaje: notifSubErr.message,
             });
           }
         }
@@ -117,7 +157,14 @@ export async function POST(req: NextRequest) {
     const pkg = PAQUETES[paquete];
 
     if (!pkg) {
-      console.error("Paquete no encontrado:", paquete);
+      await logFallo({
+        severidad: "advertencia",
+        contexto: "webhook-mp",
+        operacion: "paquete_invalido",
+        usuario_id,
+        datos_contexto: { paquete, paymentId, external_reference: ref },
+        error_mensaje: `Paquete no encontrado: ${paquete}`,
+      });
       return NextResponse.json({ ok: true });
     }
 
@@ -140,7 +187,14 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (!usuario) {
-      console.error("Usuario no encontrado:", usuario_id);
+      await logFallo({
+        severidad: "advertencia",
+        contexto: "webhook-mp",
+        operacion: "usuario_compra_no_existe",
+        usuario_id,
+        datos_contexto: { paquete, paymentId, external_reference: ref },
+        error_mensaje: `Usuario no encontrado: ${usuario_id}`,
+      });
       return NextResponse.json({ ok: true });
     }
 
@@ -153,14 +207,22 @@ export async function POST(req: NextRequest) {
     const nuevoAcumulado  = acumuladoActual + (pkg.ilimitado ? 99999 : pkg.cantidad);
     const NIVELES_LOGRO: [string, number][] = [["diamante",20000000],["platino",10000000],["oro",5000000],["plata",1000000],["bronce",100000],["ninguna",0]];
     const insignia = NIVELES_LOGRO.find(([, min]) => nuevoAcumulado >= min)?.[0] || "ninguna";
-    await supabase.from("usuarios").update({
+    const { error: upCompraErr } = await supabase.from("usuarios").update({
       [pkg.col]: nuevo,
       bits_totales_acumulados: nuevoAcumulado,
       insignia_logro: insignia,
     }).eq("id", usuario_id);
+    if (upCompraErr) await logFallo({
+      severidad: "critico",
+      contexto: "webhook-mp",
+      operacion: "update_usuario_compra",
+      usuario_id,
+      datos_contexto: { paquete, paymentId, col: pkg.col, nuevo, nuevoAcumulado, error: upCompraErr },
+      error_mensaje: upCompraErr.message,
+    });
 
     // Registrar pago para idempotencia
-    await supabase.from("pagos_mp").insert({
+    const { error: pagoInsertErr } = await supabase.from("pagos_mp").insert({
       payment_id:   String(paymentId),
       usuario_id,
       paquete,
@@ -169,13 +231,29 @@ export async function POST(req: NextRequest) {
       bits_col:     pkg.col,
       bits_cant:    pkg.cantidad,
     });
+    if (pagoInsertErr) await logFallo({
+      severidad: "critico",
+      contexto: "webhook-mp",
+      operacion: "insert_pagos_mp",
+      usuario_id,
+      datos_contexto: { paquete, paymentId, monto: pago.transaction_amount, error: pagoInsertErr },
+      error_mensaje: pagoInsertErr.message,
+    });
 
     // Notificación in-app
-    await supabase.from("notificaciones").insert({
+    const { error: notifCompradorErr } = await supabase.from("notificaciones").insert({
       usuario_id,
       tipo:    "sistema",
       mensaje: `✅ Pago aprobado — Se acreditaron ${pkg.cantidad >= 99999 ? "BIT Ilimitados" : pkg.cantidad + " BIT"} en tu cuenta`,
       leida:   false,
+    });
+    if (notifCompradorErr) await logFallo({
+      severidad: "advertencia",
+      contexto: "webhook-mp",
+      operacion: "insert_notif_comprador",
+      usuario_id,
+      datos_contexto: { paquete, paymentId, cantidad: pkg.cantidad, error: notifCompradorErr },
+      error_mensaje: notifCompradorErr.message,
     });
 
     // ── Comisión en cascada ilimitada ──
@@ -225,10 +303,18 @@ export async function POST(req: NextRequest) {
           continue;
         }
 
-        await supabase.from("usuarios").update({
+        const { error: upCascadaErr } = await supabase.from("usuarios").update({
           bits_promo: (promotor.bits_promo || 0) + comision,
           bits_promotor_total: (promotor.bits_promotor_total || 0) + comision,
         }).eq("id", current.referido_por);
+        if (upCascadaErr) await logFallo({
+          severidad: "critico",
+          contexto: "webhook-mp",
+          operacion: "update_cascada_promo",
+          usuario_id: current.referido_por,
+          datos_contexto: { comision, nivel: visitados.size, referido_origen: usuario_id, paymentId, error: upCascadaErr },
+          error_mensaje: upCascadaErr.message,
+        });
 
         // Actualizar acumulado del socio si aplica
         if (socio) {
@@ -238,33 +324,66 @@ export async function POST(req: NextRequest) {
             .eq("activo", true)
             .single();
           if (socioData) {
-            await supabase.from("socios_comerciales")
+            const { error: upSocioErr } = await supabase.from("socios_comerciales")
               .update({ bits_promotor_acumulado: (socioData.bits_promotor_acumulado || 0) + comision })
               .eq("usuario_id", current.referido_por)
               .eq("activo", true);
+            if (upSocioErr) await logFallo({
+              severidad: "critico",
+              contexto: "webhook-mp",
+              operacion: "update_socio_acumulado",
+              usuario_id: current.referido_por,
+              datos_contexto: { comision, acumulado_prev: socioData.bits_promotor_acumulado || 0, paymentId, error: upSocioErr },
+              error_mensaje: upSocioErr.message,
+            });
           }
         }
 
         const nivel = visitados.size;
         const pctLabel = socio ? `${socio.porcentaje}% socio` : "20%";
-        await supabase.from("notificaciones").insert({
+        const { error: notifCascadaErr } = await supabase.from("notificaciones").insert({
           usuario_id: current.referido_por,
           tipo: "sistema",
           mensaje: `⭐ Recibiste ${comision.toLocaleString()} BIT Promo de comisión (${pctLabel}) por tu referido ${nombreRef}${nivel > 1 ? ` (nivel ${nivel})` : ""}`,
           leida: false,
         });
+        if (notifCascadaErr) await logFallo({
+          severidad: "advertencia",
+          contexto: "webhook-mp",
+          operacion: "insert_notif_cascada",
+          usuario_id: current.referido_por,
+          datos_contexto: { comision, nivel, pctLabel, paymentId, error: notifCascadaErr },
+          error_mensaje: notifCascadaErr.message,
+        });
 
-        await supabase.from("log_bits_internos").insert({
+        const { error: logCascadaErr } = await supabase.from("log_bits_internos").insert({
           usuario_id: current.referido_por,
           cantidad: comision,
           motivo: `Comisión nivel ${nivel} (${pctLabel}) — referido ${usuario_id} compró ${pkg.cantidad} BIT (paquete: ${paquete})`,
           asignado_por: usuario_id,
         });
+        if (logCascadaErr) await logFallo({
+          severidad: "critico",
+          contexto: "webhook-mp",
+          operacion: "insert_log_cascada",
+          usuario_id: current.referido_por,
+          datos_contexto: { comision, nivel, pctLabel, referido_origen: usuario_id, paymentId, error: logCascadaErr },
+          error_mensaje: logCascadaErr.message,
+        });
 
         comisionBase = comision;
         currentId = current.referido_por;
       }
-    } catch (e) { console.error("Error comisión promotor:", e); }
+    } catch (e: any) {
+      await logFallo({
+        severidad: "critico",
+        contexto: "webhook-mp",
+        operacion: "catch_cascada",
+        usuario_id,
+        datos_contexto: { paymentId, paquete, error: String(e) },
+        error_mensaje: e?.message || String(e),
+      });
+    }
 
     // Acreditar socios comerciales solo si el comprador NO tiene cadena de referidos
     if (!tieneCascada) {
@@ -276,8 +395,14 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true });
 
-  } catch (err) {
-    console.error("Webhook error:", err);
+  } catch (err: any) {
+    await logFallo({
+      severidad: "critico",
+      contexto: "webhook-mp",
+      operacion: "catch_endpoint",
+      datos_contexto: { error: String(err) },
+      error_mensaje: err?.message || String(err),
+    });
     return NextResponse.json({ ok: true }); // Siempre 200 para MP
   }
 }

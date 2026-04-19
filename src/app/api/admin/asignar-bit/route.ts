@@ -69,18 +69,20 @@ export async function POST(req: Request) {
 
         if (comision <= 0) break;
 
-        await supabase.from("usuarios").update({
+        const { error: upCascadaErr } = await supabase.from("usuarios").update({
           bits_promo: (promotor.bits_promo || 0) + comision,
           bits_promotor_total: (promotor.bits_promotor_total || 0) + comision,
         }).eq("id", current.referido_por);
+        if (upCascadaErr) console.error("[asignar-bit] fail update cascada:", upCascadaErr);
 
         const nivel = visitados.size;
-        await supabase.from("notificaciones").insert({
+        const { error: notifCascadaErr } = await supabase.from("notificaciones").insert({
           usuario_id: current.referido_por,
           tipo: "sistema",
           mensaje: `⭐ Recibiste ${comision} BIT Promo de comisión por tu referido ${nombreRef}${nivel > 1 ? ` (nivel ${nivel})` : ""}`,
           leida: false,
         });
+        if (notifCascadaErr) console.error("[asignar-bit] fail notif cascada:", notifCascadaErr);
 
         comisionBase = comision;
         currentId = current.referido_por;
@@ -91,12 +93,13 @@ export async function POST(req: Request) {
     const msgNot = cantidad > 0
       ? `💰 Recibiste ${Math.abs(cantidad)} BIT ${tipoLabel} desde NexoNet${nota ? ` — ${nota}` : ""}`
       : `💸 Se debitaron ${Math.abs(cantidad)} BIT ${tipoLabel} desde NexoNet${nota ? ` — ${nota}` : ""}`;
-    await supabase.from("notificaciones").insert({
+    const { error: notifFinalErr } = await supabase.from("notificaciones").insert({
       usuario_id,
       tipo: "sistema",
       mensaje: msgNot,
       leida: false,
     });
+    if (notifFinalErr) console.error("[asignar-bit] fail notif final:", notifFinalErr);
 
     return NextResponse.json({ ok: true, nuevo });
   } catch (e: any) {

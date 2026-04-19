@@ -341,9 +341,9 @@ function NexoCrearInner() {
         await supabase.from("nexo_miembros").insert({ nexo_id:nexo.id, usuario_id:perfil.id, rol:"creador", estado:"activo" });
       }
 
-      if (tipo==="empresa")                        router.push(`/nexo/${nexo.id}/admin`);
-      else if (tipo==="anuncio"||tipo==="trabajo") window.location.href = `/anuncios/${nexo.id}`;
-      else                                         router.push(`/nexo/${nexo.id}`);
+      if (tipo==="empresa")        router.push(`/nexo/${nexo.id}/admin`);
+      else if (tipo==="anuncio")   window.location.href = `/anuncios/${nexo.id}`;
+      else                         router.push(`/nexo/${nexo.id}`);
 
     } catch(e:any) {
       alert("Error al crear: " + (e?.message||"Intentá de nuevo"));

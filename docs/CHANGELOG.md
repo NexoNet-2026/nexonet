@@ -21,6 +21,8 @@
 
 - **Error handling agregado a `asignar-bit/route.ts`**: las 3 operaciones secundarias (update cascada, insert notif al eslabón, insert notif final al receptor) ahora logean con `console.error` prefijo `[asignar-bit]` si fallan. Sin abortar el flujo — atomicidad real queda en Deuda técnica (refactor a RPC). Commit: `b5bf971`.
 
+- **Paridad total de `asignar-bit` con webhook y `simular-compra`**: además del acumulado del socio (confirmado como bug), se aplicaron otros 3 fixes que aparecieron al revisar la paridad — cascada transparente (faltaba el fix `fe241c9` en este archivo), inserción en `log_bits_internos` por nivel de cascada, y formato de notificación alineado con `toLocaleString` + `pctLabel`. Error handling `[asignar-bit]` extendido a los inserts/updates nuevos. Commit: `7a14f8b`.
+
 ### Database changes (aplicados en Supabase, NO en código)
 Las siguientes policies se crearon manualmente en SQL Editor:
 - `admin_nexos_delete`, `admin_nexos_update` en tabla `nexos`

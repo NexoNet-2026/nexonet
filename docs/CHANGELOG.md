@@ -1,5 +1,17 @@
 # Changelog
 
+## [2026-04-19] — Paridad asignar-bit + auditoría FKs + limpieza de logs
+
+### Fixed
+- **Paridad total de `asignar-bit` con webhook y `simular-compra`**: además del acumulado del socio (confirmado como bug), se aplicaron otros 3 fixes que aparecieron al revisar la paridad — cascada transparente (faltaba el fix `fe241c9` en este archivo), inserción en `log_bits_internos` por nivel de cascada, y formato de notificación alineado con `toLocaleString` + `pctLabel`. Error handling `[asignar-bit]` extendido a los inserts/updates nuevos. Commit: `7a14f8b`.
+
+- **Limpieza de debug logs y destructures huérfanos en `conectar`/`webhook`**: eliminados 17 `console.log` de debug trace (13 en `anuncios/conectar/route.ts` + 4 en `mp/webhook/route.ts`). Criterio: loggear solo cuando algo falla, no en flujo happy-path — la fuente de verdad del éxito es la DB, no los logs. En `conectar` se convirtieron 5 destructures `{ data, error }` a `await` pelado (sus vars solo alimentaban los logs borrados) y se removieron 4 `.select()` post-update/insert que devolvían la fila inútilmente por red. Commit: `75e7b3b`.
+
+- **Auditoría preventiva de FKs a `auth.users`**: se detectaron 25 FKs en 20 tablas de `public` apuntando a `auth.users`, que habrían causado error 400 (PostgREST PGRST200) en cualquier query con embed de usuarios. Se reapuntaron todas a `public.usuarios` manteniendo los `ON DELETE` originales (`CASCADE` / `SET NULL` donde aplicaba). Verificación previa: 0 filas huérfanas en todas las tablas. SQL aplicado en 3 bloques con `BEGIN`/`COMMIT` en Supabase. Verificación post-fix: 0 FKs restantes apuntando a `auth.users` desde `public`. Tablas afectadas: `anuncio_visitas`, `bits_promo_descargas`, `copyright_claims`, `empresa_pagos`, `grupo_invitaciones`, `grupo_mensajes`, `grupo_miembros`, `grupo_publicaciones`, `grupo_residentes`, `insignias_reputacion`, `log_bits_internos`, `log_socios_comerciales`, `mensajes_soporte`, `nexo_descarga_solicitudes`, `nexo_visitas`, `notificaciones`, `push_suscripciones`, `sesiones_log`, `suscripciones_mp`, `usuarios_conectados`.
+
+### Database changes (aplicados en Supabase, NO en código)
+**2026-04-19**: reapuntar 25 FKs de `public.*` a `public.usuarios` (en lugar de `auth.users`), manteniendo `ON DELETE` originales. Aplicado vía Supabase SQL Editor en 3 bloques `BEGIN`/`COMMIT`. No hay migration file.
+
 ## [2026-04-18] — Fix cascada socios + eliminación admin nexos
 
 ### Fixed
@@ -20,8 +32,6 @@
 - **Cascada con socio 0% resuelta (Opción 1 - Transparente)**: si la comisión redondea a 0 pero la base sigue siendo positiva, el eslabón no cobra pero la cascada sigue con la base intacta al siguiente nivel. Evita que se corte prematuramente cuando un socio con % alto redondea sobre base chica. Verificado en vivo con Usuario6 → `bit_1500`: 320/64/12/2 se mantienen idénticos, Usuario1 y Gapachu quedan transparentes y la cadena termina naturalmente en `referido_por=NULL`. Commit: `fe241c9`.
 
 - **Error handling agregado a `asignar-bit/route.ts`**: las 3 operaciones secundarias (update cascada, insert notif al eslabón, insert notif final al receptor) ahora logean con `console.error` prefijo `[asignar-bit]` si fallan. Sin abortar el flujo — atomicidad real queda en Deuda técnica (refactor a RPC). Commit: `b5bf971`.
-
-- **Paridad total de `asignar-bit` con webhook y `simular-compra`**: además del acumulado del socio (confirmado como bug), se aplicaron otros 3 fixes que aparecieron al revisar la paridad — cascada transparente (faltaba el fix `fe241c9` en este archivo), inserción en `log_bits_internos` por nivel de cascada, y formato de notificación alineado con `toLocaleString` + `pctLabel`. Error handling `[asignar-bit]` extendido a los inserts/updates nuevos. Commit: `7a14f8b`.
 
 ### Database changes (aplicados en Supabase, NO en código)
 Las siguientes policies se crearon manualmente en SQL Editor:

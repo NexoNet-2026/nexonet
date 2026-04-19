@@ -222,7 +222,13 @@ export async function POST(req: NextRequest) {
         const porcentaje = socio ? (socio.porcentaje / 100) : 0.20;
         const comision = Math.floor(comisionBase * porcentaje);
 
-        if (comision <= 0) break;
+        // Si la comisión redondea a 0 pero la base sigue siendo positiva, no cortamos:
+        // pasamos al siguiente eslabón con la base intacta (eslabón "transparente").
+        if (comision <= 0) {
+          if (comisionBase <= 0) break;
+          currentId = current.referido_por;
+          continue;
+        }
 
         await supabase.from("usuarios").update({
           bits_promo: (promotor.bits_promo || 0) + comision,

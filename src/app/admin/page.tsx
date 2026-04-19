@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabase";
 
 const ADMIN_UUID = "f9b23e04-c591-44bf-9efb-51966c30a083";
 
-type Tab = "dashboard"|"usuarios"|"anuncios"|"nexos"|"mensajes"|"promotores"|"pagos"|"alarmas"|"config"|"contactos"|"reclamos"|"socios"|"soporte";
+type Tab = "dashboard"|"usuarios"|"anuncios"|"nexos"|"mensajes"|"promotores"|"pagos"|"alarmas"|"config"|"contactos"|"reclamos"|"socios"|"soporte"|"fallos";
 type ConfigSub = "anuncios"|"empresas"|"servicios"|"trabajo"|"grupos"|"filtros_ia"|"general";
 
 const S = {
@@ -329,6 +329,24 @@ export default function AdminPanel() {
   const [soportePendientes, setSoportePendientes] = useState(0);
   const [soporteFiltro, setSoporteFiltro] = useState("todos");
   const [soporteResp, setSoporteResp] = useState<{id:string;texto:string}|null>(null);
+
+  // Fallos (log_fallos_sistema)
+  const [fallos, setFallos] = useState<any[]>([]);
+  const [fallosPendientesCriticos, setFallosPendientesCriticos] = useState(0);
+  const [fallosFiltroEstado, setFallosFiltroEstado] = useState<"pendiente"|"resuelto"|"descartado"|"todos">("pendiente");
+  const [fallosFiltroSeveridad, setFallosFiltroSeveridad] = useState<"critico"|"advertencia"|"info"|"todas">("todas");
+  const [fallosFiltroContexto, setFallosFiltroContexto] = useState<string>("todos");
+  const [fallosFiltroDesde, setFallosFiltroDesde] = useState<string>(() => {
+    const d = new Date(); d.setDate(d.getDate() - 7);
+    return d.toISOString().slice(0,10);
+  });
+  const [fallosFiltroHasta, setFallosFiltroHasta] = useState<string>(() => new Date().toISOString().slice(0,10));
+  const [fallosPagina, setFallosPagina] = useState(0);
+  const [fallosTotalCount, setFallosTotalCount] = useState(0);
+  const [fallosExpandido, setFallosExpandido] = useState<Set<number>>(new Set());
+  const [fallosResolverModal, setFallosResolverModal] = useState<any>(null);
+  const [fallosResolverNota, setFallosResolverNota] = useState("");
+  const PAGE_SIZE_FALLOS = 50;
 
   // Filtros IA
   const [filtrosIA, setFiltrosIA] = useState<any[]>([]);
@@ -1043,6 +1061,70 @@ export default function AdminPanel() {
     setModalReintegro(null); setReintegroCant(""); showToast("✅ Reintegro registrado"); await cargarSocios();
   };
 
+  // ── Fallos (log_fallos_sistema) ──
+  const cargarFallos = async () => {
+    const desde = fallosFiltroDesde + "T00:00:00";
+    const hasta = fallosFiltroHasta + "T23:59:59";
+    const from = fallosPagina * PAGE_SIZE_FALLOS;
+    const to = from + PAGE_SIZE_FALLOS - 1;
+
+    let q = supabase.from("log_fallos_sistema").select("*", { count: "exact" });
+    if (fallosFiltroEstado !== "todos") q = q.eq("estado", fallosFiltroEstado);
+    if (fallosFiltroSeveridad !== "todas") q = q.eq("severidad", fallosFiltroSeveridad);
+    if (fallosFiltroContexto !== "todos") q = q.eq("contexto", fallosFiltroContexto);
+    q = q.gte("created_at", desde).lte("created_at", hasta).order("created_at", { ascending: false }).range(from, to);
+
+    const { data, count } = await q;
+    // Orden secundario en cliente: críticos primero dentro del set
+    const ordenado = (data || []).slice().sort((a:any, b:any) => {
+      const rank = (s:string) => s === "critico" ? 0 : s === "advertencia" ? 1 : 2;
+      const r = rank(a.severidad) - rank(b.severidad);
+      return r !== 0 ? r : (new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    });
+    setFallos(ordenado);
+    setFallosTotalCount(count || 0);
+
+    // Badge: críticos pendientes globales (sin filtros de fecha)
+    const { count: critCount } = await supabase.from("log_fallos_sistema")
+      .select("*", { count: "exact", head: true })
+      .eq("estado", "pendiente")
+      .eq("severidad", "critico");
+    setFallosPendientesCriticos(critCount || 0);
+  };
+
+  useEffect(() => {
+    if (!authed) return;
+    cargarFallos();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authed, fallosFiltroEstado, fallosFiltroSeveridad, fallosFiltroContexto, fallosFiltroDesde, fallosFiltroHasta, fallosPagina]);
+
+  const resolverFallo = async () => {
+    if (!fallosResolverModal) return;
+    const { error } = await supabase.from("log_fallos_sistema").update({
+      estado: "resuelto",
+      resuelto_por: ADMIN_UUID,
+      resuelto_at: new Date().toISOString(),
+      resolucion_nota: fallosResolverNota.trim() || null,
+    }).eq("id", fallosResolverModal.id);
+    if (error) { alert("Error: " + error.message); return; }
+    showToast("✅ Fallo marcado como resuelto");
+    setFallosResolverModal(null);
+    setFallosResolverNota("");
+    await cargarFallos();
+  };
+
+  const descartarFallo = async (f: any) => {
+    if (!confirm("¿Descartar este log? No afecta datos, solo lo oculta del listado activo.")) return;
+    const { error } = await supabase.from("log_fallos_sistema").update({
+      estado: "descartado",
+      resuelto_por: ADMIN_UUID,
+      resuelto_at: new Date().toISOString(),
+    }).eq("id", f.id);
+    if (error) { alert("Error: " + error.message); return; }
+    showToast("🗑️ Fallo descartado");
+    await cargarFallos();
+  };
+
   // ── Config global ──
   const cargarConfigGlobal = async () => {
     const {data} = await supabase.from("config_global").select("*").order("clave");
@@ -1313,6 +1395,7 @@ export default function AdminPanel() {
     {id:"reclamos", e:"⚖️",l:"Reclamos"},
     {id:"socios",   e:"🤝",l:"Socios"},
     {id:"soporte",  e:"💬",l:"Soporte",badge:soportePendientes},
+    {id:"fallos",   e:"📋",l:"Fallos",badge:fallosPendientesCriticos},
     {id:"dashboard",e:"🤖",l:"Bots",href:"/admin/bots"},
     {id:"dashboard",e:"📥",l:"Importar",href:"/admin/importar"},
   ];
@@ -2488,6 +2571,117 @@ export default function AdminPanel() {
             )}
           </>
         )}
+
+        {/* ══ FALLOS ══════════════════════════════════════════════════════════ */}
+        {!loading && tab==="fallos" && (
+          <>
+            {/* Stats rápido */}
+            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"10px",marginBottom:"14px"}}>
+              <StatBox n={String(fallos.filter(f=>f.estado==="pendiente"&&f.severidad==="critico").length)} l="Críticos pendientes" e="🔴" c="#e74c3c" />
+              <StatBox n={String(fallos.filter(f=>f.estado==="pendiente"&&f.severidad==="advertencia").length)} l="Advertencias" e="🟡" c="#e67e22" />
+              <StatBox n={String(fallosTotalCount)} l="Total (filtrado)" e="📋" c="#3a7bd5" />
+            </div>
+
+            {/* Filtros */}
+            <div style={S.card}>
+              <div style={S.sect}>🔍 Filtros</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px",marginBottom:"10px"}}>
+                <div>
+                  <label style={S.label}>Estado</label>
+                  <select style={S.input} value={fallosFiltroEstado} onChange={e=>{setFallosFiltroEstado(e.target.value as any);setFallosPagina(0);}}>
+                    <option value="pendiente">⏳ Pendientes</option>
+                    <option value="resuelto">✅ Resueltos</option>
+                    <option value="descartado">🗑️ Descartados</option>
+                    <option value="todos">Todos</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={S.label}>Severidad</label>
+                  <select style={S.input} value={fallosFiltroSeveridad} onChange={e=>{setFallosFiltroSeveridad(e.target.value as any);setFallosPagina(0);}}>
+                    <option value="todas">Todas</option>
+                    <option value="critico">🔴 Crítico</option>
+                    <option value="advertencia">🟡 Advertencia</option>
+                    <option value="info">🔵 Info</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={S.label}>Contexto</label>
+                  <select style={S.input} value={fallosFiltroContexto} onChange={e=>{setFallosFiltroContexto(e.target.value);setFallosPagina(0);}}>
+                    <option value="todos">Todos</option>
+                    <option value="webhook-mp">webhook-mp</option>
+                    <option value="asignar-bit">asignar-bit</option>
+                    <option value="simular-compra">simular-compra</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={S.label}>Desde</label>
+                  <input type="date" style={S.input} value={fallosFiltroDesde} onChange={e=>{setFallosFiltroDesde(e.target.value);setFallosPagina(0);}} />
+                </div>
+                <div>
+                  <label style={S.label}>Hasta</label>
+                  <input type="date" style={S.input} value={fallosFiltroHasta} onChange={e=>{setFallosFiltroHasta(e.target.value);setFallosPagina(0);}} />
+                </div>
+              </div>
+              <button onClick={cargarFallos} style={S.btn("#3a7bd5")}>🔄 Refrescar</button>
+            </div>
+
+            {/* Lista de fallos */}
+            {fallos.length === 0 && <div style={{...S.card,textAlign:"center",color:"#9a9a9a",fontWeight:600}}>No hay fallos con los filtros aplicados.</div>}
+            {fallos.map(f => {
+              const color = f.severidad === "critico" ? "#e74c3c" : f.severidad === "advertencia" ? "#e67e22" : "#3a7bd5";
+              const emoji = f.severidad === "critico" ? "🔴" : f.severidad === "advertencia" ? "🟡" : "🔵";
+              const expandido = fallosExpandido.has(f.id);
+              return (
+                <div key={f.id} style={{...S.card,borderLeft:`4px solid ${color}`}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"8px"}}>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{display:"flex",gap:"6px",alignItems:"center",flexWrap:"wrap",marginBottom:"4px"}}>
+                        <span style={{fontSize:"14px"}}>{emoji}</span>
+                        <span style={{fontSize:"13px",fontWeight:900,color}}>{f.severidad}</span>
+                        <span style={{fontSize:"11px",fontWeight:700,color:"#9a9a9a"}}>·</span>
+                        <span style={{fontSize:"12px",fontWeight:800,color:"#1a2a3a"}}>{f.contexto}</span>
+                        <span style={{fontSize:"11px",fontWeight:700,color:"#9a9a9a"}}>·</span>
+                        <span style={{fontSize:"12px",fontWeight:700,color:"#8e44ad"}}>{f.operacion}</span>
+                        {f.estado==="resuelto" && <span style={S.badge("#fff","#27ae60")}>✅ resuelto</span>}
+                        {f.estado==="descartado" && <span style={S.badge("#fff","#9a9a9a")}>🗑️ descartado</span>}
+                      </div>
+                      <div style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600}}>{new Date(f.created_at).toLocaleDateString("es-AR",{day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"})}{f.usuario_id?` · usuario: ${f.usuario_id.slice(0,8)}...`:""}</div>
+                      {f.error_mensaje && <div style={{fontSize:"12px",color:"#1a2a3a",fontWeight:600,marginTop:"6px",background:"#f9f9f7",borderRadius:"8px",padding:"8px 12px",fontFamily:"monospace"}}>{f.error_mensaje}</div>}
+                      {f.resolucion_nota && <div style={{fontSize:"12px",color:"#27ae60",fontWeight:600,marginTop:"6px",background:"rgba(39,174,96,0.06)",borderRadius:"8px",padding:"8px 12px"}}>Resolución: {f.resolucion_nota}</div>}
+                    </div>
+                  </div>
+                  {f.datos_contexto && (
+                    <>
+                      <button onClick={()=>{const s=new Set(fallosExpandido);s.has(f.id)?s.delete(f.id):s.add(f.id);setFallosExpandido(s);}} style={{...S.btn("#9a9a9a",true),padding:"4px 10px",fontSize:"11px",marginBottom:"8px"}}>
+                        {expandido ? "▲ Ocultar datos" : "▼ Ver datos de contexto"}
+                      </button>
+                      {expandido && (
+                        <pre style={{background:"#1a2a3a",color:"#7effd4",padding:"12px",borderRadius:"8px",fontSize:"11px",overflow:"auto",marginBottom:"8px",fontFamily:"monospace"}}>{JSON.stringify(f.datos_contexto,null,2)}</pre>
+                      )}
+                    </>
+                  )}
+                  {f.estado === "pendiente" && (
+                    <div style={{display:"flex",gap:"8px"}}>
+                      <button onClick={()=>{setFallosResolverModal(f);setFallosResolverNota("");}} style={S.btn("#27ae60",true)}>✅ Resolver</button>
+                      <button onClick={()=>descartarFallo(f)} style={S.btn("#9a9a9a",true)}>🗑️ Descartar</button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+
+            {/* Paginación */}
+            {fallosTotalCount > PAGE_SIZE_FALLOS && (
+              <div style={{...S.card,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                <button onClick={()=>setFallosPagina(p=>Math.max(0,p-1))} disabled={fallosPagina===0} style={{...S.btn("#3a7bd5",true),opacity:fallosPagina===0?0.3:1}}>◀ Anterior</button>
+                <div style={{fontSize:"13px",fontWeight:700,color:"#1a2a3a"}}>
+                  Página {fallosPagina+1} de {Math.ceil(fallosTotalCount/PAGE_SIZE_FALLOS)} · {fallosTotalCount} total
+                </div>
+                <button onClick={()=>setFallosPagina(p=>p+1)} disabled={(fallosPagina+1)*PAGE_SIZE_FALLOS>=fallosTotalCount} style={{...S.btn("#3a7bd5",true),opacity:(fallosPagina+1)*PAGE_SIZE_FALLOS>=fallosTotalCount?0.3:1}}>Siguiente ▶</button>
+              </div>
+            )}
+          </>
+        )}
       </div>
 
       {/* ══ MODAL SOCIO ══════════════════════════════════════════════════ */}
@@ -2670,6 +2864,20 @@ export default function AdminPanel() {
       )}
 
       {/* ══ MODAL SIMULAR COMPRA ═════════════════════════════════════════════════ */}
+      {fallosResolverModal && (
+        <Modal titulo="✅ Resolver fallo" onClose={()=>{setFallosResolverModal(null);setFallosResolverNota("");}}>
+          <div style={{fontSize:"12px",color:"#9a9a9a",fontWeight:700,marginBottom:"10px"}}>
+            {fallosResolverModal.contexto} · {fallosResolverModal.operacion}
+          </div>
+          <div style={{fontSize:"13px",color:"#1a2a3a",fontWeight:600,background:"#f9f9f7",borderRadius:"8px",padding:"10px 12px",marginBottom:"14px",fontFamily:"monospace"}}>
+            {fallosResolverModal.error_mensaje || "(sin mensaje de error)"}
+          </div>
+          <label style={S.label}>Nota de resolución (opcional)</label>
+          <textarea style={{...S.input,minHeight:"80px",resize:"vertical",marginBottom:"16px"}} placeholder="¿Qué hiciste para resolverlo? Ej: 'Reinsertado manualmente log_bits_internos para nivel 3'" value={fallosResolverNota} onChange={e=>setFallosResolverNota(e.target.value)} />
+          <button onClick={resolverFallo} style={S.btn("#27ae60")}>✅ Marcar como resuelto</button>
+        </Modal>
+      )}
+
       {modalSimular && (
         <Modal titulo={`🧪 Simular compra — ${modalSimular.nombre_usuario}`} onClose={()=>{setModalSimular(null);setSimPaquete("bit_500");}}>
           <div style={{background:"rgba(155,89,182,0.08)",border:"2px solid rgba(155,89,182,0.2)",borderRadius:"12px",padding:"12px 14px",marginBottom:"14px",fontSize:"12px",color:"#6c3483",fontWeight:700,lineHeight:1.5}}>

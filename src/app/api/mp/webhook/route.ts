@@ -115,16 +115,17 @@ export async function POST(req: NextRequest) {
               error_mensaje: upCobroErr.message,
             });
             // Notificar
+            const mensajeSub = `💳 Débito automático: se acreditaron ${bitsCantidad.toLocaleString()} BIT por tu suscripción de ${sub.tipo}.`;
             const { error: notifSubErr } = await supabase.from("notificaciones").insert({
               usuario_id: sub.usuario_id, tipo: "sistema", leida: false,
-              mensaje: `💳 Débito automático: se acreditaron ${bitsCantidad.toLocaleString()} BIT por tu suscripción de ${sub.tipo}.`,
+              mensaje: mensajeSub,
             });
             if (notifSubErr) await logFallo({
               severidad: "advertencia",
               contexto: "webhook-mp",
               operacion: "insert_notif_suscripcion",
               usuario_id: sub.usuario_id,
-              datos_contexto: { bitsCantidad, tipo: sub.tipo, error: notifSubErr },
+              datos_contexto: { usuario_id_destino: sub.usuario_id, mensaje: mensajeSub, bitsCantidad, tipo: sub.tipo, error: notifSubErr },
               error_mensaje: notifSubErr.message,
             });
           }
@@ -236,15 +237,26 @@ export async function POST(req: NextRequest) {
       contexto: "webhook-mp",
       operacion: "insert_pagos_mp",
       usuario_id,
-      datos_contexto: { paquete, paymentId, monto: pago.transaction_amount, error: pagoInsertErr },
+      datos_contexto: {
+        usuario_id_destino: usuario_id,
+        payment_id: String(paymentId),
+        paquete,
+        monto: pago.transaction_amount,
+        estado: "approved",
+        bits_col: pkg.col,
+        bits_cant: pkg.cantidad,
+        paymentId,
+        error: pagoInsertErr,
+      },
       error_mensaje: pagoInsertErr.message,
     });
 
     // Notificación in-app
+    const mensajeComprador = `✅ Pago aprobado — Se acreditaron ${pkg.cantidad >= 99999 ? "BIT Ilimitados" : pkg.cantidad + " BIT"} en tu cuenta`;
     const { error: notifCompradorErr } = await supabase.from("notificaciones").insert({
       usuario_id,
       tipo:    "sistema",
-      mensaje: `✅ Pago aprobado — Se acreditaron ${pkg.cantidad >= 99999 ? "BIT Ilimitados" : pkg.cantidad + " BIT"} en tu cuenta`,
+      mensaje: mensajeComprador,
       leida:   false,
     });
     if (notifCompradorErr) await logFallo({
@@ -252,7 +264,7 @@ export async function POST(req: NextRequest) {
       contexto: "webhook-mp",
       operacion: "insert_notif_comprador",
       usuario_id,
-      datos_contexto: { paquete, paymentId, cantidad: pkg.cantidad, error: notifCompradorErr },
+      datos_contexto: { usuario_id_destino: usuario_id, mensaje: mensajeComprador, paquete, paymentId, cantidad: pkg.cantidad, error: notifCompradorErr },
       error_mensaje: notifCompradorErr.message,
     });
 
@@ -341,10 +353,11 @@ export async function POST(req: NextRequest) {
 
         const nivel = visitados.size;
         const pctLabel = socio ? `${socio.porcentaje}% socio` : "20%";
+        const notifMensaje = `⭐ Recibiste ${comision.toLocaleString()} BIT Promo de comisión (${pctLabel}) por tu referido ${nombreRef}${nivel > 1 ? ` (nivel ${nivel})` : ""}`;
         const { error: notifCascadaErr } = await supabase.from("notificaciones").insert({
           usuario_id: current.referido_por,
           tipo: "sistema",
-          mensaje: `⭐ Recibiste ${comision.toLocaleString()} BIT Promo de comisión (${pctLabel}) por tu referido ${nombreRef}${nivel > 1 ? ` (nivel ${nivel})` : ""}`,
+          mensaje: notifMensaje,
           leida: false,
         });
         if (notifCascadaErr) await logFallo({
@@ -352,14 +365,15 @@ export async function POST(req: NextRequest) {
           contexto: "webhook-mp",
           operacion: "insert_notif_cascada",
           usuario_id: current.referido_por,
-          datos_contexto: { comision, nivel, pctLabel, paymentId, error: notifCascadaErr },
+          datos_contexto: { usuario_id_destino: current.referido_por, mensaje: notifMensaje, comision, nivel, pctLabel, paymentId, error: notifCascadaErr },
           error_mensaje: notifCascadaErr.message,
         });
 
+        const logMotivo = `Comisión nivel ${nivel} (${pctLabel}) — referido ${usuario_id} compró ${pkg.cantidad} BIT (paquete: ${paquete})`;
         const { error: logCascadaErr } = await supabase.from("log_bits_internos").insert({
           usuario_id: current.referido_por,
           cantidad: comision,
-          motivo: `Comisión nivel ${nivel} (${pctLabel}) — referido ${usuario_id} compró ${pkg.cantidad} BIT (paquete: ${paquete})`,
+          motivo: logMotivo,
           asignado_por: usuario_id,
         });
         if (logCascadaErr) await logFallo({
@@ -367,7 +381,7 @@ export async function POST(req: NextRequest) {
           contexto: "webhook-mp",
           operacion: "insert_log_cascada",
           usuario_id: current.referido_por,
-          datos_contexto: { comision, nivel, pctLabel, referido_origen: usuario_id, paymentId, error: logCascadaErr },
+          datos_contexto: { usuario_id_destino: current.referido_por, motivo: logMotivo, comision, nivel, pctLabel, referido_origen: usuario_id, paymentId, error: logCascadaErr },
           error_mensaje: logCascadaErr.message,
         });
 

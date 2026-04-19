@@ -47,6 +47,15 @@ const PAQUETES_SIM = [
   { id: "bit_30000", label: "36.000 BIT (+6.000 bonus) — $30.000" },
 ];
 
+const OPERACIONES_REINSERTABLES = new Set([
+  "insert_log_cascada",
+  "insert_notif_cascada",
+  "insert_notif_final",
+  "insert_notif_comprador",
+  "insert_notif_suscripcion",
+  "insert_pagos_mp",
+]);
+
 function PagosTab({ pagos, usuarios }: { pagos: any[]; usuarios: any[] }) {
   const [liqBusq, setLiqBusq] = useState("");
   const [liqUser, setLiqUser] = useState<any>(null);
@@ -346,6 +355,7 @@ export default function AdminPanel() {
   const [fallosExpandido, setFallosExpandido] = useState<Set<number>>(new Set());
   const [fallosResolverModal, setFallosResolverModal] = useState<any>(null);
   const [fallosResolverNota, setFallosResolverNota] = useState("");
+  const [fallosReintentando, setFallosReintentando] = useState<Set<number>>(new Set());
   const PAGE_SIZE_FALLOS = 50;
 
   // Filtros IA
@@ -1097,6 +1107,34 @@ export default function AdminPanel() {
     cargarFallos();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authed, fallosFiltroEstado, fallosFiltroSeveridad, fallosFiltroContexto, fallosFiltroDesde, fallosFiltroHasta, fallosPagina]);
+
+  const ejecutarReintento = async (f: any) => {
+    if (!confirm(`¿Reintentar la operación ${f.operacion}? Si sale bien, el fallo queda resuelto automáticamente.`)) return;
+    setFallosReintentando(prev => new Set(prev).add(f.id));
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch("/api/admin/reintentar-fallo", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session?.access_token}`,
+        },
+        body: JSON.stringify({ fallo_id: f.id }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(`Reintento falló: ${data.error || "error desconocido"}`);
+        return;
+      }
+      if (data.warning) alert(`Advertencia: ${data.warning}`);
+      showToast("✅ Reintento exitoso — fallo marcado como resuelto");
+      await cargarFallos();
+    } catch (e: any) {
+      alert("Error: " + e.message);
+    } finally {
+      setFallosReintentando(prev => { const s = new Set(prev); s.delete(f.id); return s; });
+    }
+  };
 
   const resolverFallo = async () => {
     if (!fallosResolverModal) return;
@@ -2662,6 +2700,15 @@ export default function AdminPanel() {
                   )}
                   {f.estado === "pendiente" && (
                     <div style={{display:"flex",gap:"8px"}}>
+                      {OPERACIONES_REINSERTABLES.has(f.operacion) && (
+                        <button
+                          onClick={() => ejecutarReintento(f)}
+                          disabled={fallosReintentando.has(f.id)}
+                          style={{...S.btn("#3a7bd5",true), opacity: fallosReintentando.has(f.id) ? 0.5 : 1}}
+                        >
+                          {fallosReintentando.has(f.id) ? "⏳ Reintentando..." : "🔄 Reintentar"}
+                        </button>
+                      )}
                       <button onClick={()=>{setFallosResolverModal(f);setFallosResolverNota("");}} style={S.btn("#27ae60",true)}>✅ Resolver</button>
                       <button onClick={()=>descartarFallo(f)} style={S.btn("#9a9a9a",true)}>🗑️ Descartar</button>
                     </div>

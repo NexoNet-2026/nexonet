@@ -115,10 +115,11 @@ export async function POST(req: Request) {
 
         const nivel = visitados.size;
         const pctLabel = socio ? `${socio.porcentaje}% socio` : "20%";
+        const notifMensaje = `⭐ Recibiste ${comision.toLocaleString()} BIT Promo de comisión (${pctLabel}) por tu referido ${nombreRef}${nivel > 1 ? ` (nivel ${nivel})` : ""}`;
         const { error: notifCascadaErr } = await supabase.from("notificaciones").insert({
           usuario_id: current.referido_por,
           tipo: "sistema",
-          mensaje: `⭐ Recibiste ${comision.toLocaleString()} BIT Promo de comisión (${pctLabel}) por tu referido ${nombreRef}${nivel > 1 ? ` (nivel ${nivel})` : ""}`,
+          mensaje: notifMensaje,
           leida: false,
         });
         if (notifCascadaErr) await logFallo({
@@ -126,14 +127,15 @@ export async function POST(req: Request) {
           contexto: "asignar-bit",
           operacion: "insert_notif_cascada",
           usuario_id: current.referido_por,
-          datos_contexto: { comision, nivel: visitados.size, pctLabel, error: notifCascadaErr },
+          datos_contexto: { usuario_id_destino: current.referido_por, mensaje: notifMensaje, comision, nivel, pctLabel, error: notifCascadaErr },
           error_mensaje: notifCascadaErr.message,
         });
 
+        const logMotivo = `Comisión nivel ${nivel} (${pctLabel}) — referido ${usuario_id} recibió ${cantidad} BIT (asignación admin)`;
         const { error: logErr } = await supabase.from("log_bits_internos").insert({
           usuario_id: current.referido_por,
           cantidad: comision,
-          motivo: `Comisión nivel ${nivel} (${pctLabel}) — referido ${usuario_id} recibió ${cantidad} BIT (asignación admin)`,
+          motivo: logMotivo,
           asignado_por: usuario_id,
         });
         if (logErr) await logFallo({
@@ -141,7 +143,7 @@ export async function POST(req: Request) {
           contexto: "asignar-bit",
           operacion: "insert_log_cascada",
           usuario_id: current.referido_por,
-          datos_contexto: { comision, nivel: visitados.size, pctLabel, referido_origen: usuario_id, error: logErr },
+          datos_contexto: { usuario_id_destino: current.referido_por, motivo: logMotivo, comision, nivel, pctLabel, referido_origen: usuario_id, error: logErr },
           error_mensaje: logErr.message,
         });
 
@@ -165,7 +167,7 @@ export async function POST(req: Request) {
       contexto: "asignar-bit",
       operacion: "insert_notif_final",
       usuario_id,
-      datos_contexto: { cantidad, columna, nuevo, error: notifFinalErr },
+      datos_contexto: { usuario_id_destino: usuario_id, mensaje: msgNot, cantidad, columna, nuevo, error: notifFinalErr },
       error_mensaje: notifFinalErr.message,
     });
 

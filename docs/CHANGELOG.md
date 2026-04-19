@@ -9,8 +9,22 @@
 
 - **Auditoría preventiva de FKs a `auth.users`**: se detectaron 25 FKs en 20 tablas de `public` apuntando a `auth.users`, que habrían causado error 400 (PostgREST PGRST200) en cualquier query con embed de usuarios. Se reapuntaron todas a `public.usuarios` manteniendo los `ON DELETE` originales (`CASCADE` / `SET NULL` donde aplicaba). Verificación previa: 0 filas huérfanas en todas las tablas. SQL aplicado en 3 bloques con `BEGIN`/`COMMIT` en Supabase. Verificación post-fix: 0 FKs restantes apuntando a `auth.users` desde `public`. Tablas afectadas: `anuncio_visitas`, `bits_promo_descargas`, `copyright_claims`, `empresa_pagos`, `grupo_invitaciones`, `grupo_mensajes`, `grupo_miembros`, `grupo_publicaciones`, `grupo_residentes`, `insignias_reputacion`, `log_bits_internos`, `log_socios_comerciales`, `mensajes_soporte`, `nexo_descarga_solicitudes`, `nexo_visitas`, `notificaciones`, `push_suscripciones`, `sesiones_log`, `suscripciones_mp`, `usuarios_conectados`.
 
+- **Sistema de captura y gestión de fallos operativos (observabilidad)**:
+
+  **Fase 1**: tabla `log_fallos_sistema` con RLS admin-only (SELECT/UPDATE), 4 índices (estado+fecha, contexto+fecha, severidad+fecha, usuario), CHECK constraints en `severidad` (`critico`/`advertencia`/`info`) y `estado` (`pendiente`/`resuelto`/`descartado`). Aplicado vía SQL en Supabase.
+
+  **Fase 2**: helper `src/lib/log-fallos.ts` con singleton del `service_role` client, serialización safe de `datos_contexto` y fail-safe (nunca lanza excepciones). Instrumentados 3 endpoints críticos: `asignar-bit` (5 capturas), `simular-compra` (9 capturas), `webhook-mp` (16 capturas incluyendo flujo suscripciones y validación de firma HMAC). Criterio: `critico` = plata movida o audit trail, `advertencia` = notif/validación de input. Commit: `2e32e6f`.
+
+  **Fase 3**: tab 📋 `FALLOS` en admin con stats, filtros (estado/severidad/contexto/fecha), paginación real con `.range()` + count exacto (50 por página), orden crítico primero. Expand JSON de `datos_contexto` por fila. Acciones Resolver (con nota opcional) y Descartar (soft-delete). Badge con críticos pendientes. Commit: `d7b9faf`.
+
+  **Fase 4 (automación)**: botón 🔄 Reintentar que ejecuta el insert fallido usando `datos_contexto`, con whitelist cerrada de 6 operaciones idempotentes (todas `insert_*` que no mueven plata). Auth server-side, validación de estado (no permite doble-reintento), validación de campos del payload. Auto-marca el fallo como resuelto con nota "Reintento automático exitoso (timestamp)" si sale bien; si falla, queda pendiente y no genera nested-fallo. Commit: `903ccf5`.
+
+  **Verificación end-to-end**: trigger temporal `BEFORE INSERT` en `log_bits_internos` forzó fallos controlados durante simulaciones. Capturados correctamente en `log_fallos_sistema`, visibles en UI con `datos_contexto` enriquecido. Reintentos exitosos confirmados con `SELECT` sobre `log_bits_internos` (cantidad=320 nivel 1, cantidad=2 nivel 4, motivos correctos). Trigger removido después del test.
+
 ### Database changes (aplicados en Supabase, NO en código)
 **2026-04-19**: reapuntar 25 FKs de `public.*` a `public.usuarios` (en lugar de `auth.users`), manteniendo `ON DELETE` originales. Aplicado vía Supabase SQL Editor en 3 bloques `BEGIN`/`COMMIT`. No hay migration file.
+
+**2026-04-19**: `CREATE TABLE public.log_fallos_sistema` + 4 índices + 2 políticas RLS (SELECT/UPDATE admin-only). Aplicado vía Supabase SQL Editor.
 
 ## [2026-04-18] — Fix cascada socios + eliminación admin nexos
 

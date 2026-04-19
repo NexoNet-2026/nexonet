@@ -322,9 +322,14 @@ function NexoCrearInner() {
         if ((form as any).personal_asegurado) payload.config = { ...payload.config, personal_asegurado: true };
       }
 
-      if (tipo==="anuncio"||tipo==="trabajo") {
+      if (tipo==="anuncio") {
         const imgs = [form.foto1_url, form.foto2_url, form.foto3_url].filter(Boolean);
         if (imgs.length > 0) { payload.imagenes = imgs; payload.avatar_url = imgs[0]; }
+        delete payload.banner_url;
+      }
+      if (tipo==="trabajo") {
+        // Trabajo es un NEXO con 1 sola imagen en avatar_url, sin array imagenes
+        if (form.foto1_url) payload.avatar_url = form.foto1_url;
         delete payload.banner_url;
       }
 
@@ -549,14 +554,14 @@ function NexoCrearInner() {
           </div>
 
           <div style={CAJA}>
-            <SL>📷 Fotos del producto</SL>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"8px"}}>
-              {["foto1","foto2","foto3"].map((campo,i) => (
+            <SL>{tipo==="trabajo" ? "📷 Tu foto de perfil" : "📷 Fotos del producto"}</SL>
+            <div style={{display:"grid",gridTemplateColumns:tipo==="trabajo"?"1fr":"1fr 1fr 1fr",gap:"8px"}}>
+              {(tipo==="trabajo" ? ["foto1"] : ["foto1","foto2","foto3"]).map((campo,i) => (
                 <label key={campo} style={{cursor:"pointer"}}>
-                  <div style={{height:"80px",background:"#f4f4f2",borderRadius:"12px",border:`2px dashed ${(form as any)[campo+"_url"]?"#d4a017":"rgba(212,160,23,0.3)"}`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:"4px",overflow:"hidden",position:"relative"}}>
+                  <div style={{height:tipo==="trabajo"?"160px":"80px",background:"#f4f4f2",borderRadius:"12px",border:`2px dashed ${(form as any)[campo+"_url"]?"#d4a017":"rgba(212,160,23,0.3)"}`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:"4px",overflow:"hidden",position:"relative"}}>
                     {(form as any)[campo+"_url"]
                       ? <><img src={(form as any)[campo+"_url"]} style={{width:"100%",height:"100%",objectFit:"cover"}}/><div style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.3)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"18px"}}>📷</div></>
-                      : <><span style={{fontSize:"22px"}}>📷</span><span style={{fontSize:"9px",fontWeight:700,color:"#9a9a9a"}}>Foto {i+1}</span></>
+                      : <><span style={{fontSize:tipo==="trabajo"?"34px":"22px"}}>📷</span><span style={{fontSize:tipo==="trabajo"?"12px":"9px",fontWeight:700,color:"#9a9a9a"}}>{tipo==="trabajo"?"Subí tu foto de perfil":`Foto ${i+1}`}</span></>
                     }
                   </div>
                   <input type="file" accept="image/*" onChange={e=>subirImagenAnuncio(e,campo)} style={{display:"none"}}/>

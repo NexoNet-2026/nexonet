@@ -328,7 +328,7 @@ function NexoCrearInner() {
         delete payload.banner_url;
       }
 
-      const tabla = (tipo==="anuncio" || tipo==="trabajo") ? "anuncios" : "nexos";
+      const tabla = tipo==="anuncio" ? "anuncios" : "nexos";
       const { data: nexo, error } = await supabase.from(tabla).insert(payload).select().single();
       if (error) { console.error(error); alert(`Error al crear: ${error.message}`); setGuardando(false); return; }
 
@@ -549,14 +549,14 @@ function NexoCrearInner() {
           </div>
 
           <div style={CAJA}>
-            <SL>{tipo==="trabajo" ? "📷 Tu foto de perfil" : "📷 Fotos del producto"}</SL>
-            <div style={{display:"grid",gridTemplateColumns:tipo==="trabajo"?"1fr":"1fr 1fr 1fr",gap:"8px"}}>
-              {(tipo==="trabajo" ? ["foto1"] : ["foto1","foto2","foto3"]).map((campo,i) => (
+            <SL>📷 Fotos del producto</SL>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"8px"}}>
+              {["foto1","foto2","foto3"].map((campo,i) => (
                 <label key={campo} style={{cursor:"pointer"}}>
-                  <div style={{height:tipo==="trabajo"?"160px":"80px",background:"#f4f4f2",borderRadius:"12px",border:`2px dashed ${(form as any)[campo+"_url"]?"#d4a017":"rgba(212,160,23,0.3)"}`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:"4px",overflow:"hidden",position:"relative"}}>
+                  <div style={{height:"80px",background:"#f4f4f2",borderRadius:"12px",border:`2px dashed ${(form as any)[campo+"_url"]?"#d4a017":"rgba(212,160,23,0.3)"}`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:"4px",overflow:"hidden",position:"relative"}}>
                     {(form as any)[campo+"_url"]
                       ? <><img src={(form as any)[campo+"_url"]} style={{width:"100%",height:"100%",objectFit:"cover"}}/><div style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.3)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"18px"}}>📷</div></>
-                      : <><span style={{fontSize:tipo==="trabajo"?"34px":"22px"}}>📷</span><span style={{fontSize:tipo==="trabajo"?"12px":"9px",fontWeight:700,color:"#9a9a9a"}}>{tipo==="trabajo"?"Subí tu foto de perfil":`Foto ${i+1}`}</span></>
+                      : <><span style={{fontSize:"22px"}}>📷</span><span style={{fontSize:"9px",fontWeight:700,color:"#9a9a9a"}}>Foto {i+1}</span></>
                     }
                   </div>
                   <input type="file" accept="image/*" onChange={e=>subirImagenAnuncio(e,campo)} style={{display:"none"}}/>

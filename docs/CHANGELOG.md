@@ -19,6 +19,8 @@
 
 - **Cascada con socio 0% resuelta (Opción 1 - Transparente)**: si la comisión redondea a 0 pero la base sigue siendo positiva, el eslabón no cobra pero la cascada sigue con la base intacta al siguiente nivel. Evita que se corte prematuramente cuando un socio con % alto redondea sobre base chica. Verificado en vivo con Usuario6 → `bit_1500`: 320/64/12/2 se mantienen idénticos, Usuario1 y Gapachu quedan transparentes y la cadena termina naturalmente en `referido_por=NULL`. Commit: `fe241c9`.
 
+- **Error handling agregado a `asignar-bit/route.ts`**: las 3 operaciones secundarias (update cascada, insert notif al eslabón, insert notif final al receptor) ahora logean con `console.error` prefijo `[asignar-bit]` si fallan. Sin abortar el flujo — atomicidad real queda en Deuda técnica (refactor a RPC). Commit: `b5bf971`.
+
 ### Database changes (aplicados en Supabase, NO en código)
 Las siguientes policies se crearon manualmente en SQL Editor:
 - `admin_nexos_delete`, `admin_nexos_update` en tabla `nexos`
@@ -43,7 +45,6 @@ ALTER TABLE public.contactos_nexonet ADD CONSTRAINT contactos_nexonet_usuario_id
 
 ### Pending / Known issues
 - Pago real con MP falló en checkout (tarjeta rechazada por MP, no por NexoNet).
-- **Error handling en `asignar-bit/route.ts`**: los `update` / `insert` dentro del `while` de cascada y el `insert` final de notificación no chequean `error`. Agregar `console.error` y continuar — no abortar la cascada por un fallo en el insert de notificación.
 
 ### Deuda técnica
 - **`asignar-bit`: falta atomicidad**. Si falla el `insert` de notificación después del `update` de `bits_promo`, el referido ya cobró pero no fue notificado (o el caso inverso). Refactor a RPC / función SQL (`plpgsql`) para que el update de bits y el insert de notificación corran en una sola transacción. No urgente.

@@ -41,7 +41,6 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    console.log("MP Webhook:", JSON.stringify(body));
 
     // ── Suscripciones (preapproval) ──
     if (body.type === "subscription_preapproval") {
@@ -130,7 +129,6 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (yaAcreditado) {
-      console.log("Pago ya acreditado:", paymentId);
       return NextResponse.json({ ok: true });
     }
 
@@ -180,8 +178,6 @@ export async function POST(req: NextRequest) {
       leida:   false,
     });
 
-    console.log(`✅ Acreditados ${pkg.cantidad} en ${pkg.col} para usuario ${usuario_id}`);
-
     // ── Comisión en cascada ilimitada ──
     let tieneCascada = false;
     try {
@@ -218,7 +214,6 @@ export async function POST(req: NextRequest) {
           .eq("activo", true)
           .maybeSingle();
 
-        console.log("[cascada] nodo:", current.referido_por, "socio:", socio);
         const porcentaje = socio ? (socio.porcentaje / 100) : 0.20;
         const comision = Math.floor(comisionBase * porcentaje);
 

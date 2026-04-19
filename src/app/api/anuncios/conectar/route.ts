@@ -9,26 +9,22 @@ const supabase = createClient(
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    console.log('[conectar] body recibido:', body);
     const anuncio_id = parseInt(body.anuncio_id);
     const usuario_id = body.usuario_id;
-    console.log('[conectar] anuncio_id:', anuncio_id, 'usuario_id:', usuario_id);
     if (!anuncio_id || !usuario_id) {
       return NextResponse.json({ error: 'Faltan datos' }, { status: 400 });
     }
 
     // 1. Verificar idempotencia - ya conectó antes?
-    const { data: yaConecto, error: yaConectoError } = await supabase
+    const { data: yaConecto } = await supabase
       .from('conexiones')
       .select('id')
       .eq('anuncio_id', anuncio_id)
       .eq('usuario_id', usuario_id)
       .single();
-    console.log('[conectar] idempotencia yaConecto:', yaConecto, 'error:', yaConectoError);
 
     if (yaConecto) {
       const { data: anu } = await supabase.from('anuncios').select('link_externo, telefono, email').eq('id', anuncio_id).single();
-      console.log('[conectar] ya conectado antes, devolviendo contacto:', anu);
       return NextResponse.json({ ok: true, ya_conectado: true, contacto: anu });
     }
 
@@ -38,7 +34,6 @@ export async function POST(req: NextRequest) {
       .select('id, conexiones, usuario_id, link_externo, telefono, email')
       .eq('id', anuncio_id)
       .single();
-    console.log('[conectar] anuncio traido:', anuncio, 'error:', anuError);
 
     if (anuError || !anuncio) {
       return NextResponse.json({ error: 'Anuncio no encontrado' }, { status: 404 });
@@ -50,7 +45,6 @@ export async function POST(req: NextRequest) {
       .select('bits_free, bits, bits_promo')
       .eq('id', usuario_id)
       .single();
-    console.log('[conectar] saldo usuario:', usuario, 'error:', usuError);
 
     if (usuError || !usuario) {
       return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 });
@@ -60,7 +54,6 @@ export async function POST(req: NextRequest) {
     const bits = usuario.bits || 0;
     const bits_promo = usuario.bits_promo || 0;
     const total = bits_free + bits + bits_promo;
-    console.log('[conectar] bits_free:', bits_free, 'bits:', bits, 'bits_promo:', bits_promo, 'total:', total);
 
     if (total <= 0) {
       return NextResponse.json({ error: 'No tenés BIT disponibles para conectar' }, { status: 402 });
@@ -71,38 +64,31 @@ export async function POST(req: NextRequest) {
     if (bits_free >= 1) update.bits_free = bits_free - 1;
     else if (bits >= 1) update.bits = bits - 1;
     else update.bits_promo = bits_promo - 1;
-    console.log('[conectar] update a aplicar en usuarios:', update);
 
-    const { data: updateUsuData, error: updateUsuError } = await supabase.from('usuarios').update(update).eq('id', usuario_id).select();
-    console.log('[conectar] resultado update usuarios:', updateUsuData, 'error:', updateUsuError);
+    await supabase.from('usuarios').update(update).eq('id', usuario_id);
 
     // 5. Incrementar contador de conexiones del anuncio
-    const { data: updateAnuData, error: updateAnuError } = await supabase
+    await supabase
       .from('anuncios')
       .update({ conexiones: (anuncio.conexiones || 0) + 1 })
-      .eq('id', anuncio_id)
-      .select();
-    console.log('[conectar] resultado update anuncios:', updateAnuData, 'error:', updateAnuError);
+      .eq('id', anuncio_id);
 
     // 6. Registrar conexion
-    const { data: insertConexData, error: insertConexError } = await supabase.from('conexiones').insert({
+    await supabase.from('conexiones').insert({
       anuncio_id,
       usuario_id,
       vendedor_id: anuncio.usuario_id,
-    }).select();
-    console.log('[conectar] resultado insert conexiones:', insertConexData, 'error:', insertConexError);
+    });
 
     // 7. Notificar al vendedor
-    const { data: insertNotifData, error: insertNotifError } = await supabase.from('notificaciones').insert({
+    await supabase.from('notificaciones').insert({
       usuario_id: anuncio.usuario_id,
       tipo: 'sistema',
       leida: false,
       mensaje: 'alguien se conectó con tu anuncio.',
-    }).select();
-    console.log('[conectar] resultado insert notificaciones:', insertNotifData, 'error:', insertNotifError);
+    });
 
     // 8. Devolver contacto
-    console.log('[conectar] OK, devolviendo contacto');
     return NextResponse.json({
       ok: true,
       contacto: {

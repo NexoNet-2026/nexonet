@@ -90,6 +90,8 @@ function NexoCrearInner() {
   const [gpsLoad,        setGpsLoad]        = useState(false);
   const [esPrimeraEmpresa, setEsPrimeraEmpresa] = useState<boolean|null>(null);
   const [popupEmpresa, setPopupEmpresa] = useState(false);
+  const [adjuntarCV, setAdjuntarCV] = useState(false);
+  const [subiendoCV, setSubiendoCV] = useState(false);
 
   const [provs,     setProvs]     = useState<Prov[]>([]);
   const [ciudades,  setCiudades]  = useState<Ciudad[]>([]);
@@ -106,6 +108,7 @@ function NexoCrearInner() {
     provincia:"", ciudad:"", direccion:"", whatsapp:"", link_externo:"",
     permuto:false, banner_url:"", avatar_url:"",
     foto1_url:"", foto2_url:"", foto3_url:"",
+    foto_trabajo_url:"", cv_url:"", cv_nombre:"",
     tipo_acceso:"libre", tipo_contacto:"datos",
     rubro_id: preRubroId, subrubro_id: preSubrubroId,
     lat:"", lng:"", mostrar_en_mapa: true,
@@ -256,6 +259,35 @@ function NexoCrearInner() {
     setSubiendoImg(null);
   };
 
+  const subirFotoTrabajo = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !perfil) return;
+    if (file.size > 5*1024*1024) { alert("Máximo 5MB"); return; }
+    setSubiendoImg("avatar");
+    const ext = file.name.split(".").pop();
+    const path = `trabajos/${perfil.id}/foto_${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from("imagenes").upload(path, file, { upsert: true });
+    if (error) { alert("Error: " + error.message); setSubiendoImg(null); return; }
+    const { data } = supabase.storage.from("imagenes").getPublicUrl(path);
+    F("foto_trabajo_url", data.publicUrl);
+    setSubiendoImg(null);
+  };
+
+  const subirCV = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !perfil) return;
+    if (file.type !== "application/pdf") { alert("El CV debe ser un archivo PDF"); return; }
+    if (file.size > 10*1024*1024) { alert("Máximo 10MB"); return; }
+    setSubiendoCV(true);
+    const path = `cvs/${perfil.id}/cv_${Date.now()}.pdf`;
+    const { error } = await supabase.storage.from("imagenes").upload(path, file, { upsert: true });
+    if (error) { alert("Error: " + error.message); setSubiendoCV(false); return; }
+    const { data } = supabase.storage.from("imagenes").getPublicUrl(path);
+    F("cv_url", data.publicUrl);
+    F("cv_nombre", file.name);
+    setSubiendoCV(false);
+  };
+
   const agregarSlider = (cat:any) => {
     if (sliders.find(s=>s.tipo===cat.tipo)) return;
     setSliders(prev => [...prev, {...cat, orden:prev.length}]);
@@ -322,9 +354,14 @@ function NexoCrearInner() {
         if ((form as any).personal_asegurado) payload.config = { ...payload.config, personal_asegurado: true };
       }
 
-      if (tipo==="anuncio"||tipo==="trabajo") {
+      if (tipo==="anuncio") {
         const imgs = [form.foto1_url, form.foto2_url, form.foto3_url].filter(Boolean);
         if (imgs.length > 0) { payload.imagenes = imgs; payload.avatar_url = imgs[0]; }
+        delete payload.banner_url;
+      }
+      if (tipo==="trabajo") {
+        if (form.foto_trabajo_url) payload.avatar_url = form.foto_trabajo_url;
+        if (form.cv_url) payload.cv_url = form.cv_url;
         delete payload.banner_url;
       }
 
@@ -361,6 +398,7 @@ function NexoCrearInner() {
 
   // ── SIN SLIDERS: anuncio / trabajo ───────────────────────────────────────
   if (!usaSliders) {
+    const costoPublicacion = (tipo==="trabajo" && form.cv_url) ? 1000 : 500;
     return (
       <main style={{paddingTop:"105px",paddingBottom:"130px",background:"#f4f4f2",minHeight:"100vh",fontFamily:"'Nunito',sans-serif"}}>
         <Header/>
@@ -548,33 +586,81 @@ function NexoCrearInner() {
             ))}
           </div>
 
-          <div style={CAJA}>
-            <SL>📷 Fotos del producto</SL>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"8px"}}>
-              {["foto1","foto2","foto3"].map((campo,i) => (
-                <label key={campo} style={{cursor:"pointer"}}>
-                  <div style={{height:"80px",background:"#f4f4f2",borderRadius:"12px",border:`2px dashed ${(form as any)[campo+"_url"]?"#d4a017":"rgba(212,160,23,0.3)"}`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:"4px",overflow:"hidden",position:"relative"}}>
-                    {(form as any)[campo+"_url"]
-                      ? <><img src={(form as any)[campo+"_url"]} style={{width:"100%",height:"100%",objectFit:"cover"}}/><div style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.3)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"18px"}}>📷</div></>
-                      : <><span style={{fontSize:"22px"}}>📷</span><span style={{fontSize:"9px",fontWeight:700,color:"#9a9a9a"}}>Foto {i+1}</span></>
-                    }
-                  </div>
-                  <input type="file" accept="image/*" onChange={e=>subirImagenAnuncio(e,campo)} style={{display:"none"}}/>
-                </label>
-              ))}
+          {tipo==="anuncio" && (
+            <div style={CAJA}>
+              <SL>📷 Fotos del producto</SL>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"8px"}}>
+                {["foto1","foto2","foto3"].map((campo,i) => (
+                  <label key={campo} style={{cursor:"pointer"}}>
+                    <div style={{height:"80px",background:"#f4f4f2",borderRadius:"12px",border:`2px dashed ${(form as any)[campo+"_url"]?"#d4a017":"rgba(212,160,23,0.3)"}`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:"4px",overflow:"hidden",position:"relative"}}>
+                      {(form as any)[campo+"_url"]
+                        ? <><img src={(form as any)[campo+"_url"]} style={{width:"100%",height:"100%",objectFit:"cover"}}/><div style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.3)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"18px"}}>📷</div></>
+                        : <><span style={{fontSize:"22px"}}>📷</span><span style={{fontSize:"9px",fontWeight:700,color:"#9a9a9a"}}>Foto {i+1}</span></>
+                      }
+                    </div>
+                    <input type="file" accept="image/*" onChange={e=>subirImagenAnuncio(e,campo)} style={{display:"none"}}/>
+                  </label>
+                ))}
+              </div>
+              {subiendoImg && <div style={{textAlign:"center",fontSize:"12px",color:"#9a9a9a",marginTop:"8px"}}>⏳ Subiendo imagen...</div>}
             </div>
-            {subiendoImg && <div style={{textAlign:"center",fontSize:"12px",color:"#9a9a9a",marginTop:"8px"}}>⏳ Subiendo imagen...</div>}
-          </div>
+          )}
+
+          {tipo==="trabajo" && (
+            <>
+              <div style={CAJA}>
+                <SL>📷 Tu foto</SL>
+                <label style={{cursor:"pointer",display:"block"}}>
+                  <div style={{height:"160px",background:"#f4f4f2",borderRadius:"12px",border:`2px dashed ${form.foto_trabajo_url?"#8e44ad":"rgba(142,68,173,0.3)"}`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:"6px",overflow:"hidden",position:"relative"}}>
+                    {form.foto_trabajo_url
+                      ? <><img src={form.foto_trabajo_url} style={{width:"100%",height:"100%",objectFit:"cover"}}/><div style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.3)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"22px"}}>📷</div></>
+                      : <><span style={{fontSize:"34px"}}>📷</span><span style={{fontSize:"12px",fontWeight:700,color:"#9a9a9a"}}>Subí una foto tuya</span></>}
+                  </div>
+                  <input type="file" accept="image/*" onChange={subirFotoTrabajo} style={{display:"none"}}/>
+                </label>
+                {subiendoImg && <div style={{textAlign:"center",fontSize:"12px",color:"#9a9a9a",marginTop:"8px"}}>⏳ Subiendo imagen...</div>}
+              </div>
+
+              <div style={CAJA}>
+                <SL>📎 CV (opcional)</SL>
+                <div style={{fontSize:"12px",color:"#666",fontWeight:600,lineHeight:1.5,marginBottom:"12px"}}>
+                  Adjuntá tu CV en PDF por <strong style={{color:"#8e44ad"}}>500 BIT extra</strong>. Solo lo verán los reclutadores que se conecten con vos.
+                </div>
+                {!adjuntarCV ? (
+                  <button onClick={()=>setAdjuntarCV(true)} style={{width:"100%",background:"rgba(142,68,173,0.08)",border:"2px dashed rgba(142,68,173,0.4)",borderRadius:"12px",padding:"14px",fontSize:"13px",fontWeight:800,color:"#8e44ad",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>
+                    📎 Adjuntar CV (+500 BIT)
+                  </button>
+                ) : (
+                  <>
+                    <label style={{cursor:"pointer",display:"block"}}>
+                      <div style={{background:"#fff",borderRadius:"12px",border:`2px dashed ${form.cv_url?"#8e44ad":"rgba(142,68,173,0.4)"}`,padding:"16px",display:"flex",alignItems:"center",gap:"12px"}}>
+                        <span style={{fontSize:"28px"}}>{form.cv_url?"✅":"📄"}</span>
+                        <div style={{flex:1,minWidth:0}}>
+                          <div style={{fontSize:"13px",fontWeight:800,color:"#1a2a3a"}}>{form.cv_url?form.cv_nombre:"Seleccioná tu CV en PDF"}</div>
+                          <div style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600}}>{form.cv_url?"CV cargado — se cobrarán 500 BIT al publicar":"Máximo 10MB, solo PDF"}</div>
+                        </div>
+                      </div>
+                      <input type="file" accept="application/pdf" onChange={subirCV} style={{display:"none"}}/>
+                    </label>
+                    {subiendoCV && <div style={{textAlign:"center",fontSize:"12px",color:"#9a9a9a",marginTop:"8px"}}>⏳ Subiendo CV...</div>}
+                    <button onClick={()=>{setAdjuntarCV(false);F("cv_url","");F("cv_nombre","");}} style={{marginTop:"10px",background:"none",border:"none",fontSize:"11px",fontWeight:700,color:"#9a9a9a",cursor:"pointer",fontFamily:"'Nunito',sans-serif",textDecoration:"underline"}}>
+                      Cancelar — no adjuntar CV
+                    </button>
+                  </>
+                )}
+              </div>
+            </>
+          )}
 
           <button
             onClick={() => {
               const totalBits = (perfil?.bits_free||0) + (perfil?.bits||0) + (perfil?.bits_promo||0);
-              if (totalBits < 500) { alert(`Necesitás 500 BIT para publicar. Tenés ${totalBits} BIT disponibles.`); return; }
+              if (totalBits < costoPublicacion) { alert(`Necesitás ${costoPublicacion} BIT para publicar. Tenés ${totalBits} BIT disponibles.`); return; }
               setPopupConfirmar(true);
             }}
             disabled={guardando||!form.titulo.trim()}
             style={{width:"100%",background:guardando||!form.titulo.trim()?`${colorPage}50`:`linear-gradient(135deg,${colorPage}cc,${colorPage})`,border:"none",borderRadius:"14px",padding:"16px",fontSize:"16px",fontWeight:900,color:"#fff",cursor:guardando||!form.titulo.trim()?"not-allowed":"pointer",fontFamily:"'Nunito',sans-serif",boxShadow:guardando||!form.titulo.trim()?"none":`0 4px 0 ${colorPage}88`}}>
-            {guardando ? "⏳ Creando..." : tipo==="trabajo" ? "✅ Publicar búsqueda de trabajo" : "✅ Publicar anuncio"}
+            {guardando?"⏳ Creando...":tipo==="trabajo"?(form.cv_url?"✅ Publicar trabajo + CV":"✅ Publicar búsqueda de trabajo"):"✅ Publicar anuncio"}
           </button>
         </div>
         <AyudaPopup tipo={tipo as any}/>
@@ -582,24 +668,26 @@ function NexoCrearInner() {
 
         {popupConfirmar && (
           <PopupCompra
-            titulo="📣 Publicar anuncio" emoji="📣" costo="500 BIT"
-            descripcion="Publicá tu anuncio en NexoNet"
+            titulo={tipo==="trabajo" ? (form.cv_url ? "💼 Publicar trabajo + CV" : "💼 Publicar búsqueda de trabajo") : "📣 Publicar anuncio"}
+            emoji={tipo==="trabajo" ? "💼" : "📣"}
+            costo={`${costoPublicacion} BIT`}
+            descripcion={tipo==="trabajo" ? (form.cv_url ? "Publicación (500 BIT) + CV adjunto (500 BIT)" : "Publicá tu búsqueda en NexoNet") : "Publicá tu anuncio en NexoNet"}
             bits={{ free: Math.max(0,perfil?.bits_free||0), nexo: Math.max(0,perfil?.bits||0), promo: Math.max(0,perfil?.bits_promo||0) }}
             onClose={() => setPopupConfirmar(false)}
             onPagar={async (metodo: MetodoPago) => {
               const colGasto = tipo==="trabajo"?"bits_gastados_trabajo":"bits_gastados_anuncios";
               if (metodo === "bit_free") {
-                if ((perfil?.bits_free||0) < 500) { alert("No tenés suficientes BIT FREE."); return; }
-                await supabase.from("usuarios").update({ bits_free: perfil.bits_free - 500, [colGasto]: (perfil[colGasto]||0) + 500 }).eq("id", perfil.id);
-                setPerfil((p:any) => ({...p, bits_free: p.bits_free - 500, [colGasto]: (p[colGasto]||0) + 500}));
+                if ((perfil?.bits_free||0) < costoPublicacion) { alert("No tenés suficientes BIT FREE."); return; }
+                await supabase.from("usuarios").update({ bits_free: perfil.bits_free - costoPublicacion, [colGasto]: (perfil[colGasto]||0) + costoPublicacion }).eq("id", perfil.id);
+                setPerfil((p:any) => ({...p, bits_free: p.bits_free - costoPublicacion, [colGasto]: (p[colGasto]||0) + costoPublicacion}));
               } else if (metodo === "bit_nexo") {
-                if ((perfil?.bits||0) < 500) { alert("No tenés suficientes BIT Nexo."); return; }
-                await supabase.from("usuarios").update({ bits: perfil.bits - 500, [colGasto]: (perfil[colGasto]||0) + 500 }).eq("id", perfil.id);
-                setPerfil((p:any) => ({...p, bits: p.bits - 500, [colGasto]: (p[colGasto]||0) + 500}));
+                if ((perfil?.bits||0) < costoPublicacion) { alert("No tenés suficientes BIT Nexo."); return; }
+                await supabase.from("usuarios").update({ bits: perfil.bits - costoPublicacion, [colGasto]: (perfil[colGasto]||0) + costoPublicacion }).eq("id", perfil.id);
+                setPerfil((p:any) => ({...p, bits: p.bits - costoPublicacion, [colGasto]: (p[colGasto]||0) + costoPublicacion}));
               } else if ((metodo as string) === "bit_promo") {
-                if ((perfil?.bits_promo||0) < 500) { alert("No tenés suficientes BIT Promo."); return; }
-                await supabase.from("usuarios").update({ bits_promo: perfil.bits_promo - 500, [colGasto]: (perfil[colGasto]||0) + 500 }).eq("id", perfil.id);
-                setPerfil((p:any) => ({...p, bits_promo: p.bits_promo - 500, [colGasto]: (p[colGasto]||0) + 500}));
+                if ((perfil?.bits_promo||0) < costoPublicacion) { alert("No tenés suficientes BIT Promo."); return; }
+                await supabase.from("usuarios").update({ bits_promo: perfil.bits_promo - costoPublicacion, [colGasto]: (perfil[colGasto]||0) + costoPublicacion }).eq("id", perfil.id);
+                setPerfil((p:any) => ({...p, bits_promo: p.bits_promo - costoPublicacion, [colGasto]: (p[colGasto]||0) + costoPublicacion}));
               } else { alert("Próximamente"); return; }
               setPopupConfirmar(false);
               crear();

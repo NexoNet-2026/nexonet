@@ -237,6 +237,9 @@ function NexoPageInner() {
   const [flashOpen, setFlashOpen] = useState(false);
   const [flashItem, setFlashItem] = useState<any>(null);
   const [popupBannerCompartir, setPopupBannerCompartir] = useState(false);
+  const [modalCV, setModalCV] = useState<null | {cv_url: string}>(null);
+  const [mensajeCV, setMensajeCV] = useState("");
+  const [enviandoCV, setEnviandoCV] = useState(false);
   const colorNexo = TIPO_COLORES[nexo?.tipo] || "#d4a017";
   const emojiNexo = nexo?.subtipo ? SUBTIPO_EMOJIS[nexo.subtipo] : TIPO_EMOJIS[nexo?.tipo] || "✨";
 
@@ -355,6 +358,57 @@ function NexoPageInner() {
     if (nuevo) setMensajes(prev=>[...prev,nuevo]);
     setTexto("");
     setEnviando(false);
+  };
+
+  const cerrarModalCV = async () => {
+    if (!modalCV || !perfil?.id) { setModalCV(null); setMensajeCV(""); return; }
+    // Si NO se escribió mensaje, notificar al dueño que el CV fue visto
+    if (!mensajeCV.trim()) {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        await fetch("/api/nexos/notificar-cv-visto", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session?.access_token}`,
+          },
+          body: JSON.stringify({ nexo_id: nexo.id, usuario_id: perfil.id }),
+        });
+      } catch (e) { console.error("Error notificando CV visto:", e); }
+    }
+    setModalCV(null);
+    setMensajeCV("");
+  };
+
+  const enviarMensajeCV = async () => {
+    if (!mensajeCV.trim() || !perfil?.id || !nexo) return;
+    setEnviandoCV(true);
+    try {
+      const res = await fetch("/api/chat/enviar-mensaje", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          emisor_id: perfil.id,
+          receptor_id: nexo.usuario_id,
+          texto: mensajeCV.trim(),
+          nexo_id: nexo.id,
+          titulo: nexo.titulo,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        alert("Error al enviar: " + (data.error || "intentá de nuevo"));
+        setEnviandoCV(false);
+        return;
+      }
+      alert("✅ Mensaje enviado");
+      setModalCV(null);
+      setMensajeCV("");
+    } catch (e:any) {
+      alert("Error: " + (e?.message || "Intentá de nuevo"));
+    } finally {
+      setEnviandoCV(false);
+    }
   };
 
   useEffect(() => {
@@ -565,6 +619,10 @@ function NexoPageInner() {
                     const j = await r.json();
                     if (!r.ok || !j.ok) { alert(j.error || "Error al conectar"); return; }
                     const c = j.contacto || {};
+                    if (c.es_trabajo_cv && c.cv_url) {
+                      setModalCV({ cv_url: c.cv_url });
+                      return;
+                    }
                     if (c.whatsapp) {
                       const wa = String(c.whatsapp).replace(/\D/g, "");
                       window.open(`https://wa.me/${wa}`, "_blank");
@@ -921,6 +979,41 @@ function NexoPageInner() {
           itemContexto={flashItem ? { id: flashItem.id, titulo: flashItem.titulo, url: flashItem.url, tipo: "adjunto" } : undefined}
           onClose={() => { setFlashOpen(false); setFlashItem(null); }}
         />
+      )}
+
+      {modalCV && (
+        <div style={{position:"fixed",inset:0,zIndex:700,background:"rgba(0,0,0,0.85)",display:"flex",alignItems:"center",justifyContent:"center",padding:"20px"}} onClick={() => cerrarModalCV()}>
+          <div style={{background:"#fff",borderRadius:"20px",maxWidth:"700px",width:"100%",maxHeight:"90vh",overflow:"hidden",display:"flex",flexDirection:"column",fontFamily:"'Nunito',sans-serif"}} onClick={e => e.stopPropagation()}>
+            <div style={{padding:"16px 20px",borderBottom:"2px solid #f0f0f0",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"20px",color:"#1a2a3a",letterSpacing:"1px"}}>📎 CV adjunto</div>
+              <button onClick={cerrarModalCV} style={{background:"none",border:"none",fontSize:"24px",cursor:"pointer",color:"#9a9a9a"}}>✕</button>
+            </div>
+            <div style={{flex:1,overflow:"auto",padding:"16px 20px"}}>
+              <iframe src={modalCV.cv_url} style={{width:"100%",height:"400px",border:"2px solid #e8e8e6",borderRadius:"12px"}} />
+              <a href={modalCV.cv_url} target="_blank" rel="noopener noreferrer" style={{display:"block",textAlign:"center",marginTop:"10px",fontSize:"13px",fontWeight:800,color:"#3a7bd5",textDecoration:"underline"}}>
+                📥 Abrir CV en pestaña nueva / descargar
+              </a>
+              <div style={{marginTop:"20px",paddingTop:"20px",borderTop:"2px solid #f0f0f0"}}>
+                <div style={{fontSize:"13px",fontWeight:800,color:"#1a2a3a",marginBottom:"8px"}}>💬 Escribile al publicante (opcional)</div>
+                <textarea
+                  value={mensajeCV}
+                  onChange={e => setMensajeCV(e.target.value)}
+                  placeholder="Ej: Hola! Me interesa tu perfil para..."
+                  rows={3}
+                  style={{width:"100%",border:"2px solid #e8e8e6",borderRadius:"10px",padding:"10px 14px",fontSize:"13px",fontFamily:"'Nunito',sans-serif",outline:"none",resize:"vertical" as any,boxSizing:"border-box" as const}}
+                />
+              </div>
+            </div>
+            <div style={{padding:"16px 20px",borderTop:"2px solid #f0f0f0",display:"flex",gap:"10px"}}>
+              <button onClick={cerrarModalCV} disabled={enviandoCV} style={{flex:1,background:"#f4f4f2",border:"none",borderRadius:"12px",padding:"12px",fontSize:"13px",fontWeight:800,color:"#9a9a9a",cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>
+                Cerrar
+              </button>
+              <button onClick={enviarMensajeCV} disabled={enviandoCV || !mensajeCV.trim()} style={{flex:2,background:enviandoCV||!mensajeCV.trim()?"rgba(142,68,173,0.3)":"linear-gradient(135deg,#8e44adcc,#8e44ad)",border:"none",borderRadius:"12px",padding:"12px",fontSize:"14px",fontWeight:900,color:"#fff",cursor:enviandoCV||!mensajeCV.trim()?"not-allowed":"pointer",fontFamily:"'Nunito',sans-serif"}}>
+                {enviandoCV ? "⏳ Enviando..." : "💬 Enviar mensaje"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {popupBannerCompartir && nexo && (

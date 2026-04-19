@@ -17,6 +17,8 @@
 
 - **Bug crítico en SELECT de usuarios**: el webhook de MP y `simular-compra` pedían columnas inexistentes en la tabla `usuarios` (`bits_anuncio`, `bits_conexion`, `bits_grupo`, `bits_link`, `bits_adjunto`). Supabase devolvía error y el endpoint interpretaba "Usuario no encontrado", abortando con 404 antes de acreditar BIT o disparar cascada. El bug afectaba también al webhook real — cualquier pago aprobado de MP habría fallado silenciosamente. Fix: recortar el SELECT a las columnas reales (`bits`, `bits_busquedas`, `bits_totales_acumulados`). Commit: `bbc5646`.
 
+- **Cascada con socio 0% resuelta (Opción 1 - Transparente)**: si la comisión redondea a 0 pero la base sigue siendo positiva, el eslabón no cobra pero la cascada sigue con la base intacta al siguiente nivel. Evita que se corte prematuramente cuando un socio con % alto redondea sobre base chica. Verificado en vivo con Usuario6 → `bit_1500`: 320/64/12/2 se mantienen idénticos, Usuario1 y Gapachu quedan transparentes y la cadena termina naturalmente en `referido_por=NULL`. Commit: `fe241c9`.
+
 ### Database changes (aplicados en Supabase, NO en código)
 Las siguientes policies se crearon manualmente en SQL Editor:
 - `admin_nexos_delete`, `admin_nexos_update` en tabla `nexos`
@@ -41,7 +43,6 @@ ALTER TABLE public.contactos_nexonet ADD CONSTRAINT contactos_nexonet_usuario_id
 
 ### Pending / Known issues
 - Pago real con MP falló en checkout (tarjeta rechazada por MP, no por NexoNet).
-- **Cascada de comisiones con socio 0%**: si un eslabón intermedio en `socios_comerciales` tiene `porcentaje=0`, el cálculo `comision=0` dispara el `break` y corta la cascada para todo el upline. Decidir si corresponde saltear ese nivel pasando el monto original al siguiente eslabón, o tratar 0% como transparente. Requiere confirmar intención de negocio antes de tocar el código. **Confirmado en simulación con Usuario6 → `bit_1500`**: Usuario1 (40% socio) debió cobrar sobre base=2 BIT, pero `floor(2 × 0.40) = 0` disparó el `break`. Gapachu (30% socio) nunca se ejecutó en consecuencia. Bug reproducible con la herramienta de simulación.
 - **Error handling en `asignar-bit/route.ts`**: los `update` / `insert` dentro del `while` de cascada y el `insert` final de notificación no chequean `error`. Agregar `console.error` y continuar — no abortar la cascada por un fallo en el insert de notificación.
 
 ### Deuda técnica
@@ -58,4 +59,4 @@ ALTER TABLE public.contactos_nexonet ADD CONSTRAINT contactos_nexonet_usuario_id
   - Usuario1: 32 (40% socio)
   - Gapachu: 9 (30% socio)
 - Eliminación de nexo 'Jeep eterno' desde admin persiste en DB después de F5.
-- **Cascada de comisiones verificada end-to-end** con la herramienta de simulación. Test con Usuario6 → `bit_1500` (1.600 BIT): Usuario5=320, Usuario4=64, Usuario3=12, Usuario2=2 (✓ todos coinciden con cálculo teórico). Cascada se corta en Usuario1 por bug conocido (ver *Pending: Cascada con socio 0%*).
+- **Cascada de comisiones verificada end-to-end** con la herramienta de simulación. Test con Usuario6 → `bit_1500` (1.600 BIT): Usuario5=320, Usuario4=64, Usuario3=12, Usuario2=2 (✓ todos coinciden con cálculo teórico). Cascada llega a Usuario2 con base=2; Usuario1 (40% socio) y Gapachu (30% socio) quedan como eslabones transparentes (`floor` redondea a 0, no cobran) y la cadena termina naturalmente en `referido_por=NULL`. Comportamiento esperado post-fix `fe241c9`.

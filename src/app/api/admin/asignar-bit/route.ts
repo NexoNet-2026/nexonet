@@ -67,7 +67,13 @@ export async function POST(req: Request) {
         const porcentaje = socio ? (socio.porcentaje / 100) : 0.20;
         const comision = Math.floor(comisionBase * porcentaje);
 
-        if (comision <= 0) break;
+        // Si la comisión redondea a 0 pero la base sigue siendo positiva, no cortamos:
+        // pasamos al siguiente eslabón con la base intacta (eslabón "transparente").
+        if (comision <= 0) {
+          if (comisionBase <= 0) break;
+          currentId = current.referido_por;
+          continue;
+        }
 
         const { error: upCascadaErr } = await supabase.from("usuarios").update({
           bits_promo: (promotor.bits_promo || 0) + comision,
@@ -75,14 +81,40 @@ export async function POST(req: Request) {
         }).eq("id", current.referido_por);
         if (upCascadaErr) console.error("[asignar-bit] fail update cascada:", upCascadaErr);
 
+        if (socio) {
+          const { data: socioData } = await supabase
+            .from("socios_comerciales")
+            .select("bits_promotor_acumulado")
+            .eq("usuario_id", current.referido_por)
+            .eq("activo", true)
+            .single();
+          if (socioData) {
+            const { error: upSocioErr } = await supabase
+              .from("socios_comerciales")
+              .update({ bits_promotor_acumulado: (socioData.bits_promotor_acumulado || 0) + comision })
+              .eq("usuario_id", current.referido_por)
+              .eq("activo", true);
+            if (upSocioErr) console.error("[asignar-bit] fail update socio acumulado:", upSocioErr);
+          }
+        }
+
         const nivel = visitados.size;
+        const pctLabel = socio ? `${socio.porcentaje}% socio` : "20%";
         const { error: notifCascadaErr } = await supabase.from("notificaciones").insert({
           usuario_id: current.referido_por,
           tipo: "sistema",
-          mensaje: `⭐ Recibiste ${comision} BIT Promo de comisión por tu referido ${nombreRef}${nivel > 1 ? ` (nivel ${nivel})` : ""}`,
+          mensaje: `⭐ Recibiste ${comision.toLocaleString()} BIT Promo de comisión (${pctLabel}) por tu referido ${nombreRef}${nivel > 1 ? ` (nivel ${nivel})` : ""}`,
           leida: false,
         });
         if (notifCascadaErr) console.error("[asignar-bit] fail notif cascada:", notifCascadaErr);
+
+        const { error: logErr } = await supabase.from("log_bits_internos").insert({
+          usuario_id: current.referido_por,
+          cantidad: comision,
+          motivo: `Comisión nivel ${nivel} (${pctLabel}) — referido ${usuario_id} recibió ${cantidad} BIT (asignación admin)`,
+          asignado_por: usuario_id,
+        });
+        if (logErr) console.error("[asignar-bit] fail log_bits_internos:", logErr);
 
         comisionBase = comision;
         currentId = current.referido_por;

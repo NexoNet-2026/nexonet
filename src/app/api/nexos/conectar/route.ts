@@ -15,14 +15,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Faltan datos' }, { status: 400 });
     }
 
-    // helper: arma el objeto contacto según tipo (trabajo con CV → solo cv_url)
-    const armarContacto = (nx: any) => {
-      if (nx?.tipo === 'trabajo' && nx?.cv_url) {
-        return { cv_url: nx.cv_url, es_trabajo_cv: true };
-      }
-      return { whatsapp: nx?.whatsapp, link_externo: nx?.link_externo, telefono: nx?.telefono };
-    };
-
     // 1. Idempotencia
     const { data: yaConecto } = await supabase
       .from('conexiones_nexo')
@@ -32,14 +24,14 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (yaConecto) {
-      const { data: nx } = await supabase.from('nexos').select('whatsapp, link_externo, telefono, tipo, cv_url').eq('id', nexo_id).single();
-      return NextResponse.json({ ok: true, ya_conectado: true, contacto: armarContacto(nx) });
+      const { data: nx } = await supabase.from('nexos').select('whatsapp, link_externo, telefono').eq('id', nexo_id).single();
+      return NextResponse.json({ ok: true, ya_conectado: true, contacto: nx });
     }
 
     // 2. Traer nexo
     const { data: nexo, error: nexoError } = await supabase
       .from('nexos')
-      .select('id, conexiones, usuario_id, whatsapp, link_externo, telefono, tipo, cv_url')
+      .select('id, conexiones, usuario_id, whatsapp, link_externo, telefono')
       .eq('id', nexo_id)
       .single();
 
@@ -100,7 +92,11 @@ export async function POST(req: NextRequest) {
     // 8. Devolver contacto
     return NextResponse.json({
       ok: true,
-      contacto: armarContacto(nexo),
+      contacto: {
+        whatsapp: nexo.whatsapp,
+        link_externo: nexo.link_externo,
+        telefono: nexo.telefono,
+      }
     });
 
   } catch (err) {

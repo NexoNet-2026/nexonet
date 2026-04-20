@@ -113,7 +113,8 @@ function NexoPageInner() {
         : [];
       const allPages = [...chatTab, ...(sls || []), ...resenaTab];
       setpáginas(allPages);
-      if (allPages.length) setTabActiva(allPages[0].id);
+      // Trabajo y anuncio se muestran con formato simple sin sliders — no activar tab
+      if (n?.tipo !== "trabajo" && n?.tipo !== "anuncio" && allPages.length) setTabActiva(allPages[0].id);
 
       if (userId) {
         const { data: mm } = await supabase.from("nexo_miembros")
@@ -704,49 +705,53 @@ function NexoPageInner() {
         );
       })()}
 
-      {/* TAB BAR SLIDER */}
-      <div ref={tabBarRef} style={{ position:"sticky", top:"60px", zIndex:10, background:"#1a2a3a", boxShadow:"0 3px 14px rgba(0,0,0,0.28)", overflowX:"auto", scrollbarWidth:"none", display:"flex" }}>
-        {páginas.map(s => (
-          <button key={s.id} onClick={()=>setTabActiva(s.id)}
-            style={{ flex:"0 0 auto", minWidth:"72px", background:"none", border:"none", cursor:"pointer",
-                     padding:"10px 8px 6px", display:"flex", flexDirection:"column", alignItems:"center", gap:"3px",
-                     borderBottom: tabActiva===s.id ? `3px solid ${colorNexo}` : "3px solid transparent" }}>
-            <span style={{ fontSize:"17px" }}>{SLIDER_EMOJIS[s.tipo]||"📋"}</span>
-            <span style={{ fontSize:"9px", fontWeight:800, color: tabActiva===s.id ? colorNexo : "rgba(255,255,255,0.45)", textTransform:"uppercase", letterSpacing:"0.5px", whiteSpace:"nowrap" }}>
-              {s.titulo.length > 8 ? s.titulo.slice(0,7)+"…" : s.titulo}
-            </span>
-          </button>
-        ))}
-      </div>
+      {/* TAB BAR SLIDER — oculto para trabajo y anuncio (formato simple, sin sliders) */}
+      {nexo.tipo !== "trabajo" && nexo.tipo !== "anuncio" && (
+        <div ref={tabBarRef} style={{ position:"sticky", top:"60px", zIndex:10, background:"#1a2a3a", boxShadow:"0 3px 14px rgba(0,0,0,0.28)", overflowX:"auto", scrollbarWidth:"none", display:"flex" }}>
+          {páginas.map(s => (
+            <button key={s.id} onClick={()=>setTabActiva(s.id)}
+              style={{ flex:"0 0 auto", minWidth:"72px", background:"none", border:"none", cursor:"pointer",
+                       padding:"10px 8px 6px", display:"flex", flexDirection:"column", alignItems:"center", gap:"3px",
+                       borderBottom: tabActiva===s.id ? `3px solid ${colorNexo}` : "3px solid transparent" }}>
+              <span style={{ fontSize:"17px" }}>{SLIDER_EMOJIS[s.tipo]||"📋"}</span>
+              <span style={{ fontSize:"9px", fontWeight:800, color: tabActiva===s.id ? colorNexo : "rgba(255,255,255,0.45)", textTransform:"uppercase", letterSpacing:"0.5px", whiteSpace:"nowrap" }}>
+                {s.titulo.length > 8 ? s.titulo.slice(0,7)+"…" : s.titulo}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
 
-      {/* CONTENIDO DEL SLIDER */}
-      <div id={sliderActual ? `slider-${sliderActual.tipo}` : undefined} style={{ padding: esChat ? "0" : "14px", maxWidth:"600px", margin:"0 auto" }}>
-        {sliderActual && <SliderContenido
-          slider={sliderActual}
-          items={items[tabActiva]||[]}
-          mensajes={mensajes}
-          perfil={perfil}
-          nexo={nexo}
-          esAdmin={esAdmin}
-          esMiembro={esMiembro || nexo.usuario_id===perfil?.id}
-          descargasPagadas={descargasPagadas}
-          pagandoDescarga={pagandoDescarga}
-          miembros={miembros}
-          texto={texto}
-          setTexto={setTexto}
-          enviando={enviando}
-          onEnviar={enviarMensaje}
-          onVisor={setVisor}
-          onPagarDescarga={setPopupPagoDescarga}
-          onAbrirDescarga={abrirDescarga}
-          onFlash={(item: any) => { setFlashItem(item); setFlashOpen(true); }}
-          bottomRef={bottomRef}
-          colorNexo={colorNexo}
-          onUnirse={() => setPopupUnirse(true)}
-          onAgregarAnuncio={agregarAnuncioSlider}
-          misPublicaciones={misPublicaciones}
-        />}
-      </div>
+      {/* CONTENIDO DEL SLIDER — oculto para trabajo y anuncio */}
+      {nexo.tipo !== "trabajo" && nexo.tipo !== "anuncio" && (
+        <div id={sliderActual ? `slider-${sliderActual.tipo}` : undefined} style={{ padding: esChat ? "0" : "14px", maxWidth:"600px", margin:"0 auto" }}>
+          {sliderActual && <SliderContenido
+            slider={sliderActual}
+            items={items[tabActiva]||[]}
+            mensajes={mensajes}
+            perfil={perfil}
+            nexo={nexo}
+            esAdmin={esAdmin}
+            esMiembro={esMiembro || nexo.usuario_id===perfil?.id}
+            descargasPagadas={descargasPagadas}
+            pagandoDescarga={pagandoDescarga}
+            miembros={miembros}
+            texto={texto}
+            setTexto={setTexto}
+            enviando={enviando}
+            onEnviar={enviarMensaje}
+            onVisor={setVisor}
+            onPagarDescarga={setPopupPagoDescarga}
+            onAbrirDescarga={abrirDescarga}
+            onFlash={(item: any) => { setFlashItem(item); setFlashOpen(true); }}
+            bottomRef={bottomRef}
+            colorNexo={colorNexo}
+            onUnirse={() => setPopupUnirse(true)}
+            onAgregarAnuncio={agregarAnuncioSlider}
+            misPublicaciones={misPublicaciones}
+          />}
+        </div>
+      )}
 
       {/* VISOR */}
       {visor && (

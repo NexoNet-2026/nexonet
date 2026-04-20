@@ -11,6 +11,7 @@ export type Anuncio = {
   ciudad: string; provincia: string; imagenes: string[];
   flash: boolean; fuente: string; permuto: boolean;
   subrubro: string; rubro: string; usuario_id: string;
+  tipo?: string;
   owner_whatsapp?: string;
   owner_insignia_logro?: string;
   owner_nombre?: string;

@@ -88,8 +88,10 @@ export default function AnuncioDetalle() {
     setEditForm({ titulo: data.titulo || "", descripcion: data.descripcion || "", precio: data.precio?.toString() || "", moneda: data.moneda || "ARS" });
 
     if (data.subrubro_id) {
-      const { data: sub } = await supabase.from("subrubros").select("nombre, rubros(nombre)").eq("id", data.subrubro_id).single();
-      if (sub) setAnuncio((prev: any) => ({ ...prev, subrubro_nombre: sub.nombre, rubro_nombre: (sub.rubros as any)?.nombre || "" }));
+      const tablaSubrubros = data.tipo === "trabajo" ? "trabajo_subrubros" : "subrubros";
+      const tablaRubros    = data.tipo === "trabajo" ? "trabajo_rubros"    : "rubros";
+      const { data: sub } = await supabase.from(tablaSubrubros).select(`nombre, ${tablaRubros}(nombre)`).eq("id", data.subrubro_id).single();
+      if (sub) setAnuncio((prev: any) => ({ ...prev, subrubro_nombre: sub.nombre, rubro_nombre: (sub as any)[tablaRubros]?.nombre || "" }));
     }
 
     const { data: { session: sess } } = await supabase.auth.getSession();

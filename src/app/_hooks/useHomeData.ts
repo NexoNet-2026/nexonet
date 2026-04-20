@@ -22,7 +22,7 @@ export function useHomeData() {
         supabase.from("subrubros").select("id,nombre,rubro_id").order("nombre"),
         supabase.from("anuncios").select(`
           id,titulo,precio,moneda,ciudad,provincia,imagenes,avatar_url,banner_url,flash,
-          fuente,permuto,created_at,usuario_id,subrubro_id,
+          fuente,permuto,tipo,created_at,usuario_id,subrubro_id,
           subrubros(nombre,rubros(nombre))
         `).eq("estado", "activo").order("created_at", { ascending: false }).limit(80),
         supabase.from("nexos")
@@ -39,6 +39,7 @@ export function useHomeData() {
           ciudad: a.ciudad, provincia: a.provincia, imagenes: a.imagenes || [],
           flash: a.flash || false, fuente: a.fuente || "nexonet",
           permuto: a.permuto || false, usuario_id: a.usuario_id,
+          tipo: a.tipo,
           subrubro: a.subrubros?.nombre || "",
           rubro: Array.isArray(a.subrubros?.rubros)
             ? (a.subrubros.rubros[0]?.nombre || "")

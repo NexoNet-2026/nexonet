@@ -39,7 +39,7 @@ export default function Home() {
   const recientes = anuFiltrados.slice(0, 12);
   const empresas  = nexos.filter(n => n.tipo === "empresa").slice(0, 10);
   const servicios = nexos.filter(n => n.tipo === "servicio").slice(0, 10);
-  const trabajos  = nexos.filter(n => n.tipo === "trabajo").slice(0, 10);
+  const trabajos  = anuncios.filter(a => a.tipo === "trabajo").slice(0, 10);
 
   const SUBTIPOS_GRUPO: {key:string;emoji:string;label:string}[] = [
     {key:"emprendimiento",emoji:"🚀",label:"Emprendimientos"},
@@ -56,11 +56,10 @@ export default function Home() {
   const sections: { titulo: string; acento: string; tipo: string; emoji: string; textoVacio: string; crearUrl: string; nexoUrl: (id: string) => string }[] = [
     { titulo: "🏢 Negocios",     acento: "#c0392b", tipo: "empresas",  emoji: "🏢", textoVacio: "Sé el primero en crear un negocio",    crearUrl: "/nexo/crear/empresa",  nexoUrl: id => `/nexo/${id}` },
     { titulo: "🛠️ Servicios",   acento: "#27ae60", tipo: "servicios", emoji: "🛠️", textoVacio: "Sé el primero en ofrecer un servicio", crearUrl: "/nexo/crear/servicio", nexoUrl: id => `/nexo/${id}` },
-    { titulo: "💼 Busco Trabajo", acento: "#8e44ad", tipo: "trabajo",  emoji: "💼", textoVacio: "Sé el primero en buscar trabajo",       crearUrl: "/nexo/crear/trabajo",  nexoUrl: id => `/nexo/${id}` },
   ];
 
   const nexosByTipo: Record<string, typeof nexos> = {
-    empresas: empresas, servicios: servicios, trabajo: trabajos,
+    empresas: empresas, servicios: servicios,
   };
 
   return (
@@ -75,6 +74,12 @@ export default function Home() {
           <Slider titulo="🕐 Recién publicados" acento="#d4a017" verTodos="/buscar" onTituloClick={() => router.push("/buscar")}>
             {recientes.map((a, i) => <TarjetaAnuncio key={a.id} a={a} esPrimero={i === 0 && (a.visitas_semana || 0) > 0} onClick={perfilHome?.id && a.usuario_id === perfilHome.id ? () => router.push("/mis-anuncios") : undefined} />)}
           </Slider>
+
+          {trabajos.length > 0 && (
+            <Slider titulo="💼 Busco Trabajo" acento="#8e44ad" verTodos="/buscar?tipo=trabajo" onTituloClick={() => router.push("/buscar?tipo=trabajo")}>
+              {trabajos.map((a, i) => <TarjetaAnuncio key={a.id} a={a} esPrimero={i === 0 && (a.visitas_semana || 0) > 0} />)}
+            </Slider>
+          )}
 
           {/* ITEMS DE NEXOS */}
           {["novedades","productos","descargas","videos","galeria"].map(tipo => {

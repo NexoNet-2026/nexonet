@@ -322,18 +322,13 @@ function NexoCrearInner() {
         if ((form as any).personal_asegurado) payload.config = { ...payload.config, personal_asegurado: true };
       }
 
-      if (tipo==="anuncio") {
+      if (tipo==="anuncio"||tipo==="trabajo") {
         const imgs = [form.foto1_url, form.foto2_url, form.foto3_url].filter(Boolean);
         if (imgs.length > 0) { payload.imagenes = imgs; payload.avatar_url = imgs[0]; }
         delete payload.banner_url;
       }
-      if (tipo==="trabajo") {
-        // Trabajo es un NEXO con 1 sola imagen en avatar_url, sin array imagenes
-        if (form.foto1_url) payload.avatar_url = form.foto1_url;
-        delete payload.banner_url;
-      }
 
-      const tabla = tipo==="anuncio" ? "anuncios" : "nexos";
+      const tabla = (tipo==="anuncio"||tipo==="trabajo") ? "anuncios" : "nexos";
       const { data: nexo, error } = await supabase.from(tabla).insert(payload).select().single();
       if (error) { console.error(error); alert(`Error al crear: ${error.message}`); setGuardando(false); return; }
 
@@ -346,9 +341,9 @@ function NexoCrearInner() {
         await supabase.from("nexo_miembros").insert({ nexo_id:nexo.id, usuario_id:perfil.id, rol:"creador", estado:"activo" });
       }
 
-      if (tipo==="empresa")        router.push(`/nexo/${nexo.id}/admin`);
-      else if (tipo==="anuncio")   window.location.href = `/anuncios/${nexo.id}`;
-      else                         router.push(`/nexo/${nexo.id}`);
+      if (tipo==="empresa")                        router.push(`/nexo/${nexo.id}/admin`);
+      else if (tipo==="anuncio"||tipo==="trabajo") window.location.href = `/anuncios/${nexo.id}`;
+      else                                         router.push(`/nexo/${nexo.id}`);
 
     } catch(e:any) {
       alert("Error al crear: " + (e?.message||"Intentá de nuevo"));

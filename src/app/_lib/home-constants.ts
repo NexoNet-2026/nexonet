@@ -12,6 +12,7 @@ export type Anuncio = {
   flash: boolean; fuente: string; permuto: boolean;
   subrubro: string; rubro: string; usuario_id: string;
   tipo?: string;
+  subrubro_id?: number;
   owner_whatsapp?: string;
   owner_insignia_logro?: string;
   owner_nombre?: string;

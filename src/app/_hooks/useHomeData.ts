@@ -40,6 +40,7 @@ export function useHomeData() {
           flash: a.flash || false, fuente: a.fuente || "nexonet",
           permuto: a.permuto || false, usuario_id: a.usuario_id,
           tipo: a.tipo,
+          subrubro_id: a.subrubro_id,
           subrubro: a.subrubros?.nombre || "",
           rubro: Array.isArray(a.subrubros?.rubros)
             ? (a.subrubros.rubros[0]?.nombre || "")
@@ -74,6 +75,22 @@ export function useHomeData() {
             vData.forEach((v: any) => { conteo[v.anuncio_id] = (conteo[v.anuncio_id] || 0) + 1; });
             mapped = mapped.map(a => ({ ...a, visitas_semana: conteo[a.id] || 0 }));
           }
+        }
+        // Enriquecer trabajos con subrubro/rubro desde trabajo_subrubros
+        const trabajoIds = mapped.filter(a => a.tipo === "trabajo" && a.subrubro_id).map(a => a.subrubro_id as number);
+        if (trabajoIds.length > 0) {
+          const { data: trabSubs } = await supabase
+            .from("trabajo_subrubros")
+            .select("id, nombre, trabajo_rubros(nombre)")
+            .in("id", [...new Set(trabajoIds)]);
+          const subMap: Record<number, any> = Object.fromEntries((trabSubs || []).map((s: any) => [s.id, s]));
+          mapped = mapped.map(a => {
+            if (a.tipo !== "trabajo") return a;
+            const sub = subMap[a.subrubro_id as number];
+            return sub
+              ? { ...a, subrubro: sub.nombre, rubro: Array.isArray(sub.trabajo_rubros) ? (sub.trabajo_rubros[0]?.nombre || "") : (sub.trabajo_rubros?.nombre || "") }
+              : a;
+          });
         }
         // Ordenar: más visitas primero, sin visitas al final en orden original
         const ahora = Date.now();

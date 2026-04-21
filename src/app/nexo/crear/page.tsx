@@ -5,6 +5,7 @@ import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
 import { supabase } from "@/lib/supabase";
 import PopupCompra, { MetodoPago } from "@/components/PopupCompra";
+import { PRECIO_NEGOCIO_MENSUAL } from "@/lib/precios";
 
 const SLIDERS_PREDEFINIDOS: Record<string, { id:string; emoji:string; titulo:string; tipo:string; desc:string }[]> = {
   galeria:      [{ id:"galeria",      emoji:"📸", titulo:"Galería de fotos",    tipo:"galeria",      desc:"Fotos e imágenes" }],
@@ -243,7 +244,7 @@ function NexoCrearInner() {
         const en30dias = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
         payload.trial_hasta = esPrimeraEmpresa ? en30dias : null;
         payload.siguiente_pago = en30dias;
-        payload.plan_mensual_bits = 10000;
+        payload.plan_mensual_bits = PRECIO_NEGOCIO_MENSUAL;
       }
 
       if (tipo==="anuncio"||tipo==="trabajo") {
@@ -478,7 +479,7 @@ function NexoCrearInner() {
               <div style={{background:"linear-gradient(135deg,#1a3a2a,#204a30)",borderRadius:"16px",padding:"20px",border:"2px solid rgba(39,174,96,0.4)"}}>
                 <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"20px",color:"#27ae60",letterSpacing:"1px",marginBottom:"8px"}}>🏢 ¡Tu primera empresa es GRATIS!</div>
                 <div style={{fontSize:"13px",color:"#8abba0",fontWeight:600,lineHeight:1.6,marginBottom:"16px"}}>
-                  Tenés <strong style={{color:"#27ae60"}}>30 días gratis</strong> para probar tu perfil empresarial. Después del trial, el plan cuesta 10.000 BIT/mes.
+                  Tenés <strong style={{color:"#27ae60"}}>30 días gratis</strong> para probar tu perfil empresarial. Después del trial, el plan cuesta {PRECIO_NEGOCIO_MENSUAL.toLocaleString('es-AR')} BIT/mes.
                 </div>
                 <button onClick={() => setPagoBITEmpresa(true)} style={{width:"100%",background:"linear-gradient(135deg,#27ae60,#1e8449)",border:"none",borderRadius:"12px",padding:"14px",fontSize:"15px",fontWeight:900,color:"#fff",cursor:"pointer",fontFamily:"'Nunito',sans-serif",boxShadow:"0 4px 0 rgba(0,0,0,0.3)"}}>
                   🎉 Activar 30 días gratis
@@ -495,20 +496,20 @@ function NexoCrearInner() {
                 <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",background:"rgba(0,0,0,0.2)",borderRadius:"12px",padding:"12px 16px",marginBottom:"16px"}}>
                   <span style={{fontSize:"13px",fontWeight:700,color:"#e88a8a"}}>Costo del plan</span>
                   <div style={{textAlign:"right"}}>
-                    <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"28px",color:"#e74c3c"}}>10.000</div>
+                    <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"28px",color:"#e74c3c"}}>{PRECIO_NEGOCIO_MENSUAL.toLocaleString('es-AR')}</div>
                     <div style={{fontSize:"10px",color:"#e88a8a",fontWeight:700}}>BIT / mes</div>
                   </div>
                 </div>
                 <button onClick={async () => {
                   const bitsTotal = Math.max(0,perfil?.bits||0)+Math.max(0,perfil?.bits_free||0)+Math.max(0,perfil?.bits_promo||0);
-                  if (bitsTotal < 10000) { alert("Necesitás 10.000 BIT. Cargá BIT desde la tienda."); return; }
-                  const campo = (perfil?.bits_free||0)>=10000?"bits_free":(perfil?.bits_promo||0)>=10000?"bits_promo":"bits";
+                  if (bitsTotal < PRECIO_NEGOCIO_MENSUAL) { alert(`Necesitás ${PRECIO_NEGOCIO_MENSUAL.toLocaleString('es-AR')} BIT. Cargá BIT desde la tienda.`); return; }
+                  const campo = (perfil?.bits_free||0)>=PRECIO_NEGOCIO_MENSUAL?"bits_free":(perfil?.bits_promo||0)>=PRECIO_NEGOCIO_MENSUAL?"bits_promo":"bits";
                   const valor = campo==="bits_free"?perfil.bits_free:campo==="bits_promo"?perfil.bits_promo:perfil.bits;
-                  await supabase.from("usuarios").update({[campo]:valor-10000,plan:"nexoempresa"}).eq("id",perfil.id);
-                  setPerfil((p:any)=>({...p,[campo]:valor-10000,plan:"nexoempresa"}));
+                  await supabase.from("usuarios").update({[campo]:valor-PRECIO_NEGOCIO_MENSUAL,plan:"nexoempresa"}).eq("id",perfil.id);
+                  setPerfil((p:any)=>({...p,[campo]:valor-PRECIO_NEGOCIO_MENSUAL,plan:"nexoempresa"}));
                   setPagoBITEmpresa(true);
                 }} style={{width:"100%",background:"linear-gradient(135deg,#c0392b,#e74c3c)",border:"none",borderRadius:"12px",padding:"14px",fontSize:"15px",fontWeight:900,color:"#fff",cursor:"pointer",fontFamily:"'Nunito',sans-serif",boxShadow:"0 4px 0 rgba(0,0,0,0.3)"}}>
-                  💳 Pagar 10.000 BIT y activar Negocio
+                  💳 Pagar {PRECIO_NEGOCIO_MENSUAL.toLocaleString('es-AR')} BIT y activar Negocio
                 </button>
               </div>
             )}

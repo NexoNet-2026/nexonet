@@ -13,6 +13,7 @@ import InsigniaLogro from "@/app/_components/InsigniaLogro";
 import InsigniaReputacion from "@/app/_components/InsigniaReputacion";
 import BotonDarInsignia from "@/app/_components/BotonDarInsignia";
 import BannerCompartir from "@/components/BannerCompartir";
+import { PRECIO_NEGOCIO_MENSUAL } from "@/lib/precios";
 import BotonCompartir from "@/components/BotonCompartir";
 
 const TIPO_COLORES: Record<string,string> = {
@@ -684,7 +685,7 @@ function NexoPageInner() {
                 <div style={{fontSize:"12px",fontWeight:800,color:vencido?"#e74c3c":"#e67e22"}}>
                   {vencido ? "⚠️ Tu empresa está pausada — renovar para reactivar" : `⏰ ${esTrial?"Trial":"Plan"} vence en ${diasRest} día${diasRest!==1?"s":""}`}
                 </div>
-                <div style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600}}>Costo: 10.000 BIT/mes</div>
+                <div style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600}}>Costo: {PRECIO_NEGOCIO_MENSUAL.toLocaleString('es-AR')} BIT/mes</div>
               </div>
               <button onClick={async()=>{
                 setRenovando(true);

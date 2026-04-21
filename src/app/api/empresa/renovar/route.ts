@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { PRECIO_NEGOCIO_MENSUAL } from "@/lib/precios";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-const COSTO_MENSUAL = 10000;
+const COSTO_MENSUAL = PRECIO_NEGOCIO_MENSUAL;
 
 export async function POST(req: NextRequest) {
   try {
@@ -35,7 +36,7 @@ export async function POST(req: NextRequest) {
 
     const totalBits = (user.bits || 0) + (user.bits_free || 0) + (user.bits_promo || 0);
     if (totalBits < COSTO_MENSUAL) {
-      return NextResponse.json({ error: `Necesitás ${COSTO_MENSUAL} BIT. Tenés ${totalBits}.` }, { status: 400 });
+      return NextResponse.json({ error: `Necesitás ${COSTO_MENSUAL.toLocaleString('es-AR')} BIT. Tenés ${totalBits.toLocaleString('es-AR')}.` }, { status: 400 });
     }
 
     // Deduct BIT: free -> promo -> nexo

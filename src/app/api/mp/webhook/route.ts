@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { logFallo } from "@/lib/log-fallos";
+import { PRECIO_NEGOCIO_MENSUAL } from "@/lib/precios";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -88,7 +89,7 @@ export async function POST(req: NextRequest) {
             .select("*").eq("mp_preapproval_id", pago.metadata.preapproval_id).single();
           if (sub) {
             // Acreditar BIT según tipo
-            const bitsCantidad = sub.tipo === "empresa" ? 10000 : 500;
+            const bitsCantidad = sub.tipo === "empresa" ? PRECIO_NEGOCIO_MENSUAL : 500;
             const { data: usr } = await supabase.from("usuarios").select("bits").eq("id", sub.usuario_id).single();
             if (usr) {
               const { error: upSubBitsErr } = await supabase.from("usuarios").update({ bits: (usr.bits || 0) + bitsCantidad }).eq("id", sub.usuario_id);

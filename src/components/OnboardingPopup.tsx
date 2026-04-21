@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { PRECIO_NEGOCIO_MENSUAL } from "@/lib/precios";
 
 interface Props {
   perfil: any;
@@ -184,7 +185,7 @@ export default function OnboardingPopup({ perfil, onClose }: Props) {
                 <div style={{ fontSize: "12px", color: "#555", fontWeight: 600, lineHeight: 1.6 }}>
                   • 1 BIT por cada conexión enviada o recibida<br/>
                   • 500 BIT por subir un archivo o link<br/>
-                  • 10.000 BIT/mes por plan empresa o servicio
+                  • {PRECIO_NEGOCIO_MENSUAL.toLocaleString('es-AR')} BIT/mes por plan empresa o servicio
                 </div>
               </div>
             </div>

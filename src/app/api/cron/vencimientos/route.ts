@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { PRECIO_NEGOCIO_MENSUAL } from "@/lib/precios";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -35,7 +36,7 @@ export async function GET(req: NextRequest) {
       await supabase.from("notificaciones").insert({
         usuario_id: n.usuario_id,
         tipo: "sistema",
-        mensaje: `⚠️ Tu ${n.tipo} "${n.titulo}" fue pausado por falta de pago. Renovalo con 10.000 BIT para reactivarlo.`,
+        mensaje: `⚠️ Tu ${n.tipo} "${n.titulo}" fue pausado por falta de pago. Renovalo con ${PRECIO_NEGOCIO_MENSUAL.toLocaleString('es-AR')} BIT para reactivarlo.`,
         leida: false,
         nexo_id: n.id,
       });
@@ -72,7 +73,7 @@ export async function GET(req: NextRequest) {
         await supabase.from("notificaciones").insert({
           usuario_id: n.usuario_id,
           tipo: "sistema",
-          mensaje: `⏰ Tu ${n.tipo} "${n.titulo}" vence en ${dias} día${dias !== 1 ? "s" : ""}. Renovalo con 10.000 BIT para no perder visibilidad.`,
+          mensaje: `⏰ Tu ${n.tipo} "${n.titulo}" vence en ${dias} día${dias !== 1 ? "s" : ""}. Renovalo con ${PRECIO_NEGOCIO_MENSUAL.toLocaleString('es-AR')} BIT para no perder visibilidad.`,
           leida: false,
           nexo_id: n.id,
         });
@@ -97,7 +98,7 @@ export async function GET(req: NextRequest) {
       await supabase.from("notificaciones").insert({
         usuario_id: n.usuario_id,
         tipo: "sistema",
-        mensaje: `🎯 Tu período de prueba de "${n.titulo}" terminó. Activá tu plan por 10.000 BIT/mes para seguir activo en NexoNet.`,
+        mensaje: `🎯 Tu período de prueba de "${n.titulo}" terminó. Activá tu plan por ${PRECIO_NEGOCIO_MENSUAL.toLocaleString('es-AR')} BIT/mes para seguir activo en NexoNet.`,
         leida: false,
         nexo_id: n.id,
       });

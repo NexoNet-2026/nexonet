@@ -6,6 +6,7 @@ import BottomNav from "@/components/BottomNav";
 import { supabase } from "@/lib/supabase";
 import PopupCompra, { MetodoPago } from "@/components/PopupCompra";
 import AyudaPopup from "@/components/AyudaPopup";
+import { PRECIO_NEGOCIO_MENSUAL } from "@/lib/precios";
 
 const SLIDERS_PREDEFINIDOS: Record<string, { id:string; emoji:string; titulo:string; tipo:string; desc:string }[]> = {
   galeria:      [{ id:"galeria",      emoji:"📸", titulo:"Galería de fotos",    tipo:"galeria",      desc:"Fotos e imágenes" }],
@@ -317,7 +318,7 @@ function NexoCrearInner() {
         const en30dias = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
         payload.trial_hasta = esPrimeraEmpresa ? en30dias : null;
         payload.siguiente_pago = en30dias;
-        payload.plan_mensual_bits = 10000;
+        payload.plan_mensual_bits = PRECIO_NEGOCIO_MENSUAL;
         if ((form as any).tipo_factura) payload.config = { ...payload.config, tipo_factura: (form as any).tipo_factura };
         if ((form as any).personal_asegurado) payload.config = { ...payload.config, personal_asegurado: true };
       }
@@ -669,7 +670,7 @@ function NexoCrearInner() {
             {(tipo==="empresa" || tipo==="servicio") && esPrimeraEmpresa === false && (
               <div style={{background:"rgba(192,57,43,0.1)",border:"2px solid rgba(192,57,43,0.3)",borderRadius:"12px",padding:"12px 16px",display:"flex",alignItems:"center",gap:"10px"}}>
                 <span style={{fontSize:"20px"}}>🏢</span>
-                <div style={{fontSize:"13px",fontWeight:800,color:"#e74c3c"}}>Plan Negocio: 10.000 BIT/mes — se cobra al confirmar.</div>
+                <div style={{fontSize:"13px",fontWeight:800,color:"#e74c3c"}}>Plan Negocio: {PRECIO_NEGOCIO_MENSUAL.toLocaleString('es-AR')} BIT/mes — se cobra al confirmar.</div>
               </div>
             )}
 
@@ -946,7 +947,7 @@ function NexoCrearInner() {
         />
       )}
       {popupEmpresa && perfil && (
-        <PopupCompra titulo="Activar Negocio" emoji="🏢" costo="10.000 BIT"
+        <PopupCompra titulo="Activar Negocio" emoji="🏢" costo={`${PRECIO_NEGOCIO_MENSUAL.toLocaleString('es-AR')} BIT`}
           descripcion="Mensualidad de tu negocio en NexoNet"
           bits={{ free: perfil.bits_free||0, nexo: perfil.bits||0, promo: perfil.bits_promo||0 }}
           onClose={() => setPopupEmpresa(false)}
@@ -955,20 +956,20 @@ function NexoCrearInner() {
             let campoDescontar = "";
             let valorAnterior = 0;
             if (metodo === "bit_free") {
-              if ((perfil.bits_free||0) < 10000) { alert("No tenés suficientes BIT Free."); return; }
+              if ((perfil.bits_free||0) < PRECIO_NEGOCIO_MENSUAL) { alert("No tenés suficientes BIT Free."); return; }
               campoDescontar = "bits_free"; valorAnterior = perfil.bits_free||0;
-              await supabase.from("usuarios").update({ bits_free: valorAnterior - 10000, plan:"nexoempresa", [colGastoEmp]: (perfil[colGastoEmp]||0) + 10000 }).eq("id", perfil.id);
-              setPerfil((p:any)=>({...p, bits_free: (p.bits_free||0) - 10000, plan:"nexoempresa", [colGastoEmp]: (p[colGastoEmp]||0) + 10000}));
+              await supabase.from("usuarios").update({ bits_free: valorAnterior - PRECIO_NEGOCIO_MENSUAL, plan:"nexoempresa", [colGastoEmp]: (perfil[colGastoEmp]||0) + PRECIO_NEGOCIO_MENSUAL }).eq("id", perfil.id);
+              setPerfil((p:any)=>({...p, bits_free: (p.bits_free||0) - PRECIO_NEGOCIO_MENSUAL, plan:"nexoempresa", [colGastoEmp]: (p[colGastoEmp]||0) + PRECIO_NEGOCIO_MENSUAL}));
             } else if (metodo === "bit_nexo") {
-              if ((perfil.bits||0) < 10000) { alert("No tenés suficientes BIT Nexo."); return; }
+              if ((perfil.bits||0) < PRECIO_NEGOCIO_MENSUAL) { alert("No tenés suficientes BIT Nexo."); return; }
               campoDescontar = "bits"; valorAnterior = perfil.bits||0;
-              await supabase.from("usuarios").update({ bits: valorAnterior - 10000, plan:"nexoempresa", bits_free: (perfil.bits_free||0) + 10000, [colGastoEmp]: (perfil[colGastoEmp]||0) + 10000 }).eq("id", perfil.id);
-              setPerfil((p:any)=>({...p, bits: (p.bits||0) - 10000, plan:"nexoempresa", bits_free: (p.bits_free||0) + 10000, [colGastoEmp]: (p[colGastoEmp]||0) + 10000}));
+              await supabase.from("usuarios").update({ bits: valorAnterior - PRECIO_NEGOCIO_MENSUAL, plan:"nexoempresa", bits_free: (perfil.bits_free||0) + PRECIO_NEGOCIO_MENSUAL, [colGastoEmp]: (perfil[colGastoEmp]||0) + PRECIO_NEGOCIO_MENSUAL }).eq("id", perfil.id);
+              setPerfil((p:any)=>({...p, bits: (p.bits||0) - PRECIO_NEGOCIO_MENSUAL, plan:"nexoempresa", bits_free: (p.bits_free||0) + PRECIO_NEGOCIO_MENSUAL, [colGastoEmp]: (p[colGastoEmp]||0) + PRECIO_NEGOCIO_MENSUAL}));
             } else if ((metodo as string) === "bit_promo") {
-              if ((perfil.bits_promo||0) < 10000) { alert("No tenés suficientes BIT Promo."); return; }
+              if ((perfil.bits_promo||0) < PRECIO_NEGOCIO_MENSUAL) { alert("No tenés suficientes BIT Promo."); return; }
               campoDescontar = "bits_promo"; valorAnterior = perfil.bits_promo||0;
-              await supabase.from("usuarios").update({ bits_promo: valorAnterior - 10000, plan:"nexoempresa", bits_free: (perfil.bits_free||0) + 10000, [colGastoEmp]: (perfil[colGastoEmp]||0) + 10000 }).eq("id", perfil.id);
-              setPerfil((p:any)=>({...p, bits_promo: (p.bits_promo||0) - 10000, plan:"nexoempresa", bits_free: (p.bits_free||0) + 10000, [colGastoEmp]: (p[colGastoEmp]||0) + 10000}));
+              await supabase.from("usuarios").update({ bits_promo: valorAnterior - PRECIO_NEGOCIO_MENSUAL, plan:"nexoempresa", bits_free: (perfil.bits_free||0) + PRECIO_NEGOCIO_MENSUAL, [colGastoEmp]: (perfil[colGastoEmp]||0) + PRECIO_NEGOCIO_MENSUAL }).eq("id", perfil.id);
+              setPerfil((p:any)=>({...p, bits_promo: (p.bits_promo||0) - PRECIO_NEGOCIO_MENSUAL, plan:"nexoempresa", bits_free: (p.bits_free||0) + PRECIO_NEGOCIO_MENSUAL, [colGastoEmp]: (p[colGastoEmp]||0) + PRECIO_NEGOCIO_MENSUAL}));
             } else { alert("Próximamente"); return; }
             setPopupEmpresa(false);
             crear();

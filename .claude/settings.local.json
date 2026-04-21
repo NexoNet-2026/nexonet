@@ -50,7 +50,14 @@
       "Bash(npx supabase:*)",
       "Read(//dev/**)",
       "Bash(curl -s -X POST https://api.supabase.com/v1/projects/thehpvccubxzsnbtbzmz/database/query -H 'Authorization: Bearer sbp___CMDSUB_OUTPUT__' -H 'Content-Type: application/json' -d '{\"query\":\"SELECT 1\"}')",
-      "Bash(powershell:*)"
+      "Bash(powershell:*)",
+      "Bash(curl:*)",
+      "Bash(find C:\\\\Users\\\\Usuario\\\\Desktop\\\\nexonet *)",
+      "Bash(ls C:/Users/Usuario/Desktop/nexonet/src/app/nexo/[id]/admin/)",
+      "Bash(awk -F: '$2>=480 && $2<=580')",
+      "Bash(awk 'NR>=480 && NR<=580 && /anuncio|trabajo|tipo===|tipo==/' src/app/nexo/crear/[tipo]/page.tsx)",
+      "Bash(awk '/const crear = async/,/^  };$/' \"src/app/nexo/crear/[tipo]/page.tsx\")",
+      "Bash(npm run *)"
     ]
   }
 }

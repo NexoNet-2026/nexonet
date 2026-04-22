@@ -133,6 +133,23 @@ function NexoCrearInner() {
   };
   const setFV = (nombre:string, val:any) => setFiltroVals(prev=>({...prev,[nombre]:val}));
 
+  // Bloque 2: cargar catálogo slider_tipos filtrado por empresa_subrubros.sliders_sugeridos.
+  // Respeta el orden del array sugerido. Fallback: primeros 4 por orden del catálogo.
+  const cargarSlidersEmpresa = async (subId:string) => {
+    const [{ data: tipos }, { data: sub }] = await Promise.all([
+      supabase.from("slider_tipos").select("codigo,label,icono,orden").eq("activo", true).order("orden"),
+      subId
+        ? supabase.from("empresa_subrubros").select("sliders_sugeridos").eq("id", parseInt(subId)).single()
+        : Promise.resolve({ data: null as { sliders_sugeridos: string[] | null } | null }),
+    ]);
+    const mapa = new Map((tipos || []).map(t => [t.codigo, t]));
+    const sugeridos: string[] = (sub?.sliders_sugeridos as string[] | null) || [];
+    sugeridos.forEach(c => { if (!mapa.has(c)) console.warn(`[slider_tipos] código fantasma "${c}" en empresa_subrubros.id=${subId}`); });
+    let filtrados = sugeridos.map(c => mapa.get(c)).filter((x): x is NonNullable<typeof x> => !!x);
+    if (filtrados.length === 0) filtrados = (tipos || []).slice(0, 4);
+    setSliders(filtrados.map((t, i) => ({ id:t.codigo, emoji:t.icono, titulo:t.label, tipo:t.codigo, orden:i })));
+  };
+
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data:{ session } }) => {
       if (!session) { router.push("/login"); return; }
@@ -187,11 +204,15 @@ function NexoCrearInner() {
     // Pre-cargar filtros si viene subrubro_id por URL
     if (preSubrubroId) cargarSubFiltros(preSubrubroId);
 
-    const inicial = slidersDefault.map((s, i) => {
-      const cat = Object.values(SLIDERS_PREDEFINIDOS).flat().find(p => p.tipo === s);
-      return { id:s, emoji:cat?.emoji||"📋", titulo:cat?.titulo||s, tipo:s, orden:i };
-    });
-    setSliders(inicial);
+    if (tipo === "empresa") {
+      cargarSlidersEmpresa(preSubrubroId);
+    } else {
+      const inicial = slidersDefault.map((s, i) => {
+        const cat = Object.values(SLIDERS_PREDEFINIDOS).flat().find(p => p.tipo === s);
+        return { id:s, emoji:cat?.emoji||"📋", titulo:cat?.titulo||s, tipo:s, orden:i };
+      });
+      setSliders(inicial);
+    }
   }, []);
 
   const cambiarProv = async (nombre:string) => {
@@ -704,7 +725,7 @@ function NexoCrearInner() {
                       {form.rubro_id && entSubrubros.filter(s=>s.rubro_id===parseInt(form.rubro_id)).length > 0 && (
                         <>
                           <L>Subrubro</L>
-                          <select value={form.subrubro_id} onChange={e=>{F("subrubro_id",e.target.value);cargarSubFiltros(e.target.value);}} style={{...IS,marginBottom:"12px"}}>
+                          <select value={form.subrubro_id} onChange={e=>{F("subrubro_id",e.target.value);cargarSubFiltros(e.target.value);if(tipo==="empresa")cargarSlidersEmpresa(e.target.value);}} style={{...IS,marginBottom:"12px"}}>
                             <option value="">— Todos —</option>
                             {entSubrubros.filter(s=>s.rubro_id===parseInt(form.rubro_id)).map(s=><option key={s.id} value={s.id}>{s.nombre}</option>)}
                           </select>

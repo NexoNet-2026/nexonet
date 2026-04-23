@@ -8,6 +8,10 @@ import PopupCompra, { MetodoPago } from "@/components/PopupCompra";
 import AyudaPopup from "@/components/AyudaPopup";
 import { PRECIO_NEGOCIO_MENSUAL } from "@/lib/precios";
 
+// TODO: migrar grupo/servicio/trabajo a slider_tipos. Hoy solo empresa lee de la tabla;
+// el resto sigue usando este hardcodeo. Los tipos que hoy no están en slider_tipos
+// (proveedores, faq, facturas, clientes, lista_precios) deberán sembrarse como filas
+// activas en la tabla antes de migrar esos flujos.
 const SLIDERS_PREDEFINIDOS: Record<string, { id:string; emoji:string; titulo:string; tipo:string; desc:string }[]> = {
   galeria:      [{ id:"galeria",      emoji:"📸", titulo:"Galería de fotos",    tipo:"galeria",      desc:"Fotos e imágenes" }],
   videos:       [{ id:"videos",       emoji:"🎬", titulo:"Videos",              tipo:"videos",       desc:"Clips y presentaciones" }],
@@ -99,6 +103,7 @@ function NexoCrearInner() {
   const [entRubros,    setEntRubros]    = useState<{id:number;nombre:string}[]>([]);
   const [entSubrubros, setEntSubrubros] = useState<{id:number;nombre:string;rubro_id:number}[]>([]);
   const [sliders,   setSliders]   = useState<{id:string;emoji:string;titulo:string;tipo:string;orden:number}[]>([]);
+  const [catalogoEmpresa, setCatalogoEmpresa] = useState<{id:string;emoji:string;titulo:string;tipo:string;desc:string}[]>([]);
   const [subFiltros, setSubFiltros] = useState<any[]>([]);
   const [filtroVals, setFiltroVals] = useState<Record<string,any>>({});
 
@@ -135,9 +140,10 @@ function NexoCrearInner() {
 
   // Bloque 2: cargar catálogo slider_tipos filtrado por empresa_subrubros.sliders_sugeridos.
   // Respeta el orden del array sugerido. Fallback: primeros 4 por orden del catálogo.
+  // Además guarda el catálogo completo en catalogoEmpresa para que el PopupSlider lo use.
   const cargarSlidersEmpresa = async (subId:string) => {
     const [{ data: tipos }, { data: sub }] = await Promise.all([
-      supabase.from("slider_tipos").select("codigo,label,icono,orden").eq("activo", true).order("orden"),
+      supabase.from("slider_tipos").select("codigo,label,icono,orden,descripcion_publica").eq("activo", true).order("orden"),
       subId
         ? supabase.from("empresa_subrubros").select("sliders_sugeridos").eq("id", parseInt(subId)).single()
         : Promise.resolve({ data: null as { sliders_sugeridos: string[] | null } | null }),
@@ -148,6 +154,13 @@ function NexoCrearInner() {
     let filtrados = sugeridos.map(c => mapa.get(c)).filter((x): x is NonNullable<typeof x> => !!x);
     if (filtrados.length === 0) filtrados = (tipos || []).slice(0, 4);
     setSliders(filtrados.map((t, i) => ({ id:t.codigo, emoji:t.icono, titulo:t.label, tipo:t.codigo, orden:i })));
+    setCatalogoEmpresa((tipos || []).map(t => ({
+      id:     t.codigo,
+      emoji:  t.icono,
+      titulo: t.label,
+      tipo:   t.codigo,
+      desc:   t.descripcion_publica || "",
+    })));
   };
 
   useEffect(() => {
@@ -942,6 +955,7 @@ function NexoCrearInner() {
             setPopupSlider(false);
           }}
           yaExisten={sliders.map(s=>s.tipo)}
+          catalogo={tipo==="empresa" ? catalogoEmpresa : null}
         />
       )}
       {popupConfirmar && (
@@ -1002,9 +1016,11 @@ function NexoCrearInner() {
   );
 }
 
-function PopupSlider({onClose,onAgregar,onCustom,yaExisten}:{onClose:()=>void;onAgregar:(c:any)=>void;onCustom:(t:string)=>void;yaExisten:string[]}) {
+function PopupSlider({onClose,onAgregar,onCustom,yaExisten,catalogo}:{onClose:()=>void;onAgregar:(c:any)=>void;onCustom:(t:string)=>void;yaExisten:string[];catalogo?:{id:string;emoji:string;titulo:string;tipo:string;desc:string}[]|null}) {
   const [ct,setCt] = useState("");
-  const todas = Object.values(SLIDERS_PREDEFINIDOS).flat();
+  const todas = catalogo && catalogo.length > 0
+    ? catalogo
+    : Object.values(SLIDERS_PREDEFINIDOS).flat();
   return (
     <div style={{position:"fixed",inset:0,zIndex:500,background:"rgba(0,0,0,0.7)",display:"flex",alignItems:"flex-end"}} onClick={onClose}>
       <div style={{width:"100%",background:"#fff",borderRadius:"24px 24px 0 0",padding:"24px 20px 44px",maxHeight:"80vh",overflowY:"auto",fontFamily:"'Nunito',sans-serif"}} onClick={e=>e.stopPropagation()}>

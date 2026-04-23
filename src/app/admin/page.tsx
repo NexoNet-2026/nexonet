@@ -1436,6 +1436,7 @@ export default function AdminPanel() {
     {id:"fallos",   e:"📋",l:"Fallos",badge:fallosPendientesCriticos},
     {id:"dashboard",e:"🤖",l:"Bots",href:"/admin/bots"},
     {id:"dashboard",e:"📥",l:"Importar",href:"/admin/importar"},
+    {id:"dashboard",e:"🎨",l:"Sliders",href:"/admin/slider-tipos"},
   ];
 
   const ItemRow = ({label,onEdit,onDelete,onUp,onDown,badge,extra}:{label:string;onEdit:()=>void;onDelete:()=>void;onUp?:()=>void;onDown?:()=>void;badge?:React.ReactNode;extra?:React.ReactNode}) => (

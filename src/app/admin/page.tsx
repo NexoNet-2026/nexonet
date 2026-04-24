@@ -1290,18 +1290,18 @@ export default function AdminPanel() {
   };
   const cargarEntRubros = async (tipo: string) => {
     const t = ENT_TABLES[tipo]; if (!t) return;
-    const {data} = await supabase.from(t.rubros).select(`*,subrubros:${t.subrubros}(id,nombre,orden,sliders_sugeridos)`).order("orden",{ascending:true});
+    const {data} = await supabase.from(t.rubros).select(`*,subrubros:${t.subrubros}(id,nombre,orden,activo,sliders_sugeridos)`).order("orden",{ascending:true});
     setEntRubros(data||[]);
     setExpandEntRubro(null); setEntFiltroSubSel(null); setEntFiltros([]);
   };
   const guardarEntRubro = async (r:any, tipo:string) => {
     const t = ENT_TABLES[tipo]; if (!t||!r.nombre) return;
     if (r.id) {
-      await supabase.from(t.rubros).update({nombre:r.nombre,orden:parseInt(r.orden)||0}).eq("id",r.id);
+      await supabase.from(t.rubros).update({nombre:r.nombre,orden:parseInt(r.orden)||0,activo:r.activo!==false}).eq("id",r.id);
       setEntRubros(prev=>prev.map(x=>x.id===r.id?{...x,...r}:x));
       showToast("✅ Rubro actualizado");
     } else {
-      const {data} = await supabase.from(t.rubros).insert({nombre:r.nombre,orden:parseInt(r.orden)||entRubros.length}).select().single();
+      const {data} = await supabase.from(t.rubros).insert({nombre:r.nombre,orden:parseInt(r.orden)||entRubros.length,activo:true}).select().single();
       if (data) setEntRubros(prev=>[...prev,{...data,subrubros:[]}]);
       showToast("✅ Rubro creado");
     }
@@ -1330,19 +1330,33 @@ export default function AdminPanel() {
   const guardarEntSub = async (s:any, tipo:string) => {
     const t = ENT_TABLES[tipo]; if (!t||!s.nombre||!s.rubro_id) return;
     if (s.id) {
-      const upd: any = {nombre:s.nombre,orden:parseInt(s.orden)||0};
+      const upd: any = {nombre:s.nombre,orden:parseInt(s.orden)||0,activo:s.activo!==false};
       if (s.sliders_sugeridos !== undefined) upd.sliders_sugeridos = s.sliders_sugeridos ? JSON.parse(s.sliders_sugeridos) : null;
       await supabase.from(t.subrubros).update(upd).eq("id",s.id);
       setEntRubros(prev=>prev.map(r=>r.id===s.rubro_id?{...r,subrubros:(r.subrubros||[]).map((x:any)=>x.id===s.id?{...x,...s,sliders_sugeridos:upd.sliders_sugeridos??x.sliders_sugeridos}:x)}:r));
       showToast("✅ Subrubro actualizado");
     } else {
-      const ins: any = {nombre:s.nombre,rubro_id:s.rubro_id,orden:parseInt(s.orden)||0};
+      const ins: any = {nombre:s.nombre,rubro_id:s.rubro_id,orden:parseInt(s.orden)||0,activo:true};
       if (s.sliders_sugeridos) ins.sliders_sugeridos = JSON.parse(s.sliders_sugeridos);
       const {data} = await supabase.from(t.subrubros).insert(ins).select().single();
       if (data) setEntRubros(prev=>prev.map(r=>r.id===s.rubro_id?{...r,subrubros:[...(r.subrubros||[]),data]}:r));
       showToast("✅ Subrubro creado");
     }
     setModalEntSub(null);
+  };
+  const toggleEntRubroActivo = async (r:any, tipo:string) => {
+    const t = ENT_TABLES[tipo]; if (!t) return;
+    const nuevo = !r.activo;
+    await supabase.from(t.rubros).update({activo:nuevo}).eq("id",r.id);
+    setEntRubros(prev=>prev.map(x=>x.id===r.id?{...x,activo:nuevo}:x));
+    showToast(nuevo?"Rubro visible":"Rubro oculto");
+  };
+  const toggleEntSubActivo = async (s:any, rubro_id:number, tipo:string) => {
+    const t = ENT_TABLES[tipo]; if (!t) return;
+    const nuevo = !s.activo;
+    await supabase.from(t.subrubros).update({activo:nuevo}).eq("id",s.id);
+    setEntRubros(prev=>prev.map(r=>r.id===rubro_id?{...r,subrubros:(r.subrubros||[]).map((x:any)=>x.id===s.id?{...x,activo:nuevo}:x)}:r));
+    showToast(nuevo?"Subrubro visible":"Subrubro oculto");
   };
   const eliminarEntSub = async (id:number, rubro_id:number, tipo:string) => {
     const t = ENT_TABLES[tipo]; if (!t) return;
@@ -2238,13 +2252,16 @@ export default function AdminPanel() {
                     <button onClick={()=>setModalEntRubro({nombre:"",orden:entRubros.length,_tipo:configSub})} style={S.btn("#27ae60")}>+ Nuevo rubro</button>
                   </div>
                   {entRubros.map((r:any, idx:number)=>(
-                    <div key={r.id} style={{marginBottom:"8px",border:"1px solid #f0f0f0",borderRadius:"12px",overflow:"hidden"}}>
+                    <div key={r.id} style={{marginBottom:"8px",border:"1px solid #f0f0f0",borderRadius:"12px",overflow:"hidden",opacity:r.activo===false?0.6:1}}>
                       <div style={{display:"flex",alignItems:"center",gap:"6px",padding:"10px 12px",background:expandEntRubro===r.id?"#f9f9f7":"#fff",cursor:"pointer"}} onClick={()=>setExpandEntRubro(expandEntRubro===r.id?null:r.id)}>
                         <span style={{fontSize:"18px"}}>📁</span>
-                        <span style={{flex:1,fontSize:"14px",fontWeight:800,color:"#1a2a3a"}}>{r.nombre}</span>
+                        <span style={{flex:1,fontSize:"14px",fontWeight:800,color:"#1a2a3a",display:"flex",alignItems:"center",gap:"6px"}}>{r.nombre}{r.activo===false&&<span style={S.badge("#fff","#e74c3c")}>OCULTO</span>}</span>
                         <span style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600}}>{(r.subrubros||[]).length} sub</span>
                         <button onClick={e=>{e.stopPropagation();moverEntRubro(r,"up",configSub);}} disabled={idx===0} style={{...S.btn("#9a9a9a",true),padding:"3px 8px",opacity:idx===0?0.3:1}}>↑</button>
                         <button onClick={e=>{e.stopPropagation();moverEntRubro(r,"down",configSub);}} disabled={idx===entRubros.length-1} style={{...S.btn("#9a9a9a",true),padding:"3px 8px",opacity:idx===entRubros.length-1?0.3:1}}>↓</button>
+                        <div onClick={e=>{e.stopPropagation();toggleEntRubroActivo(r,configSub);}} style={{width:"36px",height:"20px",borderRadius:"10px",background:r.activo===false?"#e0e0e0":"#27ae60",cursor:"pointer",position:"relative",flexShrink:0}}>
+                          <div style={{position:"absolute",top:"2px",left:r.activo===false?"2px":"18px",width:"16px",height:"16px",borderRadius:"50%",background:"#fff",transition:"left .2s"}} />
+                        </div>
                         <button onClick={e=>{e.stopPropagation();setModalEntRubro({...r,_tipo:configSub});}} style={{...S.btn("#3a7bd5",true),padding:"3px 8px"}}>✏️</button>
                         <button onClick={e=>{e.stopPropagation();eliminarEntRubro(r.id,configSub);}} style={{...S.btn("#e74c3c",true),padding:"3px 8px"}}>🗑️</button>
                         <span style={{fontSize:"16px",color:"#9a9a9a"}}>{expandEntRubro===r.id?"▲":"▼"}</span>
@@ -2257,11 +2274,14 @@ export default function AdminPanel() {
                           </div>
                           {(()=>{const sorted=(r.subrubros||[]).sort((a:any,b:any)=>(a.orden||0)-(b.orden||0));return sorted.map((s:any,si:number)=>(
                             <div key={s.id}>
-                              <div style={{display:"flex",alignItems:"center",gap:"6px",padding:"6px 0",borderBottom:"1px solid #f4f4f2"}}>
-                                <div style={{flex:1,fontSize:"13px",fontWeight:700,color:"#1a2a3a"}}>{s.nombre}</div>
+                              <div style={{display:"flex",alignItems:"center",gap:"6px",padding:"6px 0",borderBottom:"1px solid #f4f4f2",opacity:s.activo===false?0.6:1}}>
+                                <div style={{flex:1,fontSize:"13px",fontWeight:700,color:"#1a2a3a",display:"flex",alignItems:"center",gap:"6px"}}>{s.nombre}{s.activo===false&&<span style={S.badge("#fff","#e74c3c")}>OCULTO</span>}</div>
                                 <button onClick={()=>moverEntSub(r.id,s,"up",configSub)} disabled={si===0} style={{...S.btn("#9a9a9a",true),padding:"3px 8px",opacity:si===0?0.3:1}}>↑</button>
                                 <button onClick={()=>moverEntSub(r.id,s,"down",configSub)} disabled={si===sorted.length-1} style={{...S.btn("#9a9a9a",true),padding:"3px 8px",opacity:si===sorted.length-1?0.3:1}}>↓</button>
                                 <button onClick={()=>{if(entFiltroSubSel===s.id){setEntFiltroSubSel(null);setEntFiltros([]);}else{cargarEntFiltros(s.id,configSub);}}} style={{...S.btn(entFiltroSubSel===s.id?"#d4a017":"#9a9a9a",true),padding:"3px 8px",fontSize:"10px"}}>🔧 Filtros</button>
+                                <div onClick={e=>{e.stopPropagation();toggleEntSubActivo(s,r.id,configSub);}} style={{width:"36px",height:"20px",borderRadius:"10px",background:s.activo===false?"#e0e0e0":"#27ae60",cursor:"pointer",position:"relative",flexShrink:0}}>
+                                  <div style={{position:"absolute",top:"2px",left:s.activo===false?"2px":"18px",width:"16px",height:"16px",borderRadius:"50%",background:"#fff",transition:"left .2s"}} />
+                                </div>
                                 <button onClick={()=>setModalEntSub({...s,rubro_id:r.id,sliders_sugeridos:s.sliders_sugeridos?JSON.stringify(s.sliders_sugeridos):"",_tipo:configSub})} style={{...S.btn("#3a7bd5",true),padding:"3px 8px"}}>✏️</button>
                                 <button onClick={()=>eliminarEntSub(s.id,r.id,configSub)} style={{...S.btn("#e74c3c",true),padding:"3px 8px"}}>🗑️</button>
                               </div>
@@ -3141,6 +3161,10 @@ export default function AdminPanel() {
           <input style={{...S.input,marginBottom:"10px"}} placeholder="Ej: Gastronomía" value={modalEntRubro.nombre||""} onChange={e=>setModalEntRubro({...modalEntRubro,nombre:e.target.value})} />
           <label style={S.label}>Orden (número)</label>
           <input style={{...S.input,marginBottom:"16px"}} type="number" placeholder="0" value={modalEntRubro.orden||""} onChange={e=>setModalEntRubro({...modalEntRubro,orden:e.target.value})} />
+          <label style={{display:"flex",alignItems:"center",gap:"8px",fontSize:"13px",fontWeight:700,cursor:"pointer",marginBottom:"16px"}}>
+            <input type="checkbox" checked={modalEntRubro.activo!==false} onChange={e=>setModalEntRubro({...modalEntRubro,activo:e.target.checked})} />
+            Visible (destildá para ocultar)
+          </label>
           <button onClick={()=>guardarEntRubro(modalEntRubro,modalEntRubro._tipo)} style={S.btn("#27ae60")} disabled={!modalEntRubro.nombre}>💾 Guardar</button>
         </Modal>
       )}
@@ -3154,6 +3178,10 @@ export default function AdminPanel() {
           <input style={{...S.input,marginBottom:"10px"}} type="number" placeholder="0" value={modalEntSub.orden||""} onChange={e=>setModalEntSub({...modalEntSub,orden:e.target.value})} />
           <label style={S.label}>Sliders sugeridos (JSON array, opcional)</label>
           <textarea style={{...S.input,minHeight:"50px",resize:"vertical",marginBottom:"16px"}} placeholder={'["galería","servicios","testimonios"]'} value={modalEntSub.sliders_sugeridos||""} onChange={e=>setModalEntSub({...modalEntSub,sliders_sugeridos:e.target.value})} />
+          <label style={{display:"flex",alignItems:"center",gap:"8px",fontSize:"13px",fontWeight:700,cursor:"pointer",marginBottom:"16px"}}>
+            <input type="checkbox" checked={modalEntSub.activo!==false} onChange={e=>setModalEntSub({...modalEntSub,activo:e.target.checked})} />
+            Visible (destildá para ocultar)
+          </label>
           <button onClick={()=>guardarEntSub(modalEntSub,modalEntSub._tipo)} style={S.btn("#27ae60")} disabled={!modalEntSub.nombre}>💾 Guardar</button>
         </Modal>
       )}

@@ -1347,14 +1347,18 @@ export default function AdminPanel() {
   const toggleEntRubroActivo = async (r:any, tipo:string) => {
     const t = ENT_TABLES[tipo]; if (!t) return;
     const nuevo = !r.activo;
-    await supabase.from(t.rubros).update({activo:nuevo}).eq("id",r.id);
+    const { data, error: errUpd } = await supabase.from(t.rubros).update({activo:nuevo}).eq("id",r.id).select();
+    if (errUpd) { showToast("Error: " + errUpd.message); return; }
+    if (!data || data.length === 0) { showToast("No se pudo cambiar: permisos"); return; }
     setEntRubros(prev=>prev.map(x=>x.id===r.id?{...x,activo:nuevo}:x));
     showToast(nuevo?"Rubro visible":"Rubro oculto");
   };
   const toggleEntSubActivo = async (s:any, rubro_id:number, tipo:string) => {
     const t = ENT_TABLES[tipo]; if (!t) return;
     const nuevo = !s.activo;
-    await supabase.from(t.subrubros).update({activo:nuevo}).eq("id",s.id);
+    const { data, error: errUpd } = await supabase.from(t.subrubros).update({activo:nuevo}).eq("id",s.id).select();
+    if (errUpd) { showToast("Error: " + errUpd.message); return; }
+    if (!data || data.length === 0) { showToast("No se pudo cambiar: permisos"); return; }
     setEntRubros(prev=>prev.map(r=>r.id===rubro_id?{...r,subrubros:(r.subrubros||[]).map((x:any)=>x.id===s.id?{...x,activo:nuevo}:x)}:r));
     showToast(nuevo?"Subrubro visible":"Subrubro oculto");
   };

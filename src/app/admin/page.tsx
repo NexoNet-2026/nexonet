@@ -449,7 +449,7 @@ export default function AdminPanel() {
       supabase.from("mensajes").select("*,emisor:emisor_id(nombre_usuario),receptor:receptor_id(nombre_usuario)").order("created_at",{ascending:false}).limit(200),
       Promise.resolve(supabase.from("liquidaciones_promotor").select("*,usuarios(nombre_usuario,codigo,email)").order("created_at",{ascending:false})).catch(()=>({data:null})),
       Promise.resolve(supabase.from("comisiones_promotor").select("*,promotor:promotor_id(nombre_usuario,codigo),origen:origen_id(nombre_usuario,codigo)").order("created_at",{ascending:false}).limit(100)).catch(()=>({data:null})),
-      supabase.from("rubros").select("*,subrubros(id,nombre,orden)").order("orden",{ascending:true}),
+      supabase.from("rubros").select("*,subrubros(id,nombre,orden,activo)").order("orden",{ascending:true}),
       supabase.from("pagos_mp").select("*,usuarios(nombre_usuario,codigo,email)").order("created_at",{ascending:false}).limit(200),
       supabase.from("grupo_categorias").select("*").order("orden",{ascending:true}),
       supabase.from("grupo_subcategorias").select("*").order("nombre"),
@@ -838,11 +838,11 @@ export default function AdminPanel() {
   const guardarRubro = async (r:any) => {
     if (!r.nombre) return;
     if (r.id) {
-      await supabase.from("rubros").update({nombre:r.nombre,emoji:r.emoji||"",orden:parseInt(r.orden)||0}).eq("id",r.id);
+      await supabase.from("rubros").update({nombre:r.nombre,emoji:r.emoji||"",orden:parseInt(r.orden)||0,activo:r.activo!==false}).eq("id",r.id);
       setRubros(prev=>prev.map(x=>x.id===r.id?{...x,...r}:x));
       showToast("✅ Rubro actualizado");
     } else {
-      const {data} = await supabase.from("rubros").insert({nombre:r.nombre,emoji:r.emoji||"",orden:parseInt(r.orden)||rubros.length}).select().single();
+      const {data} = await supabase.from("rubros").insert({nombre:r.nombre,emoji:r.emoji||"",orden:parseInt(r.orden)||rubros.length,activo:true}).select().single();
       if (data) setRubros(prev=>[...prev,{...data,subrubros:[]}]);
       showToast("✅ Rubro creado");
     }
@@ -866,16 +866,24 @@ export default function AdminPanel() {
     [nuevos[idx], nuevos[dir==="up"?idx-1:idx+1]] = [nuevos[dir==="up"?idx-1:idx+1], nuevos[idx]];
     setRubros(nuevos);
   };
+  const toggleRubroActivo = async (r:any) => {
+    const nuevo = !r.activo;
+    const { data, error: errUpd } = await supabase.from("rubros").update({activo:nuevo}).eq("id",r.id).select();
+    if (errUpd) { showToast("Error: " + errUpd.message); return; }
+    if (!data || data.length === 0) { showToast("No se pudo cambiar: permisos"); return; }
+    setRubros(prev=>prev.map(x=>x.id===r.id?{...x,activo:nuevo}:x));
+    showToast(nuevo?"Rubro visible":"Rubro oculto");
+  };
 
   // ── Config: Subrubros ──
   const guardarSubrubro = async (s:any) => {
     if (!s.nombre||!s.rubro_id) return;
     if (s.id) {
-      await supabase.from("subrubros").update({nombre:s.nombre,orden:parseInt(s.orden)||0}).eq("id",s.id);
+      await supabase.from("subrubros").update({nombre:s.nombre,orden:parseInt(s.orden)||0,activo:s.activo!==false}).eq("id",s.id);
       setRubros(prev=>prev.map(r=>r.id===s.rubro_id?{...r,subrubros:(r.subrubros||[]).map((x:any)=>x.id===s.id?{...x,...s}:x)}:r));
       showToast("✅ Subrubro actualizado");
     } else {
-      const {data} = await supabase.from("subrubros").insert({nombre:s.nombre,rubro_id:s.rubro_id,orden:parseInt(s.orden)||0}).select().single();
+      const {data} = await supabase.from("subrubros").insert({nombre:s.nombre,rubro_id:s.rubro_id,orden:parseInt(s.orden)||0,activo:true}).select().single();
       if (data) setRubros(prev=>prev.map(r=>r.id===s.rubro_id?{...r,subrubros:[...(r.subrubros||[]),data]}:r));
       showToast("✅ Subrubro creado");
     }
@@ -886,6 +894,14 @@ export default function AdminPanel() {
     await supabase.from("subrubros").delete().eq("id",id);
     setRubros(prev=>prev.map(r=>r.id===rubro_id?{...r,subrubros:(r.subrubros||[]).filter((x:any)=>x.id!==id)}:r));
     showToast("Subrubro eliminado");
+  };
+  const toggleSubrubroActivo = async (s:any, rubro_id:number) => {
+    const nuevo = !s.activo;
+    const { data, error: errUpd } = await supabase.from("subrubros").update({activo:nuevo}).eq("id",s.id).select();
+    if (errUpd) { showToast("Error: " + errUpd.message); return; }
+    if (!data || data.length === 0) { showToast("No se pudo cambiar: permisos"); return; }
+    setRubros(prev=>prev.map(r=>r.id===rubro_id?{...r,subrubros:(r.subrubros||[]).map((x:any)=>x.id===s.id?{...x,activo:nuevo}:x)}:r));
+    showToast(nuevo?"Subrubro visible":"Subrubro oculto");
   };
 
   // ── Config: Categorías de grupos ──
@@ -2170,13 +2186,16 @@ export default function AdminPanel() {
                   <button onClick={()=>setModalRubro({nombre:"",emoji:"",orden:rubros.length})} style={S.btn("#27ae60")}>+ Nuevo rubro</button>
                 </div>
                 {rubros.map((r:any, idx:number)=>(
-                  <div key={r.id} style={{marginBottom:"8px",border:"1px solid #f0f0f0",borderRadius:"12px",overflow:"hidden"}}>
+                  <div key={r.id} style={{marginBottom:"8px",border:"1px solid #f0f0f0",borderRadius:"12px",overflow:"hidden",opacity:r.activo===false?0.6:1}}>
                     <div style={{display:"flex",alignItems:"center",gap:"6px",padding:"10px 12px",background:expandRubro===r.id?"#f9f9f7":"#fff",cursor:"pointer"}} onClick={()=>setExpandRubro(expandRubro===r.id?null:r.id)}>
                       <span style={{fontSize:"18px"}}>{r.emoji||"📁"}</span>
-                      <span style={{flex:1,fontSize:"14px",fontWeight:800,color:"#1a2a3a"}}>{r.nombre}</span>
+                      <span style={{flex:1,fontSize:"14px",fontWeight:800,color:"#1a2a3a",display:"flex",alignItems:"center",gap:"6px"}}>{r.nombre}{r.activo===false&&<span style={S.badge("#fff","#e74c3c")}>OCULTO</span>}</span>
                       <span style={{fontSize:"11px",color:"#9a9a9a",fontWeight:600}}>{(r.subrubros||[]).length} sub</span>
                       <button onClick={e=>{e.stopPropagation();moverRubro(r,"up");}} disabled={idx===0} style={{...S.btn("#9a9a9a",true),padding:"3px 8px",opacity:idx===0?0.3:1}}>↑</button>
                       <button onClick={e=>{e.stopPropagation();moverRubro(r,"down");}} disabled={idx===rubros.length-1} style={{...S.btn("#9a9a9a",true),padding:"3px 8px",opacity:idx===rubros.length-1?0.3:1}}>↓</button>
+                      <div onClick={e=>{e.stopPropagation();toggleRubroActivo(r);}} style={{width:"36px",height:"20px",borderRadius:"10px",background:r.activo===false?"#e0e0e0":"#27ae60",cursor:"pointer",position:"relative",flexShrink:0}}>
+                        <div style={{position:"absolute",top:"2px",left:r.activo===false?"2px":"18px",width:"16px",height:"16px",borderRadius:"50%",background:"#fff",transition:"left .2s"}} />
+                      </div>
                       <button onClick={e=>{e.stopPropagation();setModalRubro({...r});}} style={{...S.btn("#3a7bd5",true),padding:"3px 8px"}}>✏️</button>
                       <button onClick={e=>{e.stopPropagation();eliminarRubro(r.id);}} style={{...S.btn("#e74c3c",true),padding:"3px 8px"}}>🗑️</button>
                       <span style={{fontSize:"16px",color:"#9a9a9a"}}>{expandRubro===r.id?"▲":"▼"}</span>
@@ -2189,9 +2208,12 @@ export default function AdminPanel() {
                         </div>
                         {(r.subrubros||[]).sort((a:any,b:any)=>(a.orden||0)-(b.orden||0)).map((s:any)=>(
                           <div key={s.id}>
-                            <div style={{display:"flex",alignItems:"center",gap:"6px",padding:"6px 0",borderBottom:"1px solid #f4f4f2"}}>
-                              <div style={{flex:1,fontSize:"13px",fontWeight:700,color:"#1a2a3a"}}>{s.nombre}</div>
+                            <div style={{display:"flex",alignItems:"center",gap:"6px",padding:"6px 0",borderBottom:"1px solid #f4f4f2",opacity:s.activo===false?0.6:1}}>
+                              <div style={{flex:1,fontSize:"13px",fontWeight:700,color:"#1a2a3a",display:"flex",alignItems:"center",gap:"6px"}}>{s.nombre}{s.activo===false&&<span style={S.badge("#fff","#e74c3c")}>OCULTO</span>}</div>
                               <button onClick={()=>{if(filtroSubSel===s.id){setFiltroSubSel(null);setFiltrosIA([]);}else{cargarFiltros(s.id);}}} style={{...S.btn(filtroSubSel===s.id?"#d4a017":"#9a9a9a",true),padding:"3px 8px",fontSize:"10px"}}>🔧 Filtros</button>
+                              <div onClick={e=>{e.stopPropagation();toggleSubrubroActivo(s,r.id);}} style={{width:"36px",height:"20px",borderRadius:"10px",background:s.activo===false?"#e0e0e0":"#27ae60",cursor:"pointer",position:"relative",flexShrink:0}}>
+                                <div style={{position:"absolute",top:"2px",left:s.activo===false?"2px":"18px",width:"16px",height:"16px",borderRadius:"50%",background:"#fff",transition:"left .2s"}} />
+                              </div>
                               <button onClick={()=>setModalSubrubro({...s,rubro_id:r.id})} style={{...S.btn("#3a7bd5",true),padding:"3px 8px"}}>✏️</button>
                               <button onClick={()=>eliminarSubrubro(s.id,r.id)} style={{...S.btn("#e74c3c",true),padding:"3px 8px"}}>🗑️</button>
                             </div>
@@ -2994,6 +3016,10 @@ export default function AdminPanel() {
           <input style={{...S.input,marginBottom:"10px"}} placeholder="Ej: 🚗" value={modalRubro.emoji||""} onChange={e=>setModalRubro({...modalRubro,emoji:e.target.value})} />
           <label style={S.label}>Orden (número)</label>
           <input style={{...S.input,marginBottom:"16px"}} type="number" placeholder="0" value={modalRubro.orden||""} onChange={e=>setModalRubro({...modalRubro,orden:e.target.value})} />
+          <label style={{display:"flex",alignItems:"center",gap:"8px",fontSize:"13px",fontWeight:700,cursor:"pointer",marginBottom:"16px"}}>
+            <input type="checkbox" checked={modalRubro.activo!==false} onChange={e=>setModalRubro({...modalRubro,activo:e.target.checked})} />
+            Visible (destildá para ocultar)
+          </label>
           <button onClick={()=>guardarRubro(modalRubro)} style={S.btn("#27ae60")} disabled={!modalRubro.nombre}>💾 Guardar</button>
         </Modal>
       )}
@@ -3005,6 +3031,10 @@ export default function AdminPanel() {
           <input style={{...S.input,marginBottom:"10px"}} placeholder="Ej: Autos" value={modalSubrubro.nombre||""} onChange={e=>setModalSubrubro({...modalSubrubro,nombre:e.target.value})} />
           <label style={S.label}>Orden (número)</label>
           <input style={{...S.input,marginBottom:"16px"}} type="number" placeholder="0" value={modalSubrubro.orden||""} onChange={e=>setModalSubrubro({...modalSubrubro,orden:e.target.value})} />
+          <label style={{display:"flex",alignItems:"center",gap:"8px",fontSize:"13px",fontWeight:700,cursor:"pointer",marginBottom:"16px"}}>
+            <input type="checkbox" checked={modalSubrubro.activo!==false} onChange={e=>setModalSubrubro({...modalSubrubro,activo:e.target.checked})} />
+            Visible (destildá para ocultar)
+          </label>
           <button onClick={()=>guardarSubrubro(modalSubrubro)} style={S.btn("#27ae60")} disabled={!modalSubrubro.nombre}>💾 Guardar</button>
         </Modal>
       )}

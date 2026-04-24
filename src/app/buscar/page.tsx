@@ -394,8 +394,8 @@ function BuscarInner() {
     if (!t) { setEntRubroSel(null); setEntSubSel(null); setEntLoading(false); setEntError(null); return; }
     setEntLoading(true); setEntError(null);
     Promise.all([
-      supabase.from(t.rubros).select("id,nombre").order("orden",{ascending:true}),
-      supabase.from(t.subrubros).select("id,nombre,rubro_id,orden").order("orden",{ascending:true}),
+      supabase.from(t.rubros).select("id,nombre").eq("activo",true).order("orden",{ascending:true}),
+      supabase.from(t.subrubros).select("id,nombre,rubro_id,orden").eq("activo",true).order("orden",{ascending:true}),
     ]).then(([{data:rData,error:rErr},{data:sData,error:sErr}])=>{
       if (rErr || sErr) {
         console.error("Error cargando rubros:", rErr, sErr);

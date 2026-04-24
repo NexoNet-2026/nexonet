@@ -200,8 +200,8 @@ function NexoCrearInner() {
     if (ent) {
       const subSelect = tipo==="grupo" ? "id,nombre,categoria_id" : "id,nombre,rubro_id";
       Promise.all([
-        supabase.from(ent.rubros).select("id,nombre").order("orden",{ascending:true}),
-        supabase.from(ent.subrubros).select(subSelect).order("orden",{ascending:true}),
+        supabase.from(ent.rubros).select("id,nombre").eq("activo",true).order("orden",{ascending:true}),
+        supabase.from(ent.subrubros).select(subSelect).eq("activo",true).order("orden",{ascending:true}),
       ]).then(([{data:er},{data:es}]) => {
         if (er) setEntRubros(er);
         if (es) setEntSubrubros(

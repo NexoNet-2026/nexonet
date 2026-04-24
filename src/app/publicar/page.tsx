@@ -66,9 +66,10 @@ function PublicarSelectorInner() {
     setSeleccionado(tipo.id);
     setPaso("rubro");
     setCargando(true);
-    const { data } = await (supabase as any).from(tipo.tablaRubros)
-      .select("id,nombre")
-      .order("orden", { ascending: true });
+    const usaActivo = tipo.tablaRubros !== "rubros";
+    let q = (supabase as any).from(tipo.tablaRubros).select("id,nombre");
+    if (usaActivo) q = q.eq("activo", true);
+    const { data } = await q.order("orden", { ascending: true });
     console.log("Rubros:", tipo.tablaRubros, data);
     setRubros(data || []);
     setCargando(false);
@@ -82,10 +83,10 @@ function PublicarSelectorInner() {
     setPaso("subrubro");
     setCargando(true);
     const fk = tipoSel?.fkSub || "rubro_id";
-    const { data } = await (supabase as any).from(tipoSel.tablaSubrubros)
-      .select("id,nombre")
-      .eq(fk, rubro.id)
-      .order("orden", { ascending: true });
+    const usaActivo = tipoSel.tablaSubrubros !== "subrubros";
+    let q = (supabase as any).from(tipoSel.tablaSubrubros).select("id,nombre").eq(fk, rubro.id);
+    if (usaActivo) q = q.eq("activo", true);
+    const { data } = await q.order("orden", { ascending: true });
     setSubrubros(data || []);
     setCargando(false);
     if (!data || data.length === 0) {

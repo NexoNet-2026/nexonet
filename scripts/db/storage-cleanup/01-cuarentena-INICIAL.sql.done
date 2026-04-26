@@ -1,0 +1,143 @@
+-- ===========================================================================
+-- 01-cuarentena-INICIAL.sql
+-- Estado: EJECUTADO - 2026-04-26 UTC (renombrado a .done)
+--
+-- Resumen:
+-- Cuarentena inicial de archivos huérfanos en storage. Se renombran archivos
+-- no referenciados por la BD con prefijo "_trash/20260425_" como medida
+-- reversible previa a la purga definitiva.
+--
+-- Total cuarentenado: 197 archivos / ~142 MB
+-- Snapshot guardado en: tabla _huerfanos_storage_snapshot
+--
+-- HISTORIAL DE EJECUCIÓN:
+-- 1) Primera pasada (~20:57 UTC del 25-Abr / madrugada 26-Abr UTC):
+--    Bloques 1, 2 y 3 ejecutados con éxito.
+--    197 huérfanos cuarentenados, snapshot creado.
+-- 2) Rollback accidental: el bloque de rollback se ejecutó sin querer,
+--    revirtió el UPDATE y dejó los registros en estado='restaurado'.
+-- 3) Re-aplicación: usando el snapshot existente, se reaplicó el rename
+--    sin re-ejecutar el INSERT (ver bloque "RE-APLICACIÓN" al final).
+--
+-- LECCIÓN: Después de cuarentenar, cerrar el SQL Editor o limpiar el editor
+-- para evitar re-ejecuciones accidentales del rollback.
+-- ===========================================================================
+
+
+-- ---------------------------------------------------------------------------
+-- BLOQUE 1: Tabla snapshot (auditoría y reversibilidad)
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS _huerfanos_storage_snapshot (
+  id BIGSERIAL PRIMARY KEY,
+  bucket_id TEXT NOT NULL,
+  name_original TEXT NOT NULL,
+  name_cuarentena TEXT NOT NULL,
+  bytes BIGINT,
+  fecha_snapshot TIMESTAMPTZ DEFAULT now(),
+  fecha_subida_original TIMESTAMPTZ,
+  estado TEXT DEFAULT 'cuarentena',
+  CONSTRAINT estado_valido CHECK (estado IN ('cuarentena', 'restaurado', 'purgado'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_huerfanos_estado
+  ON _huerfanos_storage_snapshot(estado);
+CREATE INDEX IF NOT EXISTS idx_huerfanos_bucket_name_orig
+  ON _huerfanos_storage_snapshot(bucket_id, name_original);
+
+
+-- ---------------------------------------------------------------------------
+-- BLOQUE 2: Detección + cuarentena (transacción atómica)
+-- ---------------------------------------------------------------------------
+BEGIN;
+
+WITH referencias_validas AS (
+  SELECT avatar_url AS ref FROM anuncios WHERE avatar_url IS NOT NULL AND avatar_url <> ''
+  UNION ALL SELECT banner_url FROM anuncios WHERE banner_url IS NOT NULL AND banner_url <> ''
+  UNION ALL SELECT content_url FROM copyright_claims WHERE content_url IS NOT NULL AND content_url <> ''
+  UNION ALL SELECT imagen FROM grupo_eventos WHERE imagen IS NOT NULL AND imagen <> ''
+  UNION ALL SELECT link_imagen FROM grupo_mensajes WHERE link_imagen IS NOT NULL AND link_imagen <> ''
+  UNION ALL SELECT link_url FROM grupo_mensajes WHERE link_url IS NOT NULL AND link_url <> ''
+  UNION ALL SELECT imagen_url FROM grupo_planos WHERE imagen_url IS NOT NULL AND imagen_url <> ''
+  UNION ALL SELECT archivo_url FROM grupo_servicios WHERE archivo_url IS NOT NULL AND archivo_url <> ''
+  UNION ALL SELECT imagen FROM grupos WHERE imagen IS NOT NULL AND imagen <> ''
+  UNION ALL SELECT imagen_fondo FROM grupos WHERE imagen_fondo IS NOT NULL AND imagen_fondo <> ''
+  UNION ALL SELECT factura_url FROM liquidaciones_promotor WHERE factura_url IS NOT NULL AND factura_url <> ''
+  UNION ALL SELECT url FROM nexo_descargas WHERE url IS NOT NULL AND url <> ''
+  UNION ALL SELECT item_url FROM nexo_flash_envios WHERE item_url IS NOT NULL AND item_url <> ''
+  UNION ALL SELECT adjunto_url FROM nexo_mensajes WHERE adjunto_url IS NOT NULL AND adjunto_url <> ''
+  UNION ALL SELECT link_url FROM nexo_mensajes WHERE link_url IS NOT NULL AND link_url <> ''
+  UNION ALL SELECT miniatura_url FROM nexo_slider_items WHERE miniatura_url IS NOT NULL AND miniatura_url <> ''
+  UNION ALL SELECT url FROM nexo_slider_items WHERE url IS NOT NULL AND url <> ''
+  UNION ALL SELECT avatar_url FROM nexos WHERE avatar_url IS NOT NULL AND avatar_url <> ''
+  UNION ALL SELECT banner_url FROM nexos WHERE banner_url IS NOT NULL AND banner_url <> ''
+  UNION ALL SELECT cv_url FROM nexos WHERE cv_url IS NOT NULL AND cv_url <> ''
+  UNION ALL SELECT url FROM notificaciones WHERE url IS NOT NULL AND url <> ''
+  UNION ALL SELECT avatar_url FROM usuarios WHERE avatar_url IS NOT NULL AND avatar_url <> ''
+  UNION ALL SELECT unnest(imagenes)::text FROM anuncios WHERE array_length(imagenes,1) > 0
+  UNION ALL SELECT unnest(imagenes)::text FROM grupo_publicaciones WHERE array_length(imagenes,1) > 0
+  UNION ALL SELECT unnest(especial_imagenes)::text FROM grupos WHERE array_length(especial_imagenes,1) > 0
+),
+huerfanos_detectados AS (
+  SELECT
+    o.bucket_id,
+    o.name AS name_original,
+    '_trash/20260425_' || o.name AS name_cuarentena,
+    (o.metadata->>'size')::bigint AS bytes,
+    o.created_at AS fecha_subida_original
+  FROM storage.objects o
+  WHERE NOT EXISTS (
+    SELECT 1 FROM referencias_validas r
+    WHERE r.ref LIKE '%' || o.bucket_id || '/' || o.name
+  )
+  AND o.name NOT LIKE '_trash/%'
+)
+INSERT INTO _huerfanos_storage_snapshot
+  (bucket_id, name_original, name_cuarentena, bytes, fecha_subida_original)
+SELECT bucket_id, name_original, name_cuarentena, bytes, fecha_subida_original
+FROM huerfanos_detectados;
+
+UPDATE storage.objects o
+SET name = s.name_cuarentena
+FROM _huerfanos_storage_snapshot s
+WHERE o.bucket_id = s.bucket_id
+  AND o.name = s.name_original
+  AND s.estado = 'cuarentena'
+  AND s.fecha_snapshot >= now() - interval '5 minutes';
+
+COMMIT;
+
+
+-- ---------------------------------------------------------------------------
+-- BLOQUE 3: Verificación post-cuarentena
+-- ---------------------------------------------------------------------------
+SELECT
+  bucket_id,
+  COUNT(*) FILTER (WHERE name NOT LIKE '_trash/%') AS vivos,
+  COUNT(*) FILTER (WHERE name LIKE '_trash/%') AS cuarentenados,
+  pg_size_pretty(SUM((metadata->>'size')::bigint) FILTER (WHERE name NOT LIKE '_trash/%')) AS peso_vivo,
+  pg_size_pretty(SUM((metadata->>'size')::bigint) FILTER (WHERE name LIKE '_trash/%')) AS peso_cuarentena
+FROM storage.objects
+GROUP BY bucket_id
+ORDER BY bucket_id;
+
+
+-- ===========================================================================
+-- RE-APLICACIÓN (post-rollback accidental)
+-- Se ejecutó después del rollback no intencional para volver al estado
+-- correcto de cuarentena, sin re-ejecutar el INSERT.
+-- ===========================================================================
+BEGIN;
+
+UPDATE storage.objects o
+SET name = s.name_cuarentena
+FROM _huerfanos_storage_snapshot s
+WHERE o.bucket_id = s.bucket_id
+  AND o.name = s.name_original
+  AND s.estado = 'restaurado';
+
+UPDATE _huerfanos_storage_snapshot
+SET estado = 'cuarentena',
+    fecha_snapshot = now()
+WHERE estado = 'restaurado';
+
+COMMIT;

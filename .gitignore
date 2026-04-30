@@ -42,3 +42,6 @@ next-env.d.ts
 
 # local notes
 CONTEXTO_PROXIMO_CHAT.md
+
+# Claude Code config personal (no commitear, contiene paths/permissions locales)
+.claude/

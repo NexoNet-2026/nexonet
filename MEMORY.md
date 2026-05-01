@@ -172,3 +172,29 @@ exonet.ar ni la URL directa de Vercel cuando viajan por ese rango. Otras conexio
 19. **Panel admin /admin/arrepentimientos** para gestionar solicitudes (ver listado, cambiar estados pendiente/en_proceso/aprobada/rechazada/completada). NO implementado todavia. Sin esto, el admin tiene que entrar a Supabase manualmente para procesar las solicitudes.
 20. **Email arrepentimiento@nexonet.ar no existe**. Hoy el endpoint manda los avisos al admin a `nexonet.ar@gmail.com`. Cuando se cree el email institucional, hay que actualizar el `to:` del segundo `resend.emails.send` en `route.ts` y cambiar `nexonet.ar@gmail.com` por `arrepentimiento@nexonet.ar`. (Recordar: el email al usuario menciona `arrepentimiento@nexonet.ar` como contacto en el HTML — eso ya esta puesto y solo es un mailto link, no requiere que el email exista todavia.)
 21. **Acepta_buena_fe NO se persiste**. Hoy se valida y rechaza si es false, pero no se guarda como columna. El abogado podria querer auditoria. Para agregarlo: `ALTER TABLE solicitudes_arrepentimiento ADD COLUMN acepta_buena_fe BOOLEAN NOT NULL DEFAULT true` en ambos proyectos + agregarlo al insert del route.ts.
+
+
+## Update - 01-May-2026 23:30 - Problema #18 RESUELTO
+
+El endpoint en PROD ahora funciona end-to-end, mails incluidos.
+
+### Causa raiz del Invalid API key
+A la mañana al rotar service_role, al copiar/pegar entre proyectos Supabase quedo cargada en Vercel la secret de STAGING en vez de la de PROD. Ambas tienen formato sb_secret_ + 22 chars (31 total), facil de confundir si tenes las dos pestañas abiertas. La key existe (era valida en STAGING) pero Supabase PROD la rechaza con "Invalid API key" (no con "Unregistered" como hubiera dicho si la key fuera invalida).
+
+### Diagnostico que llevo a la causa
+Comparar carácter por carácter caracteres 11-22 de la key cargada en Vercel vs la default_v3 real de Supabase PROD. Coincidian en formato pero no en contenido.
+
+### Solucion
+Copiar correctamente la default_v3 de Supabase PROD (proyecto thehpvccubxzsnbtbzmz, header "NexoNet APP") y pegarla en Vercel SUPABASE_SERVICE_ROLE_KEY (Production scope), Save, Redeploy.
+
+### RESEND_API_KEY no estaba cargada en Vercel
+Despues del fix de la service_role, el endpoint guardaba pero no mandaba mails (log: "RESEND_API_KEY no configurada"). El dominio nexonet.ar ya estaba Verified en Resend (region São Paulo), pero la key vieja "Supabase NexoNet" creada hace 27 dias nunca se uso (Last used: No activity) y no estaba guardada en ningun lado.
+
+### Solucion
+Borrar key vieja en Resend. Crear nueva key "nexonet-production" con Sending access scope, dominio nexonet.ar. Cargarla en Vercel como RESEND_API_KEY (Production scope). Redeploy sin cache.
+
+### Verificacion final
+Solicitud ARR-20260501-P2LN: codigo en pantalla, mail al usuario llego con header dorado y card de codigo, mail al admin llego a nexonet.ar@gmail.com con tabla completa de datos.
+
+### Aprendizaje
+Cuando se rotan keys entre proyectos del mismo servicio (PROD y STAGING en Supabase), comparar carácter por carácter al menos una porcion del medio antes de Save. Si las dos keys tienen mismo formato y prefijo, el ojo no las distingue facil.

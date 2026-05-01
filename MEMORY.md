@@ -138,3 +138,37 @@ exonet.ar ni la URL directa de Vercel cuando viajan por ese rango. Otras conexio
     - El ISP bloquea/no rutea bien hacia `216.198.79.0/24`.
     - Usuarios reales NO se ven afectados (lo testeamos desde celular, funciona).
     - Para resolver: llamar al ISP, o usar VPN (Cloudflare WARP descarga falla por intercepcion SSL del ISP - probar Proton VPN o Mullvad), o trabajar desde URL directa de Vercel cuando se necesite.
+
+
+# Cierre de sesion 01-May-2026 (parte 2 - tarde/noche)
+
+## Lo cerrado hoy
+- **Boton de Arrepentimiento (Res. 424/2020 + Disp. 954/2025)** implementado y commiteado en master:
+  - **Tabla `solicitudes_arrepentimiento`** creada en STAGING y PROD (drift accidental: se creo primero en PROD por error y despues replicamos en STAGING). 13 columnas + 5 indices + 3 policies de RLS + 1 trigger de updated_at.
+  - **Endpoint `src/app/api/legal/arrepentimiento/route.ts`** (239 lineas) con generador de codigo unico `ARR-YYYYMMDD-XXXX` (alfabeto sin caracteres ambiguos), validaciones, insert con service_role, y envio de 2 emails via Resend (al usuario con su codigo, al admin a `nexonet.ar@gmail.com` con todos los datos).
+  - **Pagina `src/app/legal/arrepentimiento/page.tsx`** (213 lineas) con formulario de 10 campos + checkbox de buena fe + estado de exito con codigo destacado. Estilo consistente con `/legal/copyright`.
+  - Verificado funcionando end-to-end en local (apuntando a STAGING): codigos `ARR-20260501-YMNE`, `ARR-20260501-72UE`, `ARR-20260501-WN24` persistidos correctamente en Supabase.
+  - Commit `c3b6961` push a `origin/master`.
+
+## Problema NO resuelto (pendiente para proxima sesion)
+- **El endpoint en PROD (nexonet.ar) tira `Invalid API key`** al intentar insertar.
+- Causa raiz: la variable `SUPABASE_SERVICE_ROLE_KEY` en Vercel Production NO contiene la `default_v3` actual de Supabase PROD, aunque a la mañana hicimos rotacion (Edit + redeploy + verificacion de login). Hipotesis: en algun paso el Save en Vercel quedo con valor incorrecto/cortado, o el redeploy con cache no tomo el cambio.
+- Login en `nexonet.ar` funciona porque usa la `anon publishable`, no la `service_role`. El test de login no validaba la rotacion de service_role.
+- Intentamos: actualizar la variable en Vercel + redeploy. NO funciono, el endpoint sigue tirando `Invalid API key` incluso despues del redeploy.
+- **Proxima sesion**: redeploy SIN cache (destildar "Use existing Build Cache" en el modal de Redeploy), o reentrar la key a mano caracter por caracter, o regenerar otra `default_v4` y cargarla limpia.
+
+## Aprendizajes
+- **Pegar codigo TSX/TS desde el chat a PowerShell rompe caracteres**. Sintaxis tipo `email.dominio` se transforma en `[email.dominio](mailto:email.dominio)` (Markdown). El metodo SEGURO para crear archivos largos es: codificar el contenido en base64 desde fuera, despues PowerShell `[System.IO.File]::WriteAllBytes` con `[Convert]::FromBase64String`. Ese metodo evita toda interpretacion intermedia. (Funciono perfecto para `page.tsx` y para el `route.ts` final.)
+- **Claude Code asume schemas si no los lee primero**. Inserto la columna `acepta_buena_fe` en el INSERT cuando esa columna no existia en la tabla. Lección: en el prompt a Claude Code hay que decirle EXPLICITAMENTE cuales son las columnas reales de la tabla (o pedirle que las lea con un SELECT antes de escribir).
+- **El display del chat de Claude Code formatea automaticamente** strings tipo `email@dominio.com` como links Markdown `[email@dominio.com](mailto:...)` al imprimirlos. El archivo en disco puede estar bien aunque el output del chat lo muestre como Markdown. Para verificar realmente: `Get-Content` directo desde PowerShell (no desde Claude Code), o abrir el archivo en VS Code.
+- **El test del login NO valida rotacion de service_role**. Login usa anon publishable. Para validar service_role hay que ejecutar un endpoint que la use (insert/update/delete server-side). Si solo verificamos el login despues de rotar, podemos creer que la rotacion fue exitosa cuando no lo fue.
+
+## Drift entre PROD y STAGING (resuelto)
+- A la mañana, al implementar la tabla `solicitudes_arrepentimiento`, el SQL de creacion se pego primero en PROD por error en lugar de STAGING.
+- Decidido: dejar la tabla en PROD y replicar en STAGING (en vez de borrar y empezar de nuevo). Las dos bases quedaron alineadas con el mismo schema.
+
+# Pendientes técnicos detectados (sesion 01-May-2026 parte 2)
+18. **Endpoint /api/legal/arrepentimiento NO funciona en PROD** (problema Vercel/service_role descrito arriba). Bloqueante para que el formulario en nexonet.ar funcione. Prioridad alta.
+19. **Panel admin /admin/arrepentimientos** para gestionar solicitudes (ver listado, cambiar estados pendiente/en_proceso/aprobada/rechazada/completada). NO implementado todavia. Sin esto, el admin tiene que entrar a Supabase manualmente para procesar las solicitudes.
+20. **Email arrepentimiento@nexonet.ar no existe**. Hoy el endpoint manda los avisos al admin a `nexonet.ar@gmail.com`. Cuando se cree el email institucional, hay que actualizar el `to:` del segundo `resend.emails.send` en `route.ts` y cambiar `nexonet.ar@gmail.com` por `arrepentimiento@nexonet.ar`. (Recordar: el email al usuario menciona `arrepentimiento@nexonet.ar` como contacto en el HTML — eso ya esta puesto y solo es un mailto link, no requiere que el email exista todavia.)
+21. **Acepta_buena_fe NO se persiste**. Hoy se valida y rechaza si es false, pero no se guarda como columna. El abogado podria querer auditoria. Para agregarlo: `ALTER TABLE solicitudes_arrepentimiento ADD COLUMN acepta_buena_fe BOOLEAN NOT NULL DEFAULT true` en ambos proyectos + agregarlo al insert del route.ts.

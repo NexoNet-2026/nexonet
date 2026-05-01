@@ -82,3 +82,59 @@
     - Es el respaldo del `.env.local` original que apuntaba a PROD.
     - Como la `service_role` que contiene ya está invalidada, el archivo es inofensivo pero engañoso: si en el futuro alguien lo lee creyendo que es válido, va a confundirse.
     - Decisión: actualizarlo con la key nueva (`default_v3`) para que sirva si volvemos a apuntar local a PROD, o borrarlo y dejarlo solo en Vercel.
+
+
+# Cierre de sesion 01-May-2026
+
+## Lo cerrado hoy
+- **Dossier para abogado argentino** redactado y entregado al usuario (archivo separado, no commiteado al repo). Cubre: que es NexoNet en lenguaje claro, arquitectura tecnica resumida, datos personales recolectados, marco legal aplicable (Ley 25.326, Ley 24.240, jurisprudencia CSJN Rodriguez/Gimbutas/Mazza, ARCA/AFIP), riesgos identificados, documentos a redactar por el abogado, preguntas concretas para la primera reunion.
+- **Checklist tecnico de pre-lanzamiento** redactado y entregado. Items A1-A10 (bloqueantes legales) y B1-B10 (deuda manejable post-lanzamiento).
+- **Smoke test** desde la PC del usuario: app sana, requests al Supabase de STAGING correctamente.
+- **Hallazgos sorpresa al recorrer la app en PROD via URL directa de Vercel**:
+  - Existen ya las paginas legales: `/legal/terminos`, `/legal/privacidad`, `/legal/cookies`, `/legal/copyright` (formulario DMCA-like funcional). Esto cubre A1, A2, A9 parcialmente.
+  - Bug menor: el boton "Volver" en paginas `/legal/*` no funciona (lleva a ningun lado). El boton "Inicio" si funciona.
+  - El sitio NO tenia footer global. Los links legales eran invisibles para el usuario que no llegaba al formulario de registro o no conocia la URL exacta.
+  - El formulario de registro tiene aceptacion tacita ("Al registrarte aceptas nuestros Terminos...") sin checkbox tildable.
+- **Footer global implementado** (commit `f9cee9e`):
+  - Componente `src/app/_components/Footer.tsx` con 4 columnas (NexoNet, Plataforma, Legal, Soporte).
+  - Estilos inline alineados con la convencion del layout.
+  - Padding-bottom 140px para no taparse con la barra inferior mobile (BUSCAR/MAPA/CREAR/GRUPOS/PERFIL).
+  - Datos del titular: Adrian Morra monotributista, CUIT pendiente (placeholder visible), Roldan, legal@nexonet.ar.
+  - Links a las 4 paginas legales existentes + placeholder visible para "Boton de Arrepentimiento" (todavia 404, prox sesion) + link a Defensa del Consumidor argentina.gob.ar.
+  - Integrado en `src/app/layout.tsx` para aparecer en todas las paginas.
+  - Verificado funcionando en local y en produccion (`nexonet.ar`).
+
+## Aprendizajes (para evitar fricción en futuras sesiones)
+- **NUNCA pegar codigo via PowerShell here-string @'...'@** en archivos .tsx. PowerShell o el chat intermedio reinterpretan caracteres como [mail](mailto:...) y rompen el JSX. Mejor: archivo presentado al usuario con boton de copia, usuario lo pega manualmente en VS Code.
+- **Test-NetConnection se cuelga en "Waiting for response"** cuando la IP no responde a TCP. Usar ping primero como diagnostico rapido (mas barato y mas rapido).
+- **El ISP del usuario tiene bloqueo selectivo** al rango 216.198.79.0/24 de Vercel desde su wifi. La PC del usuario no puede alcanzar 
+exonet.ar ni la URL directa de Vercel cuando viajan por ese rango. Otras conexiones (celular con datos moviles) si llegan. Confirmado: no es problema de la app, es ruteo del ISP. Diagnostico hecho con: ping a IPs especificas, comparacion con 1.1.1.1 (responde), 8.8.8.8 (responde), 216.198.79.1 (no responde, 100% packet loss). DNS cambiado a 8.8.8.8/1.1.1.1, router reiniciado. Nada lo arregla excepto VPN.
+- **Cuando una PC tiene problema de ISP, el navegador del celular con datos moviles** es el plan B confiable para verificar PROD.
+
+# Pendientes técnicos detectados (sesion 01-May-2026)
+11. **Botón de Arrepentimiento real** (la parte mas urgente legalmente)
+    - Hoy en footer hay link visible que apunta a `/legal/arrepentimiento` pero esa ruta da 404.
+    - Implementar:
+      - Pagina `/legal/arrepentimiento` con formulario completo (10 campos, declaracion de buena fe).
+      - Tabla `solicitudes_arrepentimiento` en Supabase con RLS.
+      - Generador de codigo unico `ARR-YYYYMMDD-XXXX`.
+      - Email al usuario con codigo + email a admin (`arrepentimiento@nexonet.ar`).
+      - Pagina admin `/admin/arrepentimientos` para gestionar estados.
+    - Resolucion 424/2020 + Disposicion 954/2025 lo exigen literalmente con ese nombre.
+12. **Checkbox de aceptacion T&C en formulario de registro**
+    - Hoy es aceptacion tacita ("Al registrarte aceptas...").
+    - Agregar checkbox NO pre-tildado, deshabilitar boton hasta tildar, guardar version+fecha de terminos aceptados en columna nueva de tabla usuarios.
+13. **Bug Volver en /legal/***
+    - Boton "← Volver" no funciona en paginas legales. Boton "Inicio" si funciona.
+    - Investigar y arreglar.
+14. **CUIT real en footer**
+    - Hoy esta como placeholder `[PENDIENTE — completar]`. Reemplazar con CUIT verdadero del usuario.
+15. **Verificacion de email obligatoria al registrarse**
+    - Supabase Auth tiene la opcion nativa: Settings -> Authentication -> Email Auth -> "Confirm email".
+    - Verificar si esta activada. Si no, activarla.
+16. **Banner de cookies inicial**
+    - La pagina `/legal/cookies` existe. Falta el banner discreto la primera vez que entra el usuario.
+17. **Problema de ISP del usuario con rango Vercel**
+    - El ISP bloquea/no rutea bien hacia `216.198.79.0/24`.
+    - Usuarios reales NO se ven afectados (lo testeamos desde celular, funciona).
+    - Para resolver: llamar al ISP, o usar VPN (Cloudflare WARP descarga falla por intercepcion SSL del ISP - probar Proton VPN o Mullvad), o trabajar desde URL directa de Vercel cuando se necesite.

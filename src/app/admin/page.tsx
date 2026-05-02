@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
@@ -1471,6 +1471,7 @@ export default function AdminPanel() {
     {id:"dashboard",e:"🤖",l:"Bots",href:"/admin/bots"},
     {id:"dashboard",e:"📥",l:"Importar",href:"/admin/importar"},
     {id:"dashboard",e:"🎨",l:"Sliders",href:"/admin/slider-tipos"},
+    {id:"dashboard",e:"🔄",l:"Arrepent.",href:"/admin/arrepentimientos"},
   ];
 
   const ItemRow = ({label,onEdit,onDelete,onUp,onDown,badge,extra}:{label:string;onEdit:()=>void;onDelete:()=>void;onUp?:()=>void;onDown?:()=>void;badge?:React.ReactNode;extra?:React.ReactNode}) => (

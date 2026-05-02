@@ -178,12 +178,12 @@ function RegistroInner() {
         {/* PASO 2 — BIENVENIDA */}
         {paso===2 && (
           <div style={{background:"#fff",borderRadius:"20px",padding:"32px 24px",boxShadow:"0 4px 20px rgba(0,0,0,0.08)",textAlign:"center"}}>
-            <div style={{fontSize:"60px",marginBottom:"16px"}}>🎉</div>
+            <div style={{fontSize:"60px",marginBottom:"16px"}}>📧</div>
             <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"26px",color:"#1a2a3a",letterSpacing:"2px",marginBottom:"12px"}}>
-              ¡Bienvenido!
+              Confirmá tu email
             </div>
             <div style={{fontSize:"14px",color:"#666",fontWeight:600,lineHeight:1.6,marginBottom:"8px"}}>
-              Tu cuenta fue creada con éxito
+              Te enviamos un mail. Confirmá antes de loguearte.
             </div>
             <div style={{fontSize:"15px",fontWeight:800,color:"#1a2a3a",marginBottom:"20px"}}>{form.email}</div>
             <div style={{background:"#f4f4f2",borderRadius:"12px",padding:"14px",marginBottom:"16px"}}>

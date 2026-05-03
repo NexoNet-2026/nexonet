@@ -1,9 +1,9 @@
 # Auditoría técnica y de producto — NexoNet Argentina
 
-> **Versión:** 0.4 (en construcción)
+> **Versión:** 0.5 (en construcción)
 > **Inicio:** 03-May-2026
 > **Última actualización:** 03-May-2026
-> **Estado:** Fase 1.1 y 1.2 cerradas. Tanda 1 de limpieza ejecutada. B-01 (Cache-Control) hecho. Pendientes: 1.3 (DB), 1.4 (env/servicios), Fase 2 (producto/UX), Fase 3 (lanzamiento).
+> **Estado:** Fase 1.1 y 1.2 cerradas. Tanda 1 de limpieza ejecutada. B-01 (Cache-Control) hecho. B-03 (README) hecho. Pendientes: 1.3 (DB), 1.4 (env/servicios), Fase 2 (producto/UX), Fase 3 (lanzamiento).
 
 ---
 
@@ -61,7 +61,7 @@ Para ir al lanzamiento hay **3 bloqueantes técnicos críticos** identificados h
 - **Evidencia:** `README.md` en la raíz, contenido pegado de la plantilla por defecto.
 - **Impacto:** baja calidad percibida si el repo es público o si se incorpora otro dev. Sin información sobre stack, vars de entorno necesarias, cómo correr STAGING vs PROD, decisiones arquitectónicas relevantes.
 - **Acción:** reescribir con lo mínimo: qué es NexoNet, comandos para correr local, variables que necesita, link a `auditoria-final.md` y `CHANGELOG.md`, decisiones de arquitectura clave.
-- **Estado:** pendiente.
+- **Estado:** hecho [commit pendiente — se commitea con esta actualización]. README reescrito con stack, instalación, estructura del repo, decisiones arquitectónicas no obvias (incluyendo la regla 'última gana' de headers() de Next que descubrimos en B-01), workflow y licencia.
 
 ### B-04 — Íconos de PWA no cumplen el contrato del manifest
 - **Evidencia:** `public/manifest.json` declara `icon-192.png` como 192×192 y `icon-512.png` como 512×512, ambos con `purpose: "maskable"`. Pero `public/icon-512.png` real mide 346×375 px (rectangular). Falta verificar `public/icon-192.png`.
@@ -216,3 +216,4 @@ Calendario tentativo, se ajusta a medida que avanzamos:
 - **03-May-2026:** Tanda 1 de limpieza ejecutada (commit 4590b0d). L-01, L-02, L-04, L-05, L-06 hechos. L-03 redefinido. Nuevo bloqueante B-04. Nuevo aclarar A-05.
 - **03-May-2026:** B-04 pospuesto por decisión del dueño (definición de marca pendiente). Iniciando B-01 (Cache-Control).
 - **03-May-2026:** B-01 (Cache-Control) resuelto y validado en build de producción local. 4/4 reglas funcionando. Hallazgos: precedencia de reglas en headers() de Next es 'última gana' (no 'primera gana'); la app tiene 77 rutas con SSG/SSR mezclado (revisar B-02 con esto en mente); Next 16 deprecó middleware.ts a favor de proxy.ts.
+- **03-May-2026:** B-03 (README) hecho. README profesional con secciones de stack, instalación, estructura, decisiones arquitectónicas, workflow y licencia.

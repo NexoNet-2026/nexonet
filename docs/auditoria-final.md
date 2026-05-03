@@ -1,9 +1,9 @@
 # Auditoría técnica y de producto — NexoNet Argentina
 
-> **Versión:** 0.2 (en construcción)
+> **Versión:** 0.3 (en construcción)
 > **Inicio:** 03-May-2026
 > **Última actualización:** 03-May-2026
-> **Estado:** Fase 1.1 y 1.2 cerradas. Pendientes: 1.3 (DB), 1.4 (env/servicios), Fase 2 (producto/UX), Fase 3 (lanzamiento).
+> **Estado:** Fase 1.1 y 1.2 cerradas. Tanda 1 de limpieza ejecutada. B-01 (Cache-Control) en curso. Pendientes: 1.3 (DB), 1.4 (env/servicios), Fase 2 (producto/UX), Fase 3 (lanzamiento).
 
 ---
 
@@ -68,7 +68,7 @@ Para ir al lanzamiento hay **3 bloqueantes técnicos críticos** identificados h
 - **Evidencia:** `public/manifest.json` declara `icon-192.png` como 192×192 y `icon-512.png` como 512×512, ambos con `purpose: "maskable"`. Pero `public/icon-512.png` real mide 346×375 px (rectangular). Falta verificar `public/icon-192.png`.
 - **Impacto:** al instalar la PWA en Android, iPhone o desktop, el ícono se ve recortado, deformado o pixelado. Mala primera impresión post-instalación. Lighthouse PWA audit lo va a marcar como fallo.
 - **Acción:** generar dos íconos correctos: 192×192 px y 512×512 px, ambos cuadrados, con safe zone central de ~80% para que el modo `maskable` funcione bien (los SO recortan los bordes). Reemplazar los archivos en `public/`. Tener idealmente un tercero para `apple-touch-icon` (180×180 px) y declararlo en el `<head>`.
-- **Estado:** pendiente.
+- **Estado:** pospuesto — el dueño del producto definirá identidad visual fuera del chat. Cuando haya logo/ícono definitivo, reemplazar archivos en `public/` y verificar que sean cuadrados con safe zone del 80%.
 
 ---
 
@@ -207,3 +207,4 @@ Calendario tentativo, se ajusta a medida que avanzamos:
 
 - **03-May-2026:** Documento creado. Fase 1.1 y 1.2 cerradas.
 - **03-May-2026:** Tanda 1 de limpieza ejecutada (commit 4590b0d). L-01, L-02, L-04, L-05, L-06 hechos. L-03 redefinido. Nuevo bloqueante B-04. Nuevo aclarar A-05.
+- **03-May-2026:** B-04 pospuesto por decisión del dueño (definición de marca pendiente). Iniciando B-01 (Cache-Control).

@@ -1,9 +1,9 @@
 # Auditoría técnica y de producto — NexoNet Argentina
 
-> **Versión:** 0.3 (en construcción)
+> **Versión:** 0.4 (en construcción)
 > **Inicio:** 03-May-2026
 > **Última actualización:** 03-May-2026
-> **Estado:** Fase 1.1 y 1.2 cerradas. Tanda 1 de limpieza ejecutada. B-01 (Cache-Control) en curso. Pendientes: 1.3 (DB), 1.4 (env/servicios), Fase 2 (producto/UX), Fase 3 (lanzamiento).
+> **Estado:** Fase 1.1 y 1.2 cerradas. Tanda 1 de limpieza ejecutada. B-01 (Cache-Control) hecho. Pendientes: 1.3 (DB), 1.4 (env/servicios), Fase 2 (producto/UX), Fase 3 (lanzamiento).
 
 ---
 
@@ -49,13 +49,12 @@ Para ir al lanzamiento hay **3 bloqueantes técnicos críticos** identificados h
 - **Evidencia:** `next.config.ts`, función `headers()` con `source: "/(.*)"`.
 - **Impacto:** rompe el cacheo del navegador y la CDN de Vercel para imágenes, CSS, JS, fuentes, páginas. Cada navegación re-descarga todo. Penaliza Lighthouse, Core Web Vitals y SEO. Aumenta costo de Vercel (bandwidth + function invocations). Mata datos móviles de los usuarios.
 - **Acción:** reemplazar por una estrategia diferenciada: `no-store` solo en `/api/*` y rutas de sesión privada; `Cache-Control: public, max-age=31536000, immutable` para `/_next/static/*`; `Cache-Control: public, max-age=0, must-revalidate` para HTML de páginas (deja que Next maneje la revalidación). Antes de cambiar, verificar si había un problema real de "contenido viejo en home" que motivó el header — si lo había, resolverlo con `revalidate` por página, no con `no-store` global.
-- **Estado:** pendiente.
+- **Estado:** hecho [commit pendiente — se commitea con esta actualización del documento]. Validado en build de producción local: home y manifest.json caen al catch-all con no-store; íconos PNG cachean 1 día; chunks de _next/static cachean 1 año immutable. Ver next.config.ts para detalles del orden de reglas.
 
-### B-02 — App 100% client-side, sin SSR/SSG en páginas públicas
-- **Evidencia:** los 47 archivos que importan `@/lib/supabase` lo hacen como Client Components. Home, categorías, fichas de anuncios — todo se renderiza en el browser después de bajar HTML vacío.
-- **Impacto:** Google ve HTML vacío en el primer crawl. Anuncios y categorías no se indexan como contenido del sitio. Para una plataforma de clasificados que vive del SEO orgánico (competencia: MercadoLibre, OLX, Evisos), esto es serio. Bonus negativo: peor LCP, peor experiencia en conexiones lentas.
-- **Acción:** convertir las páginas públicas críticas a Server Components con SSG/ISR. Mínimo necesario para lanzamiento: `/` (home), `/categoria/[rubro]`, `/anuncios/[id]`, `/grupos`, `/grupos/[id]`. Esto requiere introducir `@supabase/ssr` (que ya está instalado) para crear un cliente server-side, y agregar `middleware` que refresque la sesión en cada request.
-- **Costo estimado:** 1-2 sesiones de trabajo focal. Es el item más grande del documento.
+### B-02 — Páginas públicas insuficientemente optimizadas para SEO
+- **Evidencia (revisada):** los 47 archivos que importan `@/lib/supabase` lo hacen como Client Components. PERO el build de Next genera 77 rutas con mezcla de SSG estáticas y SSR dinámicas. Es decir: hay más HTML pre-generado del que pensábamos en Fase 1.2 — Next genera shell estático aunque el componente sea `"use client"`. A revisar en detalle qué páginas son SSG y qué contenido tienen al cargar.
+- **Impacto:** los anuncios y categorías probablemente no se indexan como contenido del sitio porque los datos llegan después de la hidratación. Falta verificar con un crawler externo o con "view source" de páginas reales.
+- **Acción:** investigar concretamente qué ve Googlebot. Posibles caminos: (a) convertir solo `/anuncios/[id]` y `/categoria/[rubro]` a Server Components con SSG/ISR (mucho menos costoso de lo que se estimó); (b) generar un sitemap.xml dinámico; (c) agregar metadata por página con `generateMetadata()`. Estimar costo después de la investigación.
 - **Estado:** pendiente.
 
 ### B-03 — README.md es boilerplate genérico de create-next-app
@@ -122,6 +121,14 @@ Para ir al lanzamiento hay **3 bloqueantes técnicos críticos** identificados h
 
 ### N-05 — Validación de formularios con `zod` y `react-hook-form`
 - Hoy probablemente se valida a mano. Para registro, publicar anuncio, crear grupo, etc., es deuda técnica.
+
+### N-06 — Migrar `src/middleware.ts` a `src/proxy.ts`
+- **Evidencia:** Next 16 deprecó middleware.ts. El warning aparece en cada `npm run dev` y `npm run build`.
+- **Acción:** renombrar el archivo y verificar que la API es la misma (debería serlo).
+- **Trivial.**
+
+### N-07 — Documentar en código la regla de precedencia de `headers()` en Next
+- **Evidencia:** descubrimos durante B-01 que `headers()` aplica todas las reglas que matchean y, para un mismo key, la ÚLTIMA gana. Esto es contraintuitivo. Ya está documentado con comentarios en `next.config.ts`, falta documentarlo en la sección de "decisiones arquitectónicas" del README cuando lo reescribamos (B-03).
 
 ---
 
@@ -208,3 +215,4 @@ Calendario tentativo, se ajusta a medida que avanzamos:
 - **03-May-2026:** Documento creado. Fase 1.1 y 1.2 cerradas.
 - **03-May-2026:** Tanda 1 de limpieza ejecutada (commit 4590b0d). L-01, L-02, L-04, L-05, L-06 hechos. L-03 redefinido. Nuevo bloqueante B-04. Nuevo aclarar A-05.
 - **03-May-2026:** B-04 pospuesto por decisión del dueño (definición de marca pendiente). Iniciando B-01 (Cache-Control).
+- **03-May-2026:** B-01 (Cache-Control) resuelto y validado en build de producción local. 4/4 reglas funcionando. Hallazgos: precedencia de reglas en headers() de Next es 'última gana' (no 'primera gana'); la app tiene 77 rutas con SSG/SSR mezclado (revisar B-02 con esto en mente); Next 16 deprecó middleware.ts a favor de proxy.ts.

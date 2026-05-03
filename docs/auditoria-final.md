@@ -1,6 +1,6 @@
 # Auditoría técnica y de producto — NexoNet Argentina
 
-> **Versión:** 0.1 (en construcción)
+> **Versión:** 0.2 (en construcción)
 > **Inicio:** 03-May-2026
 > **Última actualización:** 03-May-2026
 > **Estado:** Fase 1.1 y 1.2 cerradas. Pendientes: 1.3 (DB), 1.4 (env/servicios), Fase 2 (producto/UX), Fase 3 (lanzamiento).
@@ -64,6 +64,12 @@ Para ir al lanzamiento hay **3 bloqueantes técnicos críticos** identificados h
 - **Acción:** reescribir con lo mínimo: qué es NexoNet, comandos para correr local, variables que necesita, link a `auditoria-final.md` y `CHANGELOG.md`, decisiones de arquitectura clave.
 - **Estado:** pendiente.
 
+### B-04 — Íconos de PWA no cumplen el contrato del manifest
+- **Evidencia:** `public/manifest.json` declara `icon-192.png` como 192×192 y `icon-512.png` como 512×512, ambos con `purpose: "maskable"`. Pero `public/icon-512.png` real mide 346×375 px (rectangular). Falta verificar `public/icon-192.png`.
+- **Impacto:** al instalar la PWA en Android, iPhone o desktop, el ícono se ve recortado, deformado o pixelado. Mala primera impresión post-instalación. Lighthouse PWA audit lo va a marcar como fallo.
+- **Acción:** generar dos íconos correctos: 192×192 px y 512×512 px, ambos cuadrados, con safe zone central de ~80% para que el modo `maskable` funcione bien (los SO recortan los bordes). Reemplazar los archivos en `public/`. Tener idealmente un tercero para `apple-touch-icon` (180×180 px) y declararlo en el `<head>`.
+- **Estado:** pendiente.
+
 ---
 
 ## 4. Limpiezas seguras (ejecutables hoy)
@@ -72,31 +78,31 @@ Para ir al lanzamiento hay **3 bloqueantes técnicos críticos** identificados h
 - **Evidencia:** `@supabase/auth-helpers-nextjs` y `@supabase/ssr` están en `package.json` pero el grep en `src/` no devuelve un solo import de ellas.
 - **Acción:** `npm uninstall @supabase/auth-helpers-nextjs @supabase/ssr`.
 - **Nota:** `@supabase/ssr` se va a re-instalar cuando abordemos B-02. Es OK desinstalarla ahora.
-- **Estado:** pendiente.
+- **Estado:** hecho [commit 4590b0d].
 
 ### L-02 — Borrar `errores.txt` (0 bytes)
 - **Acción:** `rm errores.txt`.
-- **Estado:** pendiente.
+- **Estado:** hecho [commit 4590b0d].
 
-### L-03 — Borrar duplicado `icon-512.png` en raíz
-- **Evidencia:** existe `public/icon-512.png` y un duplicado suelto en raíz.
-- **Acción:** `rm icon-512.png` (el de la raíz, no el de public).
-- **Estado:** pendiente.
+### L-03 — Resolver `icon-512.png` en raíz del repo
+- **Hallazgo (revisado):** los dos archivos NO eran duplicados. El de `public/icon-512.png` pesa 166 KB y mide 346×375 px. El de la raíz pesa 1.32 MB y mide 832×1256 px (vertical, probablemente un artwork original sin optimizar).
+- **Acción:** decidir si el archivo de la raíz tiene valor histórico (mover a `docs/sesiones/diseño/` o similar) o se borra. No tiene referencias activas en el código.
+- **Estado:** pendiente — depende de decisión del dueño del producto.
 
 ### L-04 — Mover archivos de notas sueltos a `docs/sesiones/`
 - **Evidencia:** raíz contiene `BLOQUE1_PRECIOS.md`, `CONTEXT.md`, `DIAGNOSTICO.md`, `MEMORY.md`, `CONTEXTO_PROXIMO_CHAT.md` (este último ya gitignoreado).
 - **Acción:** crear `docs/sesiones/` y mover ahí los .md de notas. Mantenerlos por trazabilidad de decisiones pasadas, no borrarlos.
-- **Estado:** pendiente.
+- **Estado:** hecho [commit 4590b0d].
 
 ### L-05 — Mover scripts PowerShell a `scripts/`
 - **Evidencia:** raíz contiene `copiar-nexonet.ps1` y `exportar-nexonet.ps1`.
 - **Acción:** moverlos a `scripts/` (que ya existe).
-- **Estado:** pendiente.
+- **Estado:** hecho [commit 4590b0d].
 
 ### L-06 — Agregar `*.tsbuildinfo` a `.gitignore` y borrar el actual
 - **Evidencia:** `tsconfig.tsbuildinfo` en raíz, no debería estar en Git.
 - **Acción:** verificar si está trackeado, si lo está hacer `git rm --cached`, agregar `*.tsbuildinfo` al `.gitignore`, borrar el archivo del disco.
-- **Estado:** pendiente.
+- **Estado:** hecho [commit 4590b0d].
 
 ---
 
@@ -138,6 +144,12 @@ Para ir al lanzamiento hay **3 bloqueantes técnicos críticos** identificados h
 - **Hallazgo:** la variable está definida pero el grep de `@/lib/supabase` no la cubre. Algún endpoint en `/api/*` la lee directo. La `service_role` salta RLS.
 - **Pendiente:** rastrear todos los `process.env.SUPABASE_SERVICE_ROLE_KEY` en el código y verificar que solo se use en endpoints estrictamente necesarios y autenticados.
 - **Recordatorio cruzado:** sigue pendiente rotar la clave de STAGING (quedó expuesta en chat anterior).
+
+### A-05 — Regla `.gitignore` para `CONTEXTO_PROXIMO_CHAT.md` matchea cualquier ubicación
+- **Hallazgo:** la línea `CONTEXTO_PROXIMO_CHAT.md` en `.gitignore` (sin barra inicial) matchea el archivo en cualquier carpeta. Tras moverlo a `docs/sesiones/`, sigue invisible para Git allí también.
+- **Decisión a tomar:** ¿lo dejamos así (siempre ignorado) o cambiamos la regla a `/CONTEXTO_PROXIMO_CHAT.md` para que solo se ignore si está en raíz?
+- **Recomendación:** dejarlo como está. Es contexto efímero entre sesiones de Claude, no tiene valor versionable.
+- **Estado:** pendiente — decisión menor.
 
 ---
 
@@ -194,3 +206,4 @@ Calendario tentativo, se ajusta a medida que avanzamos:
 ## Bitácora de cambios
 
 - **03-May-2026:** Documento creado. Fase 1.1 y 1.2 cerradas.
+- **03-May-2026:** Tanda 1 de limpieza ejecutada (commit 4590b0d). L-01, L-02, L-04, L-05, L-06 hechos. L-03 redefinido. Nuevo bloqueante B-04. Nuevo aclarar A-05.

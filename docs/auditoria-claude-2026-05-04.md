@@ -106,7 +106,7 @@ Top 10, ordenado por urgencia operativa:
   4. devuelva 401/403 si falla.
   Aplicarlo en todos los handlers afectados antes del `createClient` con service-role. Patrón ya está en `simular-compra:54` y `reintentar-fallo:96`.
 - **Severidad:** CRÍTICO.
-- **Estado:** pendiente.
+- **Estado:** ✅ resuelto (2026-05-04). Helper `requireAdmin` creado en [src/lib/auth-server.ts](../src/lib/auth-server.ts) y aplicado a los 14 endpoints; `simular-compra` y `reintentar-fallo` también unificados al helper. 15 fetches cliente actualizados para mandar `Authorization: Bearer`. 401 si falta/inválido el token, 403 si no es admin.
 
 ### B-06 — Webhook MP: firma evadible `[CRÍTICO]`
 - **Evidencia:** [src/app/api/mp/webhook/route.ts:26-51](../src/app/api/mp/webhook/route.ts). El `if (secret)` envuelve la validación; dentro, `if (xSignature && xRequestId && dataId)` sólo verifica si los 3 headers existen. Si un atacante omite cualquier header, salta el check y el body pasa al procesamiento.

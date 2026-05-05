@@ -2,16 +2,8 @@
 // Replica la lógica del webhook de MercadoPago (src/app/api/mp/webhook/route.ts)
 // sin consultar la API de MP. Herramienta admin para diagnosticar cascada de comisiones.
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 import { logFallo } from "@/lib/log-fallos";
-
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
-  auth: { autoRefreshToken: false, persistSession: false },
-});
+import { requireAdmin } from "@/lib/auth-server";
 
 const PAQUETES: Record<string, { col: string; cantidad: number; ilimitado?: boolean }> = {
   "bit_500":   { col: "bits", cantidad: 500   },
@@ -33,27 +25,10 @@ const NIVELES_LOGRO: [string, number][] = [
 
 export async function POST(req: Request) {
   try {
-    // 1. Auth admin (Bearer token en header → usuarios.es_admin_sistema=true)
-    const authHeader = req.headers.get("authorization") || "";
-    const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
-    if (!token) {
-      return NextResponse.json({ error: "Falta token de autorización" }, { status: 403 });
-    }
-
-    const supabaseAuth = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    const { data: { user }, error: authErr } = await supabaseAuth.auth.getUser(token);
-    if (authErr || !user) {
-      return NextResponse.json({ error: "Sesión inválida" }, { status: 403 });
-    }
-
-    const { data: caller } = await supabase
-      .from("usuarios")
-      .select("es_admin_sistema")
-      .eq("id", user.id)
-      .single();
-    if (!caller?.es_admin_sistema) {
-      return NextResponse.json({ error: "Requiere permiso de admin" }, { status: 403 });
-    }
+    // 1. Auth admin
+    const auth = await requireAdmin(req);
+    if (!auth.ok) return auth.response;
+    const { supabase } = auth;
 
     // 2. Validar body
     const { usuario_id, paquete } = await req.json();

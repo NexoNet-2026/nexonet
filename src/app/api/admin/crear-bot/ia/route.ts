@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/auth-server";
 
 export async function POST(req: Request) {
   try {
+    const auth = await requireAdmin(req);
+    if (!auth.ok) return auth.response;
+
     const { nombre, tipo } = await req.json();
     if (!nombre || !tipo) return NextResponse.json({ error: "nombre y tipo requeridos" }, { status: 400 });
 

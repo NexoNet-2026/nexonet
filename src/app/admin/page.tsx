@@ -66,7 +66,11 @@ function PagosTab({ pagos, usuarios }: { pagos: any[]; usuarios: any[] }) {
 
   const cargarLiquidaciones = async () => {
     try {
-      const res = await fetch("/api/admin/liquidaciones");
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      const res = await fetch("/api/admin/liquidaciones", {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
       const json = await res.json();
       setLiquidaciones(json.data || []);
     } catch (err) {
@@ -625,25 +629,35 @@ export default function AdminPanel() {
 
   useEffect(() => {
     if (!authed) return;
-    fetch("/api/admin/config-contadores")
-      .then(r => r.json())
-      .then(d => {
+    (async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+        const r = await fetch("/api/admin/config-contadores", {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+        const d = await r.json();
         if (d && !d.error) setContConfig({
           usuarios_mult: Number(d.usuarios_mult ?? 1),
           usuarios_suma: Number(d.usuarios_suma ?? 0),
           activos_mult:  Number(d.activos_mult  ?? 1),
           activos_suma:  Number(d.activos_suma  ?? 0),
         });
-      })
-      .catch(()=>{});
+      } catch {}
+    })();
   }, [authed]);
 
   const guardarContConfig = async () => {
     setContGuardando(true);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { showToast("Sesión expirada — recargá la página"); setContGuardando(false); return; }
       const res = await fetch("/api/admin/config-contadores", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
         body: JSON.stringify(contConfig),
       });
       const d = await res.json();
@@ -670,9 +684,14 @@ export default function AdminPanel() {
   };
   const eliminarUsuario = async (u:any) => {
     if (!confirm(`¿Eliminar a ${u.nombre_usuario}? Esta acción no se puede deshacer.`)) return;
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) { alert("Sesión expirada — recargá la página"); return; }
     const res = await fetch("/api/admin/eliminar-usuario", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      },
       body: JSON.stringify({ usuario_id: u.id }),
     });
     const data = await res.json();
@@ -719,9 +738,14 @@ export default function AdminPanel() {
     const cant = parseInt(bitCant);
     if (isNaN(cant) || cant === 0) return;
     const col = bitTipo === "bits" ? "bits" : bitTipo === "bits_free" ? "bits_free" : "bits_promo";
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) { alert("Sesión expirada — recargá la página"); return; }
     const res = await fetch("/api/admin/asignar-bit", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      },
       body: JSON.stringify({ usuario_id: modalBit.id, columna: col, cantidad: cant, nota: bitNota }),
     });
     const data = await res.json();
@@ -768,9 +792,14 @@ export default function AdminPanel() {
   };
   const eliminarAnuncio = async (a: any) => {
     if (!confirm(`¿Eliminar "${a.titulo}"?`)) return;
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) { alert("Sesión expirada — recargá la página"); return; }
     const res = await fetch("/api/admin/eliminar-anuncio", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      },
       body: JSON.stringify({ anuncio_id: a.id }),
     });
     const data = await res.json();

@@ -3,15 +3,7 @@
 // Solo acepta operaciones en la whitelist (REINSERTABLES) para no habilitar inserts arbitrarios.
 // Si el reintento funciona, marca el fallo como resuelto automáticamente.
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
-  auth: { autoRefreshToken: false, persistSession: false },
-});
+import { requireAdmin } from "@/lib/auth-server";
 
 type ReintentoBuilder = (ctx: any) => { tabla: string; payload: Record<string, any> };
 
@@ -77,25 +69,10 @@ const REINSERTABLES: Record<string, ReintentoBuilder> = {
 
 export async function POST(req: Request) {
   try {
-    // 1. Auth admin (Bearer token → es_admin_sistema)
-    const authHeader = req.headers.get("authorization") || "";
-    const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
-    if (!token) {
-      return NextResponse.json({ error: "Falta token de autorización" }, { status: 403 });
-    }
-    const supabaseAuth = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    const { data: { user }, error: authErr } = await supabaseAuth.auth.getUser(token);
-    if (authErr || !user) {
-      return NextResponse.json({ error: "Sesión inválida" }, { status: 403 });
-    }
-    const { data: caller } = await supabase
-      .from("usuarios")
-      .select("es_admin_sistema")
-      .eq("id", user.id)
-      .single();
-    if (!caller?.es_admin_sistema) {
-      return NextResponse.json({ error: "Requiere permiso de admin" }, { status: 403 });
-    }
+    // 1. Auth admin
+    const auth = await requireAdmin(req);
+    if (!auth.ok) return auth.response;
+    const { supabase, userId } = auth;
 
     // 2. Validar body
     const { fallo_id } = await req.json();
@@ -156,7 +133,7 @@ export async function POST(req: Request) {
     const fechaStr = now.toISOString().slice(0, 16).replace("T", " ");
     const { error: updErr } = await supabase.from("log_fallos_sistema").update({
       estado: "resuelto",
-      resuelto_por: user.id,
+      resuelto_por: userId,
       resuelto_at: now.toISOString(),
       resolucion_nota: `Reintento automático exitoso (${fechaStr})`,
     }).eq("id", fallo_id);

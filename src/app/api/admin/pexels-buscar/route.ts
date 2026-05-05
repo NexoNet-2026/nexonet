@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/auth-server";
 
 export async function GET(req: Request) {
   try {
+    const auth = await requireAdmin(req);
+    if (!auth.ok) return auth.response;
+
     const { searchParams } = new URL(req.url);
     const q = searchParams.get("q")?.trim();
     if (!q) return NextResponse.json({ error: "q requerido" }, { status: 400 });

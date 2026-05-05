@@ -1,16 +1,14 @@
-import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/auth-server";
 
 export async function POST(req: Request) {
   try {
+    const auth = await requireAdmin(req);
+    if (!auth.ok) return auth.response;
+    const { supabase } = auth;
+
     const { usuario_id } = await req.json();
     if (!usuario_id) return NextResponse.json({ error: "usuario_id requerido" }, { status: 400 });
-
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      { auth: { autoRefreshToken: false, persistSession: false } }
-    );
 
     const logDel = async (label: string, promise: any) => {
       const res = await promise;

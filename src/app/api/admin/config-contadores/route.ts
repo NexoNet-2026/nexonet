@@ -1,17 +1,12 @@
-import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/auth-server";
 
-function client() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  );
-}
-
-export async function GET() {
+export async function GET(req: Request) {
   try {
-    const supabase = client();
+    const auth = await requireAdmin(req);
+    if (!auth.ok) return auth.response;
+    const { supabase } = auth;
+
     const { data, error } = await supabase
       .from("config_app")
       .select("*")
@@ -30,6 +25,10 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
+    const auth = await requireAdmin(req);
+    if (!auth.ok) return auth.response;
+    const { supabase } = auth;
+
     const body = await req.json();
     const usuarios_mult = Number(body.usuarios_mult);
     const usuarios_suma = Number(body.usuarios_suma);
@@ -40,7 +39,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Valores numéricos inválidos" }, { status: 400 });
     }
 
-    const supabase = client();
     const { data, error } = await supabase
       .from("config_app")
       .upsert(

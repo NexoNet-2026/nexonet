@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { requireAdmin } from '@/lib/auth-server';
 
 function decodeEntities(str: string): string {
   return str
@@ -52,6 +53,9 @@ async function scrapeAnuncio(url: string): Promise<{ url: string; titulo: string
 }
 
 export async function POST(req: Request) {
+  const auth = await requireAdmin(req);
+  if (!auth.ok) return auth.response;
+
   const { urls } = await req.json();
   if (!urls || !Array.isArray(urls)) return NextResponse.json({ error: 'urls requeridas' }, { status: 400 });
 

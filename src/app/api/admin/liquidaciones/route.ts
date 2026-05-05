@@ -1,13 +1,11 @@
-import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/auth-server";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { autoRefreshToken: false, persistSession: false } }
-);
+export async function GET(req: Request) {
+  const auth = await requireAdmin(req);
+  if (!auth.ok) return auth.response;
+  const { supabase } = auth;
 
-export async function GET() {
   const { data: logs, error } = await supabase
     .from("log_bits_internos")
     .select("*")

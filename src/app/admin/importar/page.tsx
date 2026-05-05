@@ -73,8 +73,12 @@ export default function ImportarPage() {
   const buscar = async (pag = 0) => {
     setBuscando(true);
     if (pag === 0) setAnuncios([]);
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) { alert('Sesión expirada — recargá la página'); setBuscando(false); return; }
+    const authHeader = { Authorization: `Bearer ${session.access_token}` };
     const res = await fetch('/api/admin/rg-buscar', {
-      method:'POST', headers:{'Content-Type':'application/json'},
+      method:'POST',
+      headers:{'Content-Type':'application/json', ...authHeader},
       body: JSON.stringify({ categoria, marca, precio_desde:precioDes, precio_hasta:precioHas, year_desde:yearDes, year_hasta:yearHas, pagina:pag }),
     });
     const data = await res.json();
@@ -90,7 +94,8 @@ export default function ImportarPage() {
     setScrapeando(true);
     const urls = nuevos.map(a=>a.url);
     const res2 = await fetch('/api/admin/rg-scrape-lote', {
-      method:'POST', headers:{'Content-Type':'application/json'},
+      method:'POST',
+      headers:{'Content-Type':'application/json', ...authHeader},
       body: JSON.stringify({ urls }),
     });
     const data2 = await res2.json();
@@ -144,7 +149,16 @@ export default function ImportarPage() {
   const convertirManual = async () => {
     if (!formManual.url.trim()) { alert('Pegá una URL'); return; }
     setScrapeandoManual(true);
-    const res = await fetch('/api/admin/scrape-url', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ url: formManual.url }) });
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) { alert('Sesión expirada — recargá la página'); setScrapeandoManual(false); return; }
+    const res = await fetch('/api/admin/scrape-url', {
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ url: formManual.url }),
+    });
     const data = await res.json();
     if (data.error) { alert('Error: '+data.error); setScrapeandoManual(false); return; }
     setPreviewManual(data);

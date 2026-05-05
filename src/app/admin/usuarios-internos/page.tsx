@@ -127,8 +127,14 @@ export default function UsuariosInternosPage() {
 
   const eliminarBot = async (id:string,nombre:string) => {
     if (!confirm(`¿Eliminar bot "${nombre}"? Se borrarán todos sus anuncios y nexos.`)) return;
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) { alert("Sesión expirada — recargá la página"); return; }
     const res = await fetch("/api/admin/eliminar-usuario", {
-      method:"POST", headers:{"Content-Type":"application/json"},
+      method:"POST",
+      headers:{
+        "Content-Type":"application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      },
       body: JSON.stringify({usuario_id:id}),
     });
     if (!res.ok) { const d = await res.json(); alert("Error: "+(d.error||"No se pudo eliminar")); return; }

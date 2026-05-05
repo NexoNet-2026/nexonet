@@ -1,17 +1,11 @@
-import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/auth-server";
 
-function client() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  );
-}
-
-export async function GET() {
+export async function GET(req: Request) {
   try {
-    const supabase = client();
+    const auth = await requireAdmin(req);
+    if (!auth.ok) return auth.response;
+    const { supabase } = auth;
 
     const { data: msgs, error } = await supabase
       .from("bot_mensajes")
@@ -48,12 +42,14 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
+    const auth = await requireAdmin(req);
+    if (!auth.ok) return auth.response;
+    const { supabase } = auth;
+
     const { mensaje_id, respuesta, bot_id } = await req.json();
     if (!mensaje_id || !respuesta?.trim() || !bot_id) {
       return NextResponse.json({ error: "mensaje_id, respuesta y bot_id requeridos" }, { status: 400 });
     }
-
-    const supabase = client();
 
     const { data: msg, error: errMsg } = await supabase
       .from("bot_mensajes")

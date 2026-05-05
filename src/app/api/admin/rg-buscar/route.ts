@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { requireAdmin } from '@/lib/auth-server';
 
 function decodeEntities(str: string): string {
   return str
@@ -17,6 +18,9 @@ const RBR_MAP: Record<string, string> = {
 };
 
 export async function POST(req: Request) {
+  const auth = await requireAdmin(req);
+  if (!auth.ok) return auth.response;
+
   const { categoria, marca, modelo, precio_desde, precio_hasta, km_desde, km_hasta, year_desde, year_hasta, pagina = 0 } = await req.json();
 
   const rbrId = RBR_MAP[categoria] || '107';

@@ -1,20 +1,18 @@
-import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import { randomBytes } from "crypto";
+import { requireAdmin } from "@/lib/auth-server";
 
 export async function POST(req: Request) {
   try {
+    const auth = await requireAdmin(req);
+    if (!auth.ok) return auth.response;
+    const { supabase } = auth;
+
     const { nombre, tipo, subtipo, descripcion, avatar_url, banner_url } = await req.json();
 
     if (!nombre || !tipo) {
       return NextResponse.json({ error: "nombre y tipo son requeridos" }, { status: 400 });
     }
-
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      { auth: { autoRefreshToken: false, persistSession: false } }
-    );
 
     const slug = String(nombre).toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9\-]/g, "");
     const sufijo = randomBytes(3).toString("hex");

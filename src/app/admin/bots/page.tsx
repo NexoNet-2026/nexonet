@@ -50,7 +50,11 @@ export default function BotsAdmin() {
   const cargarMensajes = useCallback(async () => {
     setCargandoMsgs(true);
     try {
-      const r = await fetch("/api/admin/bot-mensajes");
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { showToast("Sesión expirada — recargá la página"); return; }
+      const r = await fetch("/api/admin/bot-mensajes", {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
       const d = await r.json();
       if (!r.ok || d.error) showToast("Error: " + (d.error || r.status));
       else setMensajes(d.mensajes || []);
@@ -67,7 +71,11 @@ export default function BotsAdmin() {
     if (!nombre.trim()) return showToast("Escribí un nombre primero");
     setBuscando(true);
     try {
-      const r = await fetch(`/api/admin/pexels-buscar?q=${encodeURIComponent(nombre)}`);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { showToast("Sesión expirada — recargá la página"); setBuscando(false); return; }
+      const r = await fetch(`/api/admin/pexels-buscar?q=${encodeURIComponent(nombre)}`, {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
       const d = await r.json();
       if (!r.ok || d.error) showToast("Error: " + (d.error || r.status));
       else setFotos(d.fotos || []);
@@ -106,9 +114,14 @@ export default function BotsAdmin() {
     if (!nombre.trim()) return showToast("Escribí un nombre primero");
     setGenerandoIA(true);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { showToast("Sesión expirada — recargá la página"); setGenerandoIA(false); return; }
       const r = await fetch("/api/admin/crear-bot/ia", {
         method:"POST",
-        headers:{"Content-Type":"application/json"},
+        headers:{
+          "Content-Type":"application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
         body: JSON.stringify({ nombre, tipo }),
       });
       const d = await r.json();
@@ -123,9 +136,14 @@ export default function BotsAdmin() {
     if (!confirm(`¿Crear bot "${nombre}" como ${tipo}?`)) return;
     setCreando(true);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { showToast("Sesión expirada — recargá la página"); setCreando(false); return; }
       const r = await fetch("/api/admin/crear-bot", {
         method:"POST",
-        headers:{"Content-Type":"application/json"},
+        headers:{
+          "Content-Type":"application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
         body: JSON.stringify({ nombre, tipo, subtipo, descripcion, avatar_url: avatarUrl, banner_url: bannerUrl }),
       });
       const d = await r.json();
@@ -145,9 +163,14 @@ export default function BotsAdmin() {
     if (!texto) return showToast("Escribí una respuesta");
     setEnviandoId(msg.id);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { showToast("Sesión expirada — recargá la página"); setEnviandoId(null); return; }
       const r = await fetch("/api/admin/bot-mensajes", {
         method:"POST",
-        headers:{"Content-Type":"application/json"},
+        headers:{
+          "Content-Type":"application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
         body: JSON.stringify({ mensaje_id: msg.id, respuesta: texto, bot_id: msg.bot_id }),
       });
       const d = await r.json();

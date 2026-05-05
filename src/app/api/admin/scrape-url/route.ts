@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { requireAdmin } from '@/lib/auth-server';
 
 function decodeEntities(str: string): string {
   return str
@@ -35,6 +36,9 @@ function getPrice(html: string): string {
 }
 
 export async function POST(req: Request) {
+  const auth = await requireAdmin(req);
+  if (!auth.ok) return auth.response;
+
   const { url } = await req.json();
   if (!url) return NextResponse.json({ error: 'URL requerida' }, { status: 400 });
 

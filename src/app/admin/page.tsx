@@ -758,7 +758,7 @@ export default function AdminPanel() {
     if (!modalPassword || !nuevaPass.trim()) return;
     if (nuevaPass.length < 6) { showToast("❌ Mínimo 6 caracteres"); return; }
     const { error } = await supabase.auth.resetPasswordForEmail(modalPassword.email, {
-      redirectTo: `${window.location.origin}/nueva-contrasena`,
+      redirectTo: "https://nexonet.ar/nueva-contrasena",
     });
     if (error) {
       showToast("❌ Error: " + error.message);

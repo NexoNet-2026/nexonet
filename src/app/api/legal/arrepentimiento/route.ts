@@ -12,7 +12,7 @@ function generarCodigo(): string {
   const yyyy = fecha.getFullYear();
   const mm = String(fecha.getMonth() + 1).padStart(2, "0");
   const dd = String(fecha.getDate()).padStart(2, "0");
-  const chars = "ABCDEFGHIJKLMNPQRSTUVWXYZ23456789"; // sin O,I,1,0 para evitar confusion
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // sin O,I,1,0 para evitar confusion
   let random = "";
   for (let i = 0; i < 4; i++) {
     random += chars.charAt(Math.floor(Math.random() * chars.length));

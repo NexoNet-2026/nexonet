@@ -1,0 +1,62 @@
+<!--
+  Plantilla de email para Recuperación de contraseña — NexoNet Argentina.
+  Pegar en: Supabase Dashboard → Authentication → Email Templates → "Reset Password".
+  Subject sugerido: 🔐 Recuperá tu contraseña — NexoNet
+  Variables Supabase: {{ .ConfirmationURL }} es el link único firmado.
+-->
+<div style="font-family:Arial,Helvetica,sans-serif;max-width:600px;margin:0 auto;background:#f4f4f2;padding:20px;border-radius:16px">
+
+  <!-- Header marca -->
+  <div style="background:#1a2a3a;padding:24px 20px;border-radius:12px;text-align:center;margin-bottom:20px">
+    <h1 style="color:#d4a017;margin:0;font-size:32px;letter-spacing:3px;font-weight:900">NEXONET</h1>
+    <p style="color:#9a9a9a;margin:6px 0 0;font-size:13px;letter-spacing:1px">ARGENTINA</p>
+  </div>
+
+  <!-- Cuerpo -->
+  <div style="background:#fff;padding:28px 24px;border-radius:12px;margin-bottom:16px">
+    <h2 style="color:#1a2a3a;margin:0 0 16px;font-size:22px">🔐 Recuperá tu contraseña</h2>
+
+    <p style="color:#444;font-size:16px;line-height:1.6;margin:0 0 14px">
+      Hola,
+    </p>
+
+    <p style="color:#444;font-size:15px;line-height:1.6;margin:0 0 20px">
+      Recibimos un pedido para restablecer la contraseña de tu cuenta en NexoNet. Hacé click en el botón de abajo para crear una nueva.
+    </p>
+
+    <!-- CTA -->
+    <div style="text-align:center;margin:28px 0">
+      <a href="{{ .ConfirmationURL }}"
+         style="display:inline-block;background:#d4a017;color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:15px">
+        Crear nueva contraseña →
+      </a>
+    </div>
+
+    <p style="color:#9a9a9a;font-size:13px;line-height:1.6;margin:0 0 10px">
+      El link es válido por <strong>1 hora</strong> y solo se puede usar una vez.
+    </p>
+
+    <p style="color:#9a9a9a;font-size:13px;line-height:1.6;margin:0">
+      Si no fuiste vos quien lo pidió, podés ignorar este mail — tu contraseña actual sigue funcionando.
+    </p>
+  </div>
+
+  <!-- Link manual -->
+  <div style="background:#fff;padding:16px 20px;border-radius:12px;margin-bottom:16px">
+    <p style="color:#9a9a9a;font-size:12px;line-height:1.5;margin:0 0 6px">
+      ¿El botón no funciona? Copiá y pegá este link en tu navegador:
+    </p>
+    <p style="color:#1a2a3a;font-size:11px;word-break:break-all;margin:0">
+      <a href="{{ .ConfirmationURL }}" style="color:#1a2a3a">{{ .ConfirmationURL }}</a>
+    </p>
+  </div>
+
+  <!-- Footer -->
+  <p style="color:#9a9a9a;font-size:12px;text-align:center;margin:8px 0">
+    NexoNet Argentina — <a href="https://nexonet.ar" style="color:#9a9a9a;text-decoration:none">nexonet.ar</a>
+  </p>
+  <p style="color:#9a9a9a;font-size:11px;text-align:center;margin:0">
+    Este mail fue enviado por un sistema automático. No respondas a esta dirección.
+  </p>
+
+</div>

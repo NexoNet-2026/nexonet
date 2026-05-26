@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const host = request.headers.get("host") || "";
 
   if (host.includes("nexonet-git-master-adrianmorra-gmailcoms-projects.vercel.app")) {

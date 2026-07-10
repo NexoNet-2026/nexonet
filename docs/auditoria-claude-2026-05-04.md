@@ -178,6 +178,13 @@ Top 10, ordenado por urgencia operativa:
 - **Acción:** confirmar `ENABLE ROW LEVEL SECURITY` en cada `grupo_*`. Si la tabla está vacía y nadie consulta, eliminarla via L-12bis.
 - **Severidad:** BAJO.
 
+### L-22 — Policies RLS redundantes en tablas core y catálogos
+- **Evidencia:** análisis de `stash@{0}` (descartado 2026-05-27) detectó duplicados en `anuncios`, `socios_comerciales`, `nexos` y 8 catálogos de rubros/subrubros (empresa_rubros, empresa_subrubros, servicio_rubros, servicio_subrubros, trabajo_rubros, trabajo_subrubros, rubros, subrubros). El diagnóstico fue contra la DB del 2026-05-03; `sql/029` y `sql/030` posteriores cambiaron parte de la cobertura.
+- **Impacto:** ninguno observable; sólo ruido al leer `pg_policies`.
+- **Severidad:** BAJO.
+- **Acción:** post-lanzamiento, re-auditar `pg_policies` contra el estado actual de la DB y dropear duplicados verificados. No reusar SQL viejo sin re-validar.
+- **Estado:** pendiente.
+
 ---
 
 ## 5. Deuda técnica evidente

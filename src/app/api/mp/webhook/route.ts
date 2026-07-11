@@ -79,12 +79,49 @@ export async function POST(req: NextRequest) {
           const { data: sub } = await supabase.from("suscripciones_mp")
             .select("*").eq("mp_preapproval_id", pago.metadata.preapproval_id).single();
           if (sub) {
+            // 1. Guard de estado: solo acreditar si la suscripción está activa.
+            //    Si está cancelada/pausada/pendiente, no acreditar y loguear el intento.
+            if (sub.estado !== "authorized") {
+              await logFallo({
+                severidad: "advertencia",
+                contexto: "webhook-mp",
+                operacion: "suscripcion_no_activa",
+                usuario_id: sub.usuario_id,
+                datos_contexto: { sub_id: sub.id, estado: sub.estado, payId, preapproval_id: pago.metadata.preapproval_id },
+                error_mensaje: `Intento de débito con suscripción en estado '${sub.estado}'`,
+              });
+              return NextResponse.json({ ok: true });
+            }
+
+            // 2. Guard de doble acreditación: cada pago de MP tiene un payId único
+            //    (uno por período). Si ya está registrado en pagos_mp, no reacreditar.
+            const { data: yaProcesado } = await supabase
+              .from("pagos_mp")
+              .select("id")
+              .eq("payment_id", String(payId))
+              .single();
+            if (yaProcesado) {
+              return NextResponse.json({ ok: true });
+            }
+
             // Acreditar BIT según tipo
             const bitsCantidad = sub.tipo === "empresa" ? PRECIO_NEGOCIO_MENSUAL : 500;
             const { data: usr } = await supabase.from("usuarios").select("bits").eq("id", sub.usuario_id).single();
-            if (usr) {
-              const { error: upSubBitsErr } = await supabase.from("usuarios").update({ bits: (usr.bits || 0) + bitsCantidad }).eq("id", sub.usuario_id);
-              if (upSubBitsErr) await logFallo({
+            if (!usr) {
+              await logFallo({
+                severidad: "advertencia",
+                contexto: "webhook-mp",
+                operacion: "usuario_suscripcion_no_existe",
+                usuario_id: sub.usuario_id,
+                datos_contexto: { sub_id: sub.id, payId },
+                error_mensaje: `Usuario de suscripción no encontrado: ${sub.usuario_id}`,
+              });
+              return NextResponse.json({ ok: true });
+            }
+
+            const { error: upSubBitsErr } = await supabase.from("usuarios").update({ bits: (usr.bits || 0) + bitsCantidad }).eq("id", sub.usuario_id);
+            if (upSubBitsErr) {
+              await logFallo({
                 severidad: "critico",
                 contexto: "webhook-mp",
                 operacion: "update_usuario_bits_suscripcion",
@@ -92,7 +129,30 @@ export async function POST(req: NextRequest) {
                 datos_contexto: { bitsCantidad, tipo: sub.tipo, payId, error: upSubBitsErr },
                 error_mensaje: upSubBitsErr.message,
               });
+              // No marcamos el pago como procesado ni avanzamos el cobro: queda el
+              // fallo crítico registrado y MP puede reintentar el webhook.
+              return NextResponse.json({ ok: true });
             }
+
+            // Registrar el pago de suscripción (idempotencia — evita doble acreditación)
+            const { error: pagoSubErr } = await supabase.from("pagos_mp").insert({
+              payment_id: String(payId),
+              usuario_id: sub.usuario_id,
+              paquete: `suscripcion_${sub.tipo}`,
+              monto: pago.transaction_amount ?? sub.monto ?? null,
+              estado: "approved",
+              bits_col: "bits",
+              bits_cant: bitsCantidad,
+            });
+            if (pagoSubErr) await logFallo({
+              severidad: "critico",
+              contexto: "webhook-mp",
+              operacion: "insert_pago_suscripcion",
+              usuario_id: sub.usuario_id,
+              datos_contexto: { payId, tipo: sub.tipo, bitsCantidad, error: pagoSubErr },
+              error_mensaje: pagoSubErr.message,
+            });
+
             // Actualizar próximo cobro
             const { error: upCobroErr } = await supabase.from("suscripciones_mp").update({
               proximo_cobro: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),

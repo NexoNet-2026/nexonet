@@ -24,7 +24,7 @@ export default function TerminosPage() {
           <p style={S}>Al registrarte y usar NexoNet Argentina ("la Plataforma"), aceptás estos Términos y Condiciones. Si no los aceptás, no uses la plataforma.</p>
 
           <div style={H}>2. Quiénes somos</div>
-          <p style={S}>NexoNet Argentina es una plataforma digital operada por Adrián Morra, monotributista, con domicilio en Roldán, provincia de Santa Fe, Argentina. Contacto: <strong>legal@nexonet.ar</strong></p>
+          <p style={S}>NexoNet Argentina es una plataforma digital operada por Adrián Morra, monotributista, CUIT 20-26840084-3, con domicilio en Roldán, provincia de Santa Fe, Argentina. Contacto: <strong>legal@nexonet.ar</strong></p>
 
           <div style={H}>3. Registro y cuenta</div>
           <p style={S}>Debés ser mayor de 18 años para registrarte. Sos responsable de mantener la confidencialidad de tu contraseña. NexoNet se reserva el derecho de suspender cuentas que violen estos términos. Está prohibido crear cuentas falsas o hacerse pasar por otra persona.</p>

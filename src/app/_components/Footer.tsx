@@ -52,7 +52,7 @@ export default function Footer() {
           </p>
           <div style={{ fontSize: "12px", color: "#9aa5b1", lineHeight: 1.7 }}>
             <div>Adrián Morra — Monotributista</div>
-            <div>CUIT: [PENDIENTE — completar]</div>
+            <div>CUIT: 20-26840084-3</div>
             <div>Roldán, Santa Fe, Argentina</div>
             <div>
               <a

@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
+import { esStaffDeNexo } from "@/lib/nexoAuth";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -8,12 +9,17 @@ const supabase = createClient(
 
 export async function POST(req: Request) {
   try {
-    const { nexo_id, miembro_id, usuario_id, accion, motivo } = await req.json();
-    if (!nexo_id || !miembro_id || !usuario_id || !accion) {
+    const { nexo_id, miembro_id, usuario_id, accion, motivo, solicitante_id } = await req.json();
+    if (!nexo_id || !miembro_id || !usuario_id || !accion || !solicitante_id) {
       return NextResponse.json({ error: "Datos incompletos" }, { status: 400 });
     }
     if (accion !== "expulsado" && accion !== "bloqueado") {
       return NextResponse.json({ error: "Acción inválida" }, { status: 400 });
+    }
+
+    // Solo el creador o staff (admin/moderador) del nexo puede expulsar/bloquear
+    if (!(await esStaffDeNexo(supabase, solicitante_id, nexo_id))) {
+      return NextResponse.json({ error: "No autorizado" }, { status: 403 });
     }
 
     await supabase.from("nexo_miembros").update({ estado: accion }).eq("id", miembro_id);

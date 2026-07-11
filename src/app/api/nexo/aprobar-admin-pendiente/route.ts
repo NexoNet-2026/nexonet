@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
+import { esStaffDeNexo } from "@/lib/nexoAuth";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -11,6 +12,11 @@ export async function POST(req: Request) {
     const { miembro_id, aprobado_por, nexo_id, usuario_id, mensaje } = await req.json();
     if (!miembro_id || !aprobado_por || !nexo_id || !usuario_id) {
       return NextResponse.json({ error: "Datos incompletos" }, { status: 400 });
+    }
+
+    // Solo el creador o staff del nexo puede aprobar solicitudes de admin
+    if (!(await esStaffDeNexo(supabase, aprobado_por, nexo_id))) {
+      return NextResponse.json({ error: "No autorizado" }, { status: 403 });
     }
 
     await supabase.from("nexo_miembros")

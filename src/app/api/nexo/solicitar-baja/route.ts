@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
+import { esMiembroDeNexo } from "@/lib/nexoAuth";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -11,6 +12,12 @@ export async function POST(req: Request) {
     const { usuario_id, nexo_id, nexo_titulo, motivo, creador_id } = await req.json();
     if (!usuario_id || !nexo_id || !creador_id) {
       return NextResponse.json({ error: "Datos incompletos" }, { status: 400 });
+    }
+
+    // Acción de autoservicio: quien pide la baja tiene que ser miembro del nexo.
+    // Evita que se forje una solicitud de baja en nombre de otro usuario.
+    if (!(await esMiembroDeNexo(supabase, usuario_id, nexo_id))) {
+      return NextResponse.json({ error: "No autorizado" }, { status: 403 });
     }
 
     const { data: usuario } = await supabase.from("usuarios").select("nombre_usuario").eq("id", usuario_id).single();

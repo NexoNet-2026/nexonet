@@ -384,6 +384,7 @@ function NexoAdminPageInner() {
           usuario_id: miembro.usuario_id,
           accion: updates[accion].estado,
           motivo,
+          solicitante_id: perfil.id,
         }),
       });
       const json = await res.json();

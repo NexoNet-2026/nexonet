@@ -16,9 +16,10 @@ export async function POST(req: Request) {
     const { data: codigoData, error: rpcError } = await supabase.rpc("generar_codigo_usuario");
     if (rpcError) return NextResponse.json({ error: rpcError.message }, { status: 500 });
 
-    // Si ya existe en usuarios con ese email, eliminar para permitir reintento limpio
-    await supabase.from("usuarios").delete().eq("email", email);
-
+    // El upsert con onConflict:"email" resuelve el reintento de forma atómica:
+    // si ya existe una fila con ese email la actualiza en lugar de duplicar,
+    // sin el DELETE+INSERT previo que abría una race condition y podía perder
+    // referidos ya vinculados.
     const { error } = await supabase.from("usuarios").upsert({
       id, email,
       nombre: nombre || null,

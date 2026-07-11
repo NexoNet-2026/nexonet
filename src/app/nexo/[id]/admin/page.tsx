@@ -180,7 +180,6 @@ function NexoAdminPageInner() {
     const { data, error } = await supabase.from("nexo_sliders").insert({
       nexo_id:id, titulo, tipo, orden:sliders.length, activo:true
     }).select().single();
-    console.log("[agregarSlider]", { tipo, titulo, data, error });
     if (error) { alert("Error agregando slider: " + error.message); return; }
     if (data) setSliders(prev=>[...prev,data]);
     setPopupSlider(false);

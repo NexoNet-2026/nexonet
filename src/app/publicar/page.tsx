@@ -70,7 +70,6 @@ function PublicarSelectorInner() {
       .select("id,nombre")
       .eq("activo", true)
       .order("orden", { ascending: true });
-    console.log("Rubros:", tipo.tablaRubros, data);
     setRubros(data || []);
     setCargando(false);
     if (!data || data.length === 0) {

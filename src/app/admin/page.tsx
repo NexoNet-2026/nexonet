@@ -125,10 +125,8 @@ function PagosTab({ pagos, usuarios }: { pagos: any[]; usuarios: any[] }) {
       motivo: `Liquidación BIT Promo — pago externo $${cant.toLocaleString("es-AR")} ARS`,
       asignado_por: ADMIN_UUID,
     };
-    console.log("[Liquidación] Insertando log_bits_internos:", logPayload);
     const { data: logData, error: e2 } = await supabase.from("log_bits_internos").insert(logPayload).select();
     if (e2) { console.error("[Liquidación] Error log_bits_internos:", e2); alert("Error log: " + e2.message); setLiqLoading(false); return; }
-    console.log("[Liquidación] log_bits_internos insertado OK:", logData);
 
     const { error: e3 } = await supabase.from("notificaciones").insert({
       usuario_id: liqUser.id,
@@ -470,7 +468,6 @@ export default function AdminPanel() {
       .select("*,usuarios(nombre_usuario,codigo,email)")
       .order("created_at", { ascending: false })
       .limit(300);
-    console.log("ANUNCIOS:", anuns?.length, anunError);
     setAnuncios(anuns || []);
 
     setUsuarios(usrs||[]);
@@ -1291,7 +1288,6 @@ export default function AdminPanel() {
 
   // ── Filtros IA ──
   const cargarFiltros = async (subId:number) => {
-    console.log("Cargando filtros para subrubro:", subId);
     setFiltroSubSel(subId);
     const {data} = await supabase.from("subrubro_filtros").select("*").eq("subrubro_id",subId).order("orden");
     setFiltrosIA(data||[]);  // carga todos para mostrar ambas secciones (pub + IA)

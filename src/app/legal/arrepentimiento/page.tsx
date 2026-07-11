@@ -111,6 +111,7 @@ export default function ArrepentimientoPage() {
         <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: "28px", color: "#1a2a3a", letterSpacing: "1px", marginBottom: "8px" }}>
           🔄 Botón de Arrepentimiento
         </div>
+        <div style={{ fontSize: "12px", color: "#9a9a9a", fontWeight: 600, marginBottom: "12px" }}>Última actualización: Julio 2026</div>
         <div style={{ fontSize: "13px", color: "#9a9a9a", fontWeight: 600, lineHeight: 1.6, marginBottom: "20px" }}>
           Si te arrepentiste de una compra realizada en NexoNet (paquete de anuncios, destacado, suscripción, etc.) y querés solicitar la devolución, complettá el siguiente formulario.
           <br /><br />

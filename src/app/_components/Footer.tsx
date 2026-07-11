@@ -111,7 +111,6 @@ export default function Footer() {
                 Contacto
               </a>
             </li>
-            {/* TODO: agregar redes sociales cuando estén creadas */}
           </ul>
         </div>
       </div>

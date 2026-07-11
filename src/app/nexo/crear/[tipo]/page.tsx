@@ -174,7 +174,6 @@ function NexoCrearInner() {
       if (tipoCheck) {
         const { count } = await supabase.from("nexos").select("id", { count: "exact", head: true })
           .eq("usuario_id", session.user.id).eq("tipo", tipoCheck);
-        console.log('esPrimeraEmpresa calc:', 'count:', count, 'resultado:', (count || 0) === 0, 'tipo:', tipoCheck);
         setEsPrimeraEmpresa((count || 0) === 0);
       }
     });

@@ -1,6 +1,7 @@
 ﻿import type { Metadata } from "next";
 import "./globals.css";
 import Footer from "./_components/Footer";
+import CookieBanner from "@/components/CookieBanner";
 
 export const metadata: Metadata = {
   title: "NexoNet Argentina",
@@ -15,11 +16,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#1a2a3a" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <link rel="apple-touch-icon" href="/icon-512.png" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
       </head>
       <body style={{ margin: 0, padding: 0, fontFamily: "'Nunito', sans-serif" }}>
         {children}
         <Footer />
+        <CookieBanner />
       </body>
     </html>
   );

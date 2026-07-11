@@ -227,8 +227,6 @@ export async function POST(req: Request) {
       } catch (e) {
         console.error("Error mail admin:", e);
       }
-    } else {
-      console.log("RESEND_API_KEY no configurada — emails NO enviados");
     }
 
     return NextResponse.json({ success: true, codigo });

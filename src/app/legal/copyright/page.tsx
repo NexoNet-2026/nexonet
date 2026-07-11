@@ -35,6 +35,7 @@ export default function CopyrightClaimPage() {
         <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: "28px", color: "#1a2a3a", letterSpacing: "1px", marginBottom: "8px" }}>
           ⚖️ Reclamo de Copyright
         </div>
+        <div style={{ fontSize: "12px", color: "#9a9a9a", fontWeight: 600, marginBottom: "12px" }}>Última actualización: Julio 2026</div>
         <div style={{ fontSize: "13px", color: "#9a9a9a", fontWeight: 600, lineHeight: 1.6, marginBottom: "20px" }}>
           Si considerás que algún contenido publicado en NexoNet infringe tus derechos de autor, completá este formulario.
         </div>

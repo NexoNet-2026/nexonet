@@ -5,7 +5,6 @@ const resend = process.env.RESEND_API_KEY
 
 export async function enviarEmail(to: string, subject: string, html: string) {
   if (!resend) {
-    console.log("Email no enviado — RESEND_API_KEY no configurada");
     return;
   }
   try {

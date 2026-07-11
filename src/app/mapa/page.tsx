@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
 import { useState, useEffect, useRef, Suspense } from "react";
@@ -350,7 +351,7 @@ function MapaInner() {
         {anuncioSel && !modoConexion && (
           <div style={{position:"absolute",bottom:"56px",left:"50%",transform:"translateX(-50%)",background:"#fff",borderRadius:"16px",padding:"14px 18px",boxShadow:"0 8px 30px rgba(0,0,0,0.2)",zIndex:1000,minWidth:"260px",maxWidth:"90vw",display:"flex",alignItems:"center",gap:"12px"}}>
             <div style={{width:"52px",height:"52px",borderRadius:"10px",overflow:"hidden",flexShrink:0,background:"#f4f4f2",display:"flex",alignItems:"center",justifyContent:"center"}}>
-              {anuncioSel.imagenes?.[0]?<img src={anuncioSel.imagenes[0]} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<span style={{fontSize:"28px"}}>📦</span>}
+              {anuncioSel.imagenes?.[0]?<Image src={anuncioSel.imagenes[0]} alt="" width={400} height={400} style={{width:"100%",height:"100%",objectFit:"cover"}} loading="lazy"/>:<span style={{fontSize:"28px"}}>📦</span>}
             </div>
             <div style={{flex:1}}>
               <div style={{fontSize:"14px",fontWeight:800,color:"#1a2a3a"}}>{anuncioSel.titulo}</div>

@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 import { FUENTES, formatPrecio, type Anuncio } from "@/app/_lib/home-constants";
 import InsigniaLogro from "./InsigniaLogro";
 
@@ -22,7 +23,7 @@ export default function TarjetaAnuncio({ a, esPrimero, onClick }: { a: Anuncio; 
         </div>
         <div style={{ width: "100%", height: "120px", background: "#e8e8e6", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
           {(a.imagenes?.[0] || (a as any).avatar_url || (a as any).banner_url)
-            ? <img src={a.imagenes?.[0] || (a as any).avatar_url || (a as any).banner_url} alt={a.titulo} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            ? <Image src={a.imagenes?.[0] || (a as any).avatar_url || (a as any).banner_url} alt={a.titulo} width={400} height={400} style={{ width: "100%", height: "100%", objectFit: "cover" }} loading="lazy" />
             : <span style={{ fontSize: "40px" }}>📦</span>}
         </div>
         <div style={{ padding: "8px 10px 12px" }}>

@@ -306,7 +306,7 @@ export default function ImportarPage() {
                       style={{display:'flex',alignItems:'center',gap:'10px',background:a.estado==='publicado'?'rgba(39,174,96,0.06)':a.seleccionado?'rgba(212,160,23,0.04)':'#fafafa',border:`2px solid ${a.estado==='publicado'?'#27ae60':a.seleccionado?'rgba(212,160,23,0.3)':'#e8e8e6'}`,borderRadius:'12px',padding:'10px',cursor:a.estado==='publicado'?'default':'pointer'}}>
                       <input type='checkbox' checked={a.seleccionado} readOnly style={{flexShrink:0,width:'16px',height:'16px',accentColor:'#d4a017'}}/>
                       {a.imagen
-                        ? <img src={a.imagen} alt='' style={{width:'56px',height:'42px',objectFit:'cover',borderRadius:'8px',flexShrink:0}}/>
+                        ? <img src={a.imagen} alt='' style={{width:'56px',height:'42px',objectFit:'cover',borderRadius:'8px',flexShrink:0}} loading='lazy'/>
                         : <div style={{width:'56px',height:'42px',background:'#f0f0ee',borderRadius:'8px',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'18px'}}>{a.estado==='scrapeando'?'⏳':'🚗'}</div>
                       }
                       <div style={{flex:1,minWidth:0}}>
@@ -358,7 +358,7 @@ export default function ImportarPage() {
               </button>
             </div>
             {previewManual && (<>
-              {previewManual.imagen && <img src={previewManual.imagen} alt='' style={{width:'100%',height:'200px',objectFit:'cover',borderRadius:'12px',marginTop:'12px'}}/>}
+              {previewManual.imagen && <img src={previewManual.imagen} alt='' style={{width:'100%',height:'200px',objectFit:'cover',borderRadius:'12px',marginTop:'12px'}} loading='lazy'/>}
               <L>Título</L><input value={formManual.titulo} onChange={e=>FM('titulo',e.target.value)} style={IS}/>
               <L>Descripción</L><textarea value={formManual.descripcion} onChange={e=>FM('descripcion',e.target.value)} rows={3} style={{...IS,resize:'vertical' as any}}/>
               <div style={{display:'grid',gridTemplateColumns:'2fr 1fr',gap:'8px',marginTop:'4px'}}>

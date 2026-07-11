@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 
 export default function TarjetaNexo({ nexo, onClick, esPrimero, color, abierto, modoConexion, seleccionado, onToggle }: any) {
   const colorTipo = color || "#3a7bd5";
@@ -26,7 +27,7 @@ export default function TarjetaNexo({ nexo, onClick, esPrimero, color, abierto, 
         </div>
         <div style={{ height:"120px", background:"#e8e8e6", overflow:"hidden", display:"flex", alignItems:"center", justifyContent:"center" }}>
           {nexo.avatar_url
-            ? <img src={nexo.avatar_url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+            ? <Image src={nexo.avatar_url} alt="" width={400} height={400} style={{ width:"100%", height:"100%", objectFit:"cover" }} loading="lazy" />
             : <span style={{ fontSize:"40px", opacity:0.3 }}>{ esGrupo ? "👥" : "🏢" }</span>
           }
         </div>

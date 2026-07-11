@@ -590,7 +590,7 @@ function NexoCrearInner() {
                 <label key={campo} style={{cursor:"pointer"}}>
                   <div style={{height:tipo==="trabajo"?"160px":"80px",background:"#f4f4f2",borderRadius:"12px",border:`2px dashed ${(form as any)[campo+"_url"]?"#d4a017":"rgba(212,160,23,0.3)"}`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:"4px",overflow:"hidden",position:"relative"}}>
                     {(form as any)[campo+"_url"]
-                      ? <><img src={(form as any)[campo+"_url"]} style={{width:"100%",height:"100%",objectFit:"cover"}}/><div style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.3)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"18px"}}>📷</div></>
+                      ? <><img src={(form as any)[campo+"_url"]} style={{width:"100%",height:"100%",objectFit:"cover"}} loading="lazy"/><div style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.3)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"18px"}}>📷</div></>
                       : <><span style={{fontSize:tipo==="trabajo"?"34px":"22px"}}>📷</span><span style={{fontSize:tipo==="trabajo"?"12px":"9px",fontWeight:700,color:"#9a9a9a"}}>{tipo==="trabajo"?"Subí tu foto de perfil":`Foto ${i+1}`}</span></>
                     }
                   </div>
@@ -660,7 +660,7 @@ function NexoCrearInner() {
           <div style={{display:"flex",alignItems:"center",gap:"14px"}}>
             <div style={{position:"relative"}}>
               <div style={{width:"64px",height:"64px",borderRadius:"16px",background:`${colorPage}22`,border:`3px solid ${colorPage}60`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"28px",overflow:"hidden"}}>
-                {form.avatar_url?<img src={form.avatar_url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<span>{emojiPage}</span>}
+                {form.avatar_url?<img src={form.avatar_url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}} loading="lazy"/>:<span>{emojiPage}</span>}
               </div>
               <label style={{position:"absolute",bottom:"-6px",right:"-6px",width:"24px",height:"24px",borderRadius:"50%",background:colorPage,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",border:"2px solid #1a2a3a",fontSize:"11px"}}>
                 {subiendoImg==="avatar"?"⏳":"📷"}
@@ -769,7 +769,7 @@ function NexoCrearInner() {
                   <label style={{cursor:"pointer",flex:1}}>
                     <div style={{height:"80px",background:"#f4f4f2",borderRadius:"12px",border:`2px dashed ${form.avatar_url?colorPage:"rgba(0,0,0,0.15)"}`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:"4px",overflow:"hidden",position:"relative"}}>
                       {form.avatar_url
-                        ? <><img src={form.avatar_url} style={{width:"100%",height:"100%",objectFit:"cover"}} alt=""/><div style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.3)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"16px",color:"#fff",fontWeight:900}}>📷</div></>
+                        ? <><img src={form.avatar_url} style={{width:"100%",height:"100%",objectFit:"cover"}} alt="" loading="lazy"/><div style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.3)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"16px",color:"#fff",fontWeight:900}}>📷</div></>
                         : <><span style={{fontSize:"22px"}}>📷</span><span style={{fontSize:"9px",fontWeight:700,color:"#9a9a9a"}}>Logo / Avatar</span></>
                       }
                     </div>
@@ -778,7 +778,7 @@ function NexoCrearInner() {
                   <label style={{cursor:"pointer",flex:2}}>
                     <div style={{height:"80px",background:"#f4f4f2",borderRadius:"12px",border:`2px dashed ${form.banner_url?colorPage:"rgba(0,0,0,0.15)"}`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:"4px",overflow:"hidden",position:"relative"}}>
                       {form.banner_url
-                        ? <><img src={form.banner_url} style={{width:"100%",height:"100%",objectFit:"cover"}} alt=""/><div style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.3)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"16px",color:"#fff",fontWeight:900}}>🖼️</div></>
+                        ? <><img src={form.banner_url} style={{width:"100%",height:"100%",objectFit:"cover"}} alt="" loading="lazy"/><div style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.3)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"16px",color:"#fff",fontWeight:900}}>🖼️</div></>
                         : <><span style={{fontSize:"22px"}}>🖼️</span><span style={{fontSize:"9px",fontWeight:700,color:"#9a9a9a"}}>Banner / Portada</span></>
                       }
                     </div>

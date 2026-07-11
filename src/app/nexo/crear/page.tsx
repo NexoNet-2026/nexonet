@@ -387,7 +387,7 @@ function NexoCrearInner() {
                 <label key={campo} style={{cursor:"pointer"}}>
                   <div style={{height:"80px",background:"#f4f4f2",borderRadius:"12px",border:`2px dashed ${(form as any)[campo+"_url"]?"#d4a017":"rgba(212,160,23,0.3)"}`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:"4px",overflow:"hidden",position:"relative"}}>
                     {(form as any)[campo+"_url"]
-                      ? <><img src={(form as any)[campo+"_url"]} style={{width:"100%",height:"100%",objectFit:"cover"}}/><div style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.3)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"18px"}}>📷</div></>
+                      ? <><img src={(form as any)[campo+"_url"]} style={{width:"100%",height:"100%",objectFit:"cover"}} loading="lazy"/><div style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.3)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"18px"}}>📷</div></>
                       : <><span style={{fontSize:"22px"}}>📷</span><span style={{fontSize:"9px",fontWeight:700,color:"#9a9a9a"}}>Foto {i+1}</span></>}
                   </div>
                   <input type="file" accept="image/*" onChange={e=>subirImagenAnuncio(e,campo)} style={{display:"none"}}/>
@@ -449,7 +449,7 @@ function NexoCrearInner() {
           </button>
           <div style={{display:"flex",alignItems:"center",gap:"14px"}}>
             <div style={{width:"64px",height:"64px",borderRadius:"16px",background:`${colorPage}22`,border:`3px solid ${colorPage}60`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"28px",overflow:"hidden"}}>
-              {form.avatar_url?<img src={form.avatar_url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<span>{emojiPage}</span>}
+              {form.avatar_url?<img src={form.avatar_url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}} loading="lazy"/>:<span>{emojiPage}</span>}
             </div>
             <div style={{flex:1}}>
               <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"22px",color:colorPage,letterSpacing:"1px"}}>{tituloPage}</div>

@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
@@ -99,7 +100,7 @@ export default function Home() {
                       <div style={{ fontSize:"12px", fontWeight:800, color:"#1a2a3a", marginBottom:"4px", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{item.titulo}</div>
                       {item.precio_bits > 0 && <div style={{ fontSize:"13px", fontWeight:900, color:"#d4a017" }}>{item.precio_bits} BIT</div>}
                       <div style={{ fontSize:"10px", color:"#9a9a9a", fontWeight:600, marginTop:"4px", display:"flex", alignItems:"center", gap:"4px" }}>
-                        {item.nexo_avatar && <img src={item.nexo_avatar} style={{ width:"14px", height:"14px", borderRadius:"50%", objectFit:"cover" }} />}
+                        {item.nexo_avatar && <Image src={item.nexo_avatar} alt="" width={14} height={14} style={{ width:"14px", height:"14px", borderRadius:"50%", objectFit:"cover" }} loading="lazy" />}
                         <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{item.nexo_titulo}</span>
                       </div>
                     </div>

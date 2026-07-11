@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 import { useState, useEffect, Suspense } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Header from "@/components/Header";
@@ -314,7 +315,7 @@ function CategoriaInner() {
                 <div style={{ background:"#fff", borderRadius:"14px", overflow:"hidden", boxShadow:"0 2px 10px rgba(0,0,0,0.08)", border:"1px solid #f0f0f0" }}>
                   <div style={{ width:"100%", height:"120px", background:"#f4f4f2", display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden", position:"relative" }}>
                     {a.imagenes?.[0]
-                      ? <img src={a.imagenes[0]} alt={a.titulo} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+                      ? <Image src={a.imagenes[0]} alt={a.titulo} width={400} height={400} style={{ width:"100%", height:"100%", objectFit:"cover" }} loading="lazy" />
                       : <span style={{ fontSize:"36px" }}>📦</span>
                     }
                     {a.flash && (

@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
 import { useState, useEffect, useRef } from "react";
@@ -272,7 +273,7 @@ export default function MisAnuncios() {
                 <div style={{ width:"64px", height:"64px", borderRadius:"12px", background:"#f4f4f2",
                                overflow:"hidden", flexShrink:0, position:"relative" }}>
                   {imgs[0]
-                    ? <img src={imgs[0]} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+                    ? <Image src={imgs[0]} alt="" width={400} height={400} style={{ width:"100%", height:"100%", objectFit:"cover" }} loading="lazy" />
                     : <div style={{ width:"100%", height:"100%", display:"flex", alignItems:"center",
                                      justifyContent:"center", fontSize:"28px" }}>📦</div>
                   }
@@ -678,7 +679,7 @@ export default function MisAnuncios() {
                                scrollbarWidth:"none", paddingBottom:"8px", marginBottom:"10px" }}>
                   {editImgs.map((img, i) => (
                     <div key={i} style={{ position:"relative", flexShrink:0 }}>
-                      <img src={img} alt="" style={{ width:"80px", height:"80px", objectFit:"cover",
+                      <img src={img} alt="" loading="lazy" style={{ width:"80px", height:"80px", objectFit:"cover",
                                                       borderRadius:"10px",
                                                       border:`2px solid ${i === 0 ? "#d4a017" : "#e8e8e6"}` }} />
                       {i === 0 && (

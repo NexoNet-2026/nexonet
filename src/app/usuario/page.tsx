@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 import React from "react";
 import Header from "@/components/Header";
 import BannerPromotor from "@/components/BannerPromotor";
@@ -408,7 +409,7 @@ setMisGruposData([...conConteo(fromMiembros), ...conConteo(fromCreados)]);
             <div key={n.id} onClick={()=>router.push(`/nexo/${n.id}`)}
               style={{ background:"#fff", borderRadius:"16px", overflow:"hidden", boxShadow:"0 2px 8px rgba(0,0,0,0.06)", cursor:"pointer", display:"flex", alignItems:"stretch", border:`2px solid ${color}20` }}>
               <div style={{ width:"72px", flexShrink:0, background:`linear-gradient(135deg,${color}33,${color}11)`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"28px", overflow:"hidden" }}>
-                {n.avatar_url ? <img src={n.avatar_url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : <span>{emoji}</span>}
+                {n.avatar_url ? <Image src={n.avatar_url} alt="" width={400} height={400} style={{ width:"100%", height:"100%", objectFit:"cover" }} loading="lazy"/> : <span>{emoji}</span>}
               </div>
               <div style={{ flex:1, padding:"12px 14px" }}>
                 <div style={{ fontSize:"14px", fontWeight:900, color:"#1a2a3a", marginBottom:"4px" }}>{n.titulo}</div>
@@ -447,7 +448,7 @@ setMisGruposData([...conConteo(fromMiembros), ...conConteo(fromCreados)]);
           <div style={{ position:"relative", flexShrink:0 }}>
             <div style={{ width:"56px", height:"56px", borderRadius:"50%", background:"linear-gradient(135deg, #d4a017, #f0c040)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"26px", boxShadow:"0 4px 16px rgba(212,160,23,0.4)", overflow:"hidden" }}>
               {avatarUrl
-                ? <img src={avatarUrl} alt="avatar" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+                ? <Image src={avatarUrl} alt="avatar" width={400} height={400} style={{ width:"100%", height:"100%", objectFit:"cover" }} priority />
                 : <span>{esEmpresa ? "🏢" : "👤"}</span>
               }
             </div>
@@ -969,7 +970,7 @@ setMisGruposData([...conConteo(fromMiembros), ...conConteo(fromCreados)]);
               misGruposData.map((g:any) => (
                 <div key={g.id} onClick={()=>router.push(`/grupos/${g.id}`)} style={{ background:"#fff", borderRadius:"16px", overflow:"hidden", boxShadow:"0 2px 8px rgba(0,0,0,0.06)", cursor:"pointer", display:"flex", alignItems:"stretch" }}>
                   <div style={{ width:"80px", flexShrink:0, background:"linear-gradient(135deg,#1a2a3a,#243b55)", display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden", position:"relative" }}>
-                    {g.imagen ? <img src={g.imagen} alt={g.nombre} style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : <span style={{ fontSize:"28px", opacity:0.4 }}>{g.categoria_emoji}</span>}
+                    {g.imagen ? <Image src={g.imagen} alt={g.nombre} width={400} height={400} style={{ width:"100%", height:"100%", objectFit:"cover" }} loading="lazy"/> : <span style={{ fontSize:"28px", opacity:0.4 }}>{g.categoria_emoji}</span>}
                     <div style={{ position:"absolute", bottom:"4px", left:0, right:0, textAlign:"center" }}>
                       <span style={{ background:g.mi_rol==="creador"?"rgba(212,160,23,0.95)":g.mi_rol==="moderador"?"rgba(100,149,237,0.9)":"rgba(0,168,132,0.85)", borderRadius:"20px", padding:"1px 6px", fontSize:"8px", fontWeight:900, color:g.mi_rol==="creador"?"#1a2a3a":"#fff" }}>
                         {g.mi_rol==="creador"?"👑 Creador":g.mi_rol==="moderador"?"🛡️ Mod":"✅ Miembro"}

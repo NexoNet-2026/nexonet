@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Header from "@/components/Header";
@@ -99,7 +100,7 @@ export default function PerfilPublico() {
       <div style={{ background:"linear-gradient(135deg,#1a2a3a,#243b55)", paddingTop:"95px", padding:"95px 16px 20px" }}>
         <div style={{ display:"flex", gap:"14px", alignItems:"flex-start" }}>
           <div style={{ width:"72px", height:"72px", borderRadius:"50%", background:"linear-gradient(135deg,#d4a017,#f0c040)", overflow:"hidden", flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"32px", border:"3px solid rgba(212,160,23,0.4)" }}>
-            {perfil.avatar_url ? <img src={perfil.avatar_url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : "👤"}
+            {perfil.avatar_url ? <Image src={perfil.avatar_url} alt="" width={400} height={400} style={{ width:"100%", height:"100%", objectFit:"cover" }} priority /> : "👤"}
           </div>
           <div style={{ flex:1 }}>
             <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"26px", color:"#fff", letterSpacing:"1px", lineHeight:1.1 }}>
@@ -190,7 +191,7 @@ export default function PerfilPublico() {
                   <div key={a.id} onClick={() => router.push(`/anuncios/${a.id}`)}
                     style={{ background:"#fff", borderRadius:"14px", overflow:"hidden", boxShadow:"0 2px 10px rgba(0,0,0,0.07)", cursor:"pointer" }}>
                     <div style={{ height:"110px", background:"linear-gradient(135deg,#1a2a3a,#243b55)", overflow:"hidden", display:"flex", alignItems:"center", justifyContent:"center" }}>
-                      {a.imagenes?.[0] ? <img src={a.imagenes[0]} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : <span style={{ fontSize:"36px", opacity:0.3 }}>📦</span>}
+                      {a.imagenes?.[0] ? <Image src={a.imagenes[0]} alt="" width={400} height={400} style={{ width:"100%", height:"100%", objectFit:"cover" }} loading="lazy" /> : <span style={{ fontSize:"36px", opacity:0.3 }}>📦</span>}
                     </div>
                     <div style={{ padding:"10px 12px" }}>
                       <div style={{ fontSize:"12px", fontWeight:800, color:"#1a2a3a", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{a.titulo}</div>
@@ -216,7 +217,7 @@ export default function PerfilPublico() {
               <div key={n.id} onClick={() => router.push(`/nexo/${n.id}`)}
                 style={{ background:"#fff", borderRadius:"14px", overflow:"hidden", boxShadow:"0 2px 8px rgba(0,0,0,0.06)", cursor:"pointer", display:"flex", alignItems:"stretch", border:`2px solid ${TIPO_COLOR[n.tipo] || "#e8e8e6"}20` }}>
                 <div style={{ width:"64px", flexShrink:0, background:`${TIPO_COLOR[n.tipo] || "#e8e8e6"}20`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"24px", overflow:"hidden" }}>
-                  {n.avatar_url ? <img src={n.avatar_url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : TIPO_EMOJI[n.tipo] || "✨"}
+                  {n.avatar_url ? <Image src={n.avatar_url} alt="" width={400} height={400} style={{ width:"100%", height:"100%", objectFit:"cover" }} loading="lazy" /> : TIPO_EMOJI[n.tipo] || "✨"}
                 </div>
                 <div style={{ flex:1, padding:"12px 14px" }}>
                   <div style={{ fontSize:"10px", fontWeight:800, color:TIPO_COLOR[n.tipo]||"#9a9a9a", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"2px" }}>{n.tipo}</div>

@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 import { useState, useEffect, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Header from "@/components/Header";
@@ -1042,7 +1043,7 @@ function TarjetaAnuncio({ a, fmt, qLow, query, horizontal, modoConexion, selecci
             </div>
           </div>
           <div style={{width:"100%",height:"110px",background:"#f4f4f2",display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden"}}>
-            {a.imagenes?.[0]?<img src={a.imagenes[0]} alt={a.titulo} style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<span style={{fontSize:"36px"}}>📦</span>}
+            {a.imagenes?.[0]?<Image src={a.imagenes[0]} alt={a.titulo} width={400} height={400} style={{width:"100%",height:"100%",objectFit:"cover"}} loading="lazy"/>:<span style={{fontSize:"36px"}}>📦</span>}
           </div>
           <div style={{padding:"8px 10px 10px"}}>
             <div style={{fontSize:"11px",color:"#9a9a9a",fontWeight:700,marginBottom:"2px",textTransform:"uppercase",letterSpacing:"0.5px"}}>{a.subrubro_nombre}</div>
@@ -1075,7 +1076,7 @@ function TarjetaGrupoSlider({ nexo, onNavigate }: { nexo:Nexo; onNavigate:()=>vo
         </div>
         <div style={{width:"100%",height:"90px",background:"linear-gradient(135deg,#1a2a3a,#243b55)",display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden",position:"relative"}}>
           {nexo.avatar_url
-            ? <img src={nexo.avatar_url} alt={nexo.titulo} style={{width:"100%",height:"100%",objectFit:"cover"}} />
+            ? <Image src={nexo.avatar_url} alt={nexo.titulo} width={400} height={400} style={{width:"100%",height:"100%",objectFit:"cover"}} loading="lazy" />
             : <span style={{fontSize:"36px",opacity:0.5}}>👥</span>
           }
           {nexo.config?.tipo_acceso === "pago" && (
@@ -1118,7 +1119,7 @@ function TarjetaNexo({ nexo, color, onNavigate, esPrimero }: { nexo:Nexo; color:
         </div>
         <div style={{width:"100%",height:"120px",background:`linear-gradient(135deg,${color}33,${color}11)`,display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden"}}>
           {nexo.avatar_url
-            ? <img src={nexo.avatar_url} alt={nexo.titulo} style={{width:"100%",height:"100%",objectFit:"cover"}} />
+            ? <Image src={nexo.avatar_url} alt={nexo.titulo} width={400} height={400} style={{width:"100%",height:"100%",objectFit:"cover"}} loading="lazy" />
             : <span style={{fontSize:"36px"}}>{emoji}</span>
           }
         </div>

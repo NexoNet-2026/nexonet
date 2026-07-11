@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 import { useState } from "react";
 import { createPortal } from "react-dom";
 
@@ -165,10 +166,13 @@ export default function BotonCompartir({
                 }}
               >
                 {imagen && (
-                  <img
+                  <Image
                     src={imagen}
                     alt=""
+                    width={48}
+                    height={48}
                     style={{ width: "48px", height: "48px", borderRadius: "8px", objectFit: "cover", flexShrink: 0 }}
+                    loading="lazy"
                   />
                 )}
                 <div style={{ flex: 1, minWidth: 0 }}>

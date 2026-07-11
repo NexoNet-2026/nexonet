@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import Header from "@/components/Header";
@@ -471,7 +472,7 @@ function NexoAdminPageInner() {
           <div style={{ display:"flex", alignItems:"center", gap:"12px" }}>
             <div style={{ position:"relative" }}>
               <div style={{ width:"62px", height:"62px", borderRadius:"16px", overflow:"hidden", border:`3px solid ${colorNexo}60`, background:"#1a2a3a", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"26px" }}>
-                {formInfo.avatar_url ? <img src={formInfo.avatar_url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : "✨"}
+                {formInfo.avatar_url ? <Image src={formInfo.avatar_url} alt="" width={400} height={400} loading="lazy" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : "✨"}
               </div>
               <label style={{ position:"absolute", bottom:"-6px", right:"-6px", width:"24px", height:"24px", borderRadius:"50%", background:colorNexo, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", border:"2px solid #1a2a3a", fontSize:"11px" }}>
                 {subiendoImg==="avatar_url"?"⏳":"📷"}
@@ -554,7 +555,7 @@ function NexoAdminPageInner() {
                         {(sliderItems[s.id]||[]).map((item:any)=>(
                           <div key={item.id} style={{ background:"#fff", borderRadius:"12px", overflow:"hidden", border:"1px solid #f0f0f0", position:"relative" }}>
                             <div style={{ height:"80px", background:"linear-gradient(135deg,#1a2a3a,#243b55)", display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden" }}>
-                              {item.tipo==="imagen" && <img src={item.url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} />}
+                              {item.tipo==="imagen" && <Image src={item.url} alt="" width={400} height={400} loading="lazy" style={{ width:"100%", height:"100%", objectFit:"cover" }} />}
                               {item.tipo==="video"  && <video src={item.url} style={{ width:"100%", height:"100%", objectFit:"cover" }} />}
                               {(!["imagen","video"].includes(item.tipo)) && <span style={{ fontSize:"28px", opacity:0.5 }}>📄</span>}
                             </div>
@@ -599,7 +600,7 @@ function NexoAdminPageInner() {
               return (
                 <div key={sol.id} style={{ background:"#fff", borderRadius:"16px", padding:"14px 16px", boxShadow:"0 2px 8px rgba(0,0,0,0.06)", display:"flex", alignItems:"center", gap:"12px" }}>
                   <div style={{ width:"42px", height:"42px", borderRadius:"50%", background:"linear-gradient(135deg,#1a2a3a,#243b55)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"18px", flexShrink:0, overflow:"hidden" }}>
-                    {usr?.avatar_url ? <img src={usr.avatar_url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : "👤"}
+                    {usr?.avatar_url ? <Image src={usr.avatar_url} alt="" width={400} height={400} loading="lazy" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : "👤"}
                   </div>
                   <div style={{ flex:1, minWidth:0 }}>
                     <div style={{ fontSize:"14px", fontWeight:900, color:"#1a2a3a", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
@@ -993,7 +994,7 @@ function NexoAdminPageInner() {
                   <iframe src={formItem.url} style={{ width:"100%", height:"200px", borderRadius:"10px", border:"2px solid #e8e8e6", marginBottom:"8px" }} />
                 )}
                 {formItem.tipo === "imagen" && (
-                  <img src={formItem.url} alt="preview" style={{ width:"100%", borderRadius:"10px", marginBottom:"8px", maxHeight:"200px", objectFit:"cover" }} />
+                  <img src={formItem.url} alt="preview" loading="lazy" style={{ width:"100%", borderRadius:"10px", marginBottom:"8px", maxHeight:"200px", objectFit:"cover" }} />
                 )}
                 <div style={{ background:"#f4f4f2", borderRadius:"10px", padding:"10px 12px", fontSize:"12px", fontWeight:700, color:"#27ae60", wordBreak:"break-all" }}>
                   ✅ {formItem.url.split("/").pop()?.split("?")[0]}
@@ -1219,7 +1220,7 @@ function TarjetaMiembro({ m, onAccion, showAprobar, showAdminSolicitud, showHace
     <div style={{ background:"#fff", borderRadius:"14px", marginBottom:"8px", overflow:"hidden", boxShadow:"0 2px 6px rgba(0,0,0,0.05)" }}>
       <div style={{ padding:"12px 14px", display:"flex", alignItems:"center", gap:"10px", cursor:"pointer" }} onClick={()=>setExp(e=>!e)}>
         <div style={{ width:"40px", height:"40px", borderRadius:"50%", background:"linear-gradient(135deg,#1a2a3a,#243b55)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"17px", overflow:"hidden", flexShrink:0 }}>
-          {m.usuarios?.avatar_url?<img src={m.usuarios.avatar_url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} />:"👤"}
+          {m.usuarios?.avatar_url?<Image src={m.usuarios.avatar_url} alt="" width={400} height={400} loading="lazy" style={{ width:"100%", height:"100%", objectFit:"cover" }} />:"👤"}
         </div>
         <div style={{ flex:1 }}>
           <div style={{ fontSize:"13px", fontWeight:900, color:"#1a2a3a" }}>{m.usuarios?.nombre_usuario||"---"}</div>

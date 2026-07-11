@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
 import { useState, useEffect } from "react";
@@ -449,7 +450,7 @@ export default function AnuncioDetalle() {
         </div>
         <div style={{ maxHeight:"420px", display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden", background:"#000" }}>
           {imagenes.length > 0
-            ? <img src={imagenes[imgActiva]} alt={anuncio.titulo} style={{ width:"100%", height:"auto", maxHeight:"420px", objectFit:"contain" }} />
+            ? <Image src={imagenes[imgActiva]} alt={anuncio.titulo} width={800} height={800} style={{ width:"100%", height:"auto", maxHeight:"420px", objectFit:"contain" }} priority />
             : <span style={{ fontSize:"80px" }}>📦</span>}
         </div>
         <button onClick={volver} style={{ position:"absolute", top:"44px", left:"12px", background:"rgba(212,160,23,0.9)", border:"none", borderRadius:"20px", padding:"6px 14px", color:"#1a2a3a", fontSize:"13px", fontWeight:800, cursor:"pointer", display:"flex", alignItems:"center", gap:"4px", fontFamily:"'Nunito',sans-serif" }}>← Volver</button>
@@ -469,7 +470,7 @@ export default function AnuncioDetalle() {
           <div style={{ display:"flex", gap:"6px", padding:"8px 12px", overflowX:"auto", scrollbarWidth:"none" }}>
             {imagenes.map((img, i) => (
               <div key={i} onClick={() => setImgActiva(i)} style={{ width:"52px", height:"52px", flexShrink:0, borderRadius:"8px", overflow:"hidden", border:`2px solid ${imgActiva===i?"#d4a017":"transparent"}`, cursor:"pointer" }}>
-                <img src={img} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+                <Image src={img} alt="" width={400} height={400} style={{ width:"100%", height:"100%", objectFit:"cover" }} loading="lazy" />
               </div>
             ))}
           </div>

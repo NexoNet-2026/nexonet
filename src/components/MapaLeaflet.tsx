@@ -36,7 +36,7 @@ const crearIcono = (flash: boolean, tipo?: string, avatarUrl?: string, abierto?:
   const className = abierto === true ? "marker-abierto" : abierto === false ? "marker-cerrado" : "";
 
   const interiorHtml = avatarUrl
-    ? `<img src="${avatarUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50% 50% 50% 0;transform:rotate(45deg);" onerror="this.style.display='none';this.nextSibling.style.display='block'"/><span style="display:none;transform:rotate(45deg);font-size:16px;">${emoji}</span>`
+    ? `<img src="${avatarUrl}" loading="lazy" style="width:100%;height:100%;object-fit:cover;border-radius:50% 50% 50% 0;transform:rotate(45deg);" onerror="this.style.display='none';this.nextSibling.style.display='block'"/><span style="display:none;transform:rotate(45deg);font-size:16px;">${emoji}</span>`
     : `<span style="transform:rotate(45deg);font-size:18px;">${emoji}</span>`;
 
   return L.divIcon({

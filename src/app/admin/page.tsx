@@ -1793,7 +1793,7 @@ export default function AdminPanel() {
               {usuarios.slice(0,8).map(u=>(
                 <div key={u.id} style={S.row}>
                   <div style={{width:"36px",height:"36px",borderRadius:"50%",background:"linear-gradient(135deg,#1a2a3a,#3a7bd5)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"16px",flexShrink:0,overflow:"hidden"}}>
-                    {u.avatar_url?<img src={u.avatar_url} style={{width:"100%",height:"100%",borderRadius:"50%",objectFit:"cover"}} alt="av"/>:"👤"}
+                    {u.avatar_url?<img src={u.avatar_url} style={{width:"100%",height:"100%",borderRadius:"50%",objectFit:"cover"}} alt="av" loading="lazy"/>:"👤"}
                   </div>
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{fontSize:"13px",fontWeight:800,color:"#1a2a3a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{u.nombre_usuario||u.email}</div>
@@ -1855,7 +1855,7 @@ export default function AdminPanel() {
               <div key={u.id} style={{...S.card,opacity:u.bloqueado?0.7:1,borderLeft:`4px solid ${u.bloqueado?"#e74c3c":u.es_promotor?"#d4a017":"#e8e8e6"}`}}>
                 <div style={{display:"flex",alignItems:"flex-start",gap:"12px"}}>
                   <div style={{width:"44px",height:"44px",borderRadius:"50%",background:"linear-gradient(135deg,#1a2a3a,#3a7bd5)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"18px",flexShrink:0,overflow:"hidden"}}>
-                    {u.avatar_url?<img src={u.avatar_url} style={{width:"100%",height:"100%",objectFit:"cover"}} alt=""/>:"👤"}
+                    {u.avatar_url?<img src={u.avatar_url} style={{width:"100%",height:"100%",objectFit:"cover"}} alt="" loading="lazy"/>:"👤"}
                   </div>
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{display:"flex",alignItems:"center",gap:"6px",flexWrap:"wrap"}}>
@@ -2045,7 +2045,7 @@ export default function AdminPanel() {
                     <div onClick={()=>toggleExpand(u.id)} style={{...S.row,gap:"10px",cursor:"pointer",background:abierto?"rgba(212,160,23,0.06)":"transparent",borderRadius:"12px",padding:"10px"}}>
                       <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"22px",color:i===0?"#d4a017":"#9a9a9a",width:"28px",textAlign:"center"}}>{i+1}</span>
                       <div style={{width:"36px",height:"36px",borderRadius:"50%",background:"linear-gradient(135deg,#1a2a3a,#d4a017)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"14px",flexShrink:0,overflow:"hidden"}}>
-                        {u.avatar_url?<img src={u.avatar_url} style={{width:"100%",height:"100%",objectFit:"cover"}} alt=""/>:"⭐"}
+                        {u.avatar_url?<img src={u.avatar_url} style={{width:"100%",height:"100%",objectFit:"cover"}} alt="" loading="lazy"/>:"⭐"}
                       </div>
                       <div style={{flex:1,minWidth:0}}>
                         <div style={{fontSize:"13px",fontWeight:900,color:"#1a2a3a"}}>{u.nombre_usuario}</div>

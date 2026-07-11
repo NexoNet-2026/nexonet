@@ -1,5 +1,6 @@
 // v3 - fix esAdmin y hero padding
 "use client";
+import Image from "next/image";
 import { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import Header from "@/components/Header";
@@ -473,7 +474,7 @@ function NexoPageInner() {
         <div style={{ position:"relative", zIndex:1, padding:"16px 16px 20px" }}>
           <div style={{ display:"flex", alignItems:"flex-end", gap:"14px" }}>
             <div style={{ width:"72px", height:"72px", borderRadius:"18px", overflow:"hidden", flexShrink:0, border:`3px solid ${colorNexo}60`, background:"#1a2a3a", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"30px" }}>
-              {nexo.avatar_url ? <img src={nexo.avatar_url} alt={nexo.titulo} style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : emojiNexo}
+              {nexo.avatar_url ? <Image src={nexo.avatar_url} alt={nexo.titulo} width={400} height={400} priority style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : emojiNexo}
             </div>
             <div style={{ flex:1 }}>
               <div style={{ fontSize:"11px", fontWeight:700, color:"rgba(255,255,255,0.55)", marginBottom:"2px", textTransform:"uppercase", letterSpacing:"1px" }}>
@@ -760,7 +761,7 @@ function NexoPageInner() {
           onClick={()=>setVisor(null)}>
           <button onClick={()=>setVisor(null)} style={{ position:"absolute", top:"16px", right:"16px", background:"rgba(255,255,255,0.15)", border:"none", borderRadius:"50%", width:"44px", height:"44px", fontSize:"20px", color:"#fff", cursor:"pointer" }}>✕</button>
           <div onClick={e=>e.stopPropagation()} style={{ maxWidth:"92vw", maxHeight:"85vh", display:"flex", alignItems:"center", justifyContent:"center" }}>
-            {visor.tipo==="imagen" && <img src={visor.url} alt="" style={{ maxWidth:"92vw", maxHeight:"82vh", borderRadius:"12px", objectFit:"contain" }} />}
+            {visor.tipo==="imagen" && <Image src={visor.url} alt="" width={400} height={400} loading="lazy" style={{ maxWidth:"92vw", maxHeight:"82vh", borderRadius:"12px", objectFit:"contain" }} />}
             {visor.tipo==="video"  && <video src={visor.url} controls autoPlay style={{ maxWidth:"92vw", maxHeight:"82vh", borderRadius:"12px" }} />}
             {visor.tipo==="pdf"    && <iframe src={visor.url} style={{ width:"88vw", height:"80vh", borderRadius:"12px", border:"none" }} />}
             {(!visor.tipo||visor.tipo==="documento"||visor.tipo==="archivo") && (
@@ -1010,7 +1011,7 @@ function SliderContenido({ slider, items, mensajes, perfil, nexo, esAdmin, esMie
               <div key={m.id} style={{ display:"flex", flexDirection:esMio?"row-reverse":"row", alignItems:"flex-end", gap:"8px" }}>
                 {!esMio && (
                   <div style={{ width:"30px", height:"30px", borderRadius:"50%", background:"linear-gradient(135deg,#1a2a3a,#243b55)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"13px", flexShrink:0, overflow:"hidden" }}>
-                    {m.usuarios?.avatar_url ? <img src={m.usuarios.avatar_url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : "👤"}
+                    {m.usuarios?.avatar_url ? <Image src={m.usuarios.avatar_url} alt="" width={400} height={400} loading="lazy" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : "👤"}
                   </div>
                 )}
                 <div style={{ maxWidth:"72%", display:"flex", flexDirection:"column", alignItems:esMio?"flex-end":"flex-start" }}>
@@ -1067,7 +1068,7 @@ function SliderContenido({ slider, items, mensajes, perfil, nexo, esAdmin, esMie
         {miembros.map((m:any)=>(
           <div key={m.id} style={{ background:"#fff", borderRadius:"14px", padding:"14px 16px", display:"flex", alignItems:"center", gap:"12px" }}>
             <div style={{ width:"44px", height:"44px", borderRadius:"50%", background:"linear-gradient(135deg,#1a2a3a,#243b55)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"20px", overflow:"hidden", flexShrink:0 }}>
-              {m.usuarios?.avatar_url ? <img src={m.usuarios.avatar_url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : "👤"}
+              {m.usuarios?.avatar_url ? <Image src={m.usuarios.avatar_url} alt="" width={400} height={400} loading="lazy" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : "👤"}
             </div>
             <div style={{ flex:1 }}>
               <div style={{ fontSize:"14px", fontWeight:900, color:"#1a2a3a" }}>{m.usuarios?.nombre_usuario||"---"}</div>
@@ -1089,7 +1090,7 @@ function SliderContenido({ slider, items, mensajes, perfil, nexo, esAdmin, esMie
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10px" }}>
           {items.map((item:any)=>(
             <div key={item.id} onClick={()=>onVisor({...item, tipo:"imagen"})} style={{ borderRadius:"14px", overflow:"hidden", cursor:"pointer", background:"#1a2a3a", aspectRatio:"1", display:"flex", alignItems:"center", justifyContent:"center" }}>
-              {item.url ? <img src={item.url} alt={item.titulo||""} style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : <span style={{ fontSize:"36px", opacity:0.4 }}>📸</span>}
+              {item.url ? <Image src={item.url} alt={item.titulo||""} width={400} height={400} loading="lazy" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : <span style={{ fontSize:"36px", opacity:0.4 }}>📸</span>}
             </div>
           ))}
         </div>
@@ -1176,7 +1177,7 @@ function SliderContenido({ slider, items, mensajes, perfil, nexo, esAdmin, esMie
               return (
                 <div key={item.id} style={{ width:"100%", background:"#fff", borderRadius:"16px", overflow:"hidden", boxShadow:"0 2px 10px rgba(0,0,0,0.07)", display:"flex", flexDirection:"column" }}>
                   <div style={{ width:"100%", height:"200px", background:"linear-gradient(135deg,#1a2a3a,#243b55)", overflow:"hidden", borderRadius:"16px 16px 0 0", display:"flex", alignItems:"center", justifyContent:"center" }}>
-                    {imgSrc ? <img src={imgSrc} alt="" style={{ width:"100%", height:"200px", objectFit:"cover", display:"block" }} /> : <div style={{ fontSize:"36px", opacity:0.4 }}>{SLIDER_EMOJIS[tipo]}</div>}
+                    {imgSrc ? <Image src={imgSrc} alt="" width={400} height={200} loading="lazy" style={{ width:"100%", height:"200px", objectFit:"cover", display:"block" }} /> : <div style={{ fontSize:"36px", opacity:0.4 }}>{SLIDER_EMOJIS[tipo]}</div>}
                   </div>
                   <div style={{ padding:"12px", flex:1, display:"flex", flexDirection:"column", gap:"4px" }}>
                     <div style={{ fontSize:"13px", fontWeight:900, color:"#1a2a3a" }}>{item.titulo||"Item"}</div>
@@ -1230,7 +1231,7 @@ function SliderContenido({ slider, items, mensajes, perfil, nexo, esAdmin, esMie
             const esNexoItem = item.tipo === "nexo";
             return (
             <div key={item.id} style={{ background:"#fff", borderRadius:"14px", padding:"16px", boxShadow:"0 2px 8px rgba(0,0,0,0.06)" }}>
-              {item.miniatura_url && <img src={item.miniatura_url} alt="" style={{ width:"100%", maxHeight:"160px", objectFit:"cover", borderRadius:"10px", marginBottom:"10px" }} />}
+              {item.miniatura_url && <Image src={item.miniatura_url} alt="" width={400} height={160} loading="lazy" style={{ width:"100%", maxHeight:"160px", objectFit:"cover", borderRadius:"10px", marginBottom:"10px" }} />}
               {item.titulo && <div style={{ fontSize:"14px", fontWeight:900, color:"#1a2a3a", marginBottom:"6px" }}>{item.titulo}</div>}
               {item.descripcion && <div style={{ fontSize:"13px", color:"#555", fontWeight:600, lineHeight:1.6 }}>{item.descripcion}</div>}
               {esAnuncio ? (
@@ -1292,7 +1293,7 @@ function DescargasSlider({ items, perfil, nexo, esAdmin, esMiembro, descargasPag
         return (
           <div key={item.id} style={{ background:"#fff", borderRadius:"16px", overflow:"hidden", boxShadow:"0 2px 10px rgba(0,0,0,0.07)" }}>
             <div style={{ height:"120px", background:"linear-gradient(135deg,#1a2a3a,#243b55)", display:"flex", alignItems:"center", justifyContent:"center", position:"relative", overflow:"hidden" }}>
-              {item.tipo==="imagen" && item.url && <img src={item.url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} />}
+              {item.tipo==="imagen" && item.url && <Image src={item.url} alt="" width={400} height={400} loading="lazy" style={{ width:"100%", height:"100%", objectFit:"cover" }} />}
               {item.tipo==="video"  && item.url && <><video src={item.url} style={{ width:"100%", height:"100%", objectFit:"cover" }} /><div style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.4)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"40px" }}>▶️</div></>}
               {(!item.tipo||item.tipo==="pdf"||item.tipo==="documento") && <span style={{ fontSize:"52px", opacity:0.4 }}>{item.tipo==="pdf"?"📕":"📄"}</span>}
               <div style={{ position:"absolute", top:"8px", right:"8px", background:gratis?"rgba(39,174,96,0.92)":"rgba(212,160,23,0.92)", borderRadius:"8px", padding:"4px 10px", fontSize:"11px", fontWeight:900, color:gratis?"#fff":"#1a2a3a" }}>

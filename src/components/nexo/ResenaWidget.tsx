@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 
@@ -176,7 +177,7 @@ export default function ResenaWidget({ nexoId, perfil, color, usuarioIdNexo }: P
             <div key={r.id} style={{ background: "#fff", borderRadius: "14px", padding: "14px 16px", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "8px" }}>
                 <div style={{ width: "36px", height: "36px", borderRadius: "50%", background: "linear-gradient(135deg,#1a2a3a,#243b55)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
-                  {r.usuarios?.avatar_url ? <img src={r.usuarios.avatar_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : "👤"}
+                  {r.usuarios?.avatar_url ? <Image src={r.usuarios.avatar_url} alt="" width={400} height={400} style={{ width: "100%", height: "100%", objectFit: "cover" }} loading="lazy" /> : "👤"}
                 </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: "13px", fontWeight: 800, color: "#1a2a3a" }}>{r.usuarios?.nombre_usuario || "Usuario"}</div>

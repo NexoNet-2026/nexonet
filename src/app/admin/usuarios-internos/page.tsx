@@ -192,7 +192,7 @@ export default function UsuariosInternosPage() {
           {bots.map(b=>(
             <div key={b.id} style={{display:"flex",alignItems:"center",gap:"12px",padding:"12px 0",borderBottom:"1px solid #f4f4f2"}}>
               <div style={{width:"40px",height:"40px",borderRadius:"50%",background:"linear-gradient(135deg,#8e44ad,#6c3483)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"18px",flexShrink:0,overflow:"hidden"}}>
-                {b.avatar_url ? <img src={b.avatar_url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/> : "🤖"}
+                {b.avatar_url ? <img src={b.avatar_url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}} loading="lazy"/> : "🤖"}
               </div>
               <div style={{flex:1,minWidth:0}}>
                 <div style={{fontSize:"14px",fontWeight:900,color:"#1a2a3a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{b.nombre_usuario}</div>

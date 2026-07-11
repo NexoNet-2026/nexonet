@@ -13,10 +13,10 @@ const CATEGORIAS = [
   { id:"extras",   label:"Extras",   emoji:"✨" },
 ];
 
-const ALIAS = "nexonet.pagos";
-const CBU   = "0000003100012345678900";
-const TITULAR = "NexoNet Argentina S.A.S.";
-const CUIT  = "30-71234567-8";
+const ALIAS = "empatar";
+const CBU   = "0000003100013285822920";
+const TITULAR = "Adrián Morra";
+const CUIT  = "20-26840084-3";
 
 function ComprarInner() {
   const router = useRouter();
@@ -227,7 +227,7 @@ function ComprarInner() {
 
             {/* Datos bancarios */}
             <div style={{ display:"flex", flexDirection:"column", gap:"8px", marginBottom:"14px" }}>
-              {[{ label:"Alias", valor:ALIAS },{ label:"CBU", valor:CBU },{ label:"Titular", valor:TITULAR },{ label:"CUIT", valor:CUIT }].map(d => (
+              {[{ label:"Alias", valor:ALIAS },{ label:"CBU/CVU", valor:CBU },{ label:"Titular", valor:TITULAR },{ label:"CUIT", valor:CUIT }].map(d => (
                 <div key={d.label} style={{ background:"#f8f8f8", borderRadius:"12px", padding:"10px 14px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
                   <div>
                     <div style={{ fontSize:"10px", fontWeight:800, color:"#9a9a9a", textTransform:"uppercase", letterSpacing:"0.5px" }}>{d.label}</div>

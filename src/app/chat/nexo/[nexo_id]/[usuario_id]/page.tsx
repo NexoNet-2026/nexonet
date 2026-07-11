@@ -133,6 +133,12 @@ export default function ChatNexoPage() {
       return;
     }
 
+    if (res.status === 429 || json.error === "rate_limit") {
+      alert("Enviaste demasiados mensajes, esperá un momento.");
+      setEnviando(false);
+      return;
+    }
+
     if (json.wallet) {
       setWallet({ free: json.wallet.bits_free, nexo: json.wallet.bits, promo: json.wallet.bits_promo });
     }

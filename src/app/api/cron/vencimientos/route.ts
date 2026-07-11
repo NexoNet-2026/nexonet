@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { PRECIO_NEGOCIO_MENSUAL } from "@/lib/precios";
+import { acreditarBitComprador } from "@/lib/acreditar-pago";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -107,10 +108,51 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  // 4. REINTENTO DE ACREDITACIÓN — pagos aprobados por MP cuya acreditación de BIT
+  //    falló en el webhook (estado 'acreditacion_fallida'). Reintentamos acreditar
+  //    al comprador de forma idempotente. La cascada de comisiones NO se reintenta
+  //    (no tiene idempotencia por comisión → evitamos doble acreditación).
+  let pagosReintentados = 0;
+  let pagosAcreditados = 0;
+  const { data: pendientes } = await supabase
+    .from("pagos_pendientes")
+    .select("*")
+    .eq("estado", "acreditacion_fallida")
+    .eq("resuelto", false)
+    .lt("intentos", 5); // tope de reintentos para no loopear sobre pagos rotos
+
+  if (pendientes && pendientes.length > 0) {
+    for (const p of pendientes) {
+      pagosReintentados++;
+      const r = await acreditarBitComprador(supabase, {
+        usuario_id: p.usuario_id,
+        paquete: p.paquete,
+        paymentId: p.payment_id,
+        monto: p.monto,
+      });
+      if (r.ok) {
+        await supabase.from("pagos_pendientes").update({
+          resuelto: true,
+          intentos: (p.intentos || 0) + 1,
+          updated_at: new Date().toISOString(),
+        }).eq("id", p.id);
+        pagosAcreditados++;
+      } else {
+        await supabase.from("pagos_pendientes").update({
+          intentos: (p.intentos || 0) + 1,
+          ultimo_error: r.error ?? "error desconocido",
+          updated_at: new Date().toISOString(),
+        }).eq("id", p.id);
+      }
+    }
+  }
+
   return NextResponse.json({
     ok: true,
     pausados: pausados.length,
     notificados: notificados.length,
     trialsVencidos: trialsVencidos?.length || 0,
+    pagosReintentados,
+    pagosAcreditados,
   });
 }

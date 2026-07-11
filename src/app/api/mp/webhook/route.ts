@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { logFallo } from "@/lib/log-fallos";
 import { PRECIO_NEGOCIO_MENSUAL } from "@/lib/precios";
+import { PAQUETES, NIVELES_LOGRO } from "@/lib/acreditar-pago";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -10,16 +11,6 @@ const supabase = createClient(
 );
 
 const ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN!;
-
-// Mapa paquete → columna Supabase y cantidad
-const PAQUETES: Record<string, { col: string; cantidad: number; ilimitado?: boolean }> = {
-  "bit_500":   { col: "bits", cantidad: 500   },
-  "bit_1500":  { col: "bits", cantidad: 1600  },
-  "bit_3000":  { col: "bits", cantidad: 3300  },
-  "bit_6000":  { col: "bits", cantidad: 6800  },
-  "bit_12000": { col: "bits", cantidad: 14000 },
-  "bit_30000": { col: "bits", cantidad: 36000 },
-};
 
 export async function POST(req: NextRequest) {
   try {
@@ -147,15 +138,68 @@ export async function POST(req: NextRequest) {
     });
     const pago = await res.json();
 
-    if (pago.status !== "approved") return NextResponse.json({ ok: true });
-
     // Parsear external_reference: "usuario_id|paquete|timestamp"
+    // (se necesita también para los estados pending/rejected)
     const ref = pago.external_reference || "";
     const partes = ref.split("|");
+    const usuario_id = partes[0] || "";
+    const paquete    = partes[1] || "";
+
+    // ── Manejo explícito de estados de pago ──
+    // pending / in_process / authorized → todavía no se acredita; se registra en
+    // pagos_pendientes para visibilidad. MP mandará otro webhook al aprobarse.
+    if (pago.status === "pending" || pago.status === "in_process" || pago.status === "authorized") {
+      if (usuario_id && paquete) {
+        const { error: pendErr } = await supabase.from("pagos_pendientes").upsert({
+          payment_id: String(paymentId),
+          usuario_id,
+          paquete,
+          monto: pago.transaction_amount ?? null,
+          estado: "pending",
+          updated_at: new Date().toISOString(),
+        }, { onConflict: "payment_id" });
+        if (pendErr) await logFallo({
+          severidad: "advertencia",
+          contexto: "webhook-mp",
+          operacion: "insert_pago_pending",
+          usuario_id,
+          datos_contexto: { paymentId, paquete, status: pago.status, error: pendErr },
+          error_mensaje: pendErr.message,
+        });
+      }
+      return NextResponse.json({ ok: true });
+    }
+
+    // rejected / cancelled / refunded / charged_back → avisar al usuario, sin acreditar
+    if (["rejected", "cancelled", "refunded", "charged_back"].includes(pago.status)) {
+      if (usuario_id) {
+        const rechazado = pago.status === "rejected";
+        const { error: notifRechErr } = await supabase.from("notificaciones").insert({
+          usuario_id,
+          tipo: "sistema",
+          leida: false,
+          mensaje: rechazado
+            ? "❌ Tu pago en Mercado Pago fue rechazado. No se acreditaron BIT. Podés volver a intentarlo desde la tienda."
+            : "⚠️ Tu pago en Mercado Pago no se completó. No se acreditaron BIT. Si creés que es un error, escribinos.",
+        });
+        if (notifRechErr) await logFallo({
+          severidad: "advertencia",
+          contexto: "webhook-mp",
+          operacion: "insert_notif_pago_rechazado",
+          usuario_id,
+          datos_contexto: { paymentId, status: pago.status, error: notifRechErr },
+          error_mensaje: notifRechErr.message,
+        });
+      }
+      return NextResponse.json({ ok: true });
+    }
+
+    // Cualquier otro estado no aprobado: ignorar
+    if (pago.status !== "approved") return NextResponse.json({ ok: true });
+
+    // ── approved: acreditar ──
     if (partes.length < 2) return NextResponse.json({ ok: true });
 
-    const usuario_id = partes[0];
-    const paquete    = partes[1];
     const pkg = PAQUETES[paquete];
 
     if (!pkg) {
@@ -207,21 +251,43 @@ export async function POST(req: NextRequest) {
     // Acreditar BIT + recalcular insignia de logro
     const acumuladoActual = (usuario as any).bits_totales_acumulados || 0;
     const nuevoAcumulado  = acumuladoActual + (pkg.ilimitado ? 99999 : pkg.cantidad);
-    const NIVELES_LOGRO: [string, number][] = [["diamante",20000000],["platino",10000000],["oro",5000000],["plata",1000000],["bronce",100000],["ninguna",0]];
     const insignia = NIVELES_LOGRO.find(([, min]) => nuevoAcumulado >= min)?.[0] || "ninguna";
     const { error: upCompraErr } = await supabase.from("usuarios").update({
       [pkg.col]: nuevo,
       bits_totales_acumulados: nuevoAcumulado,
       insignia_logro: insignia,
     }).eq("id", usuario_id);
-    if (upCompraErr) await logFallo({
-      severidad: "critico",
-      contexto: "webhook-mp",
-      operacion: "update_usuario_compra",
-      usuario_id,
-      datos_contexto: { paquete, paymentId, col: pkg.col, nuevo, nuevoAcumulado, error: upCompraErr },
-      error_mensaje: upCompraErr.message,
-    });
+    if (upCompraErr) {
+      await logFallo({
+        severidad: "critico",
+        contexto: "webhook-mp",
+        operacion: "update_usuario_compra",
+        usuario_id,
+        datos_contexto: { paquete, paymentId, col: pkg.col, nuevo, nuevoAcumulado, error: upCompraErr },
+        error_mensaje: upCompraErr.message,
+      });
+      // Falló la acreditación de BIT tras un cobro aprobado: encolar para que el
+      // cron diario reintente. NO insertamos en pagos_mp (así la idempotencia no
+      // marca el pago como acreditado) ni corremos la cascada de comisiones.
+      const { error: encolarErr } = await supabase.from("pagos_pendientes").upsert({
+        payment_id: String(paymentId),
+        usuario_id,
+        paquete,
+        monto: pago.transaction_amount ?? null,
+        estado: "acreditacion_fallida",
+        ultimo_error: upCompraErr.message,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: "payment_id" });
+      if (encolarErr) await logFallo({
+        severidad: "critico",
+        contexto: "webhook-mp",
+        operacion: "encolar_acreditacion_fallida",
+        usuario_id,
+        datos_contexto: { paymentId, paquete, error: encolarErr },
+        error_mensaje: encolarErr.message,
+      });
+      return NextResponse.json({ ok: true });
+    }
 
     // Registrar pago para idempotencia
     const { error: pagoInsertErr } = await supabase.from("pagos_mp").insert({
@@ -251,6 +317,11 @@ export async function POST(req: NextRequest) {
       },
       error_mensaje: pagoInsertErr.message,
     });
+
+    // Si este pago venía encolado (pending o reintento fallido), marcarlo resuelto
+    await supabase.from("pagos_pendientes")
+      .update({ resuelto: true, updated_at: new Date().toISOString() })
+      .eq("payment_id", String(paymentId));
 
     // Notificación in-app
     const mensajeComprador = `✅ Pago aprobado — Se acreditaron ${pkg.cantidad >= 99999 ? "BIT Ilimitados" : pkg.cantidad + " BIT"} en tu cuenta`;
